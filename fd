@@ -1,0 +1,214 @@
+[33mcommit 534cd069debc1c7e8c27427836aa59ec09a67a56[m[33m ([m[1;36mHEAD -> [m[1;32mmaster[m[33m)[m
+Author: mutuRSSA <kmkp.rssa@gmail.com>
+Date:   Thu Jun 1 01:50:12 2023 +0700
+
+    first commit
+
+[1mdiff --git a/JS/main.js b/JS/main.js[m
+[1mnew file mode 100644[m
+[1mindex 0000000..c59c0be[m
+[1m--- /dev/null[m
+[1m+++ b/JS/main.js[m
+[36m@@ -0,0 +1,18 @@[m
+[32m+[m[32mconst tabItems = document.querySelectorAll('.nav');[m
+[32m+[m[32mconst tabContentItems = document.querySelectorAll('.tab-content-item');[m
+[32m+[m
+[32m+[m[32m//Select tab content item[m
+[32m+[m[32mfunction selectItem(e) {[m
+[32m+[m[32m    removeShow();[m
+[32m+[m[32m    //Grab content item from DOM[m
+[32m+[m[32m    const tabContentItems = document.querySelector(`#${this.id}-content`);[m
+[32m+[m[32m    //add show class[m
+[32m+[m[32m    tabContentItems.classList.add('show');[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mfunction removeShow() {[m
+[32m+[m[32m    tabContentItems.forEach(item => item.classList.remove('show'));[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m//listen for tab click[m
+[32m+[m[32mtabItems.forEach(item => item.addEventListener('click',selectItem));[m
+\ No newline at end of file[m
+[1mdiff --git a/css/style.css b/css/style.css[m
+[1mnew file mode 100644[m
+[1mindex 0000000..2ac4d16[m
+[1m--- /dev/null[m
+[1m+++ b/css/style.css[m
+[36m@@ -0,0 +1,93 @@[m
+[32m+[m[32m:root {[m
+[32m+[m[32m--primary-color:#b5e7a0;[m
+[32m+[m[32m--text-color: white;[m
+[32m+[m[32m--button-color:#86af49;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mbody {[m
+[32m+[m[32m    font-family: Arial, Helvetica, sans-serif;[m
+[32m+[m[32m    -webkit-font-smoothing: antialiased;[m
+[32m+[m[32m    background:#d5e1df;[m
+[32m+[m[32m    color: #3e4444;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.navbar {[m
+[32m+[m[32mdisplay: grid;[m
+[32m+[m[32mgrid-template-columns: repeat(4, 1fr);[m
+[32m+[m[32mgrid-gap: 1rem;[m
+[32m+[m[32malign-items: center;[m
+[32m+[m[32mjustify-content: center;[m
+[32m+[m[32mtext-align: center;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.navbar > div {[m
+[32m+[m[32mpadding: 1rem;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.navbar div:hover {[m
+[32m+[m[32m    cursor: pointer;[m
+[32m+[m[32m    opacity: 70%;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.mutulink {[m
+[32m+[m[32m    display: inline-block;[m
+[32m+[m[32m    background: var(--button-color);[m
+[32m+[m[32m    padding: 1rem 1rem;[m
+[32m+[m[32m    margin: 1rem 1rem;[m
+[32m+[m[32m    text-align: center;[m
+[32m+[m[32m    color: var(--text-color);[m
+[32m+[m[32m    text-decoration: none;[m
+[32m+[m[32m    border-radius: 8px;[m
+[32m+[m[41m       [m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.mutulink:hover {[m
+[32m+[m[32m    opacity: 70%;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.show {[m
+[32m+[m[32m    display:grid !important;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.tab-2-content-inner {[m
+[32m+[m[32m    display: grid;[m
+[32m+[m[32m    grid-template-columns: repeat(4, 1fr);[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.tab-3-content-inner {[m
+[32m+[m[32m    display: grid;[m
+[32m+[m[32m    grid-template-columns: repeat(2, 1fr);[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m.tab-4-content-inner {[m
+[32m+[m[32m    display: grid;[m
+[32m+[m[32m    background: var(--button-color);[m
+[32m+[m[32m    text-align: justify;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m#tab-1-content,[m
+[32m+[m[32m#tab-2-content,[m
+[32m+[m[32m#tab-3-content,[m
+[32m+[m[32m#tab-4-content {[m
+[32m+[m[32m    display: none;[m
+[32m+[m[32m}[m[41m [m
+[32m+[m
+[32m+[m[32m.perpus {[m
+[32m+[m[32m    display: grid;[m
+[32m+[m[32m    text-decoration: none;[m
+[32m+[m[32m    padding: 1rem;[m
+[32m+[m[32m    color: var(--text-color);[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32m@media (max-width: 500px) {[m
+[32m+[m[41m   [m
+[32m+[m[32m    #tab-2-content .tab-2-content-inner {[m
+[32m+[m[32m        display: grid;[m
+[32m+[m[32m        grid-template-columns: repeat(2, 1fr);[m
+[32m+[m[32m        text-align: center;[m
+[32m+[m[32m    }[m
+[32m+[m[41m    [m
+[32m+[m[32m    #tab-3-content .tab-3-content-inner {[m
+[32m+[m[32m        grid-template-columns: 1fr;[m
+[32m+[m[32m    }[m
+[32m+[m[32m}[m
+\ No newline at end of file[m
+[1mdiff --git a/index.html b/index.html[m
+[1mnew file mode 100644[m
+[1mindex 0000000..a0581b8[m
+[1m--- /dev/null[m
+[1m+++ b/index.html[m
+[36m@@ -0,0 +1,76 @@[m
+[32m+[m[32m<!DOCTYPE html>[m
+[32m+[m[32m<html lang="id">[m
+[32m+[m[32m<head>[m
+[32m+[m[32m    <meta charset="UTF-8">[m
+[32m+[m[32m    <meta http-equiv="X-UA-Compatible" content="IE=edge">[m
+[32m+[m[32m    <meta name="viewport" content="width=device-width, initial-scale=1.0">[m
+[32m+[m[32m    <title>Komite Mutu RSSA</title>[m
+[32m+[m[32m    <script src="https://kit.fontawesome.com/4bf20394b5.js" crossorigin="anonymous"></script>[m
+[32m+[m[32m    <link rel="stylesheet" href="css/style.css">[m
+[32m+[m[32m</head>[m
+[32m+[m[32m<body>[m
+[32m+[m[32m    <header class="header">[m
+[32m+[m[32m        <div class="navbar">[m
+[32m+[m[32m            <div id="tab-1" class="nav show">[m
+[32m+[m[32m                <i class="nav fa-sharp fa-solid fa-house"></i>[m
+[32m+[m[32m                <p class="navtext">KMKP RSSA</p></div>[m
+[32m+[m[32m            <div id="tab-2" class="nav">[m
+[32m+[m[32m                <i class="nav fa-sharp fa-solid fa-paper-plane"></i>[m
+[32m+[m[32m                <p class="navtext">Form Indikator Mutu</p></div>[m
+[32m+[m[32m            <div id="tab-3" class="nav">[m
+[32m+[m[32m                <i class="nav fa-sharp fa-solid fa-person-falling-burst"></i>[m
+[32m+[m[32m                <p class="navtext">Form Insiden</p></div>[m
+[32m+[m[32m            <div id="tab-4" class="nav">[m
+[32m+[m[32m                <i class="nav fa-sharp fa-solid fa-book"></i>[m
+[32m+[m[32m                <p class="navtext">Bahan Bacaan</p></div>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m    </header>[m
+[32m+[m[32m    <section class="tab-content">[m
+[32m+[m[32m        <div class="container">[m
+[32m+[m[32m            <div  id="tab-1-content" class="tab-content-item">[m
+[32m+[m[32m                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Eligendi tenetur ratione doloremque praesentium ullam, dolores architecto, voluptates aspernatur ut et ipsum, provident commodi nulla quae fugit odit expedita obcaecati temporibus!</p>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m            <div  id="tab-2-content" class="tab-content-item">[m
+[32m+[m[32m                <div class="tab-2-content-inner">[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1-e9Wf4N0lWL4BrWT77RVZNYnVEoQa7Yn0wKCXqmylT0/edit?usp=drive_link" target="_blank">UGD</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1urd1u-KdKLowL8OQW3oLs_-atV6PR0NlQhDFlwpxzKE/edit?usp=drive_link" target="_blank">VK</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1NDlFpTSGDVttt9QM5102qDmtVTcb2aI_IpRBCUHESn4/edit?usp=drive_link" target="_blank">Bangsal UPD</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/19u4-5S189aw02PePpbO1H1x79-S3PcVjPnfepXo3fro/edit?usp=drive_link" target="_blank">Farmasi</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1ElnYsyWavmX69R-g7hOmE-LsxLaP_kJf7Q75GJrDu48/edit?usp=drive_link" target="_blank">PPI</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1XMrE1k-3nVru52cyivU4hTJa1sf5nNFE2SBWUc4IpyE/edit?usp=drive_link" target="_blank">Rekam Medis</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1gdAwkOgmMs5sZ8S_092CnT1j7BOh6LRwaQZSm_cSZB4/edit?usp=drive_link" target="_blank">Rawat Jalan</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1WspNdv7ZvgaZ1sMVTONyTQf_UEh5kwgTv7TbPQroMOQ/edit?usp=drive_link" target="_blank">Radiologi</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1j34Up9n2krTxvnKt6i828gCbB1HVKdNkSKuUVDFlyN4/edit?usp=drive_link" target="_blank">Kasir</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1uMaMsT2KVaiHeoTxPxCDc8VJ1nZIiKaU0e07v3TvY3Q/edit?usp=drive_link" target="_blank">Laboratorium</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1ULLXWyG7iZUzJ4HgkYIJb90dFrls3kdJA85c8WYgnGs/edit?usp=drive_link" target="_blank">Manajemen</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1lcBUjSkpqSMxJonAlYjb_bFFOHG4GEaZwuU36Rvx9Ps/edit?usp=drive_link" target="_blank">IPSRS</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1gX2zcqow9dxhjDeIZREv7eL4lYRAe_8-8yJvx1ujqLw/edit?usp=drive_link" target="_blank">Gizi</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1zX2ZuJukCMJRRO8UPjqPgigPyV5PgeH94DHe8IO8GMQ/edit?usp=drive_link" target="_blank">Ruang Intensif</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1qbCavqZUFflk1gHXY7sExlKw_xdvjsTCC4dIlYJgWK4/edit?usp=drive_link" target="_blank">Isolasi</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1Xd2hh_Hq3ekUyDotDgsnUUv_18JB2L9b0QXqVEAl_rY/edit?usp=drive_link" target="_blank">Bangsal Anak</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1rknCBX9JAdRWhH-EaiAtwEiRh7_so9CgS0Xmo48KDtA/edit?usp=drive_link" target="_blank">Perinatologi</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/17BiG_hh6kbnZqq6Gm2cSsm0GEE8D1CzzbUT4aroL2Zo/edit?usp=drive_link" target="_blank">Unit Bedah</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1vUuWeiNITm-qU7CQPt0MYrnOpo1bSj8WlxxmmYn0c6s/edit?usp=drive_link" target="_blank">CSSD</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1KcYPJxyZH1jnmbgKDObeDZCa_nK46gseDVxSHJtxrkw/edit?usp=drive_link" target="_blank">Ambulans</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/spreadsheets/d/1djBWy3IpwTjKaxiAFrx8X7_p6HIGfs7wrrX6YwzhqIo/edit?usp=drive_link" target="_blank">Kamar Jenazah</a>[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m            <div  id="tab-3-content" class="tab-content-item">[m
+[32m+[m[32m                <div class="tab-3-content-inner">[m
+[32m+[m[32m                    <a class="mutulink" href="https://docs.google.com/forms/d/e/1FAIpQLSeD5p2Q9dKd66vGBlvaFgnT9np1z2gpWJi6Nh4ppTl5Vnl4UA/viewform?usp=sharing" target="_blank">Insiden Keselamatan Pasien</a>[m
+[32m+[m[32m                <a class="mutulink" href="https://docs.google.com/forms/d/e/1FAIpQLSemzXh3rlzK8YwAQ_7RfdIJNiErEYPoTKgrM0D-vcG8420E7g/viewform?usp=sharing" target="_blank">Kondisi Potensial Cedera</a>[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m            <div id="tab-4-content" class="tab-content-item">[m
+[32m+[m[32m                <div class="tab-4-content-inner">[m
+[32m+[m[32m                    <a class="perpus" href="https://drive.google.com/file/d/14xjUNarP3un3NbAjtU8MMVTzDzkj45Wn/view?usp=drive_link" target="_blank"> To Err is Human : Building a Safer Health System</a>[m
+[32m+[m[32m                    <a class="perpus" href="https://drive.google.com/file/d/1wL55MGzokrOs6ckCj7mwA8r8LLofcg0H/view?usp=drive_link" target="_blank"> PMK No 1691 tentang Keselamatan Pasien Rumah Sakit</a>[m
+[32m+[m[32m                    <a class="perpus" href="https://drive.google.com/file/d/1kZTOo4UYIV5LweYgaYoIdiyQQzTSz9vZ/view?usp=drive_link" target="_blank"> Manajemen Keselamatan Pasien dalam Keperawatan</a>[m
+[32m+[m[32m                    <a class="perpus" href="https://drive.google.com/file/d/1-SvQxhRYKWl69x0j8sajYBiMQ_l576rV/view?usp=drive_link" target="_blank"> Pedoman Nasional Keselamatan Pasien RS Edisi III</a>[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m    </section>[m
+[32m+[m[32m    <script src="JS/main.js"></script>[m
+[32m+[m[32m</body>[m
+[32m+[m[32m</html>[m
+\ No newline at end of file[m
