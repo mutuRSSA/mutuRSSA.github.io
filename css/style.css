@@ -61,7 +61,7 @@ iframe {
     margin: auto;
 }
 
-#indikator-small {
+.indikator-small {
     display: none;
 }
 
@@ -132,11 +132,11 @@ iframe {
         display: none;
     }
     
-    #indikator-small {
+    .indikator-small {
         display: block;
     }
 
-    #indikator {
+    .indikator {
         display: none;
     }
 }
