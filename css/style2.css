@@ -1,0 +1,99 @@
+:root {
+    --primary-color:#b5e7a0;
+    --text-color: white;
+    --button-color:#86af49;
+    }
+    
+    body {
+        font-family: Arial, Helvetica, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        background:#d5e1df;
+        color: #3e4444;
+    }
+    
+    .navbar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-gap: 1rem;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    }
+    
+    .navbar > div {
+    padding: 1rem;
+    }
+    
+    .navbar div:hover {
+        cursor: pointer;
+        opacity: 70%;
+    }
+
+    .subnav {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        background-color: var(--text-color)
+    }    
+
+    .subnavtext:hover {
+        cursor: pointer;
+        opacity: 80%;
+    }
+
+    #tab-1-content,
+    #tab-2-content,
+    #tab-3-content,
+    #tab-4-content,
+    #tab-5-content,
+    #tab-6-content,
+    #tab-7-content,
+    #tab-8-content,
+    #tab-9-content,
+    #tab-10-content,
+    #tab-11-content,
+    #tab-12-content,
+    #tab-13-content,
+    #tab-14-content,
+    #tab-15-content,
+    #tab-16-content,
+    #tab-17-content,
+    #tab-18-content,
+    #tab-19-content,
+    #tab-20-content,
+    #tab-21-content,
+    #tab-22-content,
+    #tab-23-content,
+    #tab-24-content,
+    #tab-25-content {
+        display: none;
+    }   
+    
+    .show {
+        display:grid !important;
+    }
+
+    iframe {
+        display: block;
+        width: 800px;
+        height: 400px;
+        margin: auto;
+    }
+
+    .mutulink {
+        display: inline-block;
+        position: fixed;
+        bottom: 0;
+        left: 20px;
+        background: var(--button-color);
+        padding: 1rem 1rem;
+        margin: 1rem 1rem;
+        text-align: center;
+        color: var(--text-color);
+        text-decoration: none;
+        border-radius: 8px;
+           
+    }
+    
+    .mutulink:hover {
+        opacity: 70%;
+    }
