@@ -109,7 +109,7 @@ iframe {
     }
 }
 
-@media (max-width: 500px) {
+@media (max-width: 400px) {
    
     #tab-2-content .tab-2-content-inner {
         display: grid;
@@ -123,8 +123,8 @@ iframe {
 
     iframe {
         display: block;
-        width: 400px;
-        height: 400px;
+        width: 360px;
+        height: 360px;
         margin: auto;
     }
 
@@ -138,5 +138,11 @@ iframe {
 
     .indikator {
         display: none;
+    }
+
+    .tab-1-content-inner {
+        display: grid;
+        align-items: center;
+        max-width: 360px;
     }
 }

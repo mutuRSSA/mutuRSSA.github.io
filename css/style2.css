@@ -32,7 +32,8 @@
     .subnav {
         display: grid;
         grid-template-columns: repeat(5, 1fr);
-        background-color: var(--text-color)
+        background-color: var(--text-color);
+        padding-left: 0.5rem;
     }    
 
     .subnavtext:hover {
@@ -81,9 +82,8 @@
 
     .mutulink {
         display: inline-block;
-        position: fixed;
-        bottom: 0;
-        left: 20px;
+        position: relative;
+        margin: 3rem;
         background: var(--button-color);
         padding: 1rem 1rem;
         margin: 1rem 1rem;
@@ -96,4 +96,15 @@
     
     .mutulink:hover {
         opacity: 70%;
+    }
+
+    
+    @media (max-width: 400px) {
+
+        .subnav {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            padding-left: 1rem;
+        }
+        
     }
