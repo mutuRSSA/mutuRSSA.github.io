@@ -11,6 +11,15 @@ body {
     color: #3e4444;
 }
 
+.navtext {
+    font-family: Arial, Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background:#d5e1df;
+    color: #3e4444;
+    text-decoration: none;
+}
+
+
 .navbar {
 display: grid;
 grid-template-columns: repeat(4, 1fr);
@@ -27,6 +36,10 @@ padding: 1rem;
 .navbar div:hover {
     cursor: pointer;
     opacity: 70%;
+}
+
+.fa-shield-halved {
+   padding: 1rem;
 }
 
 .mutulink {
@@ -56,8 +69,8 @@ padding: 1rem;
 
 iframe {
     display: block;
-    width: 800px;
-    height: 400px;
+    width: 840px;
+    height: 480px;
     margin: auto;
 }
 
@@ -77,7 +90,7 @@ iframe {
 
 .tab-3-content-inner {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
 }
 
 .tab-4-content-inner {
@@ -89,7 +102,8 @@ iframe {
 #tab-1-content,
 #tab-2-content,
 #tab-3-content,
-#tab-4-content {
+#tab-4-content,
+#tab-5-content {
     display: none;
 } 
 
