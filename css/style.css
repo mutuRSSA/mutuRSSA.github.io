@@ -54,6 +54,24 @@ padding: 1rem;
        
 }
 
+/* .tab-1-content-inner {
+    position: relative;
+    overflow:  visible;
+    width: 100%;
+    padding-top: 100%%;
+} */
+
+.indikator {
+    position: absolute;
+    top: 12rem;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
 .mutulink:hover {
     opacity: 70%;
 }
@@ -62,17 +80,17 @@ padding: 1rem;
     display:grid !important;
 }
 
-.tab-1-content-inner {
+/* .tab-1-content-inner {
     display: block;
     align-items: center;
-}
+} */
 
-iframe {
+/* iframe {
     display: block;
     width: 840px;
     height: 480px;
     margin: auto;
-}
+} */
 
 .indikator-small {
     display: none;
