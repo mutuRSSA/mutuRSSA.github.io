@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Formulir KPC - Komite Mutu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { 
+            background-color: #f4f6f9; 
+            padding-top: 80px; /* Jarak untuk header fixed */
+            padding-bottom: 40px; 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+        }
+        .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 4px; border-top: 3px solid #ffc107; /* Warna Kuning untuk KPC */ }
+        
+        /* Tema Header dan Sidebar */
+        .bg-custom-dark { background-color: #3c8dbc; } 
+        .sidebar-link.active { background-color: #f4f6f9; color: #3c8dbc; border-left: 4px solid #3c8dbc; font-weight: bold; }
+        .sidebar-link { color: #333; font-weight: 500; transition: 0.2s; }
+        .sidebar-link:hover { background-color: #e9ecef; }
+        .navbar-brand { font-size: 1.25rem; letter-spacing: 0.5px; }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container" style="max-width: 900px;">
+        <div class="bg-white p-4 card-custom">
+            <h4 class="mb-2 text-dark fw-bold"><i class="fas fa-exclamation-triangle text-warning me-2"></i> FORMULIR LAPORAN KPC</h4>
+            <p class="text-muted border-bottom pb-3 mb-4">Kondisi Potensial Cedera (KPC) adalah kondisi yang sangat berpotensi untuk menimbulkan cedera, tetapi belum terjadi insiden.</p>
+            
+            <form id="formKPC">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">1. Tanggal & Waktu Ditemukan</label>
+                        <input type="datetime-local" class="form-control" name="tgl_waktu" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">2. Lokasi / Unit Ditemukan</label>
+                        <input type="text" class="form-control" name="lokasi" placeholder="Misal: Selasar Lantai 2, Kamar Mandi IGD" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">3. Rincian / Deskripsi Kondisi (KPC)</label>
+                    <textarea class="form-control" name="deskripsi" rows="3" placeholder="Jelaskan kondisi yang membahayakan tersebut secara rinci..." required></textarea>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold">4. Tindakan yang langsung dilakukan (Jika ada)</label>
+                    <textarea class="form-control" name="tindakan" rows="2" placeholder="Misal: Memasang papan peringatan lantai licin, memindahkan barang..."></textarea>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">5. Nama Pelapor</label>
+                        <input type="text" class="form-control" name="nama_pelapor" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">6. Unit Kerja Pelapor</label>
+                        <input type="text" class="form-control" name="unit_pelapor" required>
+                    </div>
+                </div>
+
+                <div class="mb-4 p-3 border rounded bg-light">
+                    <label class="form-label fw-bold text-primary"><i class="fas fa-camera"></i> 7. Upload Bukti Foto Kondisi (Opsional)</label>
+                    <input class="form-control" type="file" id="buktiFoto" accept="image/*, .pdf">
+                    <div class="form-text text-danger" id="fileWarning">Ukuran file maksimal 2 MB agar proses upload lancar.</div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4 p-3 bg-light border-top">
+                    <button type="submit" class="btn btn-warning fw-bold px-4" id="btnSimpan">KIRIM LAPORAN KPC</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // MASUKKAN URL WEB APP APPS SCRIPT ANDA DI SINI
+            const scriptURL = "https://script.google.com/macros/s/AKfycbyEYtIZY66GfN3s8wY7dPovPN0jU40KcvBC3ecrRRp3L981wy503UvJx7YpOAg4oCkl/exec";
+            // CEK MODE EDIT
+            const editDataStr = localStorage.getItem('editDataKPC');
+            let isEditMode = false;
+            let editTargetId = null;
+
+            if (editDataStr) {
+                isEditMode = true;
+                const data = JSON.parse(editDataStr);
+                editTargetId = data.Timestamp;
+
+                submitBtn.innerHTML = "UPDATE LAPORAN KPC";
+                document.querySelector('.text-muted.border-bottom').innerHTML += ` <span class="badge bg-warning text-dark ms-2">MODE EDIT</span>`;
+
+                // Helper Format Tanggal
+                const d = new Date(data['Tgl & Waktu Penemuan']);
+                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                document.querySelector('[name="tgl_waktu"]').value = d.toISOString().slice(0, 16);
+                
+                document.querySelector('[name="lokasi"]').value = data['Lokasi / Unit'] || '';
+                document.querySelector('[name="deskripsi"]').value = data['Deskripsi KPC'] || '';
+                document.querySelector('[name="tindakan"]').value = data['Tindakan yang Dilakukan'] || '';
+                document.querySelector('[name="nama_pelapor"]').value = data['Nama Pelapor'] || '';
+                document.querySelector('[name="unit_pelapor"]').value = data['Unit Pelapor'] || '';
+            }
+            const form = document.getElementById("formKPC");
+            const submitBtn = document.getElementById("btnSimpan");
+            const fileInput = document.getElementById("buktiFoto");
+
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                
+                // Cek ukuran file (Maks 2MB)
+                if (fileInput.files.length > 0 && fileInput.files[0].size > 2 * 1024 * 1024) {
+                    alert("Ukuran file terlalu besar! Maksimal 2 MB.");
+                    return;
+                }
+
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Mengirim...';
+                submitBtn.disabled = true;
+
+                // Ambil data form teks
+                const formData = new FormData(form);
+                const inputData = Object.fromEntries(formData.entries());
+
+                // Proses file menggunakan FileReader
+                // JIKA EDIT MODE
+                if (isEditMode) {
+                    const payload = { action: 'update', id: editTargetId, data: inputData };
+                    // Jika ada file baru di-upload saat edit
+                    if (fileInput.files.length > 0) {
+                        const file = fileInput.files[0];
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            payload.data.fileData = e.target.result;
+                            payload.data.fileName = file.name;
+                            kirimDataKeServer(payload);
+                        };
+                        reader.readAsDataURL(file);
+                    } else {
+                        kirimDataKeServer(payload); // Edit teks saja
+                    }
+                } else {
+                    // JIKA CREATE MODE (Kode yang sudah ada sebelumnya)
+                    const payload = { action: 'create', data: inputData };
+                    if (fileInput.files.length > 0) {
+                       // ... proses filereader lama ... masukkan ke payload.data
+                    } else {
+                       kirimDataKeServer(payload);
+                    }
+                }
+                }
+            );
+
+            function kirimDataKeServer(payloadData) {
+                fetch(scriptURL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify(payloadData),
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === "success") {
+                        alert("Laporan KPC dan bukti foto berhasil terkirim!");
+                        form.reset();
+                    } else {
+                        alert("Terjadi kesalahan server: " + result.message);
+                    }
+                })
+                .catch(error => alert("Gagal terhubung ke server. Periksa koneksi internet Anda."))
+                .finally(() => {
+                    submitBtn.innerHTML = "KIRIM LAPORAN KPC";
+                    submitBtn.disabled = false;
+                });
+            }
+        });
+    </script>
+    <script src="components.js"></script>
+</body>
+</html>

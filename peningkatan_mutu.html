@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Peningkatan Mutu - Komite Mutu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { 
+            background-color: #f4f6f9; 
+            padding-top: 80px; 
+            padding-bottom: 40px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+        }
+        .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 4px; border-top: 3px solid #3c8dbc; }
+        
+        /* Tema Header dan Sidebar */
+        .bg-custom-dark { background-color: #3c8dbc; } 
+        .sidebar-link.active { background-color: #f4f6f9; color: #3c8dbc; border-left: 4px solid #3c8dbc; font-weight: bold; }
+        .sidebar-link { color: #333; font-weight: 500; transition: 0.2s; }
+        .sidebar-link:hover { background-color: #e9ecef; }
+        .navbar-brand { font-size: 1.25rem; letter-spacing: 0.5px; }
+
+        /* Gaya Tombol Dokumen */
+        .btn-dokumen {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            text-align: left;
+            padding: 12px 15px;
+            font-weight: 500;
+            color: #495057;
+            background-color: #fff;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            text-decoration: none;
+        }
+        .btn-dokumen:hover {
+            background-color: #f8f9fa;
+            border-color: #3c8dbc;
+            color: #3c8dbc;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn-dokumen i {
+            font-size: 1.5rem;
+            color: #28a745; /* Warna hijau khas Excel/Sheets */
+            margin-right: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container">
+        <div class="bg-white p-4 card-custom">
+            <h4 class="mb-2 text-secondary d-flex align-items-center">
+                <i class="fas fa-chart-line me-3 text-dark"></i>
+                <span class="fs-4 fw-bold text-dark">Peningkatan Mutu</span> 
+            </h4>
+            <p class="text-muted mb-4">Pilih dokumen *spreadsheet* di bawah ini untuk melihat atau mengelola data indikator mutu.</p>
+            
+            <hr class="mb-4">
+
+            <div class="row g-3">
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1iDYOZCQkVJDWAA0eS_xf0ajaEh7g3YDavSnv8AKV2_g/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Admin Umum dan Kepegawaian</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1jeFgSmyj34zJtg4bUzU_zNdgshCnrF7th_cLdyom7Vo/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Ambulans</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1iTFXQrB1YVd7Ud5EpgNhYIHS3Gp9mOVZfdvsvQY2ziA/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Bangsal</a></div>
+                <!-- <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1NVQrXobvBmB2zIEp5q0l9F6aVsFF3FodkSkk1J8MYiY/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Clinical Pathway</a></div> -->
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1DJwoJaLm7FdWOlQKniKs6v6gLxY2sJdk471rlgr4Ca8/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> CSSD </a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1vSu7CPTbAXubykThI45QVyXvYxY4sUCDLLDbAhquiXM/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Elektromedis</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1qh-F0iYaYXMOwUi0RyhbFtZrbe_pbx-e2kfgiH-UY18/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Farmasi</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1-5cdXLTY27w0ueHyMNuw-Vtb0WOrY92MyifMw9MdwL8/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Gizi</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1F71x9ENHb3pTmVUwAt7gHN86TD_Q-vScnzQH2VEA8I4/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> IPSRS</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1Ar4-BVcu3qQcuVihveiO4lTwTMsOlPzwL-HVa9tPk5c/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Kamar Jenazah</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1tWY-cMIOXYEelgRVsIe70cDWvaB-Qj83acdRT7uuCmM/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Kamar Operasi</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1leBAx2OKWeGuAuuXk71pY0P5kQvnAXkBXx_xwA3zV_I/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Kasir</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1tDK_PdXocvtDL-pXOeT3iPk5KPOxA7qmXSPwzAV2Dws/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Keamanan</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1lf_M34wzzkM3fW8pLoUqmwQmOnwRPXTV_ujODL-Xe5Y/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Kesehatan Lingkungan</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1hH7Wis7uO250OPZahKaHTyBlb8yDilWMfBoZEPfmGQo/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Keuangan dan Aset</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1jNCSeLUdvOqW3LxXL4XEBphVAPSQOXIYFWyUU6jsGTc/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Laboratorium</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1Et0PiGl_ZIsgjSnjaV6RHQSA_v-u4Um8Xpg4pAa_VhM/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Pengadaan Barang dan Jasa</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1qUCIR487biOKVp_nrzh5jq0ctW4WiYUSUMZk0T8NfWc/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Penjaminan dan Verifikasi</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1j7Jwqo-iuG1SSSuttQF7qL4R31GvUnbE-pVjFKrsUjc/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Perinatologi</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1yLJFEdw_iLGB0Dn80vJqcah_xpK8_H8FC_dpm3By64I/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Promosi Kesehatan</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1jDQ0Q985VIGx7FDm9tee-l2_4fvQ5o4GwJBNlOpMEJM/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Radiologi</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1cXuMOnD7Q7VtORqymqYvpYQDoxWHVLAdr3NEi9TVdHk/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Rawat jalan</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1uGizTpl7_ZhGbriBLMXIwTyJHj3J8d_kLus2eiS31Q8/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Rekam Medis</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1OI0LkEQum2gR4OugPEnORZfrF2z-ICydjdoshUYmIxE/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Ruang Intensif</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1DlRZFhUgLD8yo4zIdAbOcXl6MNGOk5U-VH908YsfWpw/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> UGD</a></div>
+                <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1AC5tlIHy44chAvLeBHxtvYBmuPQf0s9_V7Lp2IKpBlc/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> VK</a></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="components.js"></script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisis Insiden - Komite Mutu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 0.9rem;}
+        .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 4px; border-top: 3px solid #3c8dbc; }
+        .bg-custom-dark { background-color: #3c8dbc; } 
+        .form-label { font-weight: 600; color: #333; margin-top: 10px; margin-bottom: 5px; }
+        .sub-label { font-weight: 600; color: #555; font-size: 0.85rem; margin-top: 8px;}
+        textarea { resize: vertical; }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4">
+        
+        <div class="alert alert-info py-2 mb-3 shadow-sm border-0 d-flex justify-content-between align-items-center">
+            <span><strong>Insiden:</strong> <span id="lblInsiden">-</span> | <strong>Tanggal:</strong> <span id="lblTanggal">-</span></span>
+            <span class="badge bg-primary">Investigasi & Analisa</span>
+        </div>
+
+        <div class="bg-white p-4 card-custom">
+            <h5 class="mb-4 text-secondary border-bottom pb-2 text-uppercase">HASIL INVESTIGASI DAN ANALISA</h5>
+            
+            <form id="formAnalisis">
+                <div class="row">
+                    <div class="col-md-6 pe-md-4">
+                        
+                        <label class="form-label">1. TIPE INSIDEN DAN SUB TIPE INSIDEN</label>
+                        <select class="form-select form-select-sm" name="tipe_insiden"><option value=""></option><option value="KTD">KTD</option><option value="KNC">KNC</option><option value="Lainnya">Lainnya</option></select>
+
+                        <label class="form-label">2. Tipe harm(dampak yang terjadi akibat insiden)</label>
+                        <input type="text" class="form-control form-control-sm" name="tipe_harm">
+
+                        <label class="form-label mt-3">3. Masalah</label>
+                        <div class="ps-3">
+                            <label class="sub-label">A. Asuhan pelayanan/Care Management Problem (CMP)</label>
+                            <textarea class="form-control form-control-sm" name="masalah_cmp" rows="3"></textarea>
+                            <label class="sub-label">B. Masalah Pelayanan / Service Delivery Problem (SDP)</label>
+                            <textarea class="form-control form-control-sm" name="masalah_sdp" rows="3"></textarea>
+                        </div>
+
+                        <label class="form-label mt-3">4. Penyebab Insiden</label>
+                        <div class="ps-3">
+                            <label class="sub-label">A. Penyebab Langsung (Proximate / Immediate Cause)</label>
+                            <textarea class="form-control form-control-sm" name="penyebab_langsung" rows="3"></textarea>
+                            <label class="sub-label">B. Akar Masalah (Root Cause)</label>
+                            <textarea class="form-control form-control-sm" name="akar_masalah" rows="3"></textarea>
+                            <label class="sub-label">Root Cause</label>
+                            <select class="form-select form-select-sm" name="root_cause_select"><option value=""></option><option value="Faktor Komunikasi">Faktor Komunikasi</option><option value="Faktor Staf">Faktor Staf</option></select>
+                        </div>
+
+                        <label class="form-label mt-3">5. Orang yang terlibat sebagai penyebab langsung insiden</label>
+                        <select class="form-select form-select-sm" name="orang_terlibat"><option value=""></option><option value="Dokter">Dokter</option><option value="Perawat">Perawat</option><option value="Lainnya">Lainnya</option></select>
+
+                        <label class="form-label">6. Proses / fase pelayanan saat terjadi insiden</label>
+                        <select class="form-select form-select-sm" name="proses_pelayanan"><option value=""></option><option value="Diagnosis">Diagnosis</option><option value="Terapi">Terapi</option><option value="Perawatan">Perawatan</option></select>
+
+                        <label class="form-label">7. Faktor Kontributor</label>
+                        <input type="text" class="form-control form-control-sm" name="faktor_kontributor">
+
+                        <label class="form-label mt-3">8. Faktor Mitigasi</label>
+                        <div class="ps-3">
+                            <label class="sub-label">a. Untuk Pasien</label>
+                            <select class="form-select form-select-sm" name="mitigasi_pasien"><option value=""></option><option value="Ada">Ada</option><option value="Tidak">Tidak</option></select>
+                            <label class="sub-label">b. Untuk Fasyankes</label>
+                            <select class="form-select form-select-sm" name="mitigasi_fasyankes"><option value=""></option><option value="Ada">Ada</option><option value="Tidak">Tidak</option></select>
+                            <label class="sub-label">c. Untuk Faktor penyebab terkait</label>
+                            <select class="form-select form-select-sm" name="mitigasi_faktor"><option value=""></option><option value="Ada">Ada</option><option value="Tidak">Tidak</option></select>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6 ps-md-4">
+                        
+                        <label class="form-label">9. Cara mendeteksi insiden</label>
+                        <select class="form-select form-select-sm" name="cara_mendeteksi"><option value=""></option><option value="Review Rekam Medis">Review Rekam Medis</option><option value="Laporan Staf">Laporan Staf</option></select>
+
+                        <label class="form-label">10. Dampak pada Fasyankes</label>
+                        <select class="form-select form-select-sm" name="dampak_fasyankes"><option value=""></option><option value="Rendah">Rendah</option><option value="Tinggi">Tinggi</option></select>
+
+                        <label class="form-label">11. Rekomendasi</label>
+                        <textarea class="form-control form-control-sm" name="rekomendasi" rows="3"></textarea>
+
+                        <label class="form-label">12. Tindakan yang akan dilakukan</label>
+                        <textarea class="form-control form-control-sm" name="tindakan_dilakukan" rows="3"></textarea>
+
+                        <label class="form-label mt-3">13. Tindakan perbaikan</label>
+                        <div class="ps-3">
+                            <label class="sub-label">a. Kepada Pasien</label>
+                            <select class="form-select form-select-sm" name="perbaikan_pasien"><option value=""></option><option value="Edukasi">Edukasi</option><option value="Kompensasi">Kompensasi</option></select>
+                            <label class="sub-label">b. Kepada Fasyankes</label>
+                            <select class="form-select form-select-sm" name="perbaikan_fasyankes"><option value=""></option><option value="Perubahan SPO">Perubahan SPO</option></select>
+                        </div>
+
+                        <label class="form-label mt-3">14. Tindakan untuk mengurangi risiko</label>
+                        <div class="ps-3">
+                            <label class="sub-label">a. Kepada Pasien</label>
+                            <select class="form-select form-select-sm" name="risiko_pasien"><option value=""></option><option value="Monitoring">Monitoring Ketat</option></select>
+                            <label class="sub-label">b. Kepada Petugas</label>
+                            <select class="form-select form-select-sm" name="risiko_petugas"><option value=""></option><option value="Pelatihan">Pelatihan</option></select>
+                            <label class="sub-label">c. Untuk Fasyankes / Lingkungan</label>
+                            <select class="form-select form-select-sm" name="risiko_lingkungan"><option value=""></option><option value="Maintenance">Maintenance Alat</option></select>
+                            <label class="sub-label">d. Faktor yang mempengaruhi</label>
+                            <select class="form-select form-select-sm" name="risiko_faktor"><option value=""></option><option value="Revisi Anggaran">Revisi Anggaran</option></select>
+                        </div>
+
+                        <label class="form-label">15. Pembelajaran</label>
+                        <textarea class="form-control form-control-sm" name="pembelajaran" rows="3"></textarea>
+
+                        <label class="form-label">16. Safety Alert</label>
+                        <textarea class="form-control form-control-sm" name="safety_alert" rows="3"></textarea>
+
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4 p-3 bg-light border-top">
+                    <button type="submit" class="btn btn-primary fw-bold px-4" id="btnSimpanAnalisis">SIMPAN</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // PASTIKAN URL INI ADALAH URL TERBARU ANDA
+            const scriptURL = "https://script.google.com/macros/s/AKfycbw6HOnDbRYJ4pXDTWBkTwFwIH8-q3JBeUf5y3l8okxQtEJ_uVUDjPRY3wMLc92Y3pyU/exec";
+            
+            // Ambil data insiden dari localStorage
+            const analisisDataStr = localStorage.getItem('analisisDataIKP');
+            if (!analisisDataStr) {
+                alert("Data tidak ditemukan. Kembali ke halaman daftar.");
+                window.location.href = 'daftar_insiden.html';
+                return;
+            }
+
+            const data = JSON.parse(analisisDataStr);
+            const targetId = data.Timestamp;
+
+            // Setel label header
+            document.getElementById('lblInsiden').innerText = data['Insiden'] || '-';
+            document.getElementById('lblTanggal').innerText = data['Tgl & Waktu insiden'] ? new Date(data['Tgl & Waktu insiden']).toLocaleString('id-ID') : '-';
+
+            // FUNGSI AUTO-FILL Jika data sudah pernah diisi sebelumnya
+            // (Mencocokkan nama input dengan Header di Spreadsheet)
+            const fieldMapping = {
+                'tipe_insiden': 'Tipe & Sub Tipe Insiden', 'tipe_harm': 'Tipe Harm', 'masalah_cmp': 'Masalah CMP',
+                'masalah_sdp': 'Masalah SDP', 'penyebab_langsung': 'Penyebab Langsung', 'akar_masalah': 'Akar Masalah',
+                'root_cause_select': 'Root Cause (Pilihan)', 'orang_terlibat': 'Orang Terlibat', 'proses_pelayanan': 'Proses/Fase Pelayanan',
+                'faktor_kontributor': 'Faktor Kontributor', 'mitigasi_pasien': 'Mitigasi Pasien', 'mitigasi_fasyankes': 'Mitigasi Fasyankes',
+                'mitigasi_faktor': 'Mitigasi Faktor Terkait', 'cara_mendeteksi': 'Cara Mendeteksi', 'dampak_fasyankes': 'Dampak Fasyankes',
+                'rekomendasi': 'Rekomendasi', 'tindakan_dilakukan': 'Tindakan Akan Dilakukan', 'perbaikan_pasien': 'Perbaikan Kepada Pasien',
+                'perbaikan_fasyankes': 'Perbaikan Kepada Fasyankes', 'risiko_pasien': 'Risiko Kepada Pasien', 'risiko_petugas': 'Risiko Kepada Petugas',
+                'risiko_lingkungan': 'Risiko Untuk Lingkungan', 'risiko_faktor': 'Risiko Faktor Mempengaruhi', 'pembelajaran': 'Pembelajaran',
+                'safety_alert': 'Safety Alert'
+            };
+
+            for (const [inputName, sheetHeader] of Object.entries(fieldMapping)) {
+                if (data[sheetHeader]) {
+                    const el = document.querySelector(`[name="${inputName}"]`);
+                    if(el) el.value = data[sheetHeader];
+                }
+            }
+
+            const form = document.getElementById("formAnalisis");
+            const submitBtn = document.getElementById("btnSimpanAnalisis");
+
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                submitBtn.innerHTML = "Menyimpan...";
+                submitBtn.disabled = true;
+
+                const formData = new FormData(form);
+                const inputData = Object.fromEntries(formData.entries());
+
+                const payload = {
+                    action: 'update',
+                    id: targetId,
+                    data: inputData
+                };
+
+                fetch(scriptURL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify(payload),
+                })
+                .then(res => res.json())
+                .then(result => {
+                    if (result.status === "success") {
+                        alert("Data Hasil Investigasi dan Analisa berhasil disimpan!");
+                        window.location.href = 'daftar_insiden.html';
+                    } else {
+                        alert("Terjadi kesalahan: " + result.message);
+                    }
+                })
+                .catch(err => alert("Gagal terhubung ke server."))
+                .finally(() => {
+                    submitBtn.innerHTML = "SIMPAN";
+                    submitBtn.disabled = false;
+                });
+            });
+        });
+    </script>
+    <script src="components.js"></script>
+</body>
+</html>

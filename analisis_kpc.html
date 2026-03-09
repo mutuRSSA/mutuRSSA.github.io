@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analisis KPC - Komite Mutu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; }
+        .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 4px; border-top: 3px solid #198754; }
+        .bg-custom-dark { background-color: #3c8dbc; } 
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container" style="max-width: 900px;">
+        <div class="alert alert-info py-2 mb-3 shadow-sm border-0 d-flex justify-content-between align-items-center">
+            <span><strong>Lokasi:</strong> <span id="infoLokasi">-</span> | <strong>Tanggal:</strong> <span id="infoTanggal">-</span></span>
+        </div>
+
+        <div class="bg-white p-4 card-custom">
+            <h5 class="mb-4 text-center text-uppercase fw-bold text-success">LEMBAR KERJA INVESTIGASI SEDERHANA</h5>
+            
+            <form id="formAnalisisKPC">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Penyebab Langsung Insiden :</label>
+                    <textarea class="form-control" name="penyebab_langsung" rows="3" required></textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Penyebab Yang Melatar Belakangi / Akar Masalah Insiden :</label>
+                    <textarea class="form-control" name="akar_masalah" rows="3" required></textarea>
+                </div>
+
+                <table class="table table-bordered align-middle">
+                    <thead class="table-light text-center">
+                        <tr><th width="50%">Rekomendasi</th><th width="30%">Penanggung Jawab</th><th width="20%">Tanggal</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><textarea class="form-control form-control-sm" name="rekomendasi" rows="2" required></textarea></td>
+                            <td><input type="text" class="form-control form-control-sm" name="pj_rekomendasi" required></td>
+                            <td><input type="date" class="form-control form-control-sm" name="tgl_rekomendasi" required></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <table class="table table-bordered align-middle mb-4">
+                    <thead class="table-light text-center">
+                        <tr><th width="50%">Tindakan Yang Akan Dilakukan</th><th width="30%">Penanggung Jawab</th><th width="20%">Tanggal</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><textarea class="form-control form-control-sm" name="tindakan_akan_dilakukan" rows="2" required></textarea></td>
+                            <td><input type="text" class="form-control form-control-sm" name="pj_tindakan" required></td>
+                            <td><input type="date" class="form-control form-control-sm" name="tgl_tindakan" required></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="d-flex justify-content-end mt-3 p-3 bg-light border-top">
+                    <button type="submit" class="btn btn-success fw-bold px-4" id="btnSimpan">SIMPAN INVESTIGASI</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // MASUKKAN URL WEB APP KPC ANDA DI SINI
+            const scriptURL = "https://script.google.com/macros/s/AKfycbyEYtIZY66GfN3s8wY7dPovPN0jU40KcvBC3ecrRRp3L981wy503UvJx7YpOAg4oCkl/exec";
+            
+            const dataStr = localStorage.getItem('analisisDataKPC');
+            if (!dataStr) { window.location.href = 'daftar_kpc.html'; return; }
+
+            const data = JSON.parse(dataStr);
+            const targetId = data.Timestamp;
+
+            document.getElementById('infoLokasi').innerText = data['Lokasi / Unit'] || '-';
+            document.getElementById('infoTanggal').innerText = data['Tgl & Waktu Penemuan'] ? new Date(data['Tgl & Waktu Penemuan']).toLocaleString('id-ID') : '-';
+
+            // Auto-fill jika mau diedit ulang
+            const fill = (name, val) => { const el = document.querySelector(`[name="${name}"]`); if(el && val) el.value = val; };
+            fill('penyebab_langsung', data['Penyebab Langsung']); fill('akar_masalah', data['Akar Masalah']);
+            fill('rekomendasi', data['Rekomendasi']); fill('pj_rekomendasi', data['PJ Rekomendasi']); fill('tindakan_akan_dilakukan', data['Tindakan Akan Dilakukan']); fill('pj_tindakan', data['PJ Tindakan']);
+            
+            // Format Tanggal untuk tipe date (YYYY-MM-DD)
+            if(data['Tgl Rekomendasi']) fill('tgl_rekomendasi', new Date(data['Tgl Rekomendasi']).toISOString().split('T')[0]);
+            if(data['Tgl Tindakan']) fill('tgl_tindakan', new Date(data['Tgl Tindakan']).toISOString().split('T')[0]);
+
+            const form = document.getElementById("formAnalisisKPC");
+            const submitBtn = document.getElementById("btnSimpan");
+
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                submitBtn.innerHTML = "Menyimpan..."; submitBtn.disabled = true;
+
+                const inputData = Object.fromEntries(new FormData(form).entries());
+                const payload = { action: 'update', id: targetId, data: inputData };
+
+                fetch(scriptURL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) })
+                .then(res => res.json()).then(result => {
+                    if (result.status === "success") {
+                        alert("Investigasi Sederhana KPC berhasil disimpan!");
+                        window.location.href = 'daftar_kpc.html';
+                    } else alert("Error: " + result.message);
+                })
+                .catch(err => alert("Gagal koneksi."))
+                .finally(() => { submitBtn.innerHTML = "SIMPAN INVESTIGASI"; submitBtn.disabled = false; });
+            });
+        });
+    </script>
+    <script src="components.js"></script>
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekapitulasi Mutu - Komite Mutu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <style>
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 4px; border-top: 3px solid #6f42c1; }
+        .bg-custom-dark { background-color: #3c8dbc; }
+        .chart-container { position: relative; height: 300px; width: 100%; display: flex; justify-content: center;}
+        /* --- GAYA KHUSUS UNTUK EXPORT PDF --- */
+        @media print {
+            /* Sembunyikan navigasi dan background */
+            body { padding-top: 0 !important; background-color: #fff !important; }
+            #navbar-container, #sidebar-container, .filter-section, .nav-tabs, .dataTables_filter, .dataTables_length, .dataTables_info, .dataTables_paginate { 
+                display: none !important; 
+            }
+            
+            /* Hilangkan bayangan dan border card agar bersih */
+            .card-custom { box-shadow: none !important; border: none !important; padding: 0 !important; }
+            
+            /* Pastikan kedua tabel (IKP dan KPC) muncul semua saat di-print meskipun tab-nya sedang tertutup */
+            .tab-pane { display: block !important; opacity: 1 !important; visibility: visible !important; margin-bottom: 30px; page-break-inside: avoid;}
+            
+            /* Menyesuaikan ukuran grafik agar muat di kertas */
+            .chart-container { height: 250px !important; page-break-inside: avoid; }
+            .row { display: flex; flex-wrap: nowrap; }
+            .col-md-6 { width: 50% !important; }
+            
+            /* Pengaturan Tabel Cetak */
+            table { font-size: 10px !important; width: 100% !important; border-collapse: collapse !important; }
+            th { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact; }
+            th, td { border: 1px solid #dee2e6 !important; padding: 4px !important; }
+            
+            /* Judul saat di-print */
+            #tablePanel::before { content: "REKAPITULASI LAPORAN IKP & KPC"; display: block; text-align: center; font-weight: bold; font-size: 16px; margin-bottom: 15px; margin-top: 20px;}
+            
+            @page { margin: 1cm; size: landscape; } /* Rekomendasi cetak landscape agar tabel muat */
+        }
+    </style>
+    
+</head>
+<body>
+
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4">
+        <div class="bg-white p-3 mb-4 card-custom filter-section d-flex justify-content-between align-items-end flex-wrap gap-3">
+            <div>
+                <h5 class="mb-1 text-secondary"><i class="fas fa-filter me-2"></i>Filter Periode Pelaporan</h5>
+                <small class="text-muted">Tentukan rentang tanggal laporan masuk (Timestamp) untuk memfilter grafik dan tabel.</small>
+            </div>
+            <div class="d-flex align-items-end gap-2">
+                <div>
+                    <label class="form-label mb-0 fw-bold" style="font-size: 0.85rem;">Tanggal Awal:</label>
+                    <input type="date" id="startDate" class="form-control form-control-sm">
+                </div>
+                <div>
+                    <label class="form-label mb-0 fw-bold" style="font-size: 0.85rem;">Tanggal Akhir:</label>
+                    <input type="date" id="endDate" class="form-control form-control-sm">
+                </div>
+                <button id="btnFilter" class="btn btn-primary btn-sm px-3 fw-bold"><i class="fas fa-search me-1"></i> Terapkan</button>
+                <button id="btnReset" class="btn btn-secondary btn-sm px-3 fw-bold"><i class="fas fa-sync-alt me-1"></i> Reset</button>
+                
+                <button id="btnExportPDF" class="btn btn-danger btn-sm px-3 fw-bold ms-2"><i class="fas fa-file-pdf me-1"></i> Export PDF</button>
+            </div>
+        </div>
+
+        <div id="loadingMessage" class="alert alert-info text-center">Menarik data analitik dari server...</div>
+
+        <div class="row g-4 mb-4" id="dashboardPanel" style="display: none;">
+            <div class="col-md-6">
+                <div class="bg-white p-3 card-custom" style="border-top-color: #17a2b8;">
+                    <h6 class="text-center fw-bold text-secondary mb-3">Sebaran Jenis Insiden (IKP)</h6>
+                    <div class="chart-container"><canvas id="chartJenis"></canvas></div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="bg-white p-3 card-custom" style="border-top-color: #dc3545;">
+                    <h6 class="text-center fw-bold text-secondary mb-3">Sebaran Grading Risiko (IKP)</h6>
+                    <div class="chart-container"><canvas id="chartGrading"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 card-custom" id="tablePanel" style="display: none;">
+            <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active fw-bold" id="ikp-tab" data-bs-toggle="tab" data-bs-target="#ikp-pane" type="button" role="tab">Rekapitulasi IKP</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link fw-bold" id="kpc-tab" data-bs-toggle="tab" data-bs-target="#kpc-pane" type="button" role="tab">Rekapitulasi KPC</button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="myTabContent">
+                <div class="tab-pane fade show active" id="ikp-pane" role="tabpanel" tabindex="0">
+                    <div class="table-responsive">
+                        <table id="tableRekapIKP" class="table table-bordered table-striped" style="width:100%; font-size: 0.85rem;">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Tgl Lapor</th><th>Insiden</th><th>Jenis</th><th>Dampak</th><th>Probabilitas</th><th>Grading</th><th>Ruangan</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="kpc-pane" role="tabpanel" tabindex="0">
+                    <div class="table-responsive">
+                        <table id="tableRekapKPC" class="table table-bordered table-striped" style="width:100%; font-size: 0.85rem;">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Tgl Lapor</th><th>Lokasi</th><th>Deskripsi KPC</th><th>Pelapor</th><th>Tindakan Awal</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="components.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // MASUKKAN KEDUA URL WEB APP ANDA DI SINI
+        const URL_IKP = "https://script.google.com/macros/s/AKfycbw6HOnDbRYJ4pXDTWBkTwFwIH8-q3JBeUf5y3l8okxQtEJ_uVUDjPRY3wMLc92Y3pyU/exec";
+        const URL_KPC = "https://script.google.com/macros/s/AKfycbyEYtIZY66GfN3s8wY7dPovPN0jU40KcvBC3ecrRRp3L981wy503UvJx7YpOAg4oCkl/exec";
+
+        let rawDataIKP = [];
+        let rawDataKPC = [];
+        let dtIKP = null;
+        let dtKPC = null;
+        let chartJenisInstance = null;
+        let chartGradingInstance = null;
+
+        $(document).ready(function() {
+            // Menarik kedua data sekaligus secara paralel menggunakan Promise.all
+            Promise.all([
+                fetch(URL_IKP).then(res => res.json()),
+                fetch(URL_KPC).then(res => res.json())
+            ])
+            .then(([resIKP, resKPC]) => {
+                $('#loadingMessage').hide();
+                $('#dashboardPanel').show();
+                $('#tablePanel').show();
+
+                if (resIKP.status === 'success') rawDataIKP = resIKP.data;
+                if (resKPC.status === 'success') rawDataKPC = resKPC.data;
+
+                // Tampilkan data pertama kali (tanpa filter)
+                renderDashboard(rawDataIKP, rawDataKPC);
+            })
+            .catch(err => {
+                $('#loadingMessage').removeClass('alert-info').addClass('alert-danger').text("Gagal memuat data: " + err);
+            });
+
+            // Aksi Tombol Filter
+            $('#btnFilter').click(function() {
+                const start = $('#startDate').val();
+                const end = $('#endDate').val();
+                if(!start || !end) { alert("Harap isi kedua tanggal (Awal dan Akhir)."); return; }
+
+                const startData = new Date(start); startData.setHours(0,0,0,0);
+                const endData = new Date(end); endData.setHours(23,59,59,999);
+
+                // Filter Array
+                const filteredIKP = rawDataIKP.filter(row => {
+                    const d = new Date(row['Timestamp']);
+                    return d >= startData && d <= endData;
+                });
+                const filteredKPC = rawDataKPC.filter(row => {
+                    const d = new Date(row['Timestamp']);
+                    return d >= startData && d <= endData;
+                });
+
+                renderDashboard(filteredIKP, filteredKPC);
+            });
+
+            // Aksi Tombol Reset
+            $('#btnReset').click(function() {
+                $('#startDate').val('');
+                $('#endDate').val('');
+                renderDashboard(rawDataIKP, rawDataKPC);
+            });
+
+            // AKSI TOMBOL EXPORT PDF (KODE BARU)
+            $('#btnExportPDF').click(function() {
+                // Pastikan data sudah selesai dimuat sebelum mencetak
+                if (rawDataIKP.length === 0 && rawDataKPC.length === 0) {
+                    alert("Data belum tersedia. Harap tunggu sebentar.");
+                    return;
+                }
+                // Panggil perintah print
+                window.print();
+            });
+        });
+
+        // FUNGSI UTAMA UNTUK MENGGAMBAR TABEL & GRAFIK
+        function renderDashboard(dataIKP, dataKPC) {
+            renderTables(dataIKP, dataKPC);
+            renderCharts(dataIKP); // Grafik difokuskan pada IKP yang memiliki grading
+        }
+
+        function renderTables(dataIKP, dataKPC) {
+            // 1. Render Tabel IKP
+            if (dtIKP) { dtIKP.destroy(); } // Hapus instansi tabel lama
+            let htmlIKP = '';
+            dataIKP.forEach(row => {
+                let tgl = row['Timestamp'] ? new Date(row['Timestamp']).toLocaleDateString('id-ID') : '-';
+                
+                let gradingHtml = row['Grading Risiko'] || '-';
+                if(gradingHtml === 'Low') gradingHtml = '<span class="badge bg-primary">Low</span>';
+                if(gradingHtml === 'Moderate') gradingHtml = '<span class="badge bg-success">Moderate</span>';
+                if(gradingHtml === 'High') gradingHtml = '<span class="badge bg-warning text-dark">High</span>';
+                if(gradingHtml === 'Extreme') gradingHtml = '<span class="badge bg-danger">Extreme</span>';
+
+                htmlIKP += `<tr>
+                    <td>${tgl}</td><td>${row['Insiden']||'-'}</td><td>${row['Jenis Insiden']||'-'}</td>
+                    <td>${row['Dampak']||'-'}</td><td>${row['Probabilitas']||'-'}</td>
+                    <td class="text-center">${gradingHtml}</td><td>${row['Tempat Insiden']||'-'}</td>
+                </tr>`;
+            });
+            $('#tableRekapIKP tbody').html(htmlIKP);
+            dtIKP = $('#tableRekapIKP').DataTable({ "order": [[0, 'desc']], "pageLength": 5, "lengthMenu": [5, 10, 25, 50] });
+
+            // 2. Render Tabel KPC
+            if (dtKPC) { dtKPC.destroy(); }
+            let htmlKPC = '';
+            dataKPC.forEach(row => {
+                let tgl = row['Timestamp'] ? new Date(row['Timestamp']).toLocaleDateString('id-ID') : '-';
+                htmlKPC += `<tr>
+                    <td>${tgl}</td><td>${row['Lokasi / Unit']||'-'}</td><td>${row['Deskripsi KPC']||'-'}</td>
+                    <td>${row['Nama Pelapor']||'-'}</td><td>${row['Tindakan yang Dilakukan']||'-'}</td>
+                </tr>`;
+            });
+            $('#tableRekapKPC tbody').html(htmlKPC);
+            dtKPC = $('#tableRekapKPC').DataTable({ "order": [[0, 'desc']], "pageLength": 5, "lengthMenu": [5, 10, 25, 50] });
+        }
+
+        function renderCharts(dataIKP) {
+            // Menghitung Jumlah Jenis Insiden
+            const countJenis = {};
+            // Menghitung Jumlah Grading
+            const countGrading = { 'Low': 0, 'Moderate': 0, 'High': 0, 'Extreme': 0 };
+
+            dataIKP.forEach(row => {
+                // Hitung Jenis
+                const jenis = row['Jenis Insiden'] || 'Tidak Diketahui';
+                countJenis[jenis] = (countJenis[jenis] || 0) + 1;
+                
+                // Hitung Grading
+                const grad = row['Grading Risiko'];
+                if (countGrading[grad] !== undefined) countGrading[grad]++;
+            });
+
+            // Hancurkan grafik lama jika sedang melakukan filter ulang
+            if(chartJenisInstance) chartJenisInstance.destroy();
+            if(chartGradingInstance) chartGradingInstance.destroy();
+
+            // Render Grafik Pie Jenis Insiden
+            const ctxJenis = document.getElementById('chartJenis').getContext('2d');
+            chartJenisInstance = new Chart(ctxJenis, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(countJenis),
+                    datasets: [{
+                        data: Object.values(countJenis),
+                        backgroundColor: ['#17a2b8', '#ffc107', '#fd7e14', '#20c997', '#6c757d']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            // Render Grafik Pie Grading Risiko
+            const ctxGrading = document.getElementById('chartGrading').getContext('2d');
+            chartGradingInstance = new Chart(ctxGrading, {
+                type: 'pie',
+                data: {
+                    labels: ['Low (Rendah)', 'Moderate (Sedang)', 'High (Tinggi)', 'Extreme (Sangat Tinggi)'],
+                    datasets: [{
+                        data: [countGrading['Low'], countGrading['Moderate'], countGrading['High'], countGrading['Extreme']],
+                        backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+    </script>
+</body>
+</html>

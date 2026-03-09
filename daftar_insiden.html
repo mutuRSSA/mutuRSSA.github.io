@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Insiden - Komite Mutu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    
+    <style>
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 4px; border-top: 3px solid #3c8dbc; }
+        .bg-custom-dark { background-color: #3c8dbc; } 
+        .sidebar-link.active { background-color: #f4f6f9; color: #3c8dbc; border-left: 4px solid #3c8dbc; font-weight: bold; }
+        .sidebar-link { color: #333; font-weight: 500; transition: 0.2s; }
+        .sidebar-link:hover { background-color: #e9ecef; }
+        
+        /* Kustomisasi Tabel agar mirip gambar */
+        .table-responsive { overflow-x: auto; white-space: normal; }
+        table.dataTable thead th { background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; font-size: 0.9rem; text-align: center; vertical-align: middle;}
+        table.dataTable tbody td { font-size: 0.85rem; vertical-align: top; }
+        .kronologis-text { min-width: 300px; text-align: justify; } /* Kolom kronologis diperlebar */
+        .btn-aksi { font-size: 0.75rem; font-weight: bold; color: #198754; background: none; border: none; padding: 0;}
+       
+        /* --- GAYA KHUSUS UNTUK CETAK PDF --- */
+        @media print {
+            body * { visibility: hidden; } /* Sembunyikan semua elemen website */
+            #printArea, #printArea * { visibility: visible; } /* Tampilkan hanya area cetak */
+            #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; font-family: Arial, sans-serif; }
+            
+            /* Kustomisasi Tabel Cetak */
+            .print-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            .print-table th, .print-table td { border: 1px solid #000; padding: 8px; vertical-align: top; }
+            .print-table th { background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; text-align: left; text-transform: uppercase; font-size: 12px;}
+            .print-label { width: 35%; font-weight: bold; }
+            .print-value { width: 65%; }
+            
+            /* Bulatan Grading */
+            .print-grading-circle { display: inline-block; width: 25px; height: 25px; border-radius: 50%; vertical-align: middle; margin-left: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact;}
+            
+            /* Hilangkan URL/Tanggal bawaan browser saat print jika memungkinkan */
+            @page { margin: 1cm; }
+        }
+    </style>
+    
+</head>
+<body>
+
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4">
+        <div class="bg-white p-4 card-custom">
+            <h5 class="mb-4 text-secondary text-uppercase border-bottom pb-2">Riwayat Insiden Keselamatan Pasien</h5>
+            
+            <div id="loadingMessage" class="alert alert-info text-center">Mengambil data dari server...</div>
+
+            <div class="table-responsive">
+                <table id="insidenTable" class="table table-bordered table-striped" style="width:100%; display: none;">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Aksi</th>
+                            <th>Investigasi</th>
+                            <th>Sisa Waktu Kirim</th>
+                            <th>Tanggal Insiden</th>
+                            <th>Umur</th>
+                            <th>Jenis Insiden</th>
+                            <th>Insiden</th>
+                            <th>Grading</th> 
+                            <th>Kronologis</th>
+                            <th>Tgl Registrasi Pasien</th>
+                            <th>Penanggung Biaya</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+// Deklarasi array global untuk menyimpan data sementara agar bisa dipanggil tombol Edit/Hapus
+        window.insidenData = [];
+
+        $(document).ready(function() {
+            // PASTIKAN URL INI ADALAH URL TERBARU ANDA
+            const scriptURL = "https://script.google.com/macros/s/AKfycbw6HOnDbRYJ4pXDTWBkTwFwIH8-q3JBeUf5y3l8okxQtEJ_uVUDjPRY3wMLc92Y3pyU/exec";
+
+            fetch(scriptURL, { redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" } })
+            .then(response => response.text())
+            .then(text => {
+                try {
+                    const result = JSON.parse(text);
+                    $('#loadingMessage').hide(); 
+                    $('#insidenTable').show(); 
+                    
+                    if(result.status === 'success') {
+                        window.insidenData = result.data; // Simpan data ke memori
+                        let html = '';
+                        
+                        result.data.forEach((row, index) => {
+                            let umurTeks = `${row['Umur (Tahun)'] || 0} Tahun ${row['Umur (Bulan)'] || 0} Bulan ${row['Umur (Hari)'] || 0} Hari`;
+                            let tglInsiden = row['Tgl & Waktu insiden'] ? new Date(row['Tgl & Waktu insiden']).toLocaleString('id-ID') : '-';
+                            let tglPelayanan = row['Tanggal pelayanan'] ? new Date(row['Tanggal pelayanan']).toLocaleDateString('id-ID') : '-';
+
+                            // Menentukan warna badge Grading
+                            let gradingVal = row['Grading Risiko'] || '-';
+                            let gradingBadge = gradingVal;
+                            if (gradingVal === 'Low') gradingBadge = '<span class="badge bg-primary w-100 py-2">Low</span>';
+                            else if (gradingVal === 'Moderate') gradingBadge = '<span class="badge bg-success w-100 py-2">Moderate</span>';
+                            else if (gradingVal === 'High') gradingBadge = '<span class="badge bg-warning text-dark w-100 py-2">High</span>';
+                            else if (gradingVal === 'Extreme') gradingBadge = '<span class="badge bg-danger w-100 py-2">Extreme</span>';
+
+                            // --- LOGIKA PENYEMBUNYIAN TOMBOL ---
+                            // Mengecek apakah form analisis sudah diisi (berdasarkan kolom Tipe Insiden)
+                            let sudahDianalisis = row['Tipe & Sub Tipe Insiden'] && row['Tipe & Sub Tipe Insiden'].toString().trim() !== '';
+
+                            let tombolAksi = '';
+                            if (sudahDianalisis) {
+                                tombolAksi = `
+                                    <button onclick="showDetail(${index})" class="btn btn-primary btn-sm text-white mb-1" title="Lihat Detail"><i class="fas fa-eye"></i></button>
+                                    <button onclick="printData(${index})" class="btn btn-info btn-sm text-white mb-1" title="Cetak PDF"><i class="fas fa-print"></i></button><br>
+                                    <span class="btn-aksi text-success" style="font-size: 0.75rem;"><i class="fas fa-check-circle"></i> Analisa Selesai</span>
+                                `;
+                            } else {
+                                tombolAksi = `
+                                    <button onclick="showDetail(${index})" class="btn btn-primary btn-sm text-white mb-1" title="Lihat Detail"><i class="fas fa-eye"></i></button>
+                                    <button onclick="printData(${index})" class="btn btn-info btn-sm text-white mb-1" title="Cetak PDF"><i class="fas fa-print"></i></button>
+                                    <button onclick="analisisData(${index})" class="btn btn-success btn-sm text-white mb-1" title="Analisis RCA/Investigasi"><i class="fas fa-search-plus"></i></button>
+                                    <button onclick="editData(${index})" class="btn btn-warning btn-sm text-white mb-1" title="Edit"><i class="fas fa-edit"></i></button>
+                                    <button onclick="deleteData(${index})" class="btn btn-danger btn-sm text-white mb-1" title="Hapus"><i class="fas fa-trash"></i></button><br>
+                                    <span class="btn-aksi text-muted" style="font-size: 0.75rem;">Laporan Terkirim</span>
+                                `;
+                            }
+
+                            html += `
+                                <tr>
+                                    <td class="text-center">${index + 1}</td>
+                                    <td class="text-center" style="min-width: 130px;">
+                                        ${tombolAksi}
+                                    </td>
+                                    <td class="text-center">-</td>
+                                    <td class="text-center">-</td>
+                                    <td>${tglInsiden}</td>
+                                    <td>${umurTeks}</td>
+                                    <td>${row['Jenis Insiden'] || '-'}</td>
+                                    <td>${row['Insiden'] || '-'}</td>
+                                    <td class="align-middle">${gradingBadge}</td>
+                                    <td class="kronologis-text">${row['Kronologis'] || '-'}</td>
+                                    <td>${tglPelayanan}</td>
+                                    <td>${row['Penanggung Biaya'] || '-'}</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        $('#tableBody').html(html);
+                        $('#insidenTable').DataTable({
+                            "language": { "search": "Search:" },
+                            "ordering": true, "order": [[0, 'asc']], 
+                            "columnDefs": [{ "targets": [1, 2], "orderable": false }]
+                        });
+                    }
+                } catch (error) {
+                    $('#loadingMessage').removeClass('alert-info').addClass('alert-danger').html(`Gagal membaca JSON.`);
+                }
+            }).catch(err => $('#loadingMessage').text('Error: ' + err));
+            
+            // --- FUNGSI HAPUS DATA ---
+            window.deleteData = function(index) {
+                if(!confirm("Anda yakin ingin menghapus data insiden ini? Data yang dihapus tidak bisa dikembalikan.")) return;
+                
+                const targetTimestamp = window.insidenData[index].Timestamp;
+                
+                fetch(scriptURL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ action: 'delete', id: targetTimestamp })
+                })
+                .then(res => res.json())
+                .then(res => {
+                    if(res.status === 'success') {
+                        alert("Data berhasil dihapus!");
+                        location.reload(); // Muat ulang halaman agar tabel ter-update
+                    } else {
+                        alert("Gagal menghapus: " + res.message);
+                    }
+                }).catch(err => alert("Terjadi kesalahan jaringan."));
+            };
+
+            // --- FUNGSI EDIT DATA ---
+            window.editData = function(index) {
+                const targetData = window.insidenData[index];
+                // Simpan data baris tersebut ke localStorage Browser
+                localStorage.setItem('editDataIKP', JSON.stringify(targetData));
+                // Pindah ke halaman formulir
+                window.location.href = 'index.html'; 
+            };
+
+            // --- FUNGSI TAMPILKAN DETAIL (MODAL) ---
+            window.showDetail = function(index) {
+                const data = window.insidenData[index];
+                
+                // Format teks
+                let umurTeks = `${data['Umur (Tahun)'] || 0} Tahun ${data['Umur (Bulan)'] || 0} Bulan ${data['Umur (Hari)'] || 0} Hari`;
+                let tglPelayanan = data['Tanggal pelayanan'] ? new Date(data['Tanggal pelayanan']).toLocaleString('id-ID') : '-';
+                let tglInsiden = data['Tgl & Waktu insiden'] ? new Date(data['Tgl & Waktu insiden']).toLocaleString('id-ID') : '-';
+                
+                // Format warna Grading
+                let gradingHtml = data['Grading Risiko'] || '-';
+                if(gradingHtml === 'Low') gradingHtml = '<span class="badge bg-primary">Low</span>';
+                if(gradingHtml === 'Moderate') gradingHtml = '<span class="badge bg-success">Moderate</span>';
+                if(gradingHtml === 'High') gradingHtml = '<span class="badge bg-warning text-dark">High</span>';
+                if(gradingHtml === 'Extreme') gradingHtml = '<span class="badge bg-danger">Extreme</span>';
+
+                // Menyusun baris tabel detail
+                const tbody = document.getElementById('detailTableBody');
+                tbody.innerHTML = `
+                    <tr><th class="bg-light" style="width: 35%;">1. Umur Pasien</th><td>${umurTeks}</td></tr>
+                    <tr><th class="bg-light">2. Jenis Kelamin</th><td>${data['Jenis Kelamin'] || '-'}</td></tr>
+                    <tr><th class="bg-light">3. Penanggung Biaya</th><td>${data['Penanggung Biaya'] || '-'}</td></tr>
+                    <tr><th class="bg-light">4. Tanggal Pelayanan</th><td>${tglPelayanan}</td></tr>
+                    <tr><th class="bg-light">5. Tgl & Waktu Insiden</th><td>${tglInsiden}</td></tr>
+                    <tr><th class="bg-light">6. Insiden</th><td>${data['Insiden'] || '-'}</td></tr>
+                    <tr><th class="bg-light">7. Kronologis</th><td style="text-align: justify;">${data['Kronologis'] || '-'}</td></tr>
+                    <tr><th class="bg-light">8. Jenis Insiden</th><td>${data['Jenis Insiden'] || '-'}</td></tr>
+                    <tr><th class="bg-light">9. Terjadi Pada</th><td>${data['Terjadi Pada'] || '-'}</td></tr>
+                    <tr><th class="bg-light">10. Dampak</th><td>${data['Dampak'] || '-'}</td></tr>
+                    <tr><th class="bg-light">11. Probabilitas</th><td>${data['Probabilitas'] || '-'}</td></tr>
+                    <tr><th class="bg-light">12. Grading Risiko</th><td>${gradingHtml}</td></tr>
+                    <tr><th class="bg-light">13. Pelapor Pertama</th><td>${data['Pelapor Pertama'] || '-'}</td></tr>
+                    <tr><th class="bg-light">14. Menyangkut Pasien</th><td>${data['Menyangkut Pasien'] || '-'}</td></tr>
+                    <tr><th class="bg-light">15. Tempat Insiden</th><td>${data['Tempat Insiden'] || '-'}</td></tr>
+                    <tr><th class="bg-light">16. Unit Terkait</th><td>${data['Unit Terkait'] || '-'}</td></tr>
+                    <tr><th class="bg-light">17. Tindak Lanjut</th><td style="text-align: justify;">${data['Tindak Lanjut'] || '-'}</td></tr>
+                    <tr><th class="bg-light">18. Dilakukan Oleh</th><td>${data['Dilakukan Oleh'] || '-'}</td></tr>
+                    <tr><th class="bg-light">19. Pernah Terjadi?</th><td>${data['Pernah terjadi?'] || '-'}</td></tr>
+                `;
+
+                // Panggil Modal Bootstrap untuk muncul
+                var detailModal = new bootstrap.Modal(document.getElementById('modalDetail'));
+                detailModal.show();
+            };
+
+            // --- FUNGSI ANALISIS DATA ---
+            window.analisisData = function(index) {
+                const targetData = window.insidenData[index];
+                localStorage.setItem('analisisDataIKP', JSON.stringify(targetData));
+                window.location.href = 'analisis.html'; 
+            };
+
+            // --- FUNGSI CETAK DATA (PDF) ---
+            window.printData = function(index) {
+                const data = window.insidenData[index];
+                
+                // Format Tanggal dan Umur
+                let umurTeks = `${data['Umur (Tahun)'] || 0} Tahun ${data['Umur (Bulan)'] || 0} Bulan ${data['Umur (Hari)'] || 0} Hari`;
+                let tglInsiden = data['Tgl & Waktu insiden'] ? new Date(data['Tgl & Waktu insiden']).toLocaleString('id-ID') : '-';
+                let tglPelayanan = data['Tanggal pelayanan'] ? new Date(data['Tanggal pelayanan']).toLocaleDateString('id-ID') : '-';
+
+                // Tentukan Warna Grading
+                let gradingVal = data['Grading Risiko'] || '';
+                let circleColor = 'transparent';
+                if (gradingVal === 'Low') circleColor = '#0d6efd';
+                else if (gradingVal === 'Moderate') circleColor = '#198754';
+                else if (gradingVal === 'High') circleColor = '#ffc107';
+                else if (gradingVal === 'Extreme') circleColor = '#dc3545';
+
+                // Susun Template HTML persis seperti Screenshot
+                let printHtml = `
+                    <table class="print-table">
+                        <tr><th colspan="2">DATA PASIEN :</th></tr>
+                        <tr><td class="print-label">Umur</td><td class="print-value">${umurTeks}</td></tr>
+                        <tr><td class="print-label">Penanggung Biaya Pasien</td><td class="print-value">${data['Penanggung Biaya'] || '-'}</td></tr>
+                        <tr><td class="print-label">Jenis Kelamin</td><td class="print-value">${data['Jenis Kelamin'] || '-'}</td></tr>
+                        <tr><td class="print-label">Tanggal Mendapatkan Pelayanan</td><td class="print-value">${tglPelayanan}</td></tr>
+                        
+                        <tr><th colspan="2">RINCIAN KEJADIAN :</th></tr>
+                        <tr><td class="print-label">1. Tanggal Dan Waktu Insiden</td><td class="print-value">${tglInsiden}</td></tr>
+                        <tr><td class="print-label">2. Insiden</td><td class="print-value">${data['Insiden'] || '-'}</td></tr>
+                        <tr><td class="print-label">3. Kronologis Insiden</td><td class="print-value">${data['Kronologis'] || '-'}</td></tr>
+                        <tr><td class="print-label">4. Jenis Insiden</td><td class="print-value">${data['Jenis Insiden'] || '-'}</td></tr>
+                        <tr><td class="print-label">5. Insiden Terjadi Pada Pasien...</td><td class="print-value">${data['Terjadi Pada'] || '-'}</td></tr>
+                        <tr><td class="print-label">6. Dampak Insiden Terhadap Pasien</td><td class="print-value">${data['Dampak'] || '-'}</td></tr>
+                        <tr><td class="print-label">7. Probabilitas</td><td class="print-value">${data['Probabilitas'] || '-'}</td></tr>
+                        <tr><td class="print-label">8. Orang Pertama Yang Melaporkan</td><td class="print-value">${data['Pelapor Pertama'] || '-'}</td></tr>
+                        <tr><td class="print-label">9. Insiden Menyangkut Pasien</td><td class="print-value">${data['Menyangkut Pasien'] || '-'}</td></tr>
+                        <tr><td class="print-label">10. Tempat Insiden</td><td class="print-value">${data['Tempat Insiden'] || '-'}</td></tr>
+                        <tr><td class="print-label">11. Unit / Departemen Terkait</td><td class="print-value">${data['Unit Terkait'] || '-'}</td></tr>
+                        <tr><td class="print-label">12. Tindakan Lanjut...</td><td class="print-value">${data['Tindak Lanjut'] || '-'}</td></tr>
+                        <tr><td class="print-label">13. Tindak Dilakukan Oleh</td><td class="print-value">${data['Dilakukan Oleh'] || '-'}</td></tr>
+                        <tr><td class="print-label">14. Apakah kejadian insiden sama pernah terjadi?</td><td class="print-value">${data['Pernah terjadi?'] || '-'}</td></tr>
+                        
+                        <tr>
+                            <td colspan="2" style="text-align: right; border: none; padding-top: 20px; padding-bottom: 20px;">
+                                <span style="font-weight: bold; vertical-align: middle;">Grading</span> 
+                                <span class="print-grading-circle" style="background-color: ${circleColor};"></span>
+                            </td>
+                        </tr>
+
+                        <tr><th colspan="2">HASIL INVESTIGASI :</th></tr>
+                        <tr><td class="print-label">1. Tipe Insiden Dan Sub Tipe Insiden</td><td class="print-value">${data['Tipe & Sub Tipe Insiden'] || '-'}</td></tr>
+                        <tr><td class="print-label">2. Tipe harm</td><td class="print-value">${data['Tipe Harm'] || '-'}</td></tr>
+                        <tr>
+                            <td class="print-label">3. Masalah</td>
+                            <td class="print-value">
+                                <strong>A. Asuhan pelayanan/CMP:</strong><br>${data['Masalah CMP'] || '-'}<br><br>
+                                <strong>B. Masalah Pelayanan/SDP:</strong><br>${data['Masalah SDP'] || '-'}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="print-label">4. Penyebab Insiden</td>
+                            <td class="print-value">
+                                <strong>A. Penyebab Langsung:</strong><br>${data['Penyebab Langsung'] || '-'}<br><br>
+                                <strong>B. Akar Masalah:</strong><br>${data['Akar Masalah'] || '-'}
+                            </td>
+                        </tr>
+                        <tr><td class="print-label">5. Orang Yang Terlibat...</td><td class="print-value">${data['Orang Terlibat'] || '-'}</td></tr>
+                        <tr><td class="print-label">6. Proses / Fase Pelayanan...</td><td class="print-value">${data['Proses/Fase Pelayanan'] || '-'}</td></tr>
+                        <tr><td class="print-label">7. Faktor Kontributor</td><td class="print-value">${data['Faktor Kontributor'] || '-'}</td></tr>
+                        <tr>
+                            <td class="print-label">8. Faktor Mitigasi</td>
+                            <td class="print-value">
+                                <strong>a. Untuk Pasien:</strong> ${data['Mitigasi Pasien'] || '-'}<br>
+                                <strong>b. Untuk Fasyankes:</strong> ${data['Mitigasi Fasyankes'] || '-'}<br>
+                                <strong>c. Untuk Faktor Penyebab:</strong> ${data['Mitigasi Faktor Terkait'] || '-'}
+                            </td>
+                        </tr>
+                        <tr><td class="print-label">9. Cara Mendeteksi Insiden</td><td class="print-value">${data['Cara Mendeteksi'] || '-'}</td></tr>
+                        <tr><td class="print-label">10. Dampak Pada Fasyankes</td><td class="print-value">${data['Dampak Fasyankes'] || '-'}</td></tr>
+                        <tr><td class="print-label">11. Rekomendasi</td><td class="print-value">${data['Rekomendasi'] || '-'}</td></tr>
+                        <tr><td class="print-label">12. Tindakan Yang Akan Dilakukan</td><td class="print-value">${data['Tindakan Akan Dilakukan'] || '-'}</td></tr>
+                        <tr>
+                            <td class="print-label">13. Tindakan Perbaikan</td>
+                            <td class="print-value">
+                                <strong>a. Kepada Pasien:</strong> ${data['Perbaikan Kepada Pasien'] || '-'}<br>
+                                <strong>b. Kepada Fasyankes:</strong> ${data['Perbaikan Kepada Fasyankes'] || '-'}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="print-label">14. Tindakan Untuk Mengurangi Risiko</td>
+                            <td class="print-value">
+                                <strong>a. Kepada Pasien:</strong> ${data['Risiko Kepada Pasien'] || '-'}<br>
+                                <strong>b. Kepada Petugas:</strong> ${data['Risiko Kepada Petugas'] || '-'}<br>
+                                <strong>c. Untuk Fasyankes:</strong> ${data['Risiko Untuk Lingkungan'] || '-'}<br>
+                                <strong>d. Faktor Penyebab:</strong> ${data['Risiko Faktor Mempengaruhi'] || '-'}
+                            </td>
+                        </tr>
+                        <tr><td class="print-label">15. Pembelajaran</td><td class="print-value">${data['Pembelajaran'] || '-'}</td></tr>
+                        <tr><td class="print-label">16. Safety Alert</td><td class="print-value">${data['Safety Alert'] || '-'}</td></tr>
+                    </table>
+                `;
+
+                // Tampilkan di area cetak
+                const printContainer = document.getElementById('printArea');
+                printContainer.innerHTML = printHtml;
+                printContainer.style.display = 'block'; // Pastikan container muncul (secara teknis tersembunyi oleh CSS non-print)
+
+                // Panggil perintah Print Browser
+                window.print();
+
+                // Bersihkan kembali setelah print dialog ditutup
+                setTimeout(() => {
+                    printContainer.innerHTML = '';
+                    printContainer.style.display = 'none';
+                }, 1000);
+            };
+        });
+    </script>
+    <div class="modal fade" id="modalDetail" tabindex="-1" aria-labelledby="modalDetailLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-custom-dark text-white">
+                    <h5 class="modal-title fw-bold" id="modalDetailLabel"><i class="fas fa-info-circle me-2"></i> Detail Lengkap Laporan IKP</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-sm table-bordered">
+                        <tbody id="detailTableBody">
+                            </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="printArea" style="display: none;"></div>
+    <script src="components.js"></script>
+</body>
+</html>
