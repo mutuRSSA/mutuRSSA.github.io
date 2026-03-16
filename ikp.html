@@ -35,7 +35,7 @@
         <div class="bg-white p-4 card-custom">
             <h4 class="mb-4 text-secondary d-flex align-items-center">
                 <span class="fs-3 me-2 text-dark">IKP</span> 
-                <small class="text-muted fs-6 mt-1">FORMULIR LAPORAN INSIDEN KE TIM KESELAMATAN PASIEN DI FASILITAS PELAYANAN KESEHATAN</small>
+                <small class="text-muted fs-6 mt-1">FORMULIR LAPORAN INSIDEN KE TIM KESELAMATAN PASIEN DI RUMAH SAKIT SARAS ADYATMA</small>
             </h4>
             
             <form id="ikpForm">
@@ -64,6 +64,7 @@
                             <option value="BPJS">BPJS</option>
                             <option value="Umum/Pribadi">Umum/Pribadi</option>
                             <option value="Asuransi Lain">Asuransi Lain</option>
+                            <option value="Jamkesda">Jamkesda</option>
                         </select>
                     </div>
                     <div class="col-md-6 mb-3">
@@ -101,6 +102,7 @@
                                 <option value="KNC">KNC</option>
                                 <option value="KTC">KTC</option>
                                 <option value="KTD">KTD</option>
+                                <option value="Sentinel">Sentinel</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -109,6 +111,11 @@
                                 <option value=""></option>
                                 <option value="Penyakit Dalam">Penyakit Dalam</option>
                                 <option value="Bedah">Bedah</option>
+                                <option value="THT">THT</option>
+                                <option value="Anak">Kesehatan Anak</option>
+                                <option value="Obgyn">Obstetri dan Ginekologi</option>
+                                <option value="Saraf">Saraf</option>
+                                <option value="Orthopedi">Orthopedi</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -149,6 +156,7 @@
                                 <option value="Dokter">Dokter</option>
                                 <option value="Perawat">Perawat</option>
                                 <option value="Pasien">Pasien</option>
+                                <option value="Karyawan">Karyawan</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -157,14 +165,16 @@
                                 <option value=""></option>
                                 <option value="Rawat Inap">Rawat Inap</option>
                                 <option value="Rawat Jalan">Rawat Jalan</option>
+                                <option value="UGD">UGD</option>
+                                <option value="Lainnya">Lain-lain</option>
                             </select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold">10. Tempat Insiden</label>
                             <select class="form-select" name="tempat_insiden">
                                 <option value=""></option>
-                                <option value="Ruang Perawatan">Ruang Perawatan</option>
-                                <option value="IGD">IGD</option>
+                                <option value="Intrahospital">Di Dalam Rumah Sakit</option>
+                                <option value="Ekstrahospital">Di Luar Rumah Sakit</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -173,6 +183,14 @@
                                 <option value=""></option>
                                 <option value="Farmasi">Farmasi</option>
                                 <option value="Laboratorium">Laboratorium</option>
+                                <option value="Radiologi">Radiologi</option>
+                                <option value="Rekam Medis">Rekam Medis</option>
+                                <option value="Gizi">Gizi</option>
+                                <option value="UGD">UGD</option>
+                                <option value="Rawat Inap">Rawat Inap</option>
+                                <option value="Rawat Jalan">Rawat Jalan</option>
+                                <option value="IPSRS">IPSRS</option>
+                                <option value="CSSD">CSSD</option>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -183,23 +201,32 @@
                             <label class="form-label fw-bold">13. Tindak Lanjut Dilakukan Oleh</label>
                             <select class="form-select" name="dilakukan_oleh">
                                 <option value=""></option>
-                                <option value="Tim Medis">Tim Medis</option>
-                                <option value="Manajemen">Manajemen</option>
+                                <option value="Tim">Tim</option>
+                                <option value="Dokter">Dokter</option>
+                                <option value="Perawat">Perawat</option>
+                                <option value="Bidan">Bidan</option>
+                                <option value="Karyawan">Karyawan lain</option>
                             </select>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">14. Apakah kejadian insiden yang sama pernah terjadi pada Pelayanan lain ?</label>
-                            <div class="mt-2">
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="pernah_terjadi" id="radioYa" value="Ya">
-                                    <label class="form-check-label" for="radioYa">Ya</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="pernah_terjadi" id="radioTidak" value="Tidak" checked>
-                                    <label class="form-check-label" for="radioTidak">Tidak</label>
-                                </div>
-                            </div>
-                        </div>
+            <div class="mb-4 p-3 bg-light border rounded">
+                <label class="form-label fw-bold">14. Apakah kejadian yang sama pernah terjadi di Unit Kerja lain? <span class="text-danger">*</span></label>
+                
+                <div class="form-check mb-1">
+                    <input class="form-check-input" type="radio" name="pernah_terjadi" id="radioTidak" value="Tidak" required>
+                    <label class="form-check-label" for="radioTidak">Tidak</label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="pernah_terjadi" id="radioYa" value="Ya" required>
+                    <label class="form-check-label" for="radioYa">Ya</label>
+                </div>
+
+                <div id="tindakanPencegahanContainer" class="mt-3 pt-3 border-top" style="display: none; border-color: #dee2e6;">
+                    <label for="tindakanPencegahan" class="form-label fw-bold text-primary">
+                        <i class="fas fa-clipboard-check me-1"></i> Langkah/tindakan apa yang telah diambil pada pelayanan tersebut untuk mencegah terulangnya kejadian yang sama? <span class="text-danger">*</span>
+                    </label>
+                    <textarea class="form-control" id="tindakanPencegahan" name="tindakanPencegahan" rows="3" placeholder="Jelaskan langkah atau tindakan preventif yang telah diambil..."></textarea>
+                </div>
+            </div>
                     </div>
                 </div>
 
@@ -295,6 +322,24 @@
             
             // Panggil sekali saat halaman dimuat (berguna saat mode Edit data)
             setTimeout(hitungGrading, 500); 
+        });
+
+       // LOGIKA TAMPIL/SEMBUNYIKAN PERTANYAAN 14
+        const radioPernahTerjadi = document.querySelectorAll('input[name="pernah_terjadi"]'); // <--- INI YANG DIUBAH
+        const containerTindakan = document.getElementById('tindakanPencegahanContainer');
+        const inputTindakan = document.getElementById('tindakanPencegahan');
+
+        radioPernahTerjadi.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'Ya') {
+                    containerTindakan.style.display = 'block';
+                    inputTindakan.setAttribute('required', 'required');
+                } else {
+                    containerTindakan.style.display = 'none';
+                    inputTindakan.removeAttribute('required');
+                    inputTindakan.value = ''; 
+                }
+            });
         });
     </script>
     <script src="components.js"></script>

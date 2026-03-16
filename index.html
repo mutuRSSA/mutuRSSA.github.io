@@ -41,41 +41,54 @@
         
         <div class="row g-4">
             
-            <div class="col-md-4">
+            <div class="col-md-6 col-lg-3">
                 <div class="card home-card h-100 bg-white" onclick="window.location.href='ikp.html'">
-                    <div class="card-body text-center p-4">
+                    <div class="card-body text-center p-4 d-flex flex-column">
                         <div class="icon-box" style="background-color: #ffeaea;">
                             <i class="fas fa-file-medical-alt fa-2x text-danger"></i>
                         </div>
-                        <h5 class="card-title fw-bold text-dark mb-2">Laporan IKP & KPC</h5>
-                        <p class="card-text text-muted" style="font-size: 0.9rem;">Formulir pelaporan Insiden Keselamatan Pasien (IKP) dan Kondisi Potensial Cedera (KPC) secara *real-time*.</p>
-                        <span class="btn btn-outline-danger btn-sm rounded-pill px-4 mt-2 fw-bold">Buat Laporan</span>
+                        <h5 class="card-title fw-bold text-dark mb-2">Laporan IKP</h5>
+                        <p class="card-text text-muted flex-grow-1" style="font-size: 0.85rem;">Pelaporan Insiden Keselamatan Pasien (KTD, KNC, KTC, Sentinel) yang sudah terjadi.</p>
+                        <span class="btn btn-outline-danger btn-sm rounded-pill px-4 mt-3 fw-bold">Lapor Insiden</span>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="card home-card h-100 bg-white" onclick="window.location.href='kpc.html'">
+                    <div class="card-body text-center p-4 d-flex flex-column">
+                        <div class="icon-box" style="background-color: #fff3cd;">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                        </div>
+                        <h5 class="card-title fw-bold text-dark mb-2">Laporan KPC</h5>
+                        <p class="card-text text-muted flex-grow-1" style="font-size: 0.85rem;">Pelaporan Kondisi Potensial Cedera (situasi/fasilitas rusak yang rawan menimbulkan bahaya).</p>
+                        <span class="btn btn-outline-warning btn-sm rounded-pill px-4 mt-3 fw-bold text-dark">Lapor KPC</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
                 <div class="card home-card h-100 bg-white" onclick="window.location.href='input_mutu.html'">
-                    <div class="card-body text-center p-4">
+                    <div class="card-body text-center p-4 d-flex flex-column">
                         <div class="icon-box" style="background-color: #e3f2fd;">
                             <i class="fas fa-chart-line fa-2x text-primary"></i>
                         </div>
                         <h5 class="card-title fw-bold text-dark mb-2">Laporan Mutu</h5>
-                        <p class="card-text text-muted" style="font-size: 0.9rem;">Portal pengisian data Indikator Mutu Nasional (INM), Mutu Prioritas RS, dan Indikator Mutu Unit (IMU).</p>
-                        <span class="btn btn-outline-primary btn-sm rounded-pill px-4 mt-2 fw-bold">Input Data</span>
+                        <p class="card-text text-muted flex-grow-1" style="font-size: 0.85rem;">Portal pengisian data Indikator Mutu Nasional (INM) dan Indikator Mutu Unit (IMU).</p>
+                        <span class="btn btn-outline-primary btn-sm rounded-pill px-4 mt-3 fw-bold">Input Data</span>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-4">
+            <div class="col-md-6 col-lg-3">
                 <div class="card home-card h-100 bg-white" onclick="window.open('#', '_blank')">
-                    <div class="card-body text-center p-4">
+                    <div class="card-body text-center p-4 d-flex flex-column">
                         <div class="icon-box" style="background-color: #e8f5e9;">
                             <i class="fas fa-clipboard-list fa-2x text-success"></i>
                         </div>
-                        <h5 class="card-title fw-bold text-dark mb-2">Survey Budaya Pasien</h5>
-                        <p class="card-text text-muted" style="font-size: 0.9rem;">Pengisian kuesioner evaluasi dan pemantauan Budaya Keselamatan Pasien untuk seluruh staf rumah sakit.</p>
-                        <span class="btn btn-outline-success btn-sm rounded-pill px-4 mt-2 fw-bold">Isi Survey <i class="fas fa-external-link-alt ms-1" style="font-size: 0.75rem;"></i></span>
+                        <h5 class="card-title fw-bold text-dark mb-2">Survey Budaya</h5>
+                        <p class="card-text text-muted flex-grow-1" style="font-size: 0.85rem;">Pengisian kuesioner evaluasi Budaya Keselamatan Pasien untuk seluruh staf rumah sakit.</p>
+                        <span class="btn btn-outline-success btn-sm rounded-pill px-4 mt-3 fw-bold">Isi Survey <i class="fas fa-external-link-alt ms-1" style="font-size: 0.75rem;"></i></span>
                     </div>
                 </div>
             </div>

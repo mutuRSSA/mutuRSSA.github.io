@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const submitBtn = document.getElementById("submitBtn");
     
     // PASTIKAN URL INI ADALAH URL TERBARU ANDA
-    const scriptURL = "https://script.google.com/macros/s/AKfycbw6HOnDbRYJ4pXDTWBkTwFwIH8-q3JBeUf5y3l8okxQtEJ_uVUDjPRY3wMLc92Y3pyU/exec";
+    const scriptURL = "https://script.google.com/macros/s/AKfycbz4L1Dg0ThXiJSUof208fbOH-cFoDSYzI2eGCuIGRYCffh-25vOpxPtCmeuuBL9CNR6/exec";
 
     // Cek apakah ada data yang dilempar dari tombol "Edit"
     const editDataStr = localStorage.getItem('editDataIKP');
@@ -50,12 +50,15 @@ document.addEventListener("DOMContentLoaded", function () {
         document.querySelector('[name="unit_terkait"]').value = data['Unit Terkait'] || '';
         document.querySelector('[name="tindak_lanjut"]').value = data['Tindak Lanjut'] || '';
         document.querySelector('[name="dilakukan_oleh"]').value = data['Dilakukan Oleh'] || '';
+        document.querySelector('[name="tindakanPencegahan"]').value = data['Tindakan Pencegahan'] || '';
         
-        // Cek Radio Button Pernah Terjadi
+        /// Cek Radio Button Pernah Terjadi
         if (data['Pernah terjadi?'] === "Ya") {
             document.getElementById('radioYa').checked = true;
-        } else {
+            document.getElementById('tindakanPencegahanContainer').style.display = 'block'; // Munculkan kotak
+        } else if (data['Pernah terjadi?'] === "Tidak") {
             document.getElementById('radioTidak').checked = true;
+            document.getElementById('tindakanPencegahanContainer').style.display = 'none'; // Sembunyikan kotak
         }
     }
 

@@ -242,6 +242,7 @@
                     <tr><th class="bg-light">17. Tindak Lanjut</th><td style="text-align: justify;">${data['Tindak Lanjut'] || '-'}</td></tr>
                     <tr><th class="bg-light">18. Dilakukan Oleh</th><td>${data['Dilakukan Oleh'] || '-'}</td></tr>
                     <tr><th class="bg-light">19. Pernah Terjadi?</th><td>${data['Pernah terjadi?'] || '-'}</td></tr>
+                    <tr><th class="bg-light">20. Tindakan Pencegahan</th><td style="text-align: justify;">${data['Tindakan Pencegahan'] ? data['Tindakan Pencegahan'] : '<i class="text-muted">Tidak ada tindakan / Tidak relevan</i>'}</td></tr>
                 `;
 
                 // Panggil Modal Bootstrap untuk muncul
@@ -297,6 +298,8 @@
                         <tr><td class="print-label">12. Tindakan Lanjut...</td><td class="print-value">${data['Tindak Lanjut'] || '-'}</td></tr>
                         <tr><td class="print-label">13. Tindak Dilakukan Oleh</td><td class="print-value">${data['Dilakukan Oleh'] || '-'}</td></tr>
                         <tr><td class="print-label">14. Apakah kejadian insiden sama pernah terjadi?</td><td class="print-value">${data['Pernah terjadi?'] || '-'}</td></tr>
+                        
+                        <tr><td class="print-label">15. Tindakan Pencegahan</td><td class="print-value">${data['Tindakan Pencegahan'] || '-'}</td></tr>
                         
                         <tr>
                             <td colspan="2" style="text-align: right; border: none; padding-top: 20px; padding-bottom: 20px;">
