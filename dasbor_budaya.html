@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dasbor Budaya Keselamatan</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 6px rgba(0,0,0,.05); border-radius: 8px; border-top: 4px solid #6f42c1; background: #fff;}
+        .chart-container { position: relative; height: 350px; width: 100%; }
+        .chart-container-small { position: relative; height: 250px; width: 100%; }
+        .stat-card { background: #fff; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #0dcaf0; }
+        .section-title { font-weight: 800; color: #2c3e50; text-transform: uppercase; letter-spacing: 1px; margin-top: 2rem; margin-bottom: 1.5rem; border-bottom: 2px solid #dee2e6; padding-bottom: 10px; }
+        
+        /* Modal Customization */
+        .modal-header { background-color: #6f42c1; color: white; }
+        .modal-title { font-weight: bold; }
+        
+        /* ================= CSS KHUSUS CETAK PDF ================= */
+        @media print {
+            body { background-color: #fff !important; padding-top: 0 !important; }
+            #navbar-container, #sidebar-container, .d-print-none, .btn { display: none !important; }
+            .card-custom { border: none !important; box-shadow: none !important; padding: 0 !important; margin-bottom: 30px !important;}
+            .card { border: none !important; box-shadow: none !important; page-break-inside: avoid; }
+            .chart-container, .chart-container-small { page-break-inside: avoid; }
+            .row { display: flex; flex-wrap: wrap; }
+            .col-md-6, .col-lg-5, .col-lg-7 { width: 50% !important; float: left; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            @page { margin: 1cm; size: landscape; }
+
+            /* Warna Navbar & Sidebar */
+        .bg-custom-dark { background-color: #6f42c1; } /* Bisa diganti #6f42c1 agar ungu */
+        .sidebar-link { color: #333; text-decoration: none; transition: 0.2s; }
+        .sidebar-link:hover { background-color: #f1f8ff; }
+        .sidebar-link.active { font-weight: bold; background-color: #e9ecef; border-left: 4px solid #6f42c1; color: #6f42c1; }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4">
+        <div class="bg-white p-4 mb-4 card-custom d-print-none">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
+                <div>
+                    <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-chart-pie text-purple me-2" style="color: #6f42c1;"></i> Analitik Budaya Keselamatan</h4>
+                    <p class="text-muted mb-0">Dasbor komprehensif profil responden dan capaian 12 Dimensi Keselamatan Pasien.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-info fw-bold text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#modalResponden">
+                        <i class="fas fa-users me-1"></i> Daftar Responden
+                    </button>
+                    <button class="btn btn-danger fw-bold shadow-sm" onclick="window.print()">
+                        <i class="fas fa-file-pdf me-1"></i> Cetak PDF
+                    </button>
+                </div>
+            </div>
+            
+            <div class="row bg-light p-3 rounded border align-items-center">
+                <div class="col-md-6 col-lg-4">
+                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;">Filter Berdasarkan Unit Kerja:</label>
+                    <select id="filterUnit" class="form-select border-info fw-bold text-dark" onchange="updateDashboard()">
+                        <option value="SEMUA">-- Tampilkan Semua Unit --</option>
+                    </select>
+                </div>
+                <div class="col-md-6 col-lg-8 text-md-end mt-3 mt-md-0">
+                     <h5 class="mb-0 text-secondary">Total Responden: <span class="badge bg-success fs-5 ms-2" id="totalResponden"><i class="fas fa-spinner fa-spin"></i></span></h5>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingMessage" class="alert alert-info text-center shadow-sm fw-bold">
+            <i class="fas fa-spinner fa-spin me-2"></i> Memuat data survei dari server...
+        </div>
+
+        <div id="dashboardContent" style="display: none;">
+            
+            <div class="d-none d-print-block text-center mb-4 pb-2 border-bottom border-dark border-3">
+                <h3 class="fw-bold mb-1">LAPORAN ANALISIS BUDAYA KESELAMATAN PASIEN</h3>
+                <h5 class="text-uppercase mb-0" id="printUnitTitle">SEMUA UNIT</h5>
+            </div>
+
+            <h5 class="section-title"><i class="fas fa-star text-warning me-2"></i> 1. Skor 12 Dimensi Budaya Keselamatan (% Respon Positif)</h5>
+            
+            <div class="row mb-4">
+                <div class="col-lg-5 mb-4">
+                    <div class="card card-custom h-100 p-3 border-0">
+                        <h6 class="fw-bold text-center mb-3 text-dark">Keseimbangan Dimensi (Radar)</h6>
+                        <div class="chart-container">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-7 mb-4">
+                    <div class="card card-custom h-100 p-3 border-0">
+                        <h6 class="fw-bold text-center mb-3 text-dark">Peringkat Dimensi (Bar)</h6>
+                        <div class="chart-container">
+                            <canvas id="barChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mb-5">
+                <div class="col-md-6">
+                    <div class="card card-custom p-3 border-0" style="border-top-color: #198754;">
+                        <h6 class="fw-bold text-success border-bottom pb-2"><i class="fas fa-arrow-up me-2"></i> 3 Dimensi Terkuat</h6>
+                        <ul id="listTerkuat" class="text-muted mb-0 ps-3" style="font-size: 0.95rem;"></ul>
+                    </div>
+                </div>
+                <div class="col-md-6 mt-3 mt-md-0">
+                    <div class="card card-custom p-3 border-0" style="border-top-color: #dc3545;">
+                        <h6 class="fw-bold text-danger border-bottom pb-2"><i class="fas fa-arrow-down me-2"></i> 3 Dimensi Prioritas Perbaikan</h6>
+                        <ul id="listTerlemah" class="text-muted mb-0 ps-3" style="font-size: 0.95rem;"></ul>
+                    </div>
+                </div>
+            </div>
+
+            <h5 class="section-title"><i class="fas fa-users text-info me-2"></i> 2. Distribusi & Profil Responden</h5>
+            
+            <div class="row" id="distributionContainer">
+                </div>
+
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalResponden" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-list-ul me-2"></i> Log Pengisian Survei (<span id="modalUnitTitle">Semua Unit</span>)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <table class="table table-hover table-striped mb-0" style="font-size: 0.9rem;">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th class="text-center" width="10%">No</th>
+                                <th>Waktu Submit (Timestamp)</th>
+                                <th>Unit Kerja</th>
+                                <th>Profesi / Jabatan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelRespondenBody">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // GANTI DENGAN URL WEB APP SURVEY ANDA
+        const scriptURL = "https://script.google.com/macros/s/AKfycbzs7-x6GGX8dMqLgYOXZfNDY3127xbSDEnibba5yM0YcXWiShBWo9Yh1yS9JQrsoEU2/exec";
+
+        const pertanyaanPositif = ["A1", "A2", "A3", "A4", "A6", "A9", "A11", "A13", "A15", "A18", "B1", "B2", "C1", "C2", "C3", "C4", "C5", "D1", "D2", "D3", "F1", "F4", "F8", "F10"];
+        const pertanyaanNegatif = ["A5", "A7", "A8", "A10", "A12", "A14", "A16", "A17", "B3", "B4", "C6", "F2", "F3", "F5", "F6", "F7", "F9", "F11"];
+
+        const dimensiBudaya = {
+            "Kerjasama dalam Unit": ["A1", "A3", "A4", "A11"],
+            "Harapan Manajer": ["B1", "B2", "B3", "B4"],
+            "Organisasi Pembelajar": ["A6", "A9", "A13"],
+            "Dukungan Manajemen": ["F1", "F8", "F9"],
+            "Persepsi Keselamatan": ["A15", "A18", "A10", "A17"],
+            "Umpan Balik Komunikasi": ["C1", "C3", "C5"],
+            "Keterbukaan Komunikasi": ["C2", "C4", "C6"],
+            "Pelaporan Insiden": ["D1", "D2", "D3"],
+            "Kerjasama Antar Unit": ["F4", "F10", "F2", "F6"],
+            "Aspek Ketenagaan": ["A2", "A5", "A7", "A14"],
+            "Serah Terima Jaga": ["F3", "F5", "F7", "F11"],
+            "Respon Tdk Menghakimi": ["A8", "A12", "A16"]
+        };
+
+        const pertanyaanDistribusi = [
+            { id: "E1", title: "Penilaian Keselamatan Keseluruhan", type: "pie" },
+            { id: "G1", title: "Jumlah Laporan Insiden (12 Bln)", type: "bar" },
+            { id: "H1", title: "Lama Bekerja di RS", type: "bar" },
+            { id: "H2", title: "Lama Bekerja di Unit", type: "bar" },
+            { id: "H3", title: "Jam Kerja per Minggu", type: "bar" },
+            { id: "H4", title: "Posisi / Jabatan", type: "bar" },
+            { id: "H5", title: "Interaksi Langsung dgn Pasien", type: "pie" },
+            { id: "H6", title: "Lama di Profesi", type: "bar" }
+        ];
+
+        let rawData = [];
+        let filteredData = [];
+        let chartInstances = []; 
+
+        document.addEventListener("DOMContentLoaded", function () {
+            fetch(scriptURL)
+                .then(res => res.json())
+                .then(result => {
+                    if (result.status === 'success' && result.data.length > 0) {
+                        rawData = result.data;
+                        document.getElementById('loadingMessage').style.display = 'none';
+                        document.getElementById('dashboardContent').style.display = 'block';
+                        
+                        // Isi Dropdown Unit
+                        populateUnitDropdown();
+                        
+                        // Eksekusi Render Pertama (Semua Data)
+                        updateDashboard();
+                    } else {
+                        throw new Error("Belum ada data");
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('loadingMessage').classList.replace('alert-info', 'alert-warning');
+                    document.getElementById('loadingMessage').innerHTML = '<i class="fas fa-info-circle me-2"></i> Belum ada data responden atau gagal terhubung ke server.';
+                });
+        });
+
+        function populateUnitDropdown() {
+            const unitSelect = document.getElementById('filterUnit');
+            const units = [...new Set(rawData.map(item => item['unit_kerja']))].filter(Boolean).sort();
+            units.forEach(unit => { unitSelect.appendChild(new Option(unit, unit)); });
+        }
+
+        // FUNGSI UTAMA: TRIGGER SAAT FILTER BERUBAH ATAU LOAD PERTAMA
+        window.updateDashboard = function() {
+            const selectedUnit = document.getElementById('filterUnit').value;
+            
+            // 1. Filter Data
+            if (selectedUnit === 'SEMUA') {
+                filteredData = rawData;
+                document.getElementById('printUnitTitle').innerText = "RATA-RATA SELURUH UNIT";
+                document.getElementById('modalUnitTitle').innerText = "Seluruh Unit";
+            } else {
+                filteredData = rawData.filter(row => row['unit_kerja'] === selectedUnit);
+                document.getElementById('printUnitTitle').innerText = "UNIT " + selectedUnit.toUpperCase();
+                document.getElementById('modalUnitTitle').innerText = selectedUnit;
+            }
+
+            // Update Angka
+            document.getElementById('totalResponden').innerText = filteredData.length + " Orang";
+
+            // 2. HANCURKAN GRAFIK LAMA AGAR TIDAK BERTUMPUK (PENTING!)
+            chartInstances.forEach(chart => chart.destroy());
+            chartInstances = [];
+            document.getElementById('distributionContainer').innerHTML = ''; // Bersihkan container distribusi
+
+            if(filteredData.length === 0) return; // Stop jika filter kosong
+
+            // 3. Eksekusi Gambar Ulang
+            olahDataDimensi(filteredData);
+            olahDataDistribusi(filteredData);
+            buildTabelResponden(filteredData);
+        };
+
+        function olahDataDimensi(dataToProcess) {
+            let skorProporsiItem = {};
+            let semuaPertanyaan = Object.values(dimensiBudaya).flat();
+
+            semuaPertanyaan.forEach(soal => {
+                let responPositifCount = 0;
+                let totalResponValid = 0;
+                dataToProcess.forEach(row => {
+                    let nilai = parseInt(row[soal]);
+                    if (!isNaN(nilai) && nilai >= 1 && nilai <= 5) {
+                        totalResponValid++;
+                        if (pertanyaanPositif.includes(soal) && (nilai === 4 || nilai === 5)) responPositifCount++;
+                        else if (pertanyaanNegatif.includes(soal) && (nilai === 1 || nilai === 2)) responPositifCount++;
+                    }
+                });
+                skorProporsiItem[soal] = totalResponValid > 0 ? (responPositifCount / totalResponValid) * 100 : 0;
+            });
+
+            let skorRataRataDimensi = {};
+            for (let namaDimensi in dimensiBudaya) {
+                let daftarSoal = dimensiBudaya[namaDimensi];
+                let totalPersentase = 0;
+                daftarSoal.forEach(soal => { totalPersentase += skorProporsiItem[soal]; });
+                skorRataRataDimensi[namaDimensi] = (totalPersentase / daftarSoal.length).toFixed(1);
+            }
+
+            const labelDimensi = Object.keys(skorRataRataDimensi);
+            const dataSkor = Object.values(skorRataRataDimensi);
+
+            let sortedDimensi = labelDimensi.map((label, i) => ({ label, skor: parseFloat(dataSkor[i]) })).sort((a, b) => b.skor - a.skor); 
+            
+            const listTerkuat = document.getElementById('listTerkuat'); listTerkuat.innerHTML = '';
+            sortedDimensi.slice(0, 3).forEach(item => {
+                listTerkuat.innerHTML += `<li class="mb-2 d-flex justify-content-between"><span>${item.label}</span> <span class="badge bg-success">${item.skor}%</span></li>`;
+            });
+
+            const listTerlemah = document.getElementById('listTerlemah'); listTerlemah.innerHTML = '';
+            sortedDimensi.slice(-3).reverse().forEach(item => {
+                listTerlemah.innerHTML += `<li class="mb-2 d-flex justify-content-between"><span>${item.label}</span> <span class="badge bg-danger">${item.skor}%</span></li>`;
+            });
+
+            // Render Radar Chart
+            const ctxRadar = document.getElementById('radarChart').getContext('2d');
+            chartInstances.push(new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: labelDimensi,
+                    datasets: [{
+                        label: '% Positif', data: dataSkor,
+                        backgroundColor: 'rgba(111, 66, 193, 0.2)', borderColor: '#6f42c1',
+                        pointBackgroundColor: '#ffc107', borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { r: { min: 0, max: 100, ticks: { stepSize: 20, callback: v => v + "%" }, pointLabels: { font: { size: 10 } } } },
+                    plugins: { legend: { display: false } }
+                }
+            }));
+
+            // Render Bar Chart 
+            let sortedLabels = sortedDimensi.map(item => item.label);
+            let sortedData = sortedDimensi.map(item => item.skor);
+            const ctxBar = document.getElementById('barChart').getContext('2d');
+            
+            chartInstances.push(new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: sortedLabels,
+                    datasets: [{
+                        label: '% Positif', data: sortedData,
+                        backgroundColor: sortedData.map(val => val >= 75 ? 'rgba(25, 135, 84, 0.7)' : (val >= 50 ? 'rgba(255, 193, 7, 0.7)' : 'rgba(220, 53, 69, 0.7)')),
+                        borderColor: sortedData.map(val => val >= 75 ? '#198754' : (val >= 50 ? '#ffc107' : '#dc3545')),
+                        borderWidth: 1, borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    scales: { x: { min: 0, max: 100 } },
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.x + '%' } } }
+                }
+            }));
+        }
+
+        function olahDataDistribusi(dataToProcess) {
+            const container = document.getElementById('distributionContainer');
+            const colorPalette = ['#3498db', '#2ecc71', '#f1c40f', '#e74c3c', '#9b59b6', '#34495e', '#1abc9c', '#e67e22', '#7f8c8d'];
+            let htmlDistribusi = '';
+            let chartConfigsToRender = [];
+
+            pertanyaanDistribusi.forEach((pertanyaan) => {
+                let frekuensi = {};
+                dataToProcess.forEach(row => {
+                    let jawaban = row[pertanyaan.id];
+                    if (jawaban && jawaban.trim() !== "") frekuensi[jawaban] = (frekuensi[jawaban] || 0) + 1;
+                });
+
+                let labels = Object.keys(frekuensi);
+                let dataCounts = Object.values(frekuensi);
+                if (labels.length === 0) return;
+
+                let colClass = pertanyaan.type === 'pie' ? 'col-md-4' : 'col-md-8'; // Bar butuh ruang lebih luas
+                let canvasId = `chartDist_${pertanyaan.id}`;
+                
+                htmlDistribusi += `
+                    <div class="${colClass} mb-4">
+                        <div class="card card-custom h-100 p-3 border-0">
+                            <h6 class="fw-bold text-center text-dark" style="font-size:0.9rem;">${pertanyaan.title}</h6>
+                            <div class="chart-container-small mt-2"><canvas id="${canvasId}"></canvas></div>
+                        </div>
+                    </div>
+                `;
+
+                let chartConfig = {
+                    type: pertanyaan.type,
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: dataCounts,
+                            backgroundColor: pertanyaan.type === 'pie' ? colorPalette : 'rgba(52, 152, 219, 0.7)',
+                            borderColor: pertanyaan.type === 'pie' ? '#fff' : '#2980b9', borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: pertanyaan.type === 'pie', position: 'right', labels: { boxWidth: 10, font: {size: 10} } },
+                            tooltip: { callbacks: { label: ctx => ctx.parsed + (pertanyaan.type === 'bar' ? ctx.parsed.y : '') + " Orang" } }
+                        }
+                    }
+                };
+
+                if (pertanyaan.type === 'bar') {
+                    chartConfig.options.scales = { y: { beginAtZero: true, ticks: { stepSize: 1 } }, x: { ticks: { display: false } } };
+                    chartConfig.options.plugins.legend = { display: false };
+                }
+
+                chartConfigsToRender.push({ id: canvasId, config: chartConfig });
+            });
+
+            // Tanam HTML ke DOM secara bersamaan
+            container.innerHTML = htmlDistribusi;
+
+            // Render semua chart distribusi setelah Canvas-nya ada di DOM
+            chartConfigsToRender.forEach(item => {
+                let ctx = document.getElementById(item.id).getContext('2d');
+                chartInstances.push(new Chart(ctx, item.config));
+            });
+        }
+
+        // FUNGSI UNTUK TABEL MODAL RESPONDEN
+        function buildTabelResponden(dataToProcess) {
+            const tbody = document.getElementById('tabelRespondenBody');
+            tbody.innerHTML = '';
+            
+            if(dataToProcess.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Belum ada data untuk unit ini.</td></tr>';
+                return;
+            }
+
+            dataToProcess.forEach((row, index) => {
+                // Mempercantik format tanggal dari format mentah (Timestamp)
+                let waktuSubmit = row['Timestamp'] ? new Date(row['Timestamp']).toLocaleString('id-ID', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '-';
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="text-center">${index + 1}</td>
+                        <td>${waktuSubmit}</td>
+                        <td><span class="badge bg-secondary">${row['unit_kerja'] || '-'}</span></td>
+                        <td>${row['profesi'] || '-'}</td>
+                    </tr>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>

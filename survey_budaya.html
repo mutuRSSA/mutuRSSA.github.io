@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survei Budaya Keselamatan Pasien</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 8px; border-top: 4px solid #6f42c1; }
+        .bg-custom-dark { background-color: #3c8dbc; }
+        
+        .section-header { background-color: #6f42c1; color: white; padding: 12px 20px; font-weight: bold; font-size: 1.1rem; border-radius: 5px; margin-top: 40px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .survey-table-header { background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; font-weight: bold; font-size: 0.85rem; }
+        
+        .question-row { border-bottom: 1px solid #eee; transition: 0.2s; }
+        .question-row:nth-child(even) { background-color: #fcfcfc; }
+        .question-row:hover { background-color: #f1f8ff; }
+        .question-text { font-size: 0.95rem; font-weight: 500; color: #333; }
+        
+        .form-check-input { width: 1.3em; height: 1.3em; cursor: pointer; }
+        .radio-cell { text-align: center; vertical-align: middle; cursor: pointer; }
+        .radio-cell:hover { background-color: #e2e6ea; }
+        
+        /* Gaya Khusus untuk Bagian H & I (Pilihan Ganda Biasa) */
+        .pg-container { background-color: #fff; border: 1px solid #dee2e6; padding: 20px; border-radius: 6px; margin-bottom: 15px; }
+        .pg-question { font-weight: bold; margin-bottom: 15px; color: #212529; }
+        .pg-option { padding: 8px 12px; border-radius: 4px; transition: 0.2s; cursor: pointer; }
+        .pg-option:hover { background-color: #f8f9fa; }
+    </style>
+</head>
+<body>
+
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container">
+        <div class="bg-white p-4 mb-4 card-custom">
+            <div class="text-center mb-4 pb-3 border-bottom">
+                <i class="fas fa-clipboard-list fa-3x mb-3" style="color: #6f42c1;"></i>
+                <h3 class="fw-bold text-dark mb-1">Survei Budaya Keselamatan Pasien</h3>
+                <h5 class="text-secondary">(Hospital Survey on Patient Safety Culture)</h5>
+                <p class="text-muted mt-3 px-md-5">Kuesioner ini bersifat <strong>ANONIM</strong>. Mohon isi sesuai dengan kondisi nyata yang Anda rasakan di unit kerja Anda. Partisipasi Anda sangat berharga untuk meningkatkan mutu layanan rumah sakit.</p>
+            </div>
+
+            <form id="formSurveyBudaya">
+                <div class="row g-3 mb-4 mt-2 px-2">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark">Unit / Ruang Kerja Saat Ini <span class="text-danger">*</span></label>
+                        <select name="unit_kerja" class="form-select border-primary shadow-sm" required>
+                            <option value="">-- Pilih Unit Kerja --</option>
+                            <option value="Bangsal Rawat Inap">Bangsal Rawat Inap</option>
+                            <option value="IGD">IGD</option>
+                            <option value="Kamar Operasi (OK)">Kamar Operasi (OK)</option>
+                            <option value="Rawat Jalan (Poli)">Rawat Jalan (Poli)</option>
+                            <option value="ICU / HCU / NICU">ICU / HCU / NICU</option>
+                            <option value="Farmasi">Farmasi</option>
+                            <option value="Laboratorium">Laboratorium</option>
+                            <option value="Radiologi">Radiologi</option>
+                            <option value="Gizi">Gizi</option>
+                            <option value="Rekam Medis">Rekam Medis</option>
+                            <option value="Manajemen / Administrasi">Manajemen / Administrasi</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold text-dark">Profesi / Jabatan <span class="text-danger">*</span></label>
+                        <select name="profesi" class="form-select border-primary shadow-sm" required>
+                            <option value="">-- Pilih Profesi --</option>
+                            <option value="Dokter Spesialis">Dokter Spesialis</option>
+                            <option value="Dokter Umum / Gigi">Dokter Umum / Gigi</option>
+                            <option value="Perawat">Perawat</option>
+                            <option value="Bidan">Bidan</option>
+                            <option value="Apoteker / TTK">Apoteker / TTK</option>
+                            <option value="Analis Kesehatan">Analis Kesehatan</option>
+                            <option value="Radiografer">Radiografer</option>
+                            <option value="Nutrisionis / Ahli Gizi">Nutrisionis / Ahli Gizi</option>
+                            <option value="Staf Non Medis / Admin">Staf Non Medis / Admin</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                </div>
+                <hr class="mb-4">
+                
+                <div id="surveyContainer"></div>
+
+                <div class="mt-5 text-center border-top pt-4">
+                    <button type="submit" class="btn btn-lg fw-bold text-white px-5 rounded-pill shadow" style="background-color: #6f42c1;" id="btnSubmitSurvey">
+                        <i class="fas fa-paper-plane me-2"></i> KIRIM JAWABAN SURVEI
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // 1. DATABASE PERTANYAAN SUPER KOMPLEKS
+        const dataSurvei = [
+            {
+                bagian: "BAGIAN A: AREA KERJA / UNIT ANDA",
+                tipe: "skala",
+                skalaLabel: ["Sangat Tidak Setuju", "Tidak Setuju", "Netral", "Setuju", "Sangat Setuju"],
+                pertanyaan: [
+                    { id: "A1", text: "1. Semua orang saling mendukung di unit ini" },
+                    { id: "A2", text: "2. Unit kami memiliki jumlah staf yang cukup untuk menangani beban kerja. " },
+                    { id: "A3", text: "3. Bila terdapat banyak pekerjaan yang harus dikerjakan dengan cepat, kami bekerja sama sebagai tim untuk menyelesaikan pekerjaan tersebut" },
+                    { id: "A4", text: "4. Di dalam unit ini, semua orang memperlakukan satu sama lain dengan hormat" },
+                    { id: "A5", text: "5. Staf dalam unit ini bekerja dalam waktu yang lebih lama dibanding waktu ideal yang terbaik untuk perawatan pasien" },
+                    { id: "A6", text: "6. Kami secara aktif melakukan tindakan untuk meningkatkan keselamatan pasien." },
+                    { id: "A7", text: "7. Kami lebih banyak menggunakan staf temporer dibanding kondisi ideal untuk perawatan pasien" },
+                    { id: "A8", text: "8. Staf merasa kesalahan mereka dianggap tanggung jawab mereka" },
+                    { id: "A9", text: "9. Kesalahan-kesalahan yang terjadi telah menghasilkan perubahan yang positif disini" },
+                    { id: "A10", text: "10. Hanya kebetulan saja belum pernah terjadi kesalahan yang lebih serius di sini" },
+                    { id: "A11", text: "11. Ketika di unit ini menjadi sangat sibuk, unit lain ikut membantu" },
+                    { id: "A12", text: "12. Ketika dilakukan pelaporan insiden, rasanya seperti staf tersebutlah yang dilaporkan, bukan masalahnya." },
+                    { id: "A13", text: "13. Setelah kami melakukan perubahan untuk meningkatkan keselamatan pasien, kami mengevaluasi efektivitasnya." },
+                    { id: "A14", text: "14. Kami bekerja dalam “mode krisis” dengan mencoba melakukan terlalu banyak hal, dan dalam waktu yang terlalu cepat." },
+                    { id: "A15", text: "15. Keselamatan pasien tidak pernah dikorbankan untuk menyelesaikan lebih banyak pekerjaan" },
+                    { id: "A16", text: "16. Staf khawatir kesalahan yang mereka lakukan disimpan dalam berkas personalia mereka" },
+                    { id: "A17", text: "17. Kami memiliki masalah mengenai keselamatan pasien di unit ini" },
+                    { id: "A18", text: "18. Prosedur dan sistem kami sudah baik dalam mencegah terjadinya kesalahan " }
+                ]
+            },
+            {
+                bagian: "BAGIAN B:  PENANGGUNG JAWAB/KOORDINATOR UNIT",
+                tipe: "skala",
+                skalaLabel: ["Sangat Tidak Setuju", "Tidak Setuju", "Netral", "Setuju", "Sangat Setuju"],
+                pertanyaan: [
+                    { id: "B1", text: "1. Penanggung jawab / Koordinator unit saya memberikan pujian saat ia melihat suatu pekerjaan diselesaikan menurut prosedur keselamatan pasien yang telah ditetapkan" },
+                    { id: "B2", text: "2. Penanggung jawab / Koordinator unit saya mempertimbangkan dengan serius saran staf untuk meningkatkan keselamatan pasien" },
+                    { id: "B3", text: "3. Saat tekanan meningkat, penanggung jawab / Koordinator unit saya menginginkan kami bekerja lebih cepat, meskipun itu berarti mengambil jalan pintas" },
+                    { id: "B4", text: "4. Penanggung jawab / Koordinator unit saya mengabaikan masalah keselamatan pasien yang terjadi berulang kali." }
+                ]
+            },
+            {
+                bagian: "BAGIAN C: KOMUNIKASI",
+                tipe: "skala",
+                skalaLabel: ["Tidak Pernah", "Jarang", "Kadang-kadang", "Sering", "Selalu"],
+                pertanyaan: [
+                    { id: "C1", text: "1. Kami diberikan  umpan balik mengenai perubahan yang dilakukan berdasarkan laporan insiden" },
+                    { id: "C2", text: "2. Staf akan dengan bebas berbicara bila mereka melihat suatu hal yang dapat berdampak negatif terhadap pelayanan pasien" },
+                    { id: "C3", text: "3. Kami diberi informasi tentang kesalahan yang terjadi di unit ini." },
+                    { id: "C4", text: "4. Staf merasa bebas untuk mempertanyakan keputusan atau tindakan pihak dengan wewenang yang lebih tinggi" },
+                    { id: "C5", text: "5. Di unit ini, kami mendiskusikan cara-cara untuk mencegah kesalahan terjadi berulang." },
+                    { id: "C6", text: "6. Staf merasa takut untuk bertanya bila ada suatu hal yang tampak tidak benar" }
+                ]
+            },
+            {
+                bagian: "BAGIAN D: FREKUENSI PELAPORAN INSIDEN",
+                tipe: "skala",
+                skalaLabel: ["Tidak Pernah", "Jarang", "Kadang-kadang", "Sering", "Selalu"],
+                pertanyaan: [
+                    { id: "D1", text: "1. Bila suatu kesalahan terjadi, tapi diketahui dan dikoreksi sebelum berdampak pada pasien, seberapa sering hal ini dilaporkan?" },
+                    { id: "D2", text: "2. Bila suatu kesalahan terjadi, namun tidak berpotensi mencederai pasien, seberapa sering hal ini dilaporkan?" },
+                    { id: "D3", text: "3. Bila terjadi suatu kesalahan yang dapat mencederai pasien, tetapi tidak terjadi cedera pada pasien tersebut, seberapa sering hal ini dilaporkan?" }
+                ]
+            },
+            {
+                bagian: "BAGIAN E: PENILAIAN KESELAMATAN PASIEN",
+                tipe: "skala_tunggal", // Tipe khusus untuk Bagian E
+                pertanyaan: [
+                    { id: "E1", text: "Tolong berikan penilaian Anda secara keseluruhan untuk keselamatan pasien di area/unit kerja Anda.", 
+                      opsi: ["Luar Biasa", "Sangat Baik", "Dapat Diterima", "Buruk", "Gagal"] }
+                ]
+            },
+            {
+                bagian: "BAGIAN F:  RUMAH SAKIT ANDA",
+                tipe: "skala",
+                skalaLabel: ["Sangat Tidak Setuju", "Tidak Setuju", "Netral", "Setuju", "Sangat Setuju"],
+                pertanyaan: [
+                    { id: "F1", text: "1. Manajemen rumah sakit menciptakan suasana kerja yang meningkatkan keselamatan pasien" },
+                    { id: "F2", text: "2. Unit-unit di rumah sakit tidak saling berkoordinasi dengan baik satu sama lain" },
+                    { id: "F3", text: "3. Terdapat hal-hal yang luput dari perhatian saat memindahkan pasien dari satu unit ke unit lain" },
+                    { id: "F4", text: "4. Terdapat kerja sama yang baik antar unit-unit rumah sakit yang perlu bekerja sama" },
+                    { id: "F5", text: "5. Informasi perawatan pasien yang penting sering terlewatkan saat peralihan jam tugas" },
+                    { id: "F6", text: "6. Bekerja dengan staf dari unit lain sering kali tidak menyenangkan" },
+                    { id: "F7", text: "7. Sering timbul masalah dalam pertukaran informasi lintas unit rumah sakit" },
+                    { id: "F8", text: "8. Tindakan manajemen rumah sakit menunjukkan bahwa keselamatan pasien adalah prioritas utama mereka" },
+                    { id: "F9", text: "9. Manajemen rumah sakit tampak hanya peduli dengan keselamatan pasien bila terjadi kejadian yang tidak diharapkan (KTD)" },
+                    { id: "F10", text: "10. Unit-unit rumah sakit bekerja sama dengan baik dalam memberikan perawatan terbaik untuk pasien" },
+                    { id: "F11", text: "11. Peralihan jam tugas bersifat problematik untuk pasien dirumah sakit ini." }
+                ]
+            },
+            {
+                bagian: "BAGIAN G: JUMLAH LAPORAN INSIDEN",
+                tipe: "pilihan_ganda",
+                pertanyaan: [
+                    { id: "G1", text: "Dalam 12 bulan terakhir, berapa banyak laporan insiden yang sudah Anda isi dan kumpulkan?", 
+                      opsi: ["Tidak ada laporan insiden", "1 sampai 2 laporan insiden", "3 sampai 5 laporan insiden", "6 sampai 10 laporan insiden", "11 sampai 20 laporan insiden", "21 atau lebih laporan insiden"] }
+                ]
+            },
+            {
+                bagian: "BAGIAN H: INFORMASI LATAR BELAKANG",
+                tipe: "pilihan_ganda",
+                pertanyaan: [
+                    { id: "H1", text: "Sudah berapa lama Anda bekerja di rumah sakit ini?", 
+                      opsi: ["Kurang dari 1 tahun", "1 sampai 5 tahun", "6 sampai 10 tahun", "11 sampai 15 tahun", "16 sampai 20 tahun", "21 tahun atau lebih"] },
+                    { id: "H2", text: "Sudah berapa lama Anda bekerja di area kerja/unit Anda saat ini?", 
+                      opsi: ["Kurang dari 1 tahun", "1 sampai 5 tahun", "6 sampai 10 tahun", "11 sampai 15 tahun", "16 sampai 20 tahun", "21 tahun atau lebih"] },
+                    { id: "H3", text: "Biasanya, berapa jam per minggu Anda bekerja di rumah sakit?", 
+                      opsi: ["Kurang dari 20 jam per minggu", "20 sampai 39 jam per minggu", "40 sampai 59 jam per minggu", "60 sampai 79 jam per minggu", "80 sampai 99 jam per minggu", "100 jam per minggu atau lebih"] },
+                    { id: "H4", text: "Apa posisi Anda di rumah sakit ini? Pilih SATU jawaban yang paling tepat.", 
+                      opsi: ["Perawat D3", "Perawat S1 (Ners)", "Bidan", "Dokter tetap", "Residen/Dokter Muda", "Apoteker", "Dietisien", "Petugas Administrasi Unit", "Terapis", "Teknisi (seperti EKG, Lab, Radiologi)", "Manajemen Rumah Sakit", "Lainnya"] },
+                    { id: "H5", text: "Dalam posisi Anda sebagai staf, apakah Anda berinteraksi atau berkontak langsung dengan pasien?", 
+                      opsi: ["YA, saya biasanya memiliki interaksi atau kontak langsung dengan pasien", "TIDAK, saya biasanya TIDAK memiliki interaksi atau kontak langsung dengan pasien"] },
+                    { id: "H6", text: "Sudah berapa lama Anda bekerja dalam spesialisasi atau profesi Anda?", 
+                      opsi: ["Kurang dari 1 tahun", "1 sampai 5 tahun", "6 sampai 10 tahun", "11 sampai 15 tahun", "16 sampai 20 tahun", "21 tahun atau lebih"] }
+                ]
+            },
+            {
+                bagian: "BAGIAN I: KOMENTAR ANDA",
+                tipe: "essay",
+                pertanyaan: [
+                    { id: "I1", text: "Mohon tuliskan komentar apapun mengenai keselamatan pasien, kesalahan, atau pelaporan insiden di rumah sakit Anda." }
+                ]
+            }
+        ];
+
+        // 2. FUNGSI MENGGAMBAR KUESIONER MULTI-SKALA
+        document.addEventListener("DOMContentLoaded", function() {
+            const container = document.getElementById("surveyContainer");
+            let htmlContent = "";
+
+            dataSurvei.forEach(blok => {
+                // Judul Bagian
+                htmlContent += `<div class="section-header"><i class="fas fa-folder-open me-2"></i> ${blok.bagian}</div>`;
+
+                // TIPE 1: SKALA TABEL (Sangat Setuju, Sering, dll)
+                if (blok.tipe === "skala") {
+                    let thHeader = blok.skalaLabel.map(label => `<th width="12%">${label}</th>`).join('');
+                    let tbodyHtml = "";
+
+                    blok.pertanyaan.forEach((soal, i) => {
+                        let tdRadios = blok.skalaLabel.map((_, valIndex) => {
+                            let numValue = valIndex + 1; // Value 1 sampai 5
+                            return `<td class="radio-cell" onclick="document.getElementById('${soal.id}_${numValue}').checked = true;">
+                                        <input type="radio" class="form-check-input mt-0" name="${soal.id}" id="${soal.id}_${numValue}" value="${numValue}" required>
+                                    </td>`;
+                        }).join('');
+
+                        tbodyHtml += `
+                            <tr class="question-row">
+                                <td class="question-text py-3 pe-3">${i + 1}. ${soal.text}</td>
+                                ${tdRadios}
+                            </tr>
+                        `;
+                    });
+
+                    htmlContent += `
+                        <div class="table-responsive mb-4">
+                            <table class="table table-borderless mb-0">
+                                <thead class="survey-table-header text-center text-muted">
+                                    <tr>
+                                        <th width="40%" class="text-start">Pertanyaan / Pernyataan</th>
+                                        ${thHeader}
+                                    </tr>
+                                </thead>
+                                <tbody>${tbodyHtml}</tbody>
+                            </table>
+                        </div>
+                    `;
+                } 
+                
+                // TIPE 2: SKALA TUNGGAL HORIZONTAL (Bagian E)
+                else if (blok.tipe === "skala_tunggal") {
+                    blok.pertanyaan.forEach((soal, i) => {
+                        let radioInline = soal.opsi.map((opsiText, valIndex) => {
+                            return `<div class="form-check form-check-inline me-4">
+                                        <input class="form-check-input" type="radio" name="${soal.id}" id="${soal.id}_${valIndex}" value="${opsiText}" required>
+                                        <label class="form-check-label fw-bold" for="${soal.id}_${valIndex}">${opsiText}</label>
+                                    </div>`;
+                        }).join('');
+
+                        htmlContent += `
+                            <div class="pg-container">
+                                <div class="pg-question">${soal.text} <span class="text-danger">*</span></div>
+                                <div class="mt-3 px-3 py-2 bg-light border rounded text-center">${radioInline}</div>
+                            </div>
+                        `;
+                    });
+                }
+
+                // TIPE 3: PILIHAN GANDA VERTIKAL (Bagian G & H)
+                else if (blok.tipe === "pilihan_ganda") {
+                    blok.pertanyaan.forEach((soal, i) => {
+                        let radioVertical = soal.opsi.map((opsiText, valIndex) => {
+                            return `<div class="form-check pg-option" onclick="document.getElementById('${soal.id}_${valIndex}').checked = true;">
+                                        <input class="form-check-input" type="radio" name="${soal.id}" id="${soal.id}_${valIndex}" value="${opsiText}" required>
+                                        <label class="form-check-label" for="${soal.id}_${valIndex}">${opsiText}</label>
+                                    </div>`;
+                        }).join('');
+
+                        htmlContent += `
+                            <div class="pg-container">
+                                <div class="pg-question">${i + 1}. ${soal.text} <span class="text-danger">*</span></div>
+                                <div class="ps-3">${radioVertical}</div>
+                            </div>
+                        `;
+                    });
+                }
+
+                // TIPE 4: ESSAY / TEKS (Bagian I)
+                else if (blok.tipe === "essay") {
+                    blok.pertanyaan.forEach((soal, i) => {
+                        htmlContent += `
+                            <div class="pg-container">
+                                <div class="pg-question text-primary"><i class="fas fa-comment-dots me-2"></i>${soal.text}</div>
+                                <textarea class="form-control" name="${soal.id}" rows="4" placeholder="Tulis komentar Anda di sini (Opsional)..."></textarea>
+                            </div>
+                        `;
+                    });
+                }
+            });
+
+            container.innerHTML = htmlContent;
+        });
+
+        // 3. FUNGSI PENGIRIMAN DATA
+        document.getElementById("formSurveyBudaya").addEventListener("submit", function(e) {
+            e.preventDefault();
+            
+            const btnSubmit = document.getElementById("btnSubmitSurvey");
+            btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> MENGIRIM JAWABAN...';
+            btnSubmit.disabled = true;
+
+            const formData = new FormData(this);
+            const dataSurvey = Object.fromEntries(formData.entries());
+
+            console.log("Data JSON Mentah untuk dikirim ke Apps Script:", dataSurvey);
+            
+            // URL BACKEND ANDA
+            const scriptURL = "https://script.google.com/macros/s/AKfycbzs7-x6GGX8dMqLgYOXZfNDY3127xbSDEnibba5yM0YcXWiShBWo9Yh1yS9JQrsoEU2/exec";
+
+            fetch(scriptURL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(dataSurvey)
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.status === "success") {
+                    alert("Terima kasih! Survei budaya keselamatan pasien berhasil dikirim.");
+                    document.getElementById("formSurveyBudaya").reset();
+                    window.scrollTo(0, 0);
+                } else {
+                    alert("Terjadi kesalahan sistem: " + result.message);
+                }
+            })
+            .catch(error => {
+                alert("Gagal terhubung ke server. Pastikan koneksi internet stabil.");
+                console.error("Error!", error.message);
+            })
+            .finally(() => {
+                btnSubmit.innerHTML = '<i class="fas fa-paper-plane me-2"></i> KIRIM JAWABAN SURVEI';
+                btnSubmit.disabled = false;
+            });
+        });
+    </script>
+</body>
+</html>

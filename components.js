@@ -16,7 +16,8 @@ function loadNavigation() {
     // =========================================================================
     // 2. FRONTEND SECURITY GUARD (PENJAGA PINTU HALAMAN RAHASIA)
     // =========================================================================
-    const adminPages = ['daftar_insiden.html', 'analisis.html', 'daftar_kpc.html', 'analisis_kpc.html', 'rekapitulasi.html'];
+    // Menambahkan 'dasbor_budaya.html' ke dalam daftar halaman yang dikunci
+    const adminPages = ['daftar_insiden.html', 'analisis.html', 'daftar_kpc.html', 'analisis_kpc.html', 'rekapitulasi.html', 'dasbor_budaya.html'];
     
     // Jika user mencoba mengakses halaman admin tapi dia bukan Komite Mutu (atau belum login)
     if (adminPages.includes(page) && role !== "Komite Mutu") {
@@ -50,7 +51,7 @@ function loadNavigation() {
            <div class="collapse" id="collapseMutu">
                 <div class="list-group list-group-flush bg-light">
                     <a href="input_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-input-mutu" style="font-size: 0.95rem;"><i class="fas fa-edit me-2"></i> Input Laporan Mutu</a>
-                    <a href="laporan_triwulan.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-laporan-triwulan" style="font-size: 0.95rem;"><i class="fas fa-file-alt me-2"></i> Laporan Capaian Mutu</a>
+                    <a href="laporan_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-laporan-triwulan" style="font-size: 0.95rem;"><i class="fas fa-file-alt me-2"></i> Laporan Capaian Mutu</a>
                 </div>
            </div>`
         : `<a href="#" onclick="alert('Akses Terkunci! Silakan Login terlebih dahulu.'); window.location.href='login.html';" class="list-group-item list-group-item-action py-3 sidebar-link bg-light text-muted">
@@ -70,6 +71,7 @@ function loadNavigation() {
                     <a href="daftar_insiden.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-daftar-ikp" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-table me-2"></i> Daftar IKP</a>
                     <a href="daftar_kpc.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-daftar-kpc" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-list-alt me-2"></i> Daftar KPC</a>
                     <a href="rekapitulasi.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-rekap" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-chart-pie me-2"></i> Rekapitulasi IKP dan KPC</a>
+                    <a href="dasbor_budaya.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-dasbor-budaya" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-spider me-2"></i> Dasbor Budaya Keselamatan</a>
                 </div>
             </div>
         `;
@@ -78,10 +80,10 @@ function loadNavigation() {
     // =========================================================================
     // 4. SUSUN HTML UTAMA NAVBAR & SIDEBAR
     // =========================================================================
-    const currentYear = new Date().getFullYear(); // Tahun Dinamis
+    const currentYear = new Date().getFullYear();
 
     const navbarHTML = `
-    <nav class="navbar navbar-dark bg-custom-dark fixed-top shadow-sm">
+    <nav class="navbar navbar-dark fixed-top shadow-sm d-print-none" style="background-color: #2c3e50;">
         <div class="container-fluid px-3 d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
                 <button class="navbar-toggler border-0 me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu"><span class="navbar-toggler-icon"></span></button>
@@ -93,7 +95,7 @@ function loadNavigation() {
     </nav>`;
 
     const sidebarHTML = `
-    <div class="offcanvas offcanvas-start" tabindex="-1" id="sidebarMenu" style="width: 280px;">
+    <div class="offcanvas offcanvas-start d-print-none" tabindex="-1" id="sidebarMenu" style="width: 280px;">
         <div class="offcanvas-header text-white" style="background-color: #222d32;">
             <h5 class="offcanvas-title fw-bold">Main Navigation</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
@@ -111,6 +113,7 @@ function loadNavigation() {
                     <div class="list-group list-group-flush bg-light">
                         <a href="ikp.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-ikp" style="font-size: 0.95rem;"><i class="fas fa-file-signature me-2"></i> Formulir IKP</a>
                         <a href="kpc.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-kpc" style="font-size: 0.95rem;"><i class="fas fa-exclamation-circle me-2"></i> Formulir KPC</a>
+                        <a href="survey_budaya.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-survey-budaya" style="font-size: 0.95rem;"><i class="fas fa-clipboard-list me-2"></i> Kuesioner Budaya (HSPSC)</a>
                     </div>
                 </div>
 
@@ -132,7 +135,7 @@ function loadNavigation() {
     else if (page === 'input_mutu.html') { 
         document.getElementById('menu-input-mutu')?.classList.add('active'); document.getElementById('collapseMutu')?.classList.add('show'); 
     } 
-    else if (page === 'laporan_triwulan.html') { 
+    else if (page === 'laporan_mutu.html' || page === 'laporan_triwulan.html') { 
         document.getElementById('menu-laporan-triwulan')?.classList.add('active'); document.getElementById('collapseMutu')?.classList.add('show'); 
     } 
     else if (page === 'ikp.html') { 
@@ -141,6 +144,9 @@ function loadNavigation() {
     else if (page === 'kpc.html') { 
         document.getElementById('menu-kpc')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); 
     } 
+    else if (page === 'survey_budaya.html') { 
+        document.getElementById('menu-survey-budaya')?.classList.add('active', 'fw-bold'); document.getElementById('collapseKeselamatan')?.classList.add('show'); 
+    }
     // Bagian Menu Panel Admin Mutu
     else if (page === 'daftar_insiden.html' || page === 'analisis.html') { 
         document.getElementById('menu-daftar-ikp')?.classList.add('active', 'fw-bold'); document.getElementById('collapseAdmin')?.classList.add('show'); 
@@ -151,12 +157,15 @@ function loadNavigation() {
     else if (page === 'rekapitulasi.html') { 
         document.getElementById('menu-rekap')?.classList.add('active', 'fw-bold'); document.getElementById('collapseAdmin')?.classList.add('show'); 
     }
+    else if (page === 'dasbor_budaya.html') { 
+        document.getElementById('menu-dasbor-budaya')?.classList.add('active', 'fw-bold'); document.getElementById('collapseAdmin')?.classList.add('show'); 
+    }
 }
 
 window.logoutSystem = function() {
     if(confirm("Apakah Anda yakin ingin keluar dari sistem?")) {
         localStorage.removeItem("sessionMutu");
-        window.location.href = "index.html";
+        window.location.href = "login.html";
     }
 };
 
