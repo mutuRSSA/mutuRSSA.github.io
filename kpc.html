@@ -82,36 +82,43 @@
     
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            // MASUKKAN URL WEB APP APPS SCRIPT ANDA DI SINI
-            const scriptURL = "https://script.google.com/macros/s/AKfycbyEYtIZY66GfN3s8wY7dPovPN0jU40KcvBC3ecrRRp3L981wy503UvJx7YpOAg4oCkl/exec";
-            // CEK MODE EDIT
+            // MASUKKAN URL WEB APP KPC ANDA DI SINI
+            const scriptURL = "https://script.google.com/macros/s/AKfycbxuu_u_pYsmfSYAoy9arI76xSrGddgSSQMsBzjknysotJF2b0Rk5n7v25AjAe6LbBpi/exec";
+            
             const editDataStr = localStorage.getItem('editDataKPC');
             let isEditMode = false;
             let editTargetId = null;
 
+            const submitBtn = document.getElementById("btnSimpan");
+            const form = document.getElementById("formKPC");
+            const fileInput = document.getElementById("buktiFoto");
+
+            // --- JIKA HALAMAN DIBUKA UNTUK EDIT LAPORAN LAMA ---
             if (editDataStr) {
                 isEditMode = true;
                 const data = JSON.parse(editDataStr);
                 editTargetId = data.Timestamp;
 
                 submitBtn.innerHTML = "UPDATE LAPORAN KPC";
-                document.querySelector('.text-muted.border-bottom').innerHTML += ` <span class="badge bg-warning text-dark ms-2">MODE EDIT</span>`;
+                const headerDesc = document.querySelector('.text-muted.border-bottom');
+                if(headerDesc) headerDesc.innerHTML += ` <span class="badge bg-warning text-dark ms-2">MODE EDIT</span>`;
 
-                // Helper Format Tanggal
-                const d = new Date(data['Tgl & Waktu Penemuan']);
-                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-                document.querySelector('[name="tgl_waktu"]').value = d.toISOString().slice(0, 16);
+                if (data['Tgl & Waktu Penemuan']) {
+                    const d = new Date(data['Tgl & Waktu Penemuan']);
+                    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                    const tglInput = document.querySelector('[name="tgl_waktu"]');
+                    if(tglInput) tglInput.value = d.toISOString().slice(0, 16);
+                }
                 
-                document.querySelector('[name="lokasi"]').value = data['Lokasi / Unit'] || '';
-                document.querySelector('[name="deskripsi"]').value = data['Deskripsi KPC'] || '';
-                document.querySelector('[name="tindakan"]').value = data['Tindakan yang Dilakukan'] || '';
-                document.querySelector('[name="nama_pelapor"]').value = data['Nama Pelapor'] || '';
-                document.querySelector('[name="unit_pelapor"]').value = data['Unit Pelapor'] || '';
+                const fill = (name, val) => { const el = document.querySelector(`[name="${name}"]`); if(el && val) el.value = val; };
+                fill('lokasi', data['Lokasi / Unit']);
+                fill('deskripsi', data['Deskripsi KPC']);
+                fill('tindakan', data['Tindakan yang Dilakukan']);
+                fill('nama_pelapor', data['Nama Pelapor']);
+                fill('unit_pelapor', data['Unit Pelapor']);
             }
-            const form = document.getElementById("formKPC");
-            const submitBtn = document.getElementById("btnSimpan");
-            const fileInput = document.getElementById("buktiFoto");
 
+            // --- PROSES SAAT TOMBOL DIKLIK ---
             form.addEventListener("submit", function (e) {
                 e.preventDefault();
                 
@@ -124,39 +131,43 @@
                 submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Mengirim...';
                 submitBtn.disabled = true;
 
-                // Ambil data form teks
-                const formData = new FormData(form);
-                const inputData = Object.fromEntries(formData.entries());
+                // Ambil data form
+                const inputData = Object.fromEntries(new FormData(form).entries());
 
-                // Proses file menggunakan FileReader
-                // JIKA EDIT MODE
-                if (isEditMode) {
-                    const payload = { action: 'update', id: editTargetId, data: inputData };
-                    // Jika ada file baru di-upload saat edit
-                    if (fileInput.files.length > 0) {
-                        const file = fileInput.files[0];
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            payload.data.fileData = e.target.result;
-                            payload.data.fileName = file.name;
-                            kirimDataKeServer(payload);
-                        };
-                        reader.readAsDataURL(file);
-                    } else {
-                        kirimDataKeServer(payload); // Edit teks saja
-                    }
+                // Siapkan paket data (payload)
+                const payload = { 
+                    action: isEditMode ? 'update' : 'create', 
+                    data: inputData 
+                };
+                if (isEditMode) payload.id = editTargetId; // Tambahkan ID jika sedang edit
+
+                // Jika ada foto yang di-upload
+                if (fileInput.files.length > 0) {
+                    const file = fileInput.files[0];
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(event) {
+                        payload.data.fileData = event.target.result;
+                        payload.data.fileName = file.name;
+                        kirimDataKeServer(payload); // Foto selesai dibaca, kirim ke server
+                    };
+                    reader.onerror = function() {
+                        alert("Gagal membaca file foto.");
+                        resetTombol();
+                    };
+                    
+                    reader.readAsDataURL(file);
                 } else {
-                    // JIKA CREATE MODE (Kode yang sudah ada sebelumnya)
-                    const payload = { action: 'create', data: inputData };
-                    if (fileInput.files.length > 0) {
-                       // ... proses filereader lama ... masukkan ke payload.data
-                    } else {
-                       kirimDataKeServer(payload);
-                    }
+                    kirimDataKeServer(payload); // Jika tanpa foto, langsung kirim
                 }
-                }
-            );
+            });
 
+            function resetTombol() {
+                submitBtn.innerHTML = isEditMode ? "UPDATE LAPORAN KPC" : "KIRIM LAPORAN KPC";
+                submitBtn.disabled = false;
+            }
+
+            // --- FUNGSI MENGIRIM KE GOOGLE APPS SCRIPT ---
             function kirimDataKeServer(payloadData) {
                 fetch(scriptURL, {
                     method: "POST",
@@ -166,16 +177,23 @@
                 .then(response => response.json())
                 .then(result => {
                     if (result.status === "success") {
-                        alert("Laporan KPC dan bukti foto berhasil terkirim!");
-                        form.reset();
+                        alert("Laporan KPC berhasil terkirim!");
+                        if(isEditMode) {
+                            localStorage.removeItem('editDataKPC');
+                            window.location.href = 'daftar_kpc.html'; // Kembali ke daftar jika habis edit
+                        } else {
+                            form.reset(); // Kosongkan form jika laporan baru
+                        }
                     } else {
                         alert("Terjadi kesalahan server: " + result.message);
                     }
                 })
-                .catch(error => alert("Gagal terhubung ke server. Periksa koneksi internet Anda."))
+                .catch(error => {
+                    console.error(error);
+                    alert("Gagal terhubung ke server. Pastikan URL Apps Script benar.");
+                })
                 .finally(() => {
-                    submitBtn.innerHTML = "KIRIM LAPORAN KPC";
-                    submitBtn.disabled = false;
+                    resetTombol();
                 });
             }
         });

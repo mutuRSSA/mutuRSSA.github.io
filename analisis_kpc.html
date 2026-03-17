@@ -25,6 +25,14 @@
             <h5 class="mb-4 text-center text-uppercase fw-bold text-success">LEMBAR KERJA INVESTIGASI SEDERHANA</h5>
             
             <form id="formAnalisisKPC">
+                <div class="mb-4 p-3 bg-light border border-warning rounded">
+                    <label class="form-label fw-bold text-dark"><i class="fas fa-tasks text-warning me-2"></i>Status Perbaikan / Penyelesaian saat ini:</label>
+                    <select class="form-select border-warning fw-bold text-dark" name="Status KPC" required>
+                        <option value="Open">🔴 OPEN (Belum Ditangani / Bahaya Masih Ada)</option>
+                        <option value="On Progress">🟡 ON PROGRESS (Sedang Diperbaiki / Dikerjakan)</option>
+                        <option value="Resolved">🟢 RESOLVED (Selesai / Kondisi Sudah Aman)</option>
+                    </select>
+                </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold">Penyebab Langsung Insiden :</label>
                     <textarea class="form-control" name="penyebab_langsung" rows="3" required></textarea>
@@ -71,7 +79,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             // MASUKKAN URL WEB APP KPC ANDA DI SINI
-            const scriptURL = "https://script.google.com/macros/s/AKfycbyEYtIZY66GfN3s8wY7dPovPN0jU40KcvBC3ecrRRp3L981wy503UvJx7YpOAg4oCkl/exec";
+            const scriptURL = "https://script.google.com/macros/s/AKfycbxuu_u_pYsmfSYAoy9arI76xSrGddgSSQMsBzjknysotJF2b0Rk5n7v25AjAe6LbBpi/exec";
             
             const dataStr = localStorage.getItem('analisisDataKPC');
             if (!dataStr) { window.location.href = 'daftar_kpc.html'; return; }
@@ -86,7 +94,8 @@
             const fill = (name, val) => { const el = document.querySelector(`[name="${name}"]`); if(el && val) el.value = val; };
             fill('penyebab_langsung', data['Penyebab Langsung']); fill('akar_masalah', data['Akar Masalah']);
             fill('rekomendasi', data['Rekomendasi']); fill('pj_rekomendasi', data['PJ Rekomendasi']); fill('tindakan_akan_dilakukan', data['Tindakan Akan Dilakukan']); fill('pj_tindakan', data['PJ Tindakan']);
-            
+            fill('Status KPC', data['Status KPC'] || 'Open');
+
             // Format Tanggal untuk tipe date (YYYY-MM-DD)
             if(data['Tgl Rekomendasi']) fill('tgl_rekomendasi', new Date(data['Tgl Rekomendasi']).toISOString().split('T')[0]);
             if(data['Tgl Tindakan']) fill('tgl_tindakan', new Date(data['Tgl Tindakan']).toISOString().split('T')[0]);

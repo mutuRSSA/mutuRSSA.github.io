@@ -48,6 +48,7 @@
                             <th>Tindakan Awal</th>
                             <th>Pelapor</th>
                             <th>Bukti Foto</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody"></tbody>
@@ -68,7 +69,7 @@
 
         $(document).ready(function() {
             // MASUKKAN URL WEB APP KPC ANDA DI SINI
-            const scriptURL = "https://script.google.com/macros/s/AKfycbyEYtIZY66GfN3s8wY7dPovPN0jU40KcvBC3ecrRRp3L981wy503UvJx7YpOAg4oCkl/exec";
+            const scriptURL = "https://script.google.com/macros/s/AKfycbxuu_u_pYsmfSYAoy9arI76xSrGddgSSQMsBzjknysotJF2b0Rk5n7v25AjAe6LbBpi/exec";
 
             fetch(scriptURL, { redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" }})
             .then(res => res.text())
@@ -84,39 +85,38 @@
                     result.data.forEach((row, index) => {
                         let tglWaktu = row['Tgl & Waktu Penemuan'] ? new Date(row['Tgl & Waktu Penemuan']).toLocaleString('id-ID') : '-';
                         
-                        // Cek apakah ada foto
                         let fotoLink = row['Link Bukti Foto'] && row['Link Bukti Foto'] !== "" ? 
-                            `<a href="${row['Link Bukti Foto']}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="fas fa-image"></i> Lihat Foto</a>` : 
-                            `<span class="text-muted fst-italic">Tidak ada foto</span>`;
+                            `<a href="${row['Link Bukti Foto']}" target="_blank" class="btn btn-outline-primary btn-sm"><i class="fas fa-image"></i> Lihat</a>` : 
+                            `<span class="text-muted fst-italic">Tidak ada</span>`;
 
-                        // LOGIKA PENYEMBUNYIAN TOMBOL: Cek jika "Penyebab Langsung" sudah diisi
+                        // --- LOGIKA BADGE STATUS ---
+                        let statusVal = row['Status KPC'] || 'Open'; // Default jika masih kosong
+                        let statusBadge = '';
+                        if (statusVal === 'Open') statusBadge = '<span class="badge bg-danger w-100 py-2"><i class="fas fa-exclamation-circle"></i> Open</span>';
+                        else if (statusVal === 'On Progress') statusBadge = '<span class="badge bg-warning text-dark w-100 py-2"><i class="fas fa-tools"></i> On Progress</span>';
+                        else if (statusVal === 'Resolved') statusBadge = '<span class="badge bg-success w-100 py-2"><i class="fas fa-check-circle"></i> Resolved</span>';
+
                         let sudahDianalisis = row['Penyebab Langsung'] && row['Penyebab Langsung'].toString().trim() !== '';
-                        
-                        let tombolAksi = '';
-                        if (sudahDianalisis) {
-                            tombolAksi = `
-                                <button onclick="printKPC(${index})" class="btn btn-info btn-sm text-white mb-1" title="Cetak PDF"><i class="fas fa-print"></i></button><br>
-                                <span class="badge bg-success mt-1"><i class="fas fa-check"></i> Investigasi Selesai</span>
-                            `;
-                        } else {
-                            tombolAksi = `
-                                <button onclick="printKPC(${index})" class="btn btn-info btn-sm text-white mb-1" title="Cetak PDF"><i class="fas fa-print"></i></button>
-                                <button onclick="analisisKPC(${index})" class="btn btn-success btn-sm text-white mb-1" title="Investigasi Sederhana"><i class="fas fa-search"></i></button>
-                                <button onclick="editKPC(${index})" class="btn btn-warning btn-sm text-white mb-1" title="Edit"><i class="fas fa-edit"></i></button>
-                                <button onclick="deleteKPC(${index})" class="btn btn-danger btn-sm text-white mb-1" title="Hapus"><i class="fas fa-trash"></i></button>
-                            `;
-                        }
+                        let tombolAksi = sudahDianalisis ? 
+                            `<button onclick="printKPC(${index})" class="btn btn-info btn-sm text-white mb-1" title="Cetak PDF"><i class="fas fa-print"></i></button>
+                             <button onclick="analisisKPC(${index})" class="btn btn-warning btn-sm text-dark mb-1" title="Update Progress"><i class="fas fa-edit"></i></button>` 
+                            : 
+                            `<button onclick="printKPC(${index})" class="btn btn-info btn-sm text-white mb-1" title="Cetak PDF"><i class="fas fa-print"></i></button>
+                             <button onclick="analisisKPC(${index})" class="btn btn-success btn-sm text-white mb-1" title="Investigasi & Update"><i class="fas fa-search"></i></button>
+                             <button onclick="editKPC(${index})" class="btn btn-warning btn-sm text-white mb-1" title="Edit"><i class="fas fa-edit"></i></button>
+                             <button onclick="deleteKPC(${index})" class="btn btn-danger btn-sm text-white mb-1" title="Hapus"><i class="fas fa-trash"></i></button>`;
 
                         html += `
                             <tr>
                                 <td class="text-center">${index + 1}</td>
-                                <td class="text-center" style="min-width: 120px;">${tombolAksi}</td>
+                                <td class="text-center" style="min-width: 100px;">${tombolAksi}</td>
                                 <td>${tglWaktu}</td>
                                 <td>${row['Lokasi / Unit'] || '-'}</td>
                                 <td>${row['Deskripsi KPC'] || '-'}</td>
                                 <td>${row['Tindakan yang Dilakukan'] || '-'}</td>
                                 <td>${row['Nama Pelapor'] || '-'}<br><small class="text-muted">${row['Unit Pelapor'] || '-'}</small></td>
-                                <td class="text-center">${fotoLink}</td>
+                                <td class="text-center align-middle">${fotoLink}</td>
+                                <td class="align-middle">${statusBadge}</td>
                             </tr>
                         `;
                     });
