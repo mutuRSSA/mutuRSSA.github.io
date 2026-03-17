@@ -50,7 +50,7 @@ function loadNavigation() {
            <div class="collapse" id="collapseMutu">
                 <div class="list-group list-group-flush bg-light">
                     <a href="input_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-input-mutu" style="font-size: 0.95rem;"><i class="fas fa-edit me-2"></i> Input Laporan Mutu</a>
-                    <a href="laporan_triwulan.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-laporan-triwulan" style="font-size: 0.95rem;"><i class="fas fa-file-alt me-2"></i> Laporan Triwulan</a>
+                    <a href="laporan_triwulan.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-laporan-triwulan" style="font-size: 0.95rem;"><i class="fas fa-file-alt me-2"></i> Laporan Capaian Mutu</a>
                 </div>
            </div>`
         : `<a href="#" onclick="alert('Akses Terkunci! Silakan Login terlebih dahulu.'); window.location.href='login.html';" class="list-group-item list-group-item-action py-3 sidebar-link bg-light text-muted">

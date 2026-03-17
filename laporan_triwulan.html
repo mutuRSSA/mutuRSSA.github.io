@@ -3,29 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Laporan Triwulan Mutu - Komite Mutu</title>
+    <title>Laporan Capaian Mutu - Komite Mutu</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 4px; border-top: 3px solid #0dcaf0; }
+        .card-custom { box-shadow: 0 4px 6px rgba(0,0,0,.05); border-radius: 8px; border-top: 4px solid #0dcaf0; }
         .bg-custom-dark { background-color: #3c8dbc; }
-        .chart-container { position: relative; height: 400px; width: 100%; }
+        .chart-container { position: relative; height: 280px; width: 100%; }
+        
+        /* Indikator Status di Tabel */
+        .status-tercapai { color: #198754; font-weight: 900; }
+        .status-gagal { color: #dc3545; font-weight: 900; }
+        .target-text { color: #6c757d; font-weight: 600; }
+        
+        /* Kustomisasi Scrollbar untuk Tabel Tahunan yang Panjang */
+        .table-responsive::-webkit-scrollbar { height: 10px; }
+        .table-responsive::-webkit-scrollbar-thumb { background: #adb5bd; border-radius: 5px; }
+
         /* ================= CSS KHUSUS CETAK PDF ================= */
         @media print {
             body { background-color: #fff !important; padding-top: 0 !important; }
-            #navbar-container, #sidebar-container, .card-custom > .d-flex.align-items-end, .d-print-none { 
-                display: none !important; 
-            }
+            #navbar-container, #sidebar-container, .d-print-none { display: none !important; }
             .card-custom { border: none !important; box-shadow: none !important; padding: 0 !important; }
-            .card { border: none !important; box-shadow: none !important; margin-bottom: 15px !important; page-break-inside: avoid; }
-            .table { font-size: 11px !important; }
-            .chart-container { height: 200px !important; }
+            .card { border: none !important; box-shadow: none !important; margin-bottom: 20px !important; page-break-inside: avoid; }
+            .table { font-size: 10px !important; border-collapse: collapse !important; }
+            .table th, .table td { padding: 4px !important; }
+            .chart-container { height: 220px !important; }
             .col-md-6 { width: 50% !important; float: left; padding: 0 10px; }
             .row { display: flex; flex-wrap: wrap; }
-            /* Memaksa background warna badge dan grafik tetap muncul saat di-print */
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            @page { margin: 1cm; }
+            @page { margin: 1cm; size: landscape; }
         }
     </style>
 </head>
@@ -35,40 +43,48 @@
     <div id="sidebar-container"></div>
 
     <div class="container-fluid px-4">
-        <div class="bg-white p-4 mb-4 card-custom d-flex justify-content-between align-items-end flex-wrap gap-3 d-print-none">
-            <div>
-                <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-chart-bar text-info me-2"></i> Dashboard Capaian Mutu Triwulan</h4>
-                <p class="text-muted mb-0">Pilih Unit dan Triwulan untuk melihat perbandingan Target vs Pencapaian indikator.</p>
+        <div class="bg-white p-4 mb-4 card-custom d-print-none">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-chart-line text-info me-2"></i> Dashboard Capaian Mutu Terpadu</h4>
+                    <p class="text-muted mb-0">Pantau tren capaian indikator mutu berdasarkan periode (Triwulan / Semester / Tahunan).</p>
+                </div>
             </div>
             
-            <div class="d-flex align-items-end gap-2 bg-light p-2 rounded border">
-                <div>
-                    <label class="form-label mb-0 fw-bold" style="font-size: 0.85rem;">Unit / Instalasi:</label>
-                    <select id="filterUnit" class="form-select form-select-sm" style="min-width: 150px;">
-                        <option value="SEMUA">-- Semua Unit --</option>
+            <div class="row g-3 bg-light p-3 rounded border align-items-end">
+                <div class="col-md-2 col-sm-6">
+                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;">Pilih Tahun:</label>
+                    <select id="filterTahun" class="form-select border-info fw-bold text-dark"></select>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;">Unit / Instalasi:</label>
+                    <select id="filterUnit" class="form-select border-info fw-bold text-dark"></select>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;">Jenis Laporan:</label>
+                    <select id="filterTipeLaporan" class="form-select border-info fw-bold text-dark">
+                        <option value="triwulan">Triwulan (3 Bulan)</option>
+                        <option value="semester">Semester (6 Bulan)</option>
+                        <option value="tahunan">Tahunan (12 Bulan)</option>
+                    </select>
+                </div>
+                <div class="col-md-2 col-sm-6" id="divDetailPeriode">
+                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;">Pilih Periode:</label>
+                    <select id="filterDetailPeriode" class="form-select border-info fw-bold text-dark">
                         </select>
                 </div>
-                <div>
-                    <label class="form-label mb-0 fw-bold" style="font-size: 0.85rem;">Pilih Triwulan:</label>
-                    <select id="filterTriwulan" class="form-select form-select-sm" style="min-width: 150px;">
-                        <option value="1">Triwulan 1 (Jan - Mar)</option>
-                        <option value="2">Triwulan 2 (Apr - Jun)</option>
-                        <option value="3">Triwulan 3 (Jul - Sep)</option>
-                        <option value="4">Triwulan 4 (Okt - Des)</option>
-                    </select>
+                <div class="col-md-2 col-sm-12 text-md-end mt-3 mt-md-0">
+                    <button class="btn btn-primary fw-bold w-100 shadow-sm" onclick="renderDashboard()"><i class="fas fa-search me-2"></i> Tampilkan</button>
                 </div>
             </div>
         </div>
 
-        <div id="loadingMessage" class="alert alert-info text-center shadow-sm">
+        <div id="loadingMessage" class="alert alert-info text-center shadow-sm fw-bold">
             <i class="fas fa-spinner fa-spin me-2"></i> Mengambil data dari server...
         </div>
 
         <div class="bg-white p-4 card-custom" id="chartCard" style="display: none;">
-            <h5 class="text-center fw-bold text-secondary mb-4" id="chartTitle">Capaian Indikator Mutu</h5>
-            
             <div id="dashboardContent"></div> 
-            
         </div>
     </div>
 
@@ -83,22 +99,62 @@
         const scriptURL = "https://script.google.com/macros/s/AKfycbwcFY6V-0JAUuOv79xyImDdw9-7jISWasq9UD6efGe_Odqqm5qyfUrjPkfsFa4omw2T/exec";
         
         let rawData = [];
-        let rawDataAnalisa = []; // Array baru untuk menyimpan riwayat analisa
+        let rawDataAnalisa = []; 
         let chartInstances = [];
 
-        const bulanKeTriwulan = { 'januari': 1, 'februari': 1, 'maret': 1, 'april': 2, 'mei': 2, 'juni': 2, 'juli': 3, 'agustus': 3, 'september': 3, 'oktober': 4, 'november': 4, 'desember': 4 };
-        const namaBulanTriwulan = { 1: ['Januari', 'Februari', 'Maret'], 2: ['April', 'Mei', 'Juni'], 3: ['Juli', 'Agustus', 'September'], 4: ['Oktober', 'November', 'Desember'] };
+        // KAMUS WAKTU DINAMIS
+        const kamusWaktu = {
+            'triwulan': {
+                '1': ['Januari', 'Februari', 'Maret'],
+                '2': ['April', 'Mei', 'Juni'],
+                '3': ['Juli', 'Agustus', 'September'],
+                '4': ['Oktober', 'November', 'Desember']
+            },
+            'semester': {
+                '1': ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni'],
+                '2': ['Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+            },
+            'tahunan': {
+                '1': ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember']
+            }
+        };
 
         document.addEventListener("DOMContentLoaded", function () {
+            // Mengatur Interaksi Dropdown Tipe Laporan
+            document.getElementById('filterTipeLaporan').addEventListener('change', function() {
+                const tipe = this.value;
+                const detailSelect = document.getElementById('filterDetailPeriode');
+                const detailDiv = document.getElementById('divDetailPeriode');
+                
+                detailSelect.innerHTML = '';
+                if (tipe === 'triwulan') {
+                    detailDiv.style.display = 'block';
+                    detailSelect.add(new Option('Triwulan 1 (Jan-Mar)', '1'));
+                    detailSelect.add(new Option('Triwulan 2 (Apr-Jun)', '2'));
+                    detailSelect.add(new Option('Triwulan 3 (Jul-Sep)', '3'));
+                    detailSelect.add(new Option('Triwulan 4 (Okt-Des)', '4'));
+                } else if (tipe === 'semester') {
+                    detailDiv.style.display = 'block';
+                    detailSelect.add(new Option('Semester 1 (Jan-Jun)', '1'));
+                    detailSelect.add(new Option('Semester 2 (Jul-Des)', '2'));
+                } else if (tipe === 'tahunan') {
+                    detailDiv.style.display = 'none'; // Sembunyikan jika tahunan
+                    detailSelect.add(new Option('Satu Tahun Penuh', '1'));
+                }
+            });
+            // Trigger untuk inisialisasi awal
+            document.getElementById('filterTipeLaporan').dispatchEvent(new Event('change'));
+
+            // Ambil Data
             fetch(scriptURL)
                 .then(res => res.json())
                 .then(result => {
                     if (result.status === 'success') {
                         rawData = result.data;
-                        rawDataAnalisa = result.dataAnalisa || []; // Ambil riwayat analisa
+                        rawDataAnalisa = result.dataAnalisa || []; 
                         document.getElementById('loadingMessage').style.display = 'none';
                         document.getElementById('chartCard').style.display = 'block';
-                        populateUnitDropdown();
+                        populateDropdowns();
                         renderDashboard(); 
                     } else { throw new Error(result.message); }
                 })
@@ -107,74 +163,104 @@
                     msg.classList.replace('alert-info', 'alert-danger');
                     msg.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Gagal memuat data: ' + err.message;
                 });
-
-            document.getElementById('filterUnit').addEventListener('change', renderDashboard);
-            document.getElementById('filterTriwulan').addEventListener('change', renderDashboard);
         });
 
-        function populateUnitDropdown() {
+        function populateDropdowns() {
+            // Isi Unit
             const unitSelect = document.getElementById('filterUnit');
-            const units = [...new Set(rawData.map(item => item['Unit']))].filter(Boolean); 
+            unitSelect.innerHTML = ''; 
+            const units = [...new Set(rawData.map(item => item['Unit']))].filter(Boolean).sort(); 
             units.forEach(unit => { unitSelect.appendChild(new Option(unit, unit)); });
+            
+            const unitRS = units.find(u => u.toLowerCase().includes('rumah sakit'));
+            if(unitRS) unitSelect.value = unitRS;
+
+            // Isi Tahun (Mengambil unik dari kolom Tahun)
+            const tahunSelect = document.getElementById('filterTahun');
+            tahunSelect.innerHTML = '';
+            const tahuns = [...new Set(rawData.map(item => (item['Tahun'] || "").toString().trim()))].filter(Boolean).sort().reverse();
+            
+            // Default ke tahun saat ini jika ada, jika tidak, ke tahun terbaru di database
+            const currentYear = new Date().getFullYear().toString();
+            if (tahuns.length === 0) {
+                tahunSelect.appendChild(new Option(currentYear, currentYear)); // Fallback aman
+            } else {
+                tahuns.forEach(thn => { tahunSelect.appendChild(new Option(thn, thn)); });
+                if (tahuns.includes(currentYear)) tahunSelect.value = currentYear;
+            }
         }
 
+        // VARIABEL GLOBAL UNTUK MENGIRIM KE BACKEND SAAT DISIMPAN
+        let activePeriodeTitle = "";
+
         function renderDashboard() {
+            const selectedTahun = document.getElementById('filterTahun').value;
             const selectedUnit = document.getElementById('filterUnit').value;
-            const selectedTriwulan = parseInt(document.getElementById('filterTriwulan').value);
-            const namaBulan = namaBulanTriwulan[selectedTriwulan];
+            const selectedTipe = document.getElementById('filterTipeLaporan').value;
+            const selectedDetail = document.getElementById('filterDetailPeriode').value;
+            
+            // Susun array nama bulan berdasarkan pilihan (contoh: ['Januari', 'Februari', 'Maret'])
+            const namaBulan = kamusWaktu[selectedTipe][selectedDetail];
+            
+            // Susun Judul Periode untuk teks laporan & analisa
+            if (selectedTipe === 'triwulan') activePeriodeTitle = `Triwulan ${selectedDetail} Tahun ${selectedTahun}`;
+            else if (selectedTipe === 'semester') activePeriodeTitle = `Semester ${selectedDetail} Tahun ${selectedTahun}`;
+            else activePeriodeTitle = `Tahunan ${selectedTahun}`;
             
             if (chartInstances.length > 0) chartInstances.forEach(chart => chart.destroy());
             chartInstances = []; 
             const dashboardContent = document.getElementById('dashboardContent');
             dashboardContent.innerHTML = ''; 
 
+            // FILTER DATA (Mencocokkan Unit, Tahun, dan kumpulan Bulan)
             let filteredData = rawData.filter(row => {
-                let matchUnit = (selectedUnit === 'SEMUA') || (row['Unit'] === selectedUnit);
-                let matchTriwulan = (bulanKeTriwulan[(row['Bulan'] || "").toString().toLowerCase().trim()] === selectedTriwulan);
-                return matchUnit && matchTriwulan;
+                let matchUnit = (row['Unit'] === selectedUnit);
+                let matchTahun = ((row['Tahun'] || "").toString().trim() === selectedTahun);
+                
+                let bulanRow = (row['Bulan'] || "").toString().trim().toLowerCase();
+                let bulanNormalized = bulanRow.replace(/^\w/, c => c.toUpperCase()); // Jadikan awalan Kapital
+                let matchBulan = namaBulan.includes(bulanNormalized);
+
+                return matchUnit && matchTahun && matchBulan;
             });
 
             if (filteredData.length === 0) {
-                dashboardContent.innerHTML = `<div class="alert alert-warning text-center mt-4"><i class="fas fa-info-circle"></i> Tidak ada data untuk filter yang dipilih.</div>`;
+                dashboardContent.innerHTML = `<div class="alert alert-warning text-center mt-4 fw-bold"><i class="fas fa-info-circle me-2"></i> Belum ada data pelaporan masuk untuk ${selectedUnit} pada ${activePeriodeTitle}.</div>`;
                 return;
             }
 
-            // CEK APAKAH SUDAH ADA ANALISA UNTUK UNIT INI
+            // CEK STATUS ANALISA (Mencari judul periode yang sama persis di database)
             let isAnalyzed = false;
             let namaKepala = "( ........................................ )";
             let analisaMap = {};
 
-            if (selectedUnit !== 'SEMUA') {
-                let riwayat = rawDataAnalisa.filter(r => r['Unit'] === selectedUnit && r['Triwulan'] === "Triwulan " + selectedTriwulan);
-                if (riwayat.length > 0) {
-                    isAnalyzed = true;
-                    namaKepala = riwayat[0]['Kepala Unit'] || namaKepala;
-                    riwayat.forEach(r => {
-                        analisaMap[r['Judul Indikator']] = { analisa: r['Analisa'], tl: r['Tindak Lanjut'] };
-                    });
-                }
+            // Backend lama Anda menggunakan kunci "Triwulan" (kita masih mengirim lewat situ, tapi isinya activePeriodeTitle)
+            let riwayat = rawDataAnalisa.filter(r => r['Unit'] === selectedUnit && (r['Triwulan'] === activePeriodeTitle || r['Periode'] === activePeriodeTitle));
+            if (riwayat.length > 0) {
+                isAnalyzed = true;
+                namaKepala = riwayat[0]['Kepala Unit'] || namaKepala;
+                riwayat.forEach(r => { analisaMap[r['Judul Indikator']] = { analisa: r['Analisa'], tl: r['Tindak Lanjut'] }; });
             }
 
-            // HEADER HTML (TERMASUK KOP CETAK PDF)
+            // HEADER CETAK
             let fullHtml = `
-                <div class="d-none d-print-block text-center mb-5 pb-3 border-bottom border-dark border-3">
+                <div class="d-none d-print-block text-center mb-4 pb-2 border-bottom border-dark border-3">
                     <h3 class="fw-bold mb-1">LAPORAN CAPAIAN INDIKATOR MUTU</h3>
-                    <h5 class="text-uppercase mb-0">TRIWULAN ${selectedTriwulan} - UNIT ${selectedUnit === 'SEMUA' ? 'RUMAH SAKIT' : selectedUnit}</h5>
+                    <h5 class="text-uppercase mb-0">${activePeriodeTitle} - UNIT ${selectedUnit}</h5>
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3 d-print-none">
-                    <h5 class="fw-bold text-secondary mb-0" id="chartTitle">
-                        Tren Mutu - ${selectedUnit === 'SEMUA' ? 'Semua Unit' : 'Unit ' + selectedUnit} (Triwulan ${selectedTriwulan})
+                    <h5 class="fw-bold text-secondary mb-0">
+                        <i class="fas fa-hospital me-2"></i> Tren Mutu - ${selectedUnit} (${activePeriodeTitle})
                     </h5>
                     <div>
-                        ${(selectedUnit !== 'SEMUA' && !isAnalyzed) ? `<button id="btnToggleAnalisa" class="btn btn-warning fw-bold text-dark px-3 me-2" onclick="toggleAnalisaMode()"><i class="fas fa-edit me-1"></i> Mode Analisa</button>` : ''}
-                        
-                        <button class="btn btn-danger fw-bold px-3" onclick="window.print()"><i class="fas fa-file-pdf me-1"></i> Cetak PDF</button>
+                        ${!isAnalyzed ? `<button id="btnToggleAnalisa" class="btn btn-warning fw-bold text-dark px-3 me-2 shadow-sm" onclick="toggleAnalisaMode()"><i class="fas fa-edit me-1"></i> Mode Analisa</button>` : ''}
+                        <button class="btn btn-danger fw-bold px-3 shadow-sm" onclick="window.print()"><i class="fas fa-print me-1"></i> Cetak Dokumen</button>
                     </div>
                 </div>
             `;
 
-            // KELOMPOKKAN DATA
+            // GROUPING DATA
             let groupedData = {};
             filteredData.forEach(row => {
                 let jenis = row['Jenis Indikator'] || 'Lainnya';
@@ -192,6 +278,7 @@
                     let t = parseFloat((row['Target']||0).toString().replace(',', '.')) || 0;
                     let c = parseFloat((row['Pencapaian']||0).toString().replace(',', '.')) || 0;
                     if (satuan === '%' || satuan.toLowerCase() === 'persen') { t *= 100; c *= 100; }
+                    
                     groupedData[jenis][judul].bulans[bulanNormalized].target = Math.round(t * 100) / 100;
                     groupedData[jenis][judul].bulans[bulanNormalized].capai = Math.round(c * 100) / 100;
                 }
@@ -200,6 +287,10 @@
             let globalChartConfigs = []; 
             let chartIdCounter = 0;
 
+            // PEMBENTUKAN HEADER TABEL DINAMIS (Mengikuti jumlah bulan)
+            let thBulanHtml = namaBulan.map(b => `<th colspan="2" style="min-width:90px;">${b}</th>`).join('');
+            let thTargetCapaiHtml = namaBulan.map(() => `<th>Target</th><th>Capai</th>`).join('');
+
             for (let jenis in groupedData) {
                 let tableRows = ''; let nomor = 1;
                 let cardsHtml = '';
@@ -207,11 +298,29 @@
                 for (let judul in groupedData[jenis]) {
                     let item = groupedData[jenis][judul];
                     let satuanLabel = item.satuan;
-                    let targetData = [item.bulans[namaBulan[0]].target, item.bulans[namaBulan[1]].target, item.bulans[namaBulan[2]].target];
-                    let capaiData = [item.bulans[namaBulan[0]].capai, item.bulans[namaBulan[1]].capai, item.bulans[namaBulan[2]].capai];
+                    
+                    let targetData = namaBulan.map(b => item.bulans[b].target);
+                    let capaiData = namaBulan.map(b => item.bulans[b].capai);
 
-                    // Data Tabel
-                    tableRows += `<tr><td class="text-center">${nomor++}</td><td class="fw-bold">${judul}</td><td class="text-center"><span class="badge bg-secondary">${satuanLabel}</span></td><td class="text-center text-danger">${targetData[0]!==null?targetData[0]:'-'}</td><td class="text-center text-primary fw-bold">${capaiData[0]!==null?capaiData[0]:'-'}</td><td class="text-center text-danger">${targetData[1]!==null?targetData[1]:'-'}</td><td class="text-center text-primary fw-bold">${capaiData[1]!==null?capaiData[1]:'-'}</td><td class="text-center text-danger">${targetData[2]!==null?targetData[2]:'-'}</td><td class="text-center text-primary fw-bold">${capaiData[2]!==null?capaiData[2]:'-'}</td></tr>`;
+                    // Pembuatan Sel Tabel Dinamis
+                    let formatSel = (t, c) => {
+                        if (t === null || c === null) return {t: '-', c: '-', class: ''};
+                        let colorClass = (c >= t) ? 'status-tercapai' : 'status-gagal';
+                        return { t: t, c: c, class: colorClass };
+                    };
+
+                    let tdHtml = namaBulan.map(b => {
+                        let d = formatSel(item.bulans[b].target, item.bulans[b].capai);
+                        return `<td class="text-center target-text align-middle">${d.t}</td><td class="text-center align-middle ${d.class}">${d.c}</td>`;
+                    }).join('');
+
+                    // Data Tabel Baris
+                    tableRows += `<tr>
+                        <td class="text-center align-middle">${nomor++}</td>
+                        <td class="fw-bold align-middle" style="min-width:250px;">${judul}</td>
+                        <td class="text-center align-middle"><span class="badge bg-secondary">${satuanLabel}</span></td>
+                        ${tdHtml}
+                    </tr>`;
 
                     // Pilihan HTML Teks Analisa (Baca Saja vs Input)
                     let htmlAnalisaText = '';
@@ -219,40 +328,39 @@
                         htmlAnalisaText = `
                             <div class="mt-3 pt-3 border-top">
                                 <div class="mb-2">
-                                    <p class="mb-1 fw-bold text-danger" style="font-size:0.8rem;"><i class="fas fa-microscope"></i> Analisa:</p>
+                                    <p class="mb-1 fw-bold text-danger" style="font-size:0.8rem;"><i class="fas fa-search-plus"></i> Analisa Masalah:</p>
                                     <div class="p-2 bg-light border rounded text-dark" style="font-size:0.85rem; text-align: justify; white-space: pre-wrap;">${analisaMap[judul].analisa || '-'}</div>
                                 </div>
                                 <div>
                                     <p class="mb-1 fw-bold text-success" style="font-size:0.8rem;"><i class="fas fa-clipboard-check"></i> Tindak Lanjut:</p>
                                     <div class="p-2 bg-light border rounded text-dark" style="font-size:0.85rem; text-align: justify; white-space: pre-wrap;">${analisaMap[judul].tl || '-'}</div>
                                 </div>
-                            </div>
-                        `;
+                            </div>`;
                     } else if (!isAnalyzed) {
                         htmlAnalisaText = `
                             <div class="analisa-container mt-3 pt-3 border-top d-print-none" style="display: none;">
                                 <div class="mb-2">
-                                    <label class="form-label fw-bold text-danger" style="font-size:0.8rem;"><i class="fas fa-microscope"></i> Analisa:</label>
-                                    <textarea class="form-control form-control-sm input-analisa" data-judul="${judul}" rows="3" placeholder="Sebab capaian tercapai/tidak tercapai..."></textarea>
+                                    <label class="form-label fw-bold text-danger" style="font-size:0.8rem;"><i class="fas fa-search-plus"></i> Analisa Masalah:</label>
+                                    <textarea class="form-control form-control-sm input-analisa" data-judul="${judul}" rows="3" placeholder="Apa penyebab tren naik/turun ini?"></textarea>
                                 </div>
                                 <div>
-                                    <label class="form-label fw-bold text-success" style="font-size:0.8rem;"><i class="fas fa-clipboard-check"></i> Tindak Lanjut:</label>
-                                    <textarea class="form-control form-control-sm input-tl" data-judul="${judul}" rows="3" placeholder="Rencana perbaikan (PDSA)..."></textarea>
+                                    <label class="form-label fw-bold text-success" style="font-size:0.8rem;"><i class="fas fa-clipboard-check"></i> Tindak Lanjut (PDSA):</label>
+                                    <textarea class="form-control form-control-sm input-tl" data-judul="${judul}" rows="3" placeholder="Tindakan koreksi apa yang akan dilakukan..."></textarea>
                                 </div>
-                            </div>
-                        `;
+                            </div>`;
                     }
 
-                    // Card Grafik
+                    // Card Grafik (Jika Tahunan, buat grafiknya melebar penuh satu baris agar terlihat jelas)
                     let canvasId = `canvas-chart-${chartIdCounter}`;
+                    let colWidth = selectedTipe === 'tahunan' ? 'col-12' : 'col-md-6';
                     cardsHtml += `
-                        <div class="col-md-6 mb-4">
-                            <div class="card h-100 shadow-sm border-0 bg-light">
-                                <div class="card-header bg-white border-bottom-0 pt-3">
-                                    <h6 class="mb-0 text-center fw-bold text-dark" style="font-size:0.9rem;">${judul}</h6>
+                        <div class="${colWidth} mb-4">
+                            <div class="card h-100 shadow-sm border border-light">
+                                <div class="card-header bg-white border-bottom-0 pt-3 pb-0">
+                                    <h6 class="mb-0 text-center fw-bold text-dark" style="font-size:0.95rem; line-height:1.4;">${judul}</h6>
                                 </div>
-                                <div class="card-body pb-3">
-                                    <div style="position: relative; height: 220px;" class="chart-container"><canvas id="${canvasId}"></canvas></div>
+                                <div class="card-body">
+                                    <div class="chart-container"><canvas id="${canvasId}"></canvas></div>
                                     ${htmlAnalisaText}
                                 </div>
                             </div>
@@ -262,45 +370,45 @@
                     chartIdCounter++;
                 }
 
-                // Susunan Akhir per Jenis (Tabel di Atas, Grafik di Bawah)
+                // Tabel Dinamis Merentang Sesuai Jumlah Bulan
                 fullHtml += `
                     <div class="mt-4 mb-3 pb-2"><h5 class="fw-bold text-primary text-uppercase border-start border-4 border-primary ps-2">${jenis}</h5></div>
-                    <div class="table-responsive mb-4">
-                        <table class="table table-bordered table-striped mt-2" style="font-size: 0.85rem;">
-                            <thead class="bg-light text-center align-middle">
-                                <tr><th rowspan="2" width="5%">No</th><th rowspan="2" width="25%">Judul Indikator</th><th rowspan="2" width="10%">Satuan</th><th colspan="2" width="20%">${namaBulan[0]}</th><th colspan="2" width="20%">${namaBulan[1]}</th><th colspan="2" width="20%">${namaBulan[2]}</th></tr>
-                                <tr><th>Target</th><th>Capai</th><th>Target</th><th>Capai</th><th>Target</th><th>Capai</th></tr>
+                    <div class="table-responsive mb-4 shadow-sm rounded">
+                        <table class="table table-bordered table-hover mb-0" style="font-size: 0.85rem; background: #fff;">
+                            <thead class="text-center align-middle" style="background-color: #f1f5f9;">
+                                <tr><th rowspan="2" width="5%">No</th><th rowspan="2" width="25%">Judul Indikator</th><th rowspan="2" width="10%">Satuan</th>${thBulanHtml}</tr>
+                                <tr>${thTargetCapaiHtml}</tr>
                             </thead>
                             <tbody>${tableRows}</tbody>
                         </table>
                     </div>
-                    <div class="row">${cardsHtml}</div>
+                    <div class="row pt-3">${cardsHtml}</div>
                 `; 
             }
 
-            // BAGIAN TANDA TANGAN CETAK PDF (Otomatis terisi jika sudah dianalisa)
+            // BAGIAN TANDA TANGAN (Cetak Print)
             let printName = isAnalyzed ? `<u class="fw-bold">${namaKepala}</u>` : `( ..................................................... )`;
             fullHtml += `
                 <div class="mt-5 pt-4 d-none d-print-block" style="page-break-inside: avoid;">
                     <div class="row">
                         <div class="col-8"></div>
                         <div class="col-4 text-center">
-                            <p class="mb-5">Kepala Unit / Ketua Tim,</p><br><br><br>
+                            <p class="mb-5">Mengetahui,<br>Kepala Unit / Ketua Tim</p><br><br><br>
                             <p class="mb-0">${printName}</p>
                         </div>
                     </div>
                 </div>
             `;
 
-            // FOOTER INPUT KEPALA UNIT (Hanya jika belum dianalisa)
-            if (!isAnalyzed && selectedUnit !== 'SEMUA') {
+            // FOOTER INPUT KEPALA UNIT
+            if (!isAnalyzed) {
                 fullHtml += `
-                    <div id="analisaFooter" class="mt-5 p-4 bg-white border rounded shadow-sm d-print-none" style="display: none; border-top: 4px solid #198754 !important;">
-                        <h5 class="fw-bold mb-3 text-success"><i class="fas fa-user-tie me-2"></i>Pengesahan Laporan</h5>
+                    <div id="analisaFooter" class="mt-5 p-4 bg-white border rounded shadow-sm d-print-none" style="display: none; border-top: 4px solid #ffc107 !important;">
+                        <h5 class="fw-bold mb-3 text-dark"><i class="fas fa-signature text-warning me-2"></i>Pengesahan Dokumen Analisa</h5>
                         <div class="row align-items-end">
                             <div class="col-md-6 mb-3 mb-md-0">
-                                <label class="form-label fw-bold">Kepala Unit / Ketua Tim:</label>
-                                <input type="text" id="inputKepalaUnit" class="form-control" placeholder="Tuliskan Nama & Gelar...">
+                                <label class="form-label fw-bold text-muted">Nama Kepala Unit / Penanggung Jawab:</label>
+                                <input type="text" id="inputKepalaUnit" class="form-control border-warning" placeholder="Ketik Nama & Gelar...">
                             </div>
                             <div class="col-md-6 text-md-end">
                                 <button class="btn btn-success fw-bold px-4 py-2" id="btnSimpanAnalisa" onclick="kirimAnalisaKeServer()"><i class="fas fa-save me-2"></i> SIMPAN SEMUA ANALISA</button>
@@ -312,7 +420,7 @@
 
             dashboardContent.innerHTML = fullHtml;
 
-            // Render Chart
+            // RENDER LINE CHART DINAMIS
             globalChartConfigs.forEach(config => {
                 let ctx = document.getElementById(config.id).getContext('2d');
                 let newChart = new Chart(ctx, {
@@ -324,13 +432,15 @@
                             { label: 'Pencapaian', data: config.capaiData, borderColor: '#0dcaf0', backgroundColor: 'rgba(13, 202, 240, 0.1)', fill: true, borderWidth: 3, tension: 0.3, pointBackgroundColor: '#0dcaf0', pointRadius: 5 }
                         ]
                     },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, title: { display: config.satuan !== '-', text: config.satuan, color: '#6c757d' } } }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } }, tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': ' + context.parsed.y + ' ' + (config.satuan !== '-' ? config.satuan : ''); } } } } }
+                    options: { 
+                        responsive: true, maintainAspectRatio: false, 
+                        scales: { y: { beginAtZero: true, title: { display: config.satuan !== '-', text: config.satuan, font: { weight: 'bold' }, color: '#6c757d' } } }, 
+                        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 10 } }, tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': ' + context.parsed.y + ' ' + (config.satuan !== '-' ? config.satuan : ''); } } } } }
                 });
                 chartInstances.push(newChart);
             });
         }
 
-        // FUNGSI TOGGLE DAN SIMPAN (Sama persis seperti sebelumnya)
         window.toggleAnalisaMode = function() {
             const containers = document.querySelectorAll('.analisa-container');
             const footer = document.getElementById('analisaFooter');
@@ -338,7 +448,7 @@
             if (containers.length > 0 && containers[0].style.display === 'none') {
                 containers.forEach(el => el.style.display = 'block');
                 if(footer) footer.style.display = 'block';
-                btn.innerHTML = '<i class="fas fa-times me-1"></i> Batal Mode Analisa';
+                btn.innerHTML = '<i class="fas fa-times me-1"></i> Batal Analisa';
                 btn.classList.replace('btn-warning', 'btn-secondary');
             } else {
                 containers.forEach(el => el.style.display = 'none');
@@ -350,11 +460,10 @@
 
         window.kirimAnalisaKeServer = function() {
             const unit = document.getElementById('filterUnit').value;
-            const triwulan = document.getElementById('filterTriwulan').value;
             const kepala = document.getElementById('inputKepalaUnit').value;
             const btnSimpan = document.getElementById('btnSimpanAnalisa');
 
-            if (!kepala) { alert("Harap isi nama Kepala Unit / Ketua Tim."); document.getElementById('inputKepalaUnit').focus(); return; }
+            if (!kepala) { alert("Harap isi nama Kepala Unit / Penanggung Jawab."); document.getElementById('inputKepalaUnit').focus(); return; }
 
             const textAreasAnalisa = document.querySelectorAll('.input-analisa');
             const textAreasTL = document.querySelectorAll('.input-tl');
@@ -372,16 +481,17 @@
             btnSimpan.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
             btnSimpan.disabled = true;
 
+            // MENGIRIM activePeriodeTitle KE VARIABEL "triwulan" AGAR TIDAK MERUSAK BACKEND
             fetch(scriptURL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ unit: unit, triwulan: "Triwulan " + triwulan, kepala: kepala, details: dataDetails })
+                body: JSON.stringify({ action: 'analisa', unit: unit, triwulan: activePeriodeTitle, kepala: kepala, details: dataDetails })
             })
             .then(res => res.json())
             .then(result => {
                 if (result.status === "success") {
                     alert("Analisa berhasil disimpan! Halaman akan dimuat ulang.");
-                    location.reload(); // Muat ulang layar untuk memunculkan teks hasil analisa
+                    location.reload(); 
                 } else alert("Gagal menyimpan: " + result.message);
             })
             .catch(err => alert("Terjadi gangguan koneksi: " + err))
