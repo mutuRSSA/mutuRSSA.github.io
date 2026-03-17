@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const submitBtn = document.getElementById("submitBtn");
     
     // PASTIKAN URL INI ADALAH URL TERBARU ANDA
-    const scriptURL = "https://script.google.com/macros/s/AKfycbz4L1Dg0ThXiJSUof208fbOH-cFoDSYzI2eGCuIGRYCffh-25vOpxPtCmeuuBL9CNR6/exec";
+    const scriptURL = "https://script.google.com/macros/s/AKfycbwpBwmFGTKTKOElHOtK3C_ISOhfKxnFgePqhKu3b2beAT7Qxwnyr8BER54BG3-J3qiJ/exec";
 
     // Cek apakah ada data yang dilempar dari tombol "Edit"
     const editDataStr = localStorage.getItem('editDataIKP');

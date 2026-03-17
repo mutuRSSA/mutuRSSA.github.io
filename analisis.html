@@ -33,11 +33,28 @@
                 <div class="row">
                     <div class="col-md-6 pe-md-4">
                         
-                        <label class="form-label">1. TIPE INSIDEN DAN SUB TIPE INSIDEN</label>
-                        <select class="form-select form-select-sm" name="tipe_insiden"><option value=""></option><option value="KTD">KTD</option><option value="KNC">KNC</option><option value="Lainnya">Lainnya</option></select>
+                        <label class="form-label text-primary"><i class="fas fa-sitemap me-1"></i> 1. TIPE INSIDEN DAN SUB TIPE INSIDEN</label>
+                        
+                        <select class="form-select form-select-sm border-primary fw-bold text-primary" id="ui_tipe_insiden">
+                            <option value="">-- Pilih Kategori Utama --</option>
+                        </select>
+                        
+                        <div id="subTipeContainer" class="mt-2 p-3 bg-white border rounded shadow-sm" style="display:none; border-left: 4px solid #0d6efd !important;">
+                            </div>
 
-                        <label class="form-label">2. Tipe harm(dampak yang terjadi akibat insiden)</label>
-                        <input type="text" class="form-control form-control-sm" name="tipe_harm">
+                        <input type="hidden" name="tipe_insiden" id="hidden_tipe_insiden">
+
+                        <label class="form-label text-danger"><i class="fas fa-user-injured me-1"></i> 2. TIPE HARM (DAMPAK INSIDEN)</label>
+                        <div class="p-3 bg-white border rounded shadow-sm mb-3" style="border-left: 4px solid #dc3545 !important;">
+                            
+                            <label class="sub-label text-dark mt-0">A. Akibat (Cedera / Diagnosis)</label>
+                            <input type="text" class="form-control form-control-sm mb-2" id="ui_akibat_harm" placeholder="Contoh: Fraktur tulang paha kanan...">
+                            
+                            <label class="sub-label text-dark">B. Kausa (Penyebab dari cedera/diagnosis tersebut)</label>
+                            <textarea class="form-control form-control-sm" id="ui_kausa_harm" rows="2" placeholder="Contoh: Jatuh terpeleset di lantai kamar mandi pasien..."></textarea>
+                            
+                        </div>
+                        <input type="hidden" name="tipe_harm" id="hidden_tipe_harm">
 
                         <label class="form-label mt-3">3. Masalah</label>
                         <div class="ps-3">
@@ -53,37 +70,106 @@
                             <textarea class="form-control form-control-sm" name="penyebab_langsung" rows="3"></textarea>
                             <label class="sub-label">B. Akar Masalah (Root Cause)</label>
                             <textarea class="form-control form-control-sm" name="akar_masalah" rows="3"></textarea>
-                            <label class="sub-label">Root Cause</label>
-                            <select class="form-select form-select-sm" name="root_cause_select"><option value=""></option><option value="Faktor Komunikasi">Faktor Komunikasi</option><option value="Faktor Staf">Faktor Staf</option></select>
+                            <label class="sub-label text-danger mt-3"><i class="fas fa-search-plus me-1"></i> Root Cause (Pilih Kategori Utama)</label>
+                            <select class="form-select form-select-sm border-danger text-danger fw-bold" id="ui_rc_utama">
+                                <option value="">-- Pilih Faktor Utama --</option>
+                            </select>
+                            
+                            <div id="rcSubContainer" class="mt-2" style="display:none;">
+                                <label class="sub-label text-dark">Rincian Root Cause</label>
+                                <select class="form-select form-select-sm bg-light" id="ui_rc_sub">
+                                    <option value="">-- Pilih Rincian --</option>
+                                </select>
+                            </div>
+                            
+                            <input type="hidden" name="root_cause_select" id="hidden_root_cause">
                         </div>
 
-                        <label class="form-label mt-3">5. Orang yang terlibat sebagai penyebab langsung insiden</label>
-                        <select class="form-select form-select-sm" name="orang_terlibat"><option value=""></option><option value="Dokter">Dokter</option><option value="Perawat">Perawat</option><option value="Lainnya">Lainnya</option></select>
+                        <label class="form-label mt-3 text-info"><i class="fas fa-user-md me-1"></i> 5. Orang yang terlibat (Penyebab Langsung)</label>
+                        <select class="form-select form-select-sm border-info fw-bold" id="ui_ot_utama">
+                            <option value="">-- Pilih Kategori Orang Terlibat --</option>
+                        </select>
+                        
+                        <div id="otSubContainer" class="mt-2" style="display:none;">
+                            <select class="form-select form-select-sm bg-light" id="ui_ot_sub">
+                                <option value="">-- Pilih Profesi/Rincian --</option>
+                            </select>
+                        </div>
+                        
+                        <input type="hidden" name="orang_terlibat" id="hidden_orang_terlibat">
 
                         <label class="form-label">6. Proses / fase pelayanan saat terjadi insiden</label>
-                        <select class="form-select form-select-sm" name="proses_pelayanan"><option value=""></option><option value="Diagnosis">Diagnosis</option><option value="Terapi">Terapi</option><option value="Perawatan">Perawatan</option></select>
+                        <select class="form-select form-select-sm" name="proses_pelayanan"><option value=""></option><option value="Pelayanan dalam Gedung RS">Pelayanan dalam gedung RS</option><option value="Pelayanan di Luar Gedung RS">Pelayanan di Luar gedung RS</option></select>
 
-                        <label class="form-label">7. Faktor Kontributor</label>
-                        <input type="text" class="form-control form-control-sm" name="faktor_kontributor">
+                        <label class="form-label mt-3 text-success"><i class="fas fa-project-diagram me-1"></i> 7. Faktor Kontributor (Bisa pilih lebih dari satu)</label>
+                        
+                        <div class="border border-success rounded p-3 bg-white shadow-sm" style="max-height: 250px; overflow-y: auto;" id="tree_faktor_kontributor">
+                            </div>
+                        
+                        <textarea class="form-control form-control-sm mt-2 bg-light text-secondary" id="ui_faktor_preview" rows="2" readonly placeholder="Rangkuman pilihan akan muncul di sini..."></textarea>
+                        
+                        <input type="hidden" name="faktor_kontributor" id="hidden_faktor_kontributor">
 
-                        <label class="form-label mt-3">8. Faktor Mitigasi</label>
-                        <div class="ps-3">
-                            <label class="sub-label">a. Untuk Pasien</label>
-                            <select class="form-select form-select-sm" name="mitigasi_pasien"><option value=""></option><option value="Ada">Ada</option><option value="Tidak">Tidak</option></select>
-                            <label class="sub-label">b. Untuk Fasyankes</label>
-                            <select class="form-select form-select-sm" name="mitigasi_fasyankes"><option value=""></option><option value="Ada">Ada</option><option value="Tidak">Tidak</option></select>
-                            <label class="sub-label">c. Untuk Faktor penyebab terkait</label>
-                            <select class="form-select form-select-sm" name="mitigasi_faktor"><option value=""></option><option value="Ada">Ada</option><option value="Tidak">Tidak</option></select>
+                       <label class="form-label mt-3 text-warning text-darken"><i class="fas fa-shield-alt me-1"></i> 8. Faktor Mitigasi (Bisa pilih lebih dari satu)</label>
+                        <div class="ps-3 border-start border-3 border-warning ms-1 mb-3">
+                            
+                            <label class="sub-label text-dark mt-0">a. Untuk Pasien</label>
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                                <div class="form-check"><input class="form-check-input chk-mitigasi-pasien" type="checkbox" value="Langsung ditangani / direspon" id="mp1"><label class="form-check-label" for="mp1">Langsung ditangani / direspon</label></div>
+                                <div class="form-check"><input class="form-check-input chk-mitigasi-pasien" type="checkbox" value="Dilakukan Penatalaksanaan / Tindakan / Prosedur" id="mp2"><label class="form-check-label" for="mp2">Dilakukan Penatalaksanaan / Tindakan / Prosedur</label></div>
+                                <div class="form-check"><input class="form-check-input chk-mitigasi-pasien" type="checkbox" value="Pasien Dirujuk" id="mp3"><label class="form-check-label" for="mp3">Pasien Dirujuk</label></div>
+                                <div class="form-check"><input class="form-check-input chk-mitigasi-pasien" type="checkbox" value="Pemberian Edukasi / Penjelasan kepada Pasien dan keluarga" id="mp4"><label class="form-check-label" for="mp4">Pemberian Edukasi / Penjelasan kepada Pasien dan keluarga</label></div>
+                                <div class="form-check"><input class="form-check-input chk-mitigasi-pasien" type="checkbox" value="Menyatakan empati" id="mp5"><label class="form-check-label" for="mp5">Menyatakan empati</label></div>
+                            </div>
+                            <input type="hidden" name="mitigasi_pasien" id="hidden_mitigasi_pasien">
+
+                            <label class="sub-label text-dark">b. Untuk Fasyankes</label>
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                                <div class="form-check"><input class="form-check-input chk-mitigasi-fasyankes" type="checkbox" value="Kepatuhan terhadap SOP" id="mf1"><label class="form-check-label" for="mf1">Kepatuhan terhadap SOP</label></div>
+                                <div class="form-check"><input class="form-check-input chk-mitigasi-fasyankes" type="checkbox" value="Ketersediaan, kecukupan dan siap pakai sarana prasarana, alat kesehatan / alat pendukung Manajemen (ATK)" id="mf2"><label class="form-check-label" for="mf2">Ketersediaan, kecukupan dan siap pakai sarana prasarana, ATK</label></div>
+                                <div class="form-check"><input class="form-check-input chk-mitigasi-fasyankes" type="checkbox" value="Perbaikan dokumen" id="mf3"><label class="form-check-label" for="mf3">Perbaikan dokumen</label></div>
+                            </div>
+                            <input type="hidden" name="mitigasi_fasyankes" id="hidden_mitigasi_fasyankes">
+
+                            <label class="sub-label text-dark">c. Untuk Faktor penyebab terkait</label>
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                                <div class="form-check"><input class="form-check-input chk-mitigasi-faktor" type="checkbox" value="Faktor Keamanan / Lingkungan Fisik" id="mfa1"><label class="form-check-label" for="mfa1">Faktor Keamanan / Lingkungan Fisik</label></div>
+                                <div class="form-check"><input class="form-check-input chk-mitigasi-faktor" type="checkbox" value="Faktor pengendalian infeksi" id="mfa2"><label class="form-check-label" for="mfa2">Faktor pengendalian infeksi</label></div>
+                                <div class="form-check"><input class="form-check-input chk-mitigasi-faktor" type="checkbox" value="Faktor pemberian terapi" id="mfa3"><label class="form-check-label" for="mfa3">Faktor pemberian terapi</label></div>
+                                <div class="form-check"><input class="form-check-input chk-mitigasi-faktor" type="checkbox" value="Faktor alat Kesehatan" id="mfa4"><label class="form-check-label" for="mfa4">Faktor alat Kesehatan</label></div>
+                            </div>
+                            <input type="hidden" name="mitigasi_faktor" id="hidden_mitigasi_faktor">
+
                         </div>
                     </div>
 
                     <div class="col-md-6 ps-md-4">
                         
                         <label class="form-label">9. Cara mendeteksi insiden</label>
-                        <select class="form-select form-select-sm" name="cara_mendeteksi"><option value=""></option><option value="Review Rekam Medis">Review Rekam Medis</option><option value="Laporan Staf">Laporan Staf</option></select>
+                        <select class="form-select form-select-sm" name="cara_mendeteksi"><option value=""></option><option value="Berasal dari laporan insiden">Berasal dari Laporan insiden</option><option value="Mengetahui perubahan kondisi pasien">Mengetahui dari perubahan kondisi pasien</option><option value="Dengan mesin/ sistem/ perubahan lingkungan/ alam">Dengan mesin/ sistem/ perubahan lingkungan/ alam</option><option value="Saat penghitungan/ audit/ review">Saat penghitungan/ audit/ review</option><option value="Saat penilaian resiko secara proaktif">Saat penilaian resiko secara proaktif</option></select>
 
-                        <label class="form-label">10. Dampak pada Fasyankes</label>
-                        <select class="form-select form-select-sm" name="dampak_fasyankes"><option value=""></option><option value="Rendah">Rendah</option><option value="Tinggi">Tinggi</option></select>
+                        <label class="form-label mt-3 text-danger"><i class="fas fa-hospital-symbol me-1"></i> 10. Dampak pada Fasyankes (Bisa pilih > 1)</label>
+                        <div class="p-3 bg-white border rounded shadow-sm mb-3" style="font-size: 0.85rem; border-left: 4px solid #dc3545 !important;">
+                            
+                            <div class="form-check mb-1"><input class="form-check-input chk-dampak" type="checkbox" value="1. Kerusakkan fasyankes (property damages)" id="df1"><label class="form-check-label fw-bold text-dark" for="df1">1. Kerusakkan fasyankes (property damages)</label></div>
+                            
+                            <div class="fw-bold text-dark mt-2 mb-1">2. Peningkatan alokasi sumber daya yang dibutuhkan:</div>
+                            <div class="ms-3 border-start border-2 border-danger ps-2 mb-2">
+                                <div class="form-check"><input class="form-check-input chk-dampak" type="checkbox" value="2a. Peningkatan LOS" id="df2a"><label class="form-check-label" for="df2a">a. Peningkatan LOS</label></div>
+                                <div class="form-check"><input class="form-check-input chk-dampak" type="checkbox" value="2b. Penambahan area di fasyankes" id="df2b"><label class="form-check-label" for="df2b">b. Penambahan area di fasyankes</label></div>
+                                <div class="form-check"><input class="form-check-input chk-dampak" type="checkbox" value="2c. Penambahan alat/ pemeriksaan/ prosedur/ tindakan" id="df2c"><label class="form-check-label" for="df2c">c. Penambahan alat/ pemeriksaan/ prosedur/ tindakan</label></div>
+                                <div class="form-check"><input class="form-check-input chk-dampak" type="checkbox" value="2d. Perubahan alur pelayanan" id="df2d"><label class="form-check-label" for="df2d">d. Perubahan alur pelayanan</label></div>
+                                <div class="form-check"><input class="form-check-input chk-dampak" type="checkbox" value="2e. Penambahan petugas" id="df2e"><label class="form-check-label" for="df2e">e. Penambahan petugas</label></div>
+                                <div class="form-check"><input class="form-check-input chk-dampak" type="checkbox" value="2f. Penambahan peralatan" id="df2f"><label class="form-check-label" for="df2f">f. Penambahan peralatan</label></div>
+                            </div>
+
+                            <div class="form-check mb-1"><input class="form-check-input chk-dampak" type="checkbox" value="3. Publikasi media" id="df3"><label class="form-check-label fw-bold text-dark" for="df3">3. Publikasi media</label></div>
+                            <div class="form-check mb-1"><input class="form-check-input chk-dampak" type="checkbox" value="4. Keluhan" id="df4"><label class="form-check-label fw-bold text-dark" for="df4">4. Keluhan</label></div>
+                            <div class="form-check mb-1"><input class="form-check-input chk-dampak" type="checkbox" value="5. Reputasi fasyankes menjadi jelek" id="df5"><label class="form-check-label fw-bold text-dark" for="df5">5. Reputasi fasyankes menjadi jelek</label></div>
+                            <div class="form-check mb-1"><input class="form-check-input chk-dampak" type="checkbox" value="6. Konsekuensi hukum" id="df6"><label class="form-check-label fw-bold text-dark" for="df6">6. Konsekuensi hukum</label></div>
+                            
+                        </div>
+                        <input type="hidden" name="dampak_fasyankes" id="hidden_dampak_fasyankes">
 
                         <label class="form-label">11. Rekomendasi</label>
                         <textarea class="form-control form-control-sm" name="rekomendasi" rows="3"></textarea>
@@ -91,24 +177,78 @@
                         <label class="form-label">12. Tindakan yang akan dilakukan</label>
                         <textarea class="form-control form-control-sm" name="tindakan_dilakukan" rows="3"></textarea>
 
-                        <label class="form-label mt-3">13. Tindakan perbaikan</label>
-                        <div class="ps-3">
-                            <label class="sub-label">a. Kepada Pasien</label>
-                            <select class="form-select form-select-sm" name="perbaikan_pasien"><option value=""></option><option value="Edukasi">Edukasi</option><option value="Kompensasi">Kompensasi</option></select>
-                            <label class="sub-label">b. Kepada Fasyankes</label>
-                            <select class="form-select form-select-sm" name="perbaikan_fasyankes"><option value=""></option><option value="Perubahan SPO">Perubahan SPO</option></select>
+                        <label class="form-label mt-3 text-primary"><i class="fas fa-tools me-1"></i> 13. Tindakan perbaikan (Bisa pilih > 1)</label>
+                        <div class="ps-3 border-start border-3 border-primary ms-1 mb-3">
+                            
+                            <label class="sub-label text-dark mt-0">a. Kepada Pasien</label>
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                                <div class="form-check"><input class="form-check-input chk-perbaikan-pasien" type="checkbox" value="Penata laksanaan penyakit" id="pb_p1"><label class="form-check-label" for="pb_p1">Penata laksanaan penyakit</label></div>
+                                <div class="form-check"><input class="form-check-input chk-perbaikan-pasien" type="checkbox" value="Penata laksanaan cedera" id="pb_p2"><label class="form-check-label" for="pb_p2">Penata laksanaan cedera</label></div>
+                                <div class="form-check"><input class="form-check-input chk-perbaikan-pasien" type="checkbox" value="Penata laksanaan disabilitas" id="pb_p3"><label class="form-check-label" for="pb_p3">Penata laksanaan disabilitas</label></div>
+                                <div class="form-check"><input class="form-check-input chk-perbaikan-pasien" type="checkbox" value="Pemberian kompensasi" id="pb_p4"><label class="form-check-label" for="pb_p4">Pemberian kompensasi</label></div>
+                                <div class="form-check"><input class="form-check-input chk-perbaikan-pasien" type="checkbox" value="Pernyataan empati" id="pb_p5"><label class="form-check-label" for="pb_p5">Pernyataan empati</label></div>
+                            </div>
+                            <input type="hidden" name="perbaikan_pasien" id="hidden_perbaikan_pasien">
+
+                            <label class="sub-label text-dark">b. Kepada Fasyankes</label>
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                                <div class="form-check"><input class="form-check-input chk-perbaikan-fasy" type="checkbox" value="Pengelolaan Media / Hubungan Masyarakat" id="pb_f1"><label class="form-check-label" for="pb_f1">Pengelolaan Media / Hubungan Masyarakat</label></div>
+                                <div class="form-check"><input class="form-check-input chk-perbaikan-fasy" type="checkbox" value="Penatalaksanaan Keluhan / complain" id="pb_f2"><label class="form-check-label" for="pb_f2">Penatalaksanaan Keluhan / complain</label></div>
+                                <div class="form-check"><input class="form-check-input chk-perbaikan-fasy" type="checkbox" value="Penatalaksanaan Klaim / Manajemen Risiko" id="pb_f3"><label class="form-check-label" for="pb_f3">Penatalaksanaan Klaim / Manajemen Risiko</label></div>
+                                <div class="form-check"><input class="form-check-input chk-perbaikan-fasy" type="checkbox" value="Debriefing / konseling petugas" id="pb_f4"><label class="form-check-label" for="pb_f4">Debriefing / konseling petugas</label></div>
+                                <div class="form-check"><input class="form-check-input chk-perbaikan-fasy" type="checkbox" value="Pemberitahuan internal (Memorandum/ Surat Edaran dll)" id="pb_f5"><label class="form-check-label" for="pb_f5">Pemberitahuan internal (Memorandum/ Surat Edaran dll)</label></div>
+                                <div class="form-check"><input class="form-check-input chk-perbaikan-fasy" type="checkbox" value="Rekonsiliasi obat" id="pb_f6"><label class="form-check-label" for="pb_f6">Rekonsiliasi obat</label></div>
+                                <div class="form-check"><input class="form-check-input chk-perbaikan-fasy" type="checkbox" value="Perubahan Budaya" id="pb_f7"><label class="form-check-label" for="pb_f7">Perubahan Budaya</label></div>
+                                <div class="form-check"><input class="form-check-input chk-perbaikan-fasy" type="checkbox" value="Edukasi dan Pelatihan petugas" id="pb_f8"><label class="form-check-label" for="pb_f8">Edukasi dan Pelatihan petugas</label></div>
+                            </div>
+                            <input type="hidden" name="perbaikan_fasyankes" id="hidden_perbaikan_fasyankes">
+
                         </div>
 
-                        <label class="form-label mt-3">14. Tindakan untuk mengurangi risiko</label>
-                        <div class="ps-3">
-                            <label class="sub-label">a. Kepada Pasien</label>
-                            <select class="form-select form-select-sm" name="risiko_pasien"><option value=""></option><option value="Monitoring">Monitoring Ketat</option></select>
-                            <label class="sub-label">b. Kepada Petugas</label>
-                            <select class="form-select form-select-sm" name="risiko_petugas"><option value=""></option><option value="Pelatihan">Pelatihan</option></select>
-                            <label class="sub-label">c. Untuk Fasyankes / Lingkungan</label>
-                            <select class="form-select form-select-sm" name="risiko_lingkungan"><option value=""></option><option value="Maintenance">Maintenance Alat</option></select>
-                            <label class="sub-label">d. Faktor yang mempengaruhi</label>
-                            <select class="form-select form-select-sm" name="risiko_faktor"><option value=""></option><option value="Revisi Anggaran">Revisi Anggaran</option></select>
+                        <label class="form-label mt-3 text-success"><i class="fas fa-shield-virus me-1"></i> 14. Tindakan untuk mengurangi risiko (Bisa pilih > 1)</label>
+                        <div class="ps-3 border-start border-3 border-success ms-1 mb-3">
+                            
+                            <label class="sub-label text-dark mt-0">a. Kepada Pasien</label>
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                                <div class="form-check"><input class="form-check-input chk-risiko-pasien" type="checkbox" value="Pemberian pelayanan optimal" id="rk_p1"><label class="form-check-label" for="rk_p1">Pemberian pelayanan optimal</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-pasien" type="checkbox" value="Pemberian edukasi / pelatihan" id="rk_p2"><label class="form-check-label" for="rk_p2">Pemberian edukasi / pelatihan</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-pasien" type="checkbox" value="Membuat SOP untuk mendukung pasien" id="rk_p3"><label class="form-check-label" for="rk_p3">Membuat SOP untuk mendukung pasien</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-pasien" type="checkbox" value="Membuat pemantauan alat Kesehatan" id="rk_p4"><label class="form-check-label" for="rk_p4">Membuat pemantauan alat Kesehatan</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-pasien" type="checkbox" value="Menyediakan sarana prasarana dalam penyediaan obat di farmasi" id="rk_p5"><label class="form-check-label" for="rk_p5">Menyediakan sarana prasarana penyediaan obat di farmasi</label></div>
+                            </div>
+                            <input type="hidden" name="risiko_pasien" id="hidden_risiko_pasien">
+
+                            <label class="sub-label text-dark">b. Kepada Petugas</label>
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                                <div class="form-check"><input class="form-check-input chk-risiko-petugas" type="checkbox" value="Orientasi" id="rk_pt1"><label class="form-check-label" for="rk_pt1">Orientasi</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-petugas" type="checkbox" value="Pelatihan" id="rk_pt2"><label class="form-check-label" for="rk_pt2">Pelatihan</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-petugas" type="checkbox" value="Supervisi" id="rk_pt3"><label class="form-check-label" for="rk_pt3">Supervisi</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-petugas" type="checkbox" value="Pengaturan beban kerja" id="rk_pt4"><label class="form-check-label" for="rk_pt4">Pengaturan beban kerja</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-petugas" type="checkbox" value="Ketersediaan Regulasi : Kebijakan, SOP dan Daftar Periksa" id="rk_pt5"><label class="form-check-label" for="rk_pt5">Ketersediaan Regulasi : Kebijakan, SOP dan Daftar Periksa</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-petugas" type="checkbox" value="Jumlah petugas yang berkualitas memadai" id="rk_pt6"><label class="form-check-label" for="rk_pt6">Jumlah petugas yang berkualitas memadai</label></div>
+                            </div>
+                            <input type="hidden" name="risiko_petugas" id="hidden_risiko_petugas">
+
+                            <label class="sub-label text-dark">c. Untuk Fasyankes / Lingkungan</label>
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                                <div class="form-check"><input class="form-check-input chk-risiko-ling" type="checkbox" value="Menyesuaikan lingkungan fisik dengan kebutuhan fasyankes" id="rk_f1"><label class="form-check-label" for="rk_f1">Menyesuaikan lingkungan fisik dengan kebutuhan fasyankes</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-ling" type="checkbox" value="Pengaturan akses ke pelayanan" id="rk_f2"><label class="form-check-label" for="rk_f2">Pengaturan akses ke pelayanan</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-ling" type="checkbox" value="Melakukan RCA (root cause analysis)" id="rk_f3"><label class="form-check-label" for="rk_f3">Melakukan RCA (root cause analysis)</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-ling" type="checkbox" value="Pemenuhan kode / spesifikasi / peraturan saat Ini" id="rk_f4"><label class="form-check-label" for="rk_f4">Pemenuhan kode / spesifikasi / peraturan saat Ini</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-ling" type="checkbox" value="Pengaturan akses kepada regulasi : Kebijakan, SPO" id="rk_f5"><label class="form-check-label" for="rk_f5">Pengaturan akses kepada regulasi : Kebijakan, SPO</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-ling" type="checkbox" value="Meningkatkan kepemimpinan / Petunjuk" id="rk_f6"><label class="form-check-label" for="rk_f6">Meningkatkan kepemimpinan / Petunjuk</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-ling" type="checkbox" value="Kesesuaian petugas dengan tugas dan kompetensinya" id="rk_f7"><label class="form-check-label" for="rk_f7">Kesesuaian petugas dengan tugas dan kompetensinya</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-ling" type="checkbox" value="Meningkatkan budaya keselamatan" id="rk_f8"><label class="form-check-label" for="rk_f8">Meningkatkan budaya keselamatan</label></div>
+                            </div>
+                            <input type="hidden" name="risiko_lingkungan" id="hidden_risiko_lingkungan">
+
+                            <label class="sub-label text-dark">d. Faktor yang mempengaruhi</label>
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                                <div class="form-check"><input class="form-check-input chk-risiko-faktor" type="checkbox" value="Ketersediaan sarana prasarana" id="rk_fl1"><label class="form-check-label" for="rk_fl1">Ketersediaan sarana prasarana</label></div>
+                                <div class="form-check"><input class="form-check-input chk-risiko-faktor" type="checkbox" value="Pemantauan" id="rk_fl2"><label class="form-check-label" for="rk_fl2">Pemantauan</label></div>
+                            </div>
+                            <input type="hidden" name="risiko_faktor" id="hidden_risiko_faktor">
+
                         </div>
 
                         <label class="form-label">15. Pembelajaran</label>
@@ -130,9 +270,11 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             // PASTIKAN URL INI ADALAH URL TERBARU ANDA
-            const scriptURL = "https://script.google.com/macros/s/AKfycbw6HOnDbRYJ4pXDTWBkTwFwIH8-q3JBeUf5y3l8okxQtEJ_uVUDjPRY3wMLc92Y3pyU/exec";
+            const scriptURL = "https://script.google.com/macros/s/AKfycbwpBwmFGTKTKOElHOtK3C_ISOhfKxnFgePqhKu3b2beAT7Qxwnyr8BER54BG3-J3qiJ/exec";
             
-            // Ambil data insiden dari localStorage
+            // =========================================================================
+            // 1. AMBIL DATA DARI MEMORI TERLEBIH DAHULU
+            // =========================================================================
             const analisisDataStr = localStorage.getItem('analisisDataIKP');
             if (!analisisDataStr) {
                 alert("Data tidak ditemukan. Kembali ke halaman daftar.");
@@ -143,24 +285,301 @@
             const data = JSON.parse(analisisDataStr);
             const targetId = data.Timestamp;
 
-            // Setel label header
             document.getElementById('lblInsiden').innerText = data['Insiden'] || '-';
             document.getElementById('lblTanggal').innerText = data['Tgl & Waktu insiden'] ? new Date(data['Tgl & Waktu insiden']).toLocaleString('id-ID') : '-';
 
-            // FUNGSI AUTO-FILL Jika data sudah pernah diisi sebelumnya
-            // (Mencocokkan nama input dengan Header di Spreadsheet)
-            const fieldMapping = {
-                'tipe_insiden': 'Tipe & Sub Tipe Insiden', 'tipe_harm': 'Tipe Harm', 'masalah_cmp': 'Masalah CMP',
-                'masalah_sdp': 'Masalah SDP', 'penyebab_langsung': 'Penyebab Langsung', 'akar_masalah': 'Akar Masalah',
-                'root_cause_select': 'Root Cause (Pilihan)', 'orang_terlibat': 'Orang Terlibat', 'proses_pelayanan': 'Proses/Fase Pelayanan',
-                'faktor_kontributor': 'Faktor Kontributor', 'mitigasi_pasien': 'Mitigasi Pasien', 'mitigasi_fasyankes': 'Mitigasi Fasyankes',
-                'mitigasi_faktor': 'Mitigasi Faktor Terkait', 'cara_mendeteksi': 'Cara Mendeteksi', 'dampak_fasyankes': 'Dampak Fasyankes',
-                'rekomendasi': 'Rekomendasi', 'tindakan_dilakukan': 'Tindakan Akan Dilakukan', 'perbaikan_pasien': 'Perbaikan Kepada Pasien',
-                'perbaikan_fasyankes': 'Perbaikan Kepada Fasyankes', 'risiko_pasien': 'Risiko Kepada Pasien', 'risiko_petugas': 'Risiko Kepada Petugas',
-                'risiko_lingkungan': 'Risiko Untuk Lingkungan', 'risiko_faktor': 'Risiko Faktor Mempengaruhi', 'pembelajaran': 'Pembelajaran',
-                'safety_alert': 'Safety Alert'
+            // =========================================================================
+            // 2. KAMUS DATA
+            // =========================================================================
+            const taksonomiInsiden = {
+                "1. ADMINISTRASI KLINIK": {
+                    "a. Proses": ["Serah terima", "Perjanjian", "Daftar tunggu / Antrian", "Rujukan / Konsultasi", "Admisi", "Keluar/Pulang dari Ranap/RS", "Pindah Perawatan (Transfer of care)", "Identifikasi Pasien", "Consent", "Pembagian tugas", "Respons terhadap kegawatdaruratan"],
+                    "b. Masalah": ["Tidak performed ketika dibutuhkan/indikasi", "Tidak lengkap / Inadekuat", "Tidak tersedia", "Salah pasien", "Salah proses / pelayanan"]
+                },
+                "2. PROSES / PROSEDUR KLINIS": {
+                    "a. Proses": ["Skrining / Pencegahan / Medical check up", "Diagnosis / Assessment", "Prosedur / Pengobatan / Intervensi", "General care / Management", "Test / Investigasi", "Spesimen / Hasil", "Belum dipulangkan (Detention/Restraint)"],
+                    "b. Masalah": ["Tidak performance ketika dibutuhkan/ indikasi", "Tidak lengkap / Inadekuat", "Tidak tersedia", "Salah pasien", "Salah proses / pengobatan / prosedur", "Salah bagian tubuh / sisi"]
+                },
+                "3. DOKUMENTASI": {
+                    "a. Dokumen Terkait": ["Order / Permintaan", "Chart / Rekam medik / Assessment/ Konsultasi", "Check list", "Form / sertifikat", "Instruksi / Informasi / Kebijakan / SPO /Guideline", "Label / Stiker / Identifikasi Bands / Kartu", "Surat / E-mail / Rekaman Komunikasi", "Laporan / Hasil / Images"],
+                    "b. Masalah": ["Dokumen hilang / tidak tersedia", "Terlambat mengakses dokumen", "Salah dokumen / Salah orang", "Tidak jelas / Membingungkan /Illegible"]
+                },
+                "4. INFEKSI NOSOKOMIAL (HAI)": {
+                    "a. Tipe organisme": ["Bakteri", "Virus", "Jamur", "Parasit", "Protozoa", "Rickettsia", "Prion (Partikel protein yang infeksius)", "Organisme tidak teridentifikasi"],
+                    "b. Tipe / Bagian infeksi": ["Bloodstream", "Bagian yang dioperasi", "Abses", "Pneumonia", "Kanul IV", "Protesis infeksi", "Drain/ tube urin", "Jaringan lunak"]
+                },
+                "5. MEDIKASI/ CAIRAN INFUS": {
+                    "a. Medikasi/Cairan terkait": ["Daftar Medikasi", "Daftar Cairan infus"],
+                    "b. Proses penggunaan": ["Peresepan", "Persiapan / Dispensing", "Pemaketan", "Pengantaran", "Pemberian", "Supply / pesan", "Penyimpanan", "Monitoring"],
+                    "c. Masalah": ["Salah pasien", "Salah obat", "Salah dosis / kekuatan / frekuensi", "Salah formulasi / presentasi", "Salah rute pemberian", "Salah jumlah / kuantitas", "Salah Dispensing Label / Instruksi", "Kontraindikasi", "Salah penyimpanan", "Ommited medicine or dose", "Obat kadaluarsa", "Adverse drug"]
+                },
+                "6. TRANSFUSI DARAH / PRODUK DARAH": {
+                    "a. Produk terkait": ["Produk selular", "Faktor pembekuan (clothing)", "Albumin / Plasma protein", "Imunoglobulin"],
+                    "b. Proses Transfusi": ["Tes pre transfusi", "Peresepan", "Persiapan / Dispensing", "Pengantaran", "Pemberian", "Penyimpanan", "Monitoring", "Presentasi / Pemaketan", "Suply / Pesan"],
+                    "c. Masalah": ["Salah pasien", "Salah Darah / Produk darah", "Salah dosis / Frekuensi", "Salah jumlah", "Salah label dispensing / Instruksi", "Kontraindikasi", "Salah penyimpanan", "Obat atau Dosis yang diabaikan", "Darah kadaluarsa", "Efek samping (Adverse effect)"]
+                },
+                "7. NUTRISI": {
+                    "a. Nutrisi terkait": ["Nutrisi umum", "Nutrisi khusus"],
+                    "b. Proses nutrisi": ["Peresepan / Permintaan", "Pesiapan / Manufaktur / memasak", "Supply / order", "Penyajian", "Dispensing / Alokasi", "Pengantaran", "Pemberian", "Penyimpanan"],
+                    "c. Masalah": ["Salah pasien", "Salah diet", "Salah jumlah", "Salah Frekuensi", "Salah konsistensi"]
+                },
+                "8. OKSIGEN / GAS": {
+                    "a. Oksigen / Gas terkait": ["Daftar oksigen /gas terkait"],
+                    "b. Proses penggunaan": ["Label silinder / warna kode / Index pin", "Peresepan", "Pemberian", "Pengantaran", "Suply / order"],
+                    "c. Masalah": ["Salah pasien", "Salah gas", "Salah rate / flow/ konsentrasi", "Salah mode pengantaran", "Kontraindikasi", "Salah penyimpanan", "Gagal pemberian", "Kontaminasi"]
+                },
+                "9. ALAT MEDIS / ALAT KESEHATAN": {
+                    "a. Tipe Alat / Equipment": ["Daftar Alat medis / Alat kesehatan / Equipment property"],
+                    "b. Masalah": ["Presentasi / Pemaketan tidak baik", "Ketidaktersediaan", "Inapropiate for task", "Tidak bersih / Tidak steril", "Kegagalan / Malfungsi"]
+                },
+                "10. PASIEN": {
+                    "a. Perilaku pasien": ["Tidak kooperatif", "Tidak pantas / Sikap bermusuhan / Kasar", "Berisiko/ Sembrono / Berbahaya", "Masalah dengan penggunaan substansi / Abuse", "Menggangu (Harrassment)", "Diskriminasitif / Berprasangka", "Berkeliaran, Melarikan diri.", "Sengaja mencederai diri, Bunuh diri."],
+                    "b. Agresi / Assault": ["Agresi verbal", "Kekerasan fisik", "Ancaman nyawa"]
+                },
+                "11. JATUH": {
+                    "a. Tipe Jatuh": ["Tersandung", "Slip", "Kolaps", "Hilang keseimbangan"],
+                    "b. Keterlibatan saat jatuh": ["Velbed", "Tempat tidur", "Kursi", "Strecher", "Toilet", "Peralatan terapi", "Tangga", "Dibawa/dibantu oleh orang lain"]
+                },
+                "12. KECELAKAAN": {
+                    "a. Benturan tumpul": ["Kontak dengan benda/binatang", "Kontak dengan orang", "Hancur, remuk"],
+                    "b. Serangan tajam/ tusukan": ["Cakaran", "Sayatan", "Tusukan", "Gigitan", "Sengatan"],
+                    "c. Kejadian mekanik lain": ["Benturan akibat ledakan bom", "Kontak dengan mesin"],
+                    "d. Mekanisme Panas": ["Panas yg berlebihan, dingin yg berlebihan"],
+                    "e. Ancaman pernafasan": ["Ancaman mekanik pernafasan, tenggelam atau hampir tenggelam, pembatasan oksigen - kekurangan tempat"],
+                    "g. Paparan bahan kimia": ["Keracunan bahan kimia atau substansi lain", "Bahan kimia korosif"],
+                    "h. Mekanisme spesifik lain": ["Paparan listrik/radiasi", "Paparan suara/ getaran"]
+                },
+                "13. INFRASTRUKTUR / BANGUNAN": {
+                    "a. Keterlibatan Struktur": ["Daftar struktur", "Daftar Bangunan", "Daftar Furniture"],
+                    "b. Masalah": ["Inadekuat", "Damaged/Faulty/Worn"]
+                },
+                "14. RESOURCE / MANAJEMEN ORGANISASI": {
+                    "a. Beban kerja manajemen": ["Ketersediaan/ keadekuatan tempat tidur/ pelayanan", "Sumber Daya Manusia", "Ketersediaan/ keadekuatan staf", "Organisasi/ Tim"],
+                    "b. Protocols/ SOP Guideline": ["Tidak Ada SOP", "SOP Inadekuat/Tidak Jelas", "SOP Tidak Dipatuhi"],
+                    "c. Ketersediaan / Adequacy": ["Inadekuat", "Tidak Tersedia"]
+                },
+                "15. LABORATORIUM / PATOLOGI": {
+                    "a. Proses Lab": ["Pengambilan/ Pick up", "Transport", "Sorting", "Data entry", "Prosesing", "Verifikasi / Validasi Hasil"]
+                }
             };
 
+            const taksonomiRootCause = {
+                "1. Faktor Komunikasi": ["a. Gangguan Komunikasi antara dan di antara staf, tim, dan PPA", "b. Gangguan komunikasi saat serah terima atau transisi perawatan", "c. Gangguan Bahasa atau literasi", "d. Ketidaktersediaan informasi", "e. Salah tafsir informasi", "f. Salah menyajikan informasi", "g. Lain-lain"],
+                "2. Faktor Lingkungan": ["a. Kebisingan, pencahayaan yang kurang, kondisi lantai dsb", "b. Ketersediaan ruang, desain, Lokasi penyimpanan", "c. Pemeliharaan, tata graha", "d. Lain-lain"],
+                "3. Faktor teknologi informasi peralatan / perangkat / persediaan": ["a. Masalah ketersediaan peralatan, perangkat, atau persediaan", "b. Masalah teknologi informasi (tampilan/interoperabilitas)", "c. Ketersediaan informasi", "d. Malfungsi informasi, kesalahan pemilihan, gangguan koneksi", "e. Tidak ada instruksi pelabelan", "f. Alarm dimatikan, dinonaktifkan, diganti", "g. Lain-lain"],
+                "4. Faktor tugas/ proses": ["a. Kurangnya proses redundansi, interupsi atau kurangnya dukungan Keputusan", "b. Kurangnya recovery Ketika terjadi kesalahan", "c. Alur kerja tidak efisien / kompleks", "d. Lain-lain"],
+                "5. Faktor Kinerja/ performance staf": ["a. Kelelahan, kurang perhatian, gangguan konsentrasi atau beban kerja berlebih", "b. Pengetahuan / kompetensi staf yang kurang", "c. Tindakan kriminal atau kesengajaan, tindakan yang tidak aman", "d. Lain-lain"],
+                "6. Faktor Tim": ["a. Speak up, perilaku mengganggu, lack of shared mental model", "b. Kurangnya pemberdayaan (empowerment)", "c. Gagal melibatkan pasien", "d. Lain-lain"],
+                "7. Faktor manajemen / pengawasan / tenaga kerja": ["a. Perilaku yang mengganggu / mengintimidasi", "b. Pelatihan staf", "c. Aturan/ kebijakan / prosedur yang sesuai atau kekurangannya", "d. Kegagalan menyediakan staf / memperbaiki masalah yang terjadi", "e. Kegagalan untuk memberikan informasi yang diperlukan", "f. Lain-lain"],
+                "8. Budaya organisasi / kepemimpinan": ["a. Kegagalan organisasi untuk memperbaiki masalah / memberikan sumber daya", "b. Iklim tempat kerja / budaya organisasi", "c. Komitmen pimpinan terhadap keselamatan pasien"]
+            };
+
+            const taksonomiOrangTerlibat = {
+                "1. Tenaga medis": ["a. Dokter", "b. Dokter gigi"],
+                "2. Tenaga Kesehatan": ["a. Tenaga Psikologi klinis", "b. Tenaga keperawatan", "c. Tenaga Kebidanan", "d. Tenaga kefarmasian", "e. Tenaga Kesehatan masyarakat", "f. Tenaga Kesehatan lingkungan", "g. Tenaga gizi", "h. Tenaga keterapian fisik", "i. Tenaga ketehnisan medis", "j. Tenaga Kesehatan tradisional"],
+                "3. Tenaga Kesehatan lain": [], "4. Pasien lain": [], "5. Pengunjung": [], "6. Keluarga/ penunggu pasien": [], "7. Pasien sendiri": [], "8. Peserta didik/ mahasiswa": [], "9. Lain-lain": []
+            };
+
+            const templateStafPasien = {
+                "a. Faktor Kognitif": {
+                    "Persepsi/ Pemahaman": null,
+                    "Berdasarkan Pengetahuan/ Pemecahan Masalah": {
+                        "Kegagalan Menganalisis / bertindak berdasarkan informasi yang tersedia": null, "Masalah dengan Kausalitas/Penyebab": null, "Masalah dengan kompleksitas": null
+                    }
+                },
+                "b. Faktor Kinerja/ Performance": {
+                    "Kesalahan Teknis dalam Penatalaksanaan (Berdasarkan fisik dan keterampilan)": { "Kesalahan : Slips (konsentrasi pecah)/ Lapses (lupa)": null },
+                    "Kesalahan Teknis dalam Penatalaksanaan (Berdasarkan aturan/ prosedur)": { "Kesalahan penerapan aturan/ prosedur": null, "Aturan/ prosedur tidak sesuai": null },
+                    "Melakukan Pemilihan/ Seleksi": null,
+                    "Bias (Cenderung berasumsi/ Opini tanpa data / fakta)": { "Bias review (berasumsi/ beropini tanpa review)": null, "Bias Konfirmasi (Berasumsi/ beropini tanpa konfirmasi)": null }
+                },
+                "c. Tingkah laku": {
+                    "Masalah perhatian": { "Gangguan konsentrasi": null, "Ketidak pedulian": null, "Perhatian berlebihan": null, "Hilang konsentrasi": null },
+                    "Kelelahan/ Keletihan": null, "Terlalu Percaya diri": null, "Ketidakpatuhan": null, "Pelanggaran dilakukan secara rutin": null, "Perilaku beresiko": null
+                },
+                "d. Faktor Komunikasi": {
+                    "Metode Komunikasi": { "Lisan": null, "Tertulis": null, "elektronik": null }, "Perbedaan Bahasa": null, "Awan tentang Kesehatan (health literacy)": null, "Dengan siapa": { "Dengan staf": null, "Dengan Pasien": null }
+                },
+                "e. Faktor terkait : Faktor patologis/ penyakit pasien": { "Klasifikasi penyakit (ICD IX/ ICD X)": null, "Masalah penyalahgunaan": null },
+                "f. Faktor Emosi": null, "g. Faktor Sosial": null
+            };
+
+            const taksonomiFaktorKontributor = {
+                "1. Faktor Eksternal": { "a. Lingkungan Alam": null, "b. Produk Teknologi Infrastruktur": null, "c. Pelayanan, Sistem, kebijakan": null },
+                "2. Faktor Fasyankes": { "a. Kebijakan, Prosedur, Protokol, Proses": null, "b. Keputusan Organisasi, Budaya organisasi": null, "c. Kerjasama Tim": null, "d. Sumber Daya/ Beban kerja": null },
+                "3. Faktor Staf": templateStafPasien,
+                "4. Faktor Pasien": templateStafPasien,
+                "5. Faktor Lingkungan": { "a. Lingkungan Fisik/ Infrastruktur": null, "b. Lokasi yang jauh dari fasilitas pelayanan/ Remote area": null, "c. Asesmen resiko lingkungan/ evaluasi keselamatan lingkungan": null, "d. Regulasi/ kode yang digunakan saat ini": null }
+            };
+
+            // =========================================================================
+            // 3. INISIALISASI TAMPILAN ANTARMUKA (SANGAT PENTING DILAKUKAN DI AWAL)
+            // =========================================================================
+            
+            // Tipe Insiden
+            const selectUtama = document.getElementById('ui_tipe_insiden');
+            const containerSub = document.getElementById('subTipeContainer');
+            for (let kategori in taksonomiInsiden) { selectUtama.add(new Option(kategori, kategori)); }
+            selectUtama.addEventListener('change', function() {
+                const pilihan = this.value; containerSub.innerHTML = '';
+                if (pilihan && taksonomiInsiden[pilihan]) {
+                    containerSub.style.display = 'block';
+                    for (let subKategori in taksonomiInsiden[pilihan]) {
+                        let htmlSub = `<label class="sub-label text-dark">${subKategori}</label>
+                                       <select class="form-select form-select-sm ui-subtipe mb-2" data-label="${subKategori}"><option value="">-- Pilih Spesifikasi --</option>`;
+                        taksonomiInsiden[pilihan][subKategori].forEach(item => { htmlSub += `<option value="${item}">${item}</option>`; });
+                        htmlSub += `</select>`; containerSub.innerHTML += htmlSub;
+                    }
+                } else { containerSub.style.display = 'none'; }
+            });
+
+            // Root Cause
+            const selectRcUtama = document.getElementById('ui_rc_utama');
+            const containerRcSub = document.getElementById('rcSubContainer');
+            const selectRcSub = document.getElementById('ui_rc_sub');
+            for (let kategori in taksonomiRootCause) { selectRcUtama.add(new Option(kategori, kategori)); }
+            selectRcUtama.addEventListener('change', function() {
+                const pilihan = this.value; selectRcSub.innerHTML = '<option value="">-- Pilih Rincian --</option>';
+                if (pilihan && taksonomiRootCause[pilihan]) {
+                    containerRcSub.style.display = 'block';
+                    taksonomiRootCause[pilihan].forEach(item => { selectRcSub.add(new Option(item, item)); });
+                } else { containerRcSub.style.display = 'none'; }
+            });
+
+            // Orang Terlibat
+            const selectOtUtama = document.getElementById('ui_ot_utama');
+            const containerOtSub = document.getElementById('otSubContainer');
+            const selectOtSub = document.getElementById('ui_ot_sub');
+            for (let kategori in taksonomiOrangTerlibat) { selectOtUtama.add(new Option(kategori, kategori)); }
+            selectOtUtama.addEventListener('change', function() {
+                const pilihan = this.value; selectOtSub.innerHTML = '<option value="">-- Pilih Profesi/Rincian --</option>';
+                if (pilihan && taksonomiOrangTerlibat[pilihan] && taksonomiOrangTerlibat[pilihan].length > 0) {
+                    containerOtSub.style.display = 'block'; 
+                    taksonomiOrangTerlibat[pilihan].forEach(item => { selectOtSub.add(new Option(item, item)); });
+                } else { containerOtSub.style.display = 'none'; }
+            });
+
+            // Pohon Checkbox Faktor Kontributor
+            function buildCheckboxTree(obj, path = "", isRoot = true) {
+                let html = isRoot ? '<ul class="list-unstyled mb-0">' : '<ul class="list-unstyled ms-4 border-start ps-3 mb-1 mt-1">';
+                for (let key in obj) {
+                    let currentPath = path ? `${path} > ${key}` : key;
+                    let id = "chk_" + Math.random().toString(36).substr(2, 9);
+                    let isLeaf = (obj[key] === null);
+                    let textClass = isRoot ? "fw-bold text-success" : "text-dark";
+                    html += `<li class="mb-1">`;
+                    if (isLeaf) {
+                        html += `<div class="form-check"><input class="form-check-input chk-faktor" type="checkbox" value="${currentPath}" id="${id}">
+                                 <label class="form-check-label ${textClass}" for="${id}" style="font-size: 0.85rem;">${key}</label></div>`;
+                    } else {
+                        html += `<div class="fw-bold text-secondary mt-2 mb-1" style="font-size: 0.85rem; border-bottom: 1px dashed #ccc;">${key}</div>`;
+                        html += buildCheckboxTree(obj[key], currentPath, false);
+                    }
+                    html += `</li>`;
+                }
+                html += '</ul>'; return html;
+            }
+            document.getElementById('tree_faktor_kontributor').innerHTML = buildCheckboxTree(taksonomiFaktorKontributor);
+            
+            function updateFaktorPreview() {
+                let checkedItems = [];
+                document.querySelectorAll('.chk-faktor:checked').forEach(cb => { checkedItems.push(`• ${cb.value}`); });
+                let hasilGabungan = checkedItems.join('\n');
+                document.getElementById('ui_faktor_preview').value = hasilGabungan;
+                document.getElementById('hidden_faktor_kontributor').value = hasilGabungan;
+            }
+            document.querySelectorAll('.chk-faktor').forEach(cb => { cb.addEventListener('change', updateFaktorPreview); });
+
+            // =========================================================================
+            // 4. AUTO-FILL DATA LAMA (MODE EDIT)
+            // =========================================================================
+            
+            if (data['Tipe & Sub Tipe Insiden']) {
+                let savedString = data['Tipe & Sub Tipe Insiden']; let parts = savedString.split(' | '); let mainCat = parts[0];
+                if (taksonomiInsiden[mainCat]) {
+                    selectUtama.value = mainCat; selectUtama.dispatchEvent(new Event('change')); 
+                    setTimeout(() => {
+                        parts.slice(1).forEach(part => {
+                            let splitPart = part.split(': ');
+                            if(splitPart.length === 2) {
+                                let targetSelect = document.querySelector(`.ui-subtipe[data-label="${splitPart[0]}"]`);
+                                if(targetSelect) targetSelect.value = splitPart[1];
+                            }
+                        });
+                    }, 100); 
+                } else { document.getElementById('hidden_tipe_insiden').value = savedString; }
+            }
+
+            if (data['Tipe Harm']) {
+                let savedHarm = data['Tipe Harm'];
+                if (savedHarm.includes(' | Kausa: ')) {
+                    let partsHarm = savedHarm.replace('Akibat: ', '').split(' | Kausa: ');
+                    document.getElementById('ui_akibat_harm').value = partsHarm[0] || '';
+                    document.getElementById('ui_kausa_harm').value = partsHarm[1] || '';
+                } else { document.getElementById('ui_akibat_harm').value = savedHarm; }
+            }
+
+            if (data['Root Cause (Pilihan)']) {
+                let savedRC = data['Root Cause (Pilihan)'];
+                if (savedRC.includes(' | ')) {
+                    let partsRC = savedRC.split(' | '); let rcUtama = partsRC[0]; let rcSub = partsRC[1];
+                    if (taksonomiRootCause[rcUtama]) {
+                        selectRcUtama.value = rcUtama; selectRcUtama.dispatchEvent(new Event('change'));
+                        setTimeout(() => { selectRcSub.value = rcSub; }, 100);
+                    }
+                } else { document.getElementById('hidden_root_cause').value = savedRC; }
+            }
+
+            if (data['Orang Terlibat']) {
+                let savedOT = data['Orang Terlibat'];
+                if (savedOT.includes(' | ')) {
+                    let partsOT = savedOT.split(' | '); let otUtama = partsOT[0]; let otSub = partsOT[1];
+                    if (taksonomiOrangTerlibat[otUtama]) {
+                        selectOtUtama.value = otUtama; selectOtUtama.dispatchEvent(new Event('change'));
+                        setTimeout(() => { selectOtSub.value = otSub; }, 100);
+                    }
+                } else {
+                    if (taksonomiOrangTerlibat[savedOT]) { selectOtUtama.value = savedOT; selectOtUtama.dispatchEvent(new Event('change'));
+                    } else { document.getElementById('hidden_orang_terlibat').value = savedOT; }
+                }
+            }
+
+            if (data['Faktor Kontributor']) {
+                let savedFaktor = data['Faktor Kontributor'];
+                let savedArray = savedFaktor.split('\n').map(item => item.replace('• ', ''));
+                let isMatchFound = false;
+                document.querySelectorAll('.chk-faktor').forEach(cb => {
+                    if (savedArray.includes(cb.value)) { cb.checked = true; isMatchFound = true; }
+                });
+                if (isMatchFound) { updateFaktorPreview(); } 
+                else { document.getElementById('ui_faktor_preview').value = savedFaktor; document.getElementById('hidden_faktor_kontributor').value = savedFaktor; }
+            }
+
+            // Fungsi Pembacaan Multi-Checkbox Bawah
+            const isiSemuaCheckboxKustom = (dbValue, selectorClass) => {
+                if (!dbValue) return;
+                let arrValue = dbValue.split(', ').map(s => s.trim());
+                document.querySelectorAll(selectorClass).forEach(cb => {
+                    if (arrValue.includes(cb.value)) cb.checked = true;
+                });
+            };
+            
+            isiSemuaCheckboxKustom(data['Mitigasi Pasien'], '.chk-mitigasi-pasien');
+            isiSemuaCheckboxKustom(data['Mitigasi Fasyankes'], '.chk-mitigasi-fasyankes');
+            isiSemuaCheckboxKustom(data['Mitigasi Faktor Terkait'], '.chk-mitigasi-faktor');
+            isiSemuaCheckboxKustom(data['Dampak Fasyankes'], '.chk-dampak');
+            isiSemuaCheckboxKustom(data['Perbaikan Kepada Pasien'], '.chk-perbaikan-pasien'); 
+            isiSemuaCheckboxKustom(data['Perbaikan Kepada Fasyankes'], '.chk-perbaikan-fasy');
+            isiSemuaCheckboxKustom(data['Risiko Kepada Pasien'], '.chk-risiko-pasien'); 
+            isiSemuaCheckboxKustom(data['Risiko Kepada Petugas'], '.chk-risiko-petugas'); 
+            isiSemuaCheckboxKustom(data['Risiko Untuk Lingkungan'], '.chk-risiko-ling'); 
+            isiSemuaCheckboxKustom(data['Risiko Faktor Mempengaruhi'], '.chk-risiko-faktor');
+
+            const fieldMapping = {
+                'masalah_cmp': 'Masalah CMP', 'masalah_sdp': 'Masalah SDP', 'penyebab_langsung': 'Penyebab Langsung', 'akar_masalah': 'Akar Masalah',
+                'proses_pelayanan': 'Proses/Fase Pelayanan', 'cara_mendeteksi': 'Cara Mendeteksi', 'rekomendasi': 'Rekomendasi', 'tindakan_dilakukan': 'Tindakan Akan Dilakukan', 
+                'pembelajaran': 'Pembelajaran', 'safety_alert': 'Safety Alert'
+            };
             for (const [inputName, sheetHeader] of Object.entries(fieldMapping)) {
                 if (data[sheetHeader]) {
                     const el = document.querySelector(`[name="${inputName}"]`);
@@ -168,42 +587,94 @@
                 }
             }
 
+            // =========================================================================
+            // 5. PROSES PENGIRIMAN DATA (SUBMIT)
+            // =========================================================================
             const form = document.getElementById("formAnalisis");
             const submitBtn = document.getElementById("btnSimpanAnalisis");
 
             form.addEventListener("submit", function (e) {
                 e.preventDefault();
-                submitBtn.innerHTML = "Menyimpan...";
-                submitBtn.disabled = true;
 
-                const formData = new FormData(form);
-                const inputData = Object.fromEntries(formData.entries());
+                let combinedType = selectUtama.value;
+                if (combinedType) {
+                    document.querySelectorAll('.ui-subtipe').forEach(sel => { if (sel.value) combinedType += ` | ${sel.dataset.label}: ${sel.value}`; });
+                }
+                document.getElementById('hidden_tipe_insiden').value = combinedType;
+
+                let akibatVal = document.getElementById('ui_akibat_harm').value.trim();
+                let kausaVal = document.getElementById('ui_kausa_harm').value.trim();
+                document.getElementById('hidden_tipe_harm').value = (akibatVal || kausaVal) ? `Akibat: ${akibatVal} | Kausa: ${kausaVal}` : "";
+
+                let rcUtamaVal = selectRcUtama.value; let rcSubVal = selectRcSub.value;
+                document.getElementById('hidden_root_cause').value = rcUtamaVal ? (rcSubVal ? `${rcUtamaVal} | ${rcSubVal}` : rcUtamaVal) : "";
+                
+                let otUtamaVal = selectOtUtama.value; let otSubVal = selectOtSub.value;
+                document.getElementById('hidden_orang_terlibat').value = otUtamaVal ? (otSubVal ? `${otUtamaVal} | ${otSubVal}` : otUtamaVal) : "";
+
+                const gabungkanCheckboxPilihan = (selectorClass) => {
+                    let selected = [];
+                    document.querySelectorAll(selectorClass + ':checked').forEach(cb => selected.push(cb.value));
+                    return selected.join(', ');
+                };
+                
+                document.getElementById('hidden_mitigasi_pasien').value = gabungkanCheckboxPilihan('.chk-mitigasi-pasien');
+                document.getElementById('hidden_mitigasi_fasyankes').value = gabungkanCheckboxPilihan('.chk-mitigasi-fasyankes');
+                document.getElementById('hidden_mitigasi_faktor').value = gabungkanCheckboxPilihan('.chk-mitigasi-faktor');
+                document.getElementById('hidden_dampak_fasyankes').value = gabungkanCheckboxPilihan('.chk-dampak');
+                document.getElementById('hidden_perbaikan_pasien').value = gabungkanCheckboxPilihan('.chk-perbaikan-pasien');
+                document.getElementById('hidden_perbaikan_fasyankes').value = gabungkanCheckboxPilihan('.chk-perbaikan-fasy');
+                document.getElementById('hidden_risiko_pasien').value = gabungkanCheckboxPilihan('.chk-risiko-pasien');
+                document.getElementById('hidden_risiko_petugas').value = gabungkanCheckboxPilihan('.chk-risiko-petugas');
+                document.getElementById('hidden_risiko_lingkungan').value = gabungkanCheckboxPilihan('.chk-risiko-ling');
+                document.getElementById('hidden_risiko_faktor').value = gabungkanCheckboxPilihan('.chk-risiko-faktor');
+                
+                submitBtn.innerHTML = "Menyimpan..."; submitBtn.disabled = true;
+
+                // Menyusun urutan data secara paksa berdasarkan atribut 'name' agar tidak bergeser
+                const inputData = {
+                    "tipe_insiden": document.getElementById('hidden_tipe_insiden').value,
+                    "tipe_harm": document.getElementById('hidden_tipe_harm').value,
+                    "masalah_cmp": form.querySelector('[name="masalah_cmp"]').value,
+                    "masalah_sdp": form.querySelector('[name="masalah_sdp"]').value,
+                    "penyebab_langsung": form.querySelector('[name="penyebab_langsung"]').value,
+                    "akar_masalah": form.querySelector('[name="akar_masalah"]').value,
+                    "root_cause_select": document.getElementById('hidden_root_cause').value,
+                    "orang_terlibat": document.getElementById('hidden_orang_terlibat').value,
+                    "proses_pelayanan": form.querySelector('[name="proses_pelayanan"]').value,
+                    "faktor_kontributor": document.getElementById('hidden_faktor_kontributor').value,
+                    "mitigasi_pasien": document.getElementById('hidden_mitigasi_pasien').value,
+                    "mitigasi_fasyankes": document.getElementById('hidden_mitigasi_fasyankes').value,
+                    "mitigasi_faktor": document.getElementById('hidden_mitigasi_faktor').value,
+                    "cara_mendeteksi": form.querySelector('[name="cara_mendeteksi"]').value,
+                    "dampak_fasyankes": document.getElementById('hidden_dampak_fasyankes').value,
+                    "rekomendasi": form.querySelector('[name="rekomendasi"]').value,
+                    "tindakan_dilakukan": form.querySelector('[name="tindakan_dilakukan"]').value,
+                    "perbaikan_pasien": document.getElementById('hidden_perbaikan_pasien').value,
+                    "perbaikan_fasyankes": document.getElementById('hidden_perbaikan_fasyankes').value,
+                    "risiko_pasien": document.getElementById('hidden_risiko_pasien').value,
+                    "risiko_petugas": document.getElementById('hidden_risiko_petugas').value,
+                    "risiko_lingkungan": document.getElementById('hidden_risiko_lingkungan').value,
+                    "risiko_faktor": document.getElementById('hidden_risiko_faktor').value,
+                    "pembelajaran": form.querySelector('[name="pembelajaran"]').value,
+                    "safety_alert": form.querySelector('[name="safety_alert"]').value
+                };
 
                 const payload = {
-                    action: 'update',
-                    id: targetId,
+                    action: 'update', 
+                    id: targetId, 
                     data: inputData
                 };
 
-                fetch(scriptURL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify(payload),
-                })
+                fetch(scriptURL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) })
                 .then(res => res.json())
                 .then(result => {
                     if (result.status === "success") {
-                        alert("Data Hasil Investigasi dan Analisa berhasil disimpan!");
-                        window.location.href = 'daftar_insiden.html';
-                    } else {
-                        alert("Terjadi kesalahan: " + result.message);
-                    }
+                        alert("Data Hasil Investigasi dan Analisa berhasil disimpan!"); window.location.href = 'daftar_insiden.html';
+                    } else { alert("Terjadi kesalahan: " + result.message); }
                 })
                 .catch(err => alert("Gagal terhubung ke server."))
-                .finally(() => {
-                    submitBtn.innerHTML = "SIMPAN";
-                    submitBtn.disabled = false;
-                });
+                .finally(() => { submitBtn.innerHTML = "SIMPAN"; submitBtn.disabled = false; });
             });
         });
     </script>
