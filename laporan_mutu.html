@@ -88,12 +88,17 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbwcFY6V-0JAUuOv79xyImDdw9-7jISWasq9UD6efGe_Odqqm5qyfUrjPkfsFa4omw2T/exec";
+    const scriptURL = "https://script.google.com/macros/s/AKfycbwcFY6V-0JAUuOv79xyImDdw9-7jISWasq9UD6efGe_Odqqm5qyfUrjPkfsFa4omw2T/exec";
         
         let rawData = [];
         let rawDataAnalisa = []; 
         let chartInstances = [];
         let activePeriodeTitle = "";
+
+        // Mengambil profil sesi pengguna dari penyimpanan browser
+        let sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        let userUnit = sessionMutu.unit || "";
+        let userRole = sessionMutu.role || "";
 
         const kamusWaktu = {
             'triwulan': { '1': ['Januari', 'Februari', 'Maret'], '2': ['April', 'Mei', 'Juni'], '3': ['Juli', 'Agustus', 'September'], '4': ['Oktober', 'November', 'Desember'] },
@@ -126,8 +131,12 @@
                     rawData = result.data; rawDataAnalisa = result.dataAnalisa || [];
                     document.getElementById('loadingMessage').style.display = 'none';
                     document.getElementById('chartCard').style.display = 'block';
-                    populateDropdowns(); renderDashboard();
+                    
+                    populateDropdowns(); 
+                    aturKunciUnitDanRender(); // Panggil fungsi pengunci unit yang baru
                 }
+            }).catch(err => {
+                document.getElementById('loadingMessage').innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-2"></i> Gagal memuat data dari server.';
             });
         });
 
@@ -141,9 +150,42 @@
             tahuns.forEach(thn => { tahunSelect.appendChild(new Option(thn, thn)); });
         }
 
+        // =====================================================================
+        // FUNGSI BARU: AUTO-LOCK UNIT SESUAI SESSION & LANGSUNG RENDER GRAFIK
+        // =====================================================================
+        function aturKunciUnitDanRender() {
+            const unitSelect = document.getElementById('filterUnit');
+            
+            if (userUnit && userUnit !== "Non-Unit" && userRole !== "Komite Mutu") {
+                // Pastikan unit user ada di dropdown, kalau tidak buat paksa
+                let optionExists = Array.from(unitSelect.options).some(opt => opt.value === userUnit);
+                if (!optionExists) {
+                    unitSelect.add(new Option(userUnit, userUnit));
+                }
+                
+                // Set nilai, lalu kunci (disable)
+                unitSelect.value = userUnit;
+                unitSelect.setAttribute("disabled", "true");
+                unitSelect.classList.add("bg-light", "text-muted");
+                
+                // Tambahkan pesan agar user tahu
+                let colParent = unitSelect.parentElement;
+                let info = document.createElement("small");
+                info.className = "text-success fw-bold d-block mt-1 d-print-none";
+                info.innerHTML = `<i class="fas fa-lock me-1"></i> Terkunci (Hak Akses Unit)`;
+                colParent.appendChild(info);
+            }
+
+            // Setelah dropdown diatur (dikunci atau dibiarkan bebas), langsung gambar grafiknya
+            renderDashboard();
+        }
+
         function renderDashboard() {
             const selectedTahun = document.getElementById('filterTahun').value;
-            const selectedUnit = document.getElementById('filterUnit').value;
+            // Penting: Jika dropdown unit disabled, .value mungkin tidak stabil di beberapa browser lama, 
+            // jadi kita ambil dari userUnit (session) jika dia bukan Komite Mutu.
+            const selectedUnit = (userRole !== "Komite Mutu" && userUnit) ? userUnit : document.getElementById('filterUnit').value;
+            
             const selectedTipe = document.getElementById('filterTipeLaporan').value;
             const selectedDetail = document.getElementById('filterDetailPeriode').value;
             const namaBulan = kamusWaktu[selectedTipe][selectedDetail];
@@ -261,6 +303,9 @@
             });
         }
 
+        // =========================================================
+        // BATAS FUNGSI BAWAAN YANG SAYA BIARKAN UTUH
+        // =========================================================
         window.toggleAnalisaMode = function() {
             const cont = document.querySelectorAll('.analisa-container');
             const foot = document.getElementById('analisaFooter');
@@ -292,7 +337,6 @@
                 canvas.parentNode.replaceChild(img, canvas);
             });
 
-            // PENYAMARAN TAG HTML AGAR TIDAK ERROR DI CMS / EDITOR
             const h1 = "<ht" + "ml xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><he" + "ad><meta charset='utf-8'><st" + "yle>";
             const h2 = "body { font-family: 'Segoe UI', Arial, sans-serif; } table { border-collapse: collapse; width: 100%; margin-bottom: 20px; } th, td { border: 1px solid #000; padding: 5px; font-size: 9pt; } th { background: #f2f2f2; font-weight: bold; } .text-center { text-align: center; } .status-tercapai { color: #198754; font-weight: bold; } .status-gagal { color: #dc3545; font-weight: bold; } .fw-bold { font-weight: bold; } h3, h5, h6 { text-align: center; } .d-print-none, .btn, textarea { display: none !important; }";
             const h3 = "</st" + "yle></he" + "ad><bo" + "dy>";
@@ -306,7 +350,8 @@
         };
 
         window.kirimAnalisaKeServer = function() {
-            const unit = document.getElementById('filterUnit').value;
+            // Karena dropdown unit bisa jadi disabled (jika staf unit), kita harus mengambil dari userUnit
+            const unit = (userRole !== "Komite Mutu" && userUnit) ? userUnit : document.getElementById('filterUnit').value;
             const kepala = document.getElementById('inputKepalaUnit').value;
             if (!kepala) return alert("Isi nama Kepala Unit!");
             

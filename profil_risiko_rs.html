@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profil Risiko Rumah Sakit</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 6px rgba(0,0,0,.05); border-radius: 8px; border-top: 4px solid #ffc107; background: #fff;}
+        
+        .table-custom { font-size: 0.8rem; }
+        .table-custom th { background-color: #2c3e50; color: white; vertical-align: middle; text-align: center; border: 1px solid #455a64; }
+        .table-custom td { vertical-align: middle; border: 1px solid #dee2e6; }
+        
+        .input-profil { font-size: 0.8rem; border-radius: 4px; border: 1px solid #ccc; width: 100%; padding: 6px; }
+        .input-profil:focus { border-color: #6f42c1; outline: none; box-shadow: 0 0 0 0.2rem rgba(111,66,193,.25); }
+
+        .bg-ekstrem { background-color: #dc3545 !important; color: white; font-weight: bold; } 
+        .bg-tinggi { background-color: #fd7e14 !important; color: white; font-weight: bold; } 
+
+        .status-select { font-weight: bold; cursor: pointer; }
+        .status-belum { background-color: #f8d7da; color: #842029; }
+        .status-proses { background-color: #fff3cd; color: #664d03; }
+        .status-selesai { background-color: #d1e7dd; color: #0f5132; }
+        .status-batal { background-color: #e2e3e5; color: #41464b; }
+
+        @media print {
+            body { background-color: #fff !important; padding-top: 0 !important; }
+            #navbar-container, #sidebar-container, .d-print-none, .btn { display: none !important; }
+            .card-custom { border: none !important; box-shadow: none !important; padding: 0 !important; }
+            .input-profil, .status-select { border: none !important; background: transparent !important; resize: none; overflow: hidden; -webkit-appearance: none; appearance: none;}
+            @page { margin: 1cm; size: landscape; }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4">
+        <div class="bg-white p-4 mb-4 card-custom">
+            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3 d-print-none">
+                <div>
+                    <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-crown text-warning me-2"></i> Profil Risiko Rumah Sakit (Korporat)</h4>
+                    <p class="text-muted mb-0">Rencana penanganan dan pemantauan risiko prioritas tingkat Rumah Sakit.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="dasbor_risiko.html" class="btn btn-outline-secondary fw-bold shadow-sm">
+                        <i class="fas fa-arrow-left me-1"></i> Kembali
+                    </a>
+                    <button class="btn btn-danger fw-bold shadow-sm" onclick="window.print()">
+                        <i class="fas fa-file-pdf me-1"></i> Cetak Dokumen
+                    </button>
+                    <button class="btn btn-success fw-bold shadow-sm" onclick="simpanProfilRS()">
+                        <i class="fas fa-save me-1"></i> Update Pemantauan
+                    </button>
+                </div>
+            </div>
+
+            <div class="d-none d-print-block text-center mb-4 pb-2 border-bottom border-dark border-3">
+                <h3 class="fw-bold mb-1">DASHBOARD SUPERVISI RISK REGISTER</h3>
+                <h4 class="text-uppercase mb-0">RUMAH SAKIT UMUM DAERAH (RSUD)</h4>
+            </div>
+
+            <div id="loadingMessage" class="alert alert-info text-center shadow-sm fw-bold d-print-none">
+                <i class="fas fa-spinner fa-spin me-2"></i> Sinkronisasi database pemantauan...
+            </div>
+
+            <div class="table-responsive" id="tabelContainer" style="display: none;">
+                <table class="table table-bordered table-hover table-custom mb-0">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" width="2%">No</th>
+                            <th rowspan="2" width="10%">Risiko Teridentifikasi</th>
+                            <th rowspan="2" width="3%">Frekuensi</th>
+                            <th rowspan="2" width="3%">Dampak</th>
+                            <th rowspan="2" width="3%">Skor (DxF)</th>
+                            <th rowspan="2" width="5%">Pemilik Risiko (Unit)</th>
+                            <th colspan="3">Strategi Pengurangan Risiko</th>
+                            <th colspan="6" class="bg-primary text-white">Pemantauan Terhadap Rencana Penanganan</th>
+                        </tr>
+                        <tr>
+                            <th width="10%">Penanganan Saat Ini</th>
+                            <th width="3%">Kontrol</th>
+                            <th width="3%">Skor Akhir</th>
+                            <th width="8%">Periode Program</th>
+                            <th width="8%">PIC Penanganan</th>
+                            <th width="10%">Realisasi</th>
+                            <th width="10%">Rencana Lanjutan</th>
+                            <th width="10%">Hasil Pemantauan</th>
+                            <th width="10%">Status Penanganan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelProfilBody">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // MASUKKAN URL WEB APP RISK REGISTER ANDA
+        const scriptURL = "https://script.google.com/macros/s/AKfycbzGMUFIYrzzLMkWwx7fysIX9xFaM4IvBT7sedc70nn-t8pMFHal0HYv2G6jF05QT6l2lA/exec";
+        
+        let dataTampilArray = [];
+
+        document.addEventListener("DOMContentLoaded", function () {
+            fetch(scriptURL)
+                .then(res => res.json())
+                .then(result => {
+                    document.getElementById('loadingMessage').style.display = 'none';
+                    if (result.status === 'success') {
+                        
+                        // 1. OLAH DATA UNIT (Mengambil Data Dasar Risiko)
+                        let dataUnitUnik = {};
+                        (result.data || []).forEach(row => {
+                            if (row['ID Risiko']) dataUnitUnik[row['ID Risiko']] = row;
+                        });
+
+                        // 2. OLAH DATA PROFIL RS (Mengambil Riwayat Pemantauan Komite Mutu)
+                        let dataProfilUnik = {};
+                        (result.data_profil || []).forEach(row => {
+                            if (row['ID Risiko']) dataProfilUnik[row['ID Risiko']] = row;
+                        });
+
+                        // 3. DAFTAR ID YANG AKAN DITAMPILKAN
+                        // Ambil dari LocalStorage (baru dicentang) + ID yang memang sudah pernah disimpan di Profil RS
+                        let idUntukDitampilkan = new Set(Object.keys(dataProfilUnik));
+                        
+                        const draftBaru = localStorage.getItem('draftProfilRS');
+                        if (draftBaru) {
+                            JSON.parse(draftBaru).forEach(id => idUntukDitampilkan.add(id));
+                            localStorage.removeItem('draftProfilRS'); // Hapus draft agar tidak dobel
+                        }
+
+                        if (idUntukDitampilkan.size === 0) {
+                            document.getElementById('tabelContainer').innerHTML = '<div class="alert alert-warning text-center fw-bold">Belum ada risiko yang dimasukkan ke Profil RS. Silakan kembali ke Dasbor dan centang risiko terlebih dahulu.</div>';
+                            document.getElementById('tabelContainer').style.display = 'block';
+                            return;
+                        }
+
+                        // 4. GABUNGKAN DATA DASAR DENGAN DATA PEMANTAUAN
+                        dataTampilArray = Array.from(idUntukDitampilkan).map(id => {
+                            let base = dataUnitUnik[id] || {};
+                            let pantauan = dataProfilUnik[id] || {}; // Jika belum pernah dipantau, ini kosong
+                            return { base: base, pantauan: pantauan, id: id };
+                        });
+
+                        // Urutkan dari Skor Akhir Tertinggi
+                        dataTampilArray.sort((a, b) => parseInt(b.base['Skor Akhir'] || 0) - parseInt(a.base['Skor Akhir'] || 0));
+
+                        document.getElementById('tabelContainer').style.display = 'block';
+                        renderTabelProfil();
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('loadingMessage').classList.replace('alert-info', 'alert-danger');
+                    document.getElementById('loadingMessage').innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i> Gagal menyambungkan ke database.';
+                });
+        });
+
+        function penentuWarnaSkor(skor) {
+            if (skor >= 15) return 'bg-ekstrem';  
+            if (skor >= 10) return 'bg-tinggi';   
+            return '';                   
+        }
+
+        function updateWarnaStatus(selectElement) {
+            selectElement.className = "form-select input-profil status-select"; // Reset
+            let val = selectElement.value;
+            if(val === "Belum Ditangani") selectElement.classList.add("status-belum");
+            else if(val === "On Proses") selectElement.classList.add("status-proses");
+            else if(val === "Selesai Ditangani") selectElement.classList.add("status-selesai");
+            else if(val === "Dibatalkan") selectElement.classList.add("status-batal");
+        }
+
+        function renderTabelProfil() {
+            const tbody = document.getElementById('tabelProfilBody');
+            tbody.innerHTML = '';
+
+            dataTampilArray.forEach((item, index) => {
+                let id = item.id;
+                let skorDxF = parseInt(item.base['Skor Risiko (DxF)'] || 0);
+                let warnaSR = penentuWarnaSkor(skorDxF);
+                
+                // Isi default jika sebelumnya sudah disimpan
+                let prevStatus = item.pantauan['Status Penanganan'] || 'Belum Ditangani';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="text-center fw-bold">${index + 1}</td>
+                        <td class="fw-bold text-dark">${item.base['Risiko Teridentifikasi'] || '-'}</td>
+                        <td class="text-center">${item.base['Frekuensi (F)'] || '-'}</td>
+                        <td class="text-center">${item.base['Dampak (D)'] || '-'}</td>
+                        <td class="text-center fw-bold ${warnaSR}">${skorDxF}</td>
+                        <td class="text-center fw-bold text-primary">${item.base['Unit Kerja'] || '-'}</td>
+                        
+                        <td><small>${item.base['Penanganan Saat Ini'] || '-'}</small></td>
+                        <td class="text-center">${item.base['Kontrol (K)'] || '-'}</td>
+                        <td class="text-center fw-bold bg-light">${item.base['Skor Akhir'] || '-'}</td>
+                        
+                        <td><textarea class="input-profil" id="periode_${id}" rows="2">${item.pantauan['Periode Program'] || ''}</textarea></td>
+                        <td><textarea class="input-profil" id="pic_${id}" rows="2">${item.pantauan['PIC Penanganan'] || ''}</textarea></td>
+                        <td><textarea class="input-profil" id="realisasi_${id}" rows="2">${item.pantauan['Realisasi'] || ''}</textarea></td>
+                        <td><textarea class="input-profil" id="lanjutan_${id}" rows="2">${item.pantauan['Rencana Pencegahan Lanjutan'] || ''}</textarea></td>
+                        <td><textarea class="input-profil" id="hasil_${id}" rows="2">${item.pantauan['Hasil Pemantauan'] || ''}</textarea></td>
+                        <td>
+                            <select class="form-select input-profil status-select" id="status_${id}" onchange="updateWarnaStatus(this)">
+                                <option value="Belum Ditangani" ${prevStatus === 'Belum Ditangani' ? 'selected' : ''}>Belum Ditangani</option>
+                                <option value="On Proses" ${prevStatus === 'On Proses' ? 'selected' : ''}>On Proses</option>
+                                <option value="Selesai Ditangani" ${prevStatus === 'Selesai Ditangani' ? 'selected' : ''}>Selesai Ditangani</option>
+                                <option value="Dibatalkan" ${prevStatus === 'Dibatalkan' ? 'selected' : ''}>Dibatalkan</option>
+                            </select>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // Trigger pewarnaan status awal
+            document.querySelectorAll('.status-select').forEach(select => updateWarnaStatus(select));
+        }
+
+        function simpanProfilRS() {
+            let finalDataUntukDisimpan = dataTampilArray.map(item => {
+                let id = item.id;
+                return {
+                    id_risiko: id,
+                    unit: item.base['Unit Kerja'],
+                    risiko: item.base['Risiko Teridentifikasi'],
+                    skor_akhir: item.base['Skor Akhir'],
+                    periode: document.getElementById(`periode_${id}`).value,
+                    pic: document.getElementById(`pic_${id}`).value,
+                    realisasi: document.getElementById(`realisasi_${id}`).value,
+                    lanjutan: document.getElementById(`lanjutan_${id}`).value,
+                    hasil: document.getElementById(`hasil_${id}`).value,
+                    status_penanganan: document.getElementById(`status_${id}`).value
+                };
+            });
+
+            const payload = {
+                action: "save_profil_rs",
+                data: finalDataUntukDisimpan
+            };
+
+            const btnSubmit = document.querySelector('.btn-success');
+            btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memperbarui...';
+            btnSubmit.disabled = true;
+
+            fetch(scriptURL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.status === 'success') {
+                    alert("Pembaruan Berhasil! Dasbor Profil Risiko RS telah tersimpan secara permanen.");
+                } else {
+                    alert("Sistem Gagal: " + res.message);
+                }
+            })
+            .catch(err => {
+                alert("Gagal terhubung ke server. Periksa koneksi internet Anda.");
+            })
+            .finally(() => {
+                btnSubmit.innerHTML = '<i class="fas fa-save me-1"></i> Update Pemantauan';
+                btnSubmit.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>

@@ -16,8 +16,8 @@ function loadNavigation() {
     // =========================================================================
     // 2. FRONTEND SECURITY GUARD (PENJAGA PINTU HALAMAN RAHASIA)
     // =========================================================================
-    // Menambahkan 'dasbor_budaya.html' ke dalam daftar halaman yang dikunci
-    const adminPages = ['daftar_insiden.html', 'analisis.html', 'daftar_kpc.html', 'analisis_kpc.html', 'rekapitulasi.html', 'dasbor_budaya.html'];
+    // Menambahkan Dasbor Supervisi & Profil Risiko RS ke daftar halaman terkunci
+    const adminPages = ['daftar_insiden.html', 'analisis.html', 'daftar_kpc.html', 'analisis_kpc.html', 'rekapitulasi.html', 'dasbor_budaya.html', 'dasbor_risiko.html', 'profil_risiko_rs.html'];
     
     // Jika user mencoba mengakses halaman admin tapi dia bukan Komite Mutu (atau belum login)
     if (adminPages.includes(page) && role !== "Komite Mutu") {
@@ -58,6 +58,20 @@ function loadNavigation() {
                 <i class="fas fa-chart-line me-3 text-secondary"></i> Peningkatan Mutu <i class="fas fa-lock float-end mt-1 text-danger" style="font-size: 0.8rem;"></i>
            </a>`;
 
+    // Menu Manajemen Risiko (Terkunci jika belum login)
+    let menuRisiko = isLoggedIn
+        ? `<a class="list-group-item list-group-item-action py-3 sidebar-link" data-bs-toggle="collapse" href="#collapseRisiko" role="button" aria-expanded="false">
+                <i class="fas fa-exclamation-triangle me-3 text-secondary"></i> Manajemen Risiko <i class="fas fa-chevron-down float-end mt-1" style="font-size: 0.8rem;"></i>
+           </a>
+           <div class="collapse" id="collapseRisiko">
+                <div class="list-group list-group-flush bg-light">
+                    <a href="risk_register.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-risk-register" style="font-size: 0.95rem;"><i class="fas fa-clipboard-check me-2"></i> Risk Register Unit</a>
+                </div>
+           </div>`
+        : `<a href="#" onclick="alert('Akses Terkunci! Silakan Login terlebih dahulu.'); window.location.href='login.html';" class="list-group-item list-group-item-action py-3 sidebar-link bg-light text-muted">
+                <i class="fas fa-exclamation-triangle me-3 text-secondary"></i> Manajemen Risiko <i class="fas fa-lock float-end mt-1 text-danger" style="font-size: 0.8rem;"></i>
+           </a>`;
+
     // Menu Panel Khusus Komite Mutu (Berdiri Sendiri)
     let menuRahasiaKomite = '';
     if (role === "Komite Mutu") {
@@ -70,8 +84,10 @@ function loadNavigation() {
                 <div class="list-group list-group-flush" style="background-color: #fff5f5;">
                     <a href="daftar_insiden.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-daftar-ikp" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-table me-2"></i> Daftar IKP</a>
                     <a href="daftar_kpc.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-daftar-kpc" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-list-alt me-2"></i> Daftar KPC</a>
-                    <a href="rekapitulasi.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-rekap" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-chart-pie me-2"></i> Rekapitulasi IKP dan KPC</a>
-                    <a href="dasbor_budaya.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-dasbor-budaya" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-spider me-2"></i> Dasbor Budaya Keselamatan</a>
+                    <a href="rekapitulasi.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-rekap" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-chart-pie me-2"></i> Rekapitulasi Insiden</a>
+                    <a href="dasbor_budaya.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-dasbor-budaya" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-spider me-2"></i> Analitik Budaya</a>
+                    <a href="dasbor_risiko.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-dasbor-risiko" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-satellite-dish me-2"></i> Supervisi Risiko RS</a>
+                    <a href="profil_risiko_rs.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-profil-risiko" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-crown me-2"></i> Profil Risiko RS</a>
                 </div>
             </div>
         `;
@@ -105,6 +121,8 @@ function loadNavigation() {
                 <a href="index.html" class="list-group-item list-group-item-action py-3 sidebar-link" id="menu-home"><i class="fas fa-home me-3 text-secondary"></i> Beranda Utama</a>
                 
                 ${menuMutu}
+
+                ${menuRisiko}
                 
                 <a class="list-group-item list-group-item-action py-3 sidebar-link" data-bs-toggle="collapse" href="#collapseKeselamatan" role="button" aria-expanded="false">
                     <i class="fas fa-user-shield me-3 text-secondary"></i> Keselamatan Pasien <i class="fas fa-chevron-down float-end mt-1" style="font-size: 0.8rem;"></i>
@@ -113,7 +131,7 @@ function loadNavigation() {
                     <div class="list-group list-group-flush bg-light">
                         <a href="ikp.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-ikp" style="font-size: 0.95rem;"><i class="fas fa-file-signature me-2"></i> Formulir IKP</a>
                         <a href="kpc.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-kpc" style="font-size: 0.95rem;"><i class="fas fa-exclamation-circle me-2"></i> Formulir KPC</a>
-                        <a href="survey_budaya.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-survey-budaya" style="font-size: 0.95rem;"><i class="fas fa-clipboard-list me-2"></i> Kuesioner Budaya (HSPSC)</a>
+                        <a href="survey_budaya.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-survey-budaya" style="font-size: 0.95rem;"><i class="fas fa-clipboard-list me-2"></i> Kuesioner Budaya</a>
                     </div>
                 </div>
 
@@ -138,6 +156,9 @@ function loadNavigation() {
     else if (page === 'laporan_mutu.html' || page === 'laporan_triwulan.html') { 
         document.getElementById('menu-laporan-triwulan')?.classList.add('active'); document.getElementById('collapseMutu')?.classList.add('show'); 
     } 
+    else if (page === 'risk_register.html') { 
+        document.getElementById('menu-risk-register')?.classList.add('active'); document.getElementById('collapseRisiko')?.classList.add('show'); 
+    } 
     else if (page === 'ikp.html') { 
         document.getElementById('menu-ikp')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); 
     } 
@@ -145,7 +166,7 @@ function loadNavigation() {
         document.getElementById('menu-kpc')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); 
     } 
     else if (page === 'survey_budaya.html') { 
-        document.getElementById('menu-survey-budaya')?.classList.add('active', 'fw-bold'); document.getElementById('collapseKeselamatan')?.classList.add('show'); 
+        document.getElementById('menu-survey-budaya')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); 
     }
     // Bagian Menu Panel Admin Mutu
     else if (page === 'daftar_insiden.html' || page === 'analisis.html') { 
@@ -159,6 +180,12 @@ function loadNavigation() {
     }
     else if (page === 'dasbor_budaya.html') { 
         document.getElementById('menu-dasbor-budaya')?.classList.add('active', 'fw-bold'); document.getElementById('collapseAdmin')?.classList.add('show'); 
+    }
+    else if (page === 'dasbor_risiko.html') { 
+        document.getElementById('menu-dasbor-risiko')?.classList.add('active', 'fw-bold'); document.getElementById('collapseAdmin')?.classList.add('show'); 
+    }
+    else if (page === 'profil_risiko_rs.html') { 
+        document.getElementById('menu-profil-risiko')?.classList.add('active', 'fw-bold'); document.getElementById('collapseAdmin')?.classList.add('show'); 
     }
 }
 

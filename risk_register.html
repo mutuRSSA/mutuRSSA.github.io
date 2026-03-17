@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Register Unit</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 6px rgba(0,0,0,.05); border-radius: 8px; border-top: 4px solid #dc3545; background: #fff;}
+        .table-custom th { background-color: #2c3e50; color: white; vertical-align: middle; text-align: center; font-size: 0.85rem; }
+        .table-custom td { vertical-align: middle; font-size: 0.85rem; }
+        
+        .bg-ekstrem { background-color: #dc3545 !important; color: white; font-weight: bold; } 
+        .bg-tinggi { background-color: #fd7e14 !important; color: white; font-weight: bold; } 
+        .bg-sedang { background-color: #ffc107 !important; color: black; font-weight: bold; } 
+        .bg-rendah { background-color: #198754 !important; color: white; font-weight: bold; } 
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4">
+        <div class="bg-white p-4 mb-4 card-custom">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-exclamation-triangle text-danger me-2"></i> Form Risk Register</h4>
+                    <p class="text-muted mb-0">Identifikasi, analisis, dan evaluasi risiko di lingkungan Rumah Sakit.</p>
+                </div>
+                <button class="btn btn-danger fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalRisiko" onclick="resetForm()">
+                    <i class="fas fa-plus me-2"></i> Tambah Risiko Baru
+                </button>
+            </div>
+
+            <div class="row bg-light p-3 mt-3 mb-2 rounded border align-items-center">
+                <div class="col-md-6 col-lg-4">
+                    <label class="form-label mb-1 fw-bold text-secondary">Filter / Unit Pelapor <span class="text-danger">*</span></label>
+                    <select id="pilihUnit" class="form-select border-danger fw-bold text-dark">
+                        <option value="">-- TAMPILKAN SEMUA UNIT --</option>
+                        <option value="Unit Rawat Inap">Unit Rawat Inap</option>
+                        <option value="Unit Gawat Darurat">Unit Gawat Darurat</option>
+                        <option value="Unit Kamar Operasi">Unit Kamar Operasi</option>
+                        <option value="Unit Rawat Jalan">Unit Rawat Jalan</option>
+                        <option value="Unit Rawat Intensif">Unit Rawat Intensif</option>
+                        <option value="Unit Kamar Bersalin">Unit Kamar bersalin</option>
+                        <option value="Unit Perinatologi">Unit Perinatologi</option>
+                        <option value="Unit Farmasi">Unit Farmasi</option>
+                        <option value="Unit Laboratorium">Unit Laboratorium</option>
+                        <option value="Unit Gizi">Unit Gizi</option>
+                        <option value="Unit Rekam Medis">Unit Rekam Medis</option>
+                        <option value="Unit Kesehatan Lingkungan dan Laundry">Unit Kesehatan Lingkungan dan Laundry</option>
+                        <option value="Unit Radiologi">Unit Radiologi</option>
+                        <option value="Unit Keamanan">Unit Keamanan</option>
+                        <option value="Unit Pemeliharaan Sarana Rumah Sakit">Unit Pemeliharaan Sarana Rumah Sakit</option>
+                        <option value="Unit Sterilisasi Terpusat">Unit Sterilisasi Terpusat</option>
+                        <option value="Unit Pemulasaraan Jenazah">Unit Pemulasaraan Jenazah</option>
+                        <option value="Unit Pengemudi">Unit Pengemudi</option>
+                        <option value="Tim Kerja Keuangan dan Aset">Tim Kerja Keuangan dan Aset</option>
+                        <option value="Tim Kerja Perencanaan, Evaluasi, Administrasi Umum dan kepegawaian">Tim Kerja Perencanaan, Evaluasi, Administrasi Umum dan kepegawaian</option>
+                        <option value="Tim kerja Pengadaan Barang dan Jasa">Tim kerja Pengadaan Barang dan Jasa</option>
+                        <option value="Tim kerja Promosi Kesehatan Rumah Sakit">Tim kerja Promosi Kesehatan Rumah Sakit</option>
+                        <option value="Tim kerja Penjaminan dan Verifikasi">Tim kerja Penjaminan dan Verifikasi</option>
+                        <option value="Unit Kasir">Unit Kasir</option>
+                        <option value="Unit Elektromedis">Unit Elektromedis</option>
+                    </select>
+                </div>
+                <div class="col-md-6 col-lg-8 text-md-end mt-2 mt-md-0" id="pesanUnit">
+                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Memuat hak akses...</small>
+                </div>
+            </div>
+
+            <div class="table-responsive mt-4">
+                <table class="table table-bordered table-hover table-custom">
+                    <thead>
+                        <tr>
+                            <th rowspan="2" width="3%">Rank</th>
+                            <th rowspan="2" width="8%">Unit</th> <th rowspan="2" width="15%">Risiko Teridentifikasi</th>
+                            <th rowspan="2" width="15%">Penyebab Risiko</th>
+                            <th colspan="2">Analisis Dasar</th>
+                            <th rowspan="2" width="10%">Dampak Yang Timbul</th>
+                            <th rowspan="2" width="12%">Penanganan Risiko</th>
+                            <th rowspan="2" width="5%">Skor (DxF)</th>
+                            <th rowspan="2" width="5%">Kontrol</th>
+                            <th rowspan="2" width="5%">Skor Akhir</th>
+                            <th rowspan="2" width="8%">Aksi</th>
+                        </tr>
+                        <tr>
+                            <th width="5%" style="background-color: #34495e;">Dampak</th>
+                            <th width="5%" style="background-color: #34495e;">Frekuensi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabelRisikoBody">
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-4 text-end">
+                <button class="btn btn-success fw-bold px-4" onclick="kirimKeServer()"><i class="fas fa-save me-2"></i> Simpan & Kirim ke Server</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalRisiko" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-edit me-2"></i> Input / Edit Risiko</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light">
+                    <form id="formRisiko">
+                        <input type="hidden" id="inputIdRisiko">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Risiko Teridentifikasi</label>
+                            <textarea class="form-control" id="inputRisiko" rows="2" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Penyebab Risiko</label>
+                            <textarea class="form-control" id="inputPenyebab" rows="2" required></textarea>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Skor Dampak (1-5)</label>
+                                <select class="form-select" id="inputDampak" onchange="hitungSkorLive()" required>
+                                    <option value="">Pilih...</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Skor Frekuensi (1-5)</label>
+                                <select class="form-select" id="inputFrekuensi" onchange="hitungSkorLive()" required>
+                                    <option value="">Pilih...</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Dampak Yang Timbul</label>
+                            <textarea class="form-control" id="inputDampakTimbul" rows="2" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Penanganan Saat Ini</label>
+                            <textarea class="form-control" id="inputPenanganan" rows="2" required></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Tingkat Kontrol (1-4)</label>
+                            <select class="form-select border-primary" id="inputKontrol" onchange="hitungSkorLive()" required>
+                                <option value="">Pilih...</option><option value="1">1 - Sulit</option><option value="2">2 - Agak Sulit</option><option value="3">3 - Agak Mudah</option><option value="4">4 - Mudah</option>
+                            </select>
+                        </div>
+                        <div class="alert alert-info text-center mt-3">
+                            <div class="row">
+                                <div class="col-6 border-end"><small class="fw-bold">SKOR RISIKO (DxF)</small><h3 class="mb-0 fw-bold" id="previewSkorRisiko">-</h3></div>
+                                <div class="col-6"><small class="fw-bold text-primary">SKOR AKHIR</small><h3 class="mb-0 fw-bold text-primary" id="previewSkorAkhir">-</h3></div>
+                            </div>
+                        </div>
+                        <div class="text-end mt-4">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                            <button type="button" class="btn btn-danger fw-bold px-4" onclick="simpanRisikoSementara()"><i class="fas fa-save me-2"></i> Simpan ke Tabel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // MASUKKAN URL WEB APP RISK REGISTER ANDA DI SINI
+        const scriptURL = "https://script.google.com/macros/s/AKfycbzGMUFIYrzzLMkWwx7fysIX9xFaM4IvBT7sedc70nn-t8pMFHal0HYv2G6jF05QT6l2lA/exec";
+
+        let daftarRisikoLokal = [];
+        let sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        let userUnit = sessionMutu.unit || "";
+        let userRole = sessionMutu.role || "";
+        let storageKey = 'draftRiskRegister_' + userUnit;
+
+        document.addEventListener("DOMContentLoaded", function() {
+            const dropdownUnit = document.getElementById('pilihUnit');
+            const pesanUnit = document.getElementById('pesanUnit');
+
+            if (dropdownUnit) {
+                // JIKA STAF UNIT YANG LOGIN
+                if (userUnit && userUnit !== "Non-Unit" && userRole !== "Komite Mutu") {
+                    let optionExists = Array.from(dropdownUnit.options).some(opt => opt.value === userUnit);
+                    if (!optionExists) dropdownUnit.add(new Option(userUnit, userUnit));
+                    
+                    dropdownUnit.value = userUnit;
+                    dropdownUnit.setAttribute("disabled", "true");
+                    dropdownUnit.classList.add("bg-light", "text-muted", "border-secondary");
+                    
+                    pesanUnit.innerHTML = `<span class="text-success fw-bold"><i class="fas fa-user-lock me-1"></i> Terkunci otomatis untuk Unit ${userUnit}</span>`;
+                } 
+                // JIKA KOMITE MUTU YANG LOGIN
+                else if (userRole === "Komite Mutu") {
+                    dropdownUnit.addEventListener('change', renderTabelRisiko);
+                    pesanUnit.innerHTML = `<span class="text-primary fw-bold"><i class="fas fa-filter me-1"></i> Mode Admin: Anda melihat semua data. Gunakan filter untuk memilih unit spesifik.</span>`;
+                }
+            }
+
+            tarikDataServer();
+        });
+
+        function tarikDataServer() {
+            const tbody = document.getElementById('tabelRisikoBody');
+            tbody.innerHTML = '<tr><td colspan="12" class="text-center py-5"><i class="fas fa-spinner fa-spin text-primary fs-3 mb-2 d-block"></i> Sinkronisasi riwayat risiko...</td></tr>';
+
+            fetch(scriptURL)
+            .then(res => res.json())
+            .then(result => {
+                if (result.status === 'success' && result.data && result.data.length > 0) {
+                    let dataServer = result.data;
+
+                    if (userRole !== "Komite Mutu" && userUnit !== "Non-Unit") {
+                        dataServer = dataServer.filter(row => row['Unit Kerja'] === userUnit);
+                    }
+
+                    let unikData = {};
+                    dataServer.forEach(row => {
+                        let id = row['ID Risiko'];
+                        if (id) unikData[id] = row;
+                    });
+
+                    daftarRisikoLokal = Object.values(unikData).map(row => ({
+                        id: row['ID Risiko'],
+                        unit: row['Unit Kerja'], 
+                        risiko: row['Risiko Teridentifikasi'],
+                        penyebab: row['Penyebab'],
+                        dampak: parseInt(row['Dampak (D)']),
+                        frekuensi: parseInt(row['Frekuensi (F)']),
+                        dampak_timbul: row['Dampak Timbul'],
+                        penanganan: row['Penanganan Saat Ini'],
+                        kontrol: parseInt(row['Kontrol (K)']),
+                        skor_risiko: parseInt(row['Skor Risiko (DxF)']),
+                        skor_akhir: parseInt(row['Skor Akhir']),
+                        status: 'terkirim'
+                    }));
+                }
+
+                let draftLokal = JSON.parse(localStorage.getItem(storageKey)) || [];
+                draftLokal.forEach(draft => {
+                    let idx = daftarRisikoLokal.findIndex(r => r.id === draft.id);
+                    if (idx >= 0) daftarRisikoLokal[idx] = draft;
+                    else daftarRisikoLokal.push(draft);
+                });
+
+                renderTabelRisiko();
+            })
+            .catch(err => {
+                console.error(err);
+                daftarRisikoLokal = JSON.parse(localStorage.getItem(storageKey)) || [];
+                renderTabelRisiko();
+            });
+        }
+
+        function hitungSkorLive() {
+            let d = parseInt(document.getElementById('inputDampak').value) || 0;
+            let f = parseInt(document.getElementById('inputFrekuensi').value) || 0;
+            let k = parseInt(document.getElementById('inputKontrol').value) || 0;
+            document.getElementById('previewSkorRisiko').innerText = (d * f) || '-';
+            document.getElementById('previewSkorAkhir').innerText = ((d * f) * k) || '-';
+        }
+
+        function penentuWarnaSkor(skor) {
+            if (skor >= 15) return 'bg-ekstrem';  
+            if (skor >= 10) return 'bg-tinggi';   
+            if (skor >= 4) return 'bg-sedang';    
+            return 'bg-rendah';                   
+        }
+
+        function resetForm() {
+            document.getElementById('formRisiko').reset();
+            document.getElementById('inputIdRisiko').value = '';
+            document.getElementById('previewSkorRisiko').innerText = '-';
+            document.getElementById('previewSkorAkhir').innerText = '-';
+        }
+
+        function simpanRisikoSementara() {
+            const form = document.getElementById('formRisiko');
+            if (!form.checkValidity()) { form.reportValidity(); return; }
+            
+            const dropdownUnit = document.getElementById('pilihUnit');
+            // Jika Admin, wajib pilih unit spesifik sebelum menambah data (tidak boleh kosong / "SEMUA UNIT")
+            if (userRole === "Komite Mutu" && dropdownUnit.value === "") {
+                alert("Mode Admin: Mohon pilih satu Unit Pelapor spesifik pada dropdown sebelum menyimpan risiko baru.");
+                dropdownUnit.focus();
+                return;
+            }
+
+            let idEdit = document.getElementById('inputIdRisiko').value;
+            let d = parseInt(document.getElementById('inputDampak').value);
+            let f = parseInt(document.getElementById('inputFrekuensi').value);
+            let k = parseInt(document.getElementById('inputKontrol').value);
+            
+            let dataBaru = {
+                id: idEdit ? idEdit : 'RSK-' + Date.now(),
+                unit: userRole === "Komite Mutu" ? dropdownUnit.value : userUnit, // Kunci identitas unit
+                risiko: document.getElementById('inputRisiko').value,
+                penyebab: document.getElementById('inputPenyebab').value,
+                dampak: d,
+                frekuensi: f,
+                dampak_timbul: document.getElementById('inputDampakTimbul').value,
+                penanganan: document.getElementById('inputPenanganan').value,
+                kontrol: k,
+                skor_risiko: d * f,
+                skor_akhir: (d * f) * k,
+                status: 'draft' 
+            };
+
+            if (idEdit) {
+                let index = daftarRisikoLokal.findIndex(r => r.id === idEdit);
+                daftarRisikoLokal[index] = dataBaru;
+            } else {
+                daftarRisikoLokal.push(dataBaru);
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('modalRisiko')).hide();
+            renderTabelRisiko();
+        }
+
+        function renderTabelRisiko() {
+            daftarRisikoLokal.sort((a, b) => b.skor_akhir - a.skor_akhir);
+
+            let hanyaDraft = daftarRisikoLokal.filter(r => r.status === 'draft');
+            localStorage.setItem(storageKey, JSON.stringify(hanyaDraft));
+
+            const tbody = document.getElementById('tabelRisikoBody');
+            tbody.innerHTML = '';
+
+            let dataTampil = daftarRisikoLokal;
+            const dropdownUnit = document.getElementById('pilihUnit');
+            
+            // Filter Khusus Komite Mutu jika memilih unit tertentu
+            if (userRole === "Komite Mutu" && dropdownUnit && dropdownUnit.value !== "") {
+                dataTampil = daftarRisikoLokal.filter(r => r.unit === dropdownUnit.value);
+            }
+
+            if (dataTampil.length === 0) {
+                let pesanKosong = userRole === "Komite Mutu" ? 'Tidak ada riwayat data untuk filter yang dipilih.' : 'Belum ada identifikasi risiko di unit Anda.';
+                tbody.innerHTML = `<tr><td colspan="12" class="text-center text-muted py-4">${pesanKosong}</td></tr>`;
+                return;
+            }
+
+            dataTampil.forEach((row, index) => {
+                let warnaSR = penentuWarnaSkor(row.skor_risiko);
+                let badgeStatus = row.status === 'terkirim' 
+                    ? '<span class="badge bg-success mt-2 d-block"><i class="fas fa-check-double"></i> Tersimpan</span>' 
+                    : '<span class="badge bg-warning text-dark mt-2 d-block"><i class="fas fa-hourglass-half"></i> Draft</span>';
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="text-center fw-bold fs-5">${index + 1}</td>
+                        <td class="text-center fw-bold text-primary">${row.unit || '-'}</td> <td>${row.risiko} ${badgeStatus}</td>
+                        <td>${row.penyebab}</td>
+                        <td class="text-center">${row.dampak}</td>
+                        <td class="text-center">${row.frekuensi}</td>
+                        <td>${row.dampak_timbul}</td>
+                        <td>${row.penanganan}</td>
+                        <td class="text-center fs-5 ${warnaSR}">${row.skor_risiko}</td>
+                        <td class="text-center fw-bold text-primary">${row.kontrol}</td>
+                        <td class="text-center fw-bold fs-5 text-dark" style="background-color: #e9ecef;">${row.skor_akhir}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-warning text-dark mb-1 w-100" onclick="editRisiko('${row.id}')"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="btn btn-sm btn-outline-danger w-100" onclick="hapusRisiko('${row.id}')"><i class="fas fa-trash"></i> Hapus</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function editRisiko(id) {
+            let row = daftarRisikoLokal.find(r => r.id === id);
+            if (!row) return;
+
+            document.getElementById('inputIdRisiko').value = row.id;
+            document.getElementById('inputRisiko').value = row.risiko;
+            document.getElementById('inputPenyebab').value = row.penyebab;
+            document.getElementById('inputDampak').value = row.dampak;
+            document.getElementById('inputFrekuensi').value = row.frekuensi;
+            document.getElementById('inputDampakTimbul').value = row.dampak_timbul;
+            document.getElementById('inputPenanganan').value = row.penanganan;
+            document.getElementById('inputKontrol').value = row.kontrol;
+            
+            // Jika Komite Mutu mengedit, paksa dropdown agar sama dengan unit asli data tersebut
+            const dropdownUnit = document.getElementById('pilihUnit');
+            if (userRole === "Komite Mutu") {
+                dropdownUnit.value = row.unit;
+            }
+
+            hitungSkorLive();
+            new bootstrap.Modal(document.getElementById('modalRisiko')).show();
+        }
+
+        function hapusRisiko(id) {
+            if(confirm("Yakin ingin menghapus risiko ini?")) {
+                daftarRisikoLokal = daftarRisikoLokal.filter(r => r.id !== id);
+                renderTabelRisiko();
+            }
+        }
+
+        function kirimKeServer() {
+            const dataDraft = daftarRisikoLokal.filter(r => r.status === 'draft');
+
+            if (dataDraft.length === 0) {
+                alert("Semua data risiko di tabel sudah terkirim. Tambahkan atau edit risiko baru jika ingin memperbarui data.");
+                return;
+            }
+
+            const btnSubmit = document.querySelector('.btn-success');
+            btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Mengirim Data...';
+            btnSubmit.disabled = true;
+
+            // Setiap baris data sudah punya "row.unit" masing-masing, jadi kita tidak menggunakan dropdown lagi untuk payload utama,
+            // melainkan memastikan setiap data draft membawa identitas unitnya sendiri.
+            let unitTerkirim = userRole === "Komite Mutu" ? "Pembaruan Admin" : userUnit;
+
+            const payload = {
+                action: "save_risk",
+                unit: unitTerkirim, // Label umum pengirim (data per baris tetap memakai r.unit di Backend jika backend disesuaikan, tapi sementara kita loop)
+                data: dataDraft 
+            };
+
+            fetch(scriptURL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.status === 'success') {
+                    alert(`Pembaruan Berhasil disimpan ke Server!`);
+                    daftarRisikoLokal.forEach(r => r.status = 'terkirim');
+                    localStorage.removeItem(storageKey); 
+                    renderTabelRisiko(); 
+                } else {
+                    alert("Sistem Gagal: " + res.message);
+                }
+            })
+            .catch(err => alert("Gagal terhubung ke server. Periksa koneksi internet Anda."))
+            .finally(() => {
+                btnSubmit.innerHTML = '<i class="fas fa-save me-2"></i> Simpan & Kirim ke Server';
+                btnSubmit.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>
