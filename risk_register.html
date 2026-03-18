@@ -16,6 +16,17 @@
         .bg-tinggi { background-color: #fd7e14 !important; color: white; font-weight: bold; } 
         .bg-sedang { background-color: #ffc107 !important; color: black; font-weight: bold; } 
         .bg-rendah { background-color: #198754 !important; color: white; font-weight: bold; } 
+
+        /* ================= CSS KHUSUS CETAK PDF ================= */
+        @media print {
+            body { background-color: #fff !important; padding-top: 0 !important; }
+            #navbar-container, #sidebar-container, .d-print-none, .btn { display: none !important; }
+            .card-custom { border: none !important; box-shadow: none !important; padding: 0 !important; margin-bottom: 0 !important; }
+            .table { font-size: 11px !important; }
+            .table th, .table td { padding: 4px !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            @page { margin: 1cm; size: landscape; }
+        }
     </style>
 </head>
 <body>
@@ -24,17 +35,23 @@
 
     <div class="container-fluid px-4">
         <div class="bg-white p-4 mb-4 card-custom">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            
+            <div class="d-flex justify-content-between align-items-center mb-3 d-print-none">
                 <div>
                     <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-exclamation-triangle text-danger me-2"></i> Form Risk Register</h4>
                     <p class="text-muted mb-0">Identifikasi, analisis, dan evaluasi risiko di lingkungan Rumah Sakit.</p>
                 </div>
-                <button class="btn btn-danger fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalRisiko" onclick="resetForm()">
-                    <i class="fas fa-plus me-2"></i> Tambah Risiko Baru
-                </button>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-secondary fw-bold shadow-sm" onclick="siapkanCetak()">
+                        <i class="fas fa-print me-2"></i> Cetak PDF
+                    </button>
+                    <button class="btn btn-danger fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalRisiko" onclick="resetForm()">
+                        <i class="fas fa-plus me-2"></i> Tambah Risiko Baru
+                    </button>
+                </div>
             </div>
 
-            <div class="row bg-light p-3 mt-3 mb-2 rounded border align-items-center">
+            <div class="row bg-light p-3 mt-3 mb-4 rounded border align-items-center d-print-none">
                 <div class="col-md-6 col-lg-4">
                     <label class="form-label mb-1 fw-bold text-secondary">Filter / Unit Pelapor <span class="text-danger">*</span></label>
                     <select id="pilihUnit" class="form-select border-danger fw-bold text-dark">
@@ -71,7 +88,13 @@
                 </div>
             </div>
 
-            <div class="table-responsive mt-4">
+            <div class="d-none d-print-block text-center mb-4 pb-2 border-bottom border-dark border-3">
+                <h3 class="fw-bold mb-1">RISK REGISTER</h3>
+                <h4 class="text-uppercase mb-1" id="printUnitTitle">UNIT XXX</h4>
+                <h5 class="mb-0">RSUD SARAS ADYATMA TAHUN <span id="printYearTitle">202X</span></h5>
+            </div>
+
+            <div class="table-responsive">
                 <table class="table table-bordered table-hover table-custom">
                     <thead>
                         <tr>
@@ -84,7 +107,7 @@
                             <th rowspan="2" width="5%">Skor (DxF)</th>
                             <th rowspan="2" width="5%">Kontrol</th>
                             <th rowspan="2" width="5%">Skor Akhir</th>
-                            <th rowspan="2" width="8%">Aksi</th>
+                            <th rowspan="2" width="8%" class="d-print-none">Aksi</th>
                         </tr>
                         <tr>
                             <th width="5%" style="background-color: #34495e;">Dampak</th>
@@ -96,7 +119,7 @@
                 </table>
             </div>
             
-            <div class="mt-4 text-end">
+            <div class="mt-4 text-end d-print-none">
                 <button class="btn btn-success fw-bold px-4" onclick="kirimKeServer()"><i class="fas fa-save me-2"></i> Simpan & Kirim ke Server</button>
             </div>
         </div>
@@ -183,7 +206,6 @@
             const pesanUnit = document.getElementById('pesanUnit');
 
             if (dropdownUnit) {
-                // JIKA STAF UNIT YANG LOGIN
                 if (userUnit && userUnit !== "Non-Unit" && userRole !== "Komite Mutu") {
                     let optionExists = Array.from(dropdownUnit.options).some(opt => opt.value === userUnit);
                     if (!optionExists) dropdownUnit.add(new Option(userUnit, userUnit));
@@ -194,7 +216,6 @@
                     
                     pesanUnit.innerHTML = `<span class="text-success fw-bold"><i class="fas fa-user-lock me-1"></i> Terkunci otomatis untuk Unit ${userUnit}</span>`;
                 } 
-                // JIKA KOMITE MUTU YANG LOGIN
                 else if (userRole === "Komite Mutu") {
                     dropdownUnit.addEventListener('change', renderTabelRisiko);
                     pesanUnit.innerHTML = `<span class="text-primary fw-bold"><i class="fas fa-filter me-1"></i> Mode Admin: Anda melihat semua data. Gunakan filter untuk memilih unit spesifik.</span>`;
@@ -203,6 +224,26 @@
 
             tarikDataServer();
         });
+
+        // FUNGSI BARU UNTUK MENCETAK
+        window.siapkanCetak = function() {
+            const dropdownUnit = document.getElementById('pilihUnit');
+            let unitCetak = "SELURUH UNIT";
+            
+            // Cek unit siapa yang akan dicetak
+            if (userRole === "Komite Mutu") {
+                unitCetak = dropdownUnit.value === "" ? "SELURUH UNIT" : dropdownUnit.value;
+            } else {
+                unitCetak = userUnit;
+            }
+            
+            // Set teks pada KOP Surat
+            document.getElementById('printUnitTitle').innerText = unitCetak.toUpperCase();
+            document.getElementById('printYearTitle').innerText = new Date().getFullYear(); // Ambil tahun saat ini
+            
+            // Panggil dialog print bawaan browser
+            window.print();
+        };
 
         function tarikDataServer() {
             const tbody = document.getElementById('tabelRisikoBody');
@@ -283,7 +324,6 @@
             if (!form.checkValidity()) { form.reportValidity(); return; }
             
             const dropdownUnit = document.getElementById('pilihUnit');
-            // Jika Admin, wajib pilih unit spesifik sebelum menambah data (tidak boleh kosong / "SEMUA UNIT")
             if (userRole === "Komite Mutu" && dropdownUnit.value === "") {
                 alert("Mode Admin: Mohon pilih satu Unit Pelapor spesifik pada dropdown sebelum menyimpan risiko baru.");
                 dropdownUnit.focus();
@@ -297,7 +337,7 @@
             
             let dataBaru = {
                 id: idEdit ? idEdit : 'RSK-' + Date.now(),
-                unit: userRole === "Komite Mutu" ? dropdownUnit.value : userUnit, // Kunci identitas unit
+                unit: userRole === "Komite Mutu" ? dropdownUnit.value : userUnit, 
                 risiko: document.getElementById('inputRisiko').value,
                 penyebab: document.getElementById('inputPenyebab').value,
                 dampak: d,
@@ -333,7 +373,6 @@
             let dataTampil = daftarRisikoLokal;
             const dropdownUnit = document.getElementById('pilihUnit');
             
-            // Filter Khusus Komite Mutu jika memilih unit tertentu
             if (userRole === "Komite Mutu" && dropdownUnit && dropdownUnit.value !== "") {
                 dataTampil = daftarRisikoLokal.filter(r => r.unit === dropdownUnit.value);
             }
@@ -346,14 +385,16 @@
 
             dataTampil.forEach((row, index) => {
                 let warnaSR = penentuWarnaSkor(row.skor_risiko);
+                // Badge status kita sembunyikan saat di-print (d-print-none) agar dokumen terlihat resmi
                 let badgeStatus = row.status === 'terkirim' 
-                    ? '<span class="badge bg-success mt-2 d-block"><i class="fas fa-check-double"></i> Tersimpan</span>' 
-                    : '<span class="badge bg-warning text-dark mt-2 d-block"><i class="fas fa-hourglass-half"></i> Draft</span>';
+                    ? '<span class="badge bg-success mt-2 d-block d-print-none"><i class="fas fa-check-double"></i> Tersimpan</span>' 
+                    : '<span class="badge bg-warning text-dark mt-2 d-block d-print-none"><i class="fas fa-hourglass-half"></i> Draft</span>';
 
                 tbody.innerHTML += `
                     <tr>
                         <td class="text-center fw-bold fs-5">${index + 1}</td>
-                        <td class="text-center fw-bold text-primary">${row.unit || '-'}</td> <td>${row.risiko} ${badgeStatus}</td>
+                        <td class="text-center fw-bold text-primary">${row.unit || '-'}</td> 
+                        <td>${row.risiko} ${badgeStatus}</td>
                         <td>${row.penyebab}</td>
                         <td class="text-center">${row.dampak}</td>
                         <td class="text-center">${row.frekuensi}</td>
@@ -362,7 +403,7 @@
                         <td class="text-center fs-5 ${warnaSR}">${row.skor_risiko}</td>
                         <td class="text-center fw-bold text-primary">${row.kontrol}</td>
                         <td class="text-center fw-bold fs-5 text-dark" style="background-color: #e9ecef;">${row.skor_akhir}</td>
-                        <td class="text-center">
+                        <td class="text-center d-print-none">
                             <button class="btn btn-sm btn-warning text-dark mb-1 w-100" onclick="editRisiko('${row.id}')"><i class="fas fa-edit"></i> Edit</button>
                             <button class="btn btn-sm btn-outline-danger w-100" onclick="hapusRisiko('${row.id}')"><i class="fas fa-trash"></i> Hapus</button>
                         </td>
@@ -384,7 +425,6 @@
             document.getElementById('inputPenanganan').value = row.penanganan;
             document.getElementById('inputKontrol').value = row.kontrol;
             
-            // Jika Komite Mutu mengedit, paksa dropdown agar sama dengan unit asli data tersebut
             const dropdownUnit = document.getElementById('pilihUnit');
             if (userRole === "Komite Mutu") {
                 dropdownUnit.value = row.unit;
@@ -413,13 +453,11 @@
             btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Mengirim Data...';
             btnSubmit.disabled = true;
 
-            // Setiap baris data sudah punya "row.unit" masing-masing, jadi kita tidak menggunakan dropdown lagi untuk payload utama,
-            // melainkan memastikan setiap data draft membawa identitas unitnya sendiri.
             let unitTerkirim = userRole === "Komite Mutu" ? "Pembaruan Admin" : userUnit;
 
             const payload = {
                 action: "save_risk",
-                unit: unitTerkirim, // Label umum pengirim (data per baris tetap memakai r.unit di Backend jika backend disesuaikan, tapi sementara kita loop)
+                unit: unitTerkirim,
                 data: dataDraft 
             };
 

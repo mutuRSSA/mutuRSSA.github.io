@@ -25,17 +25,20 @@
             .card-custom { border: none !important; box-shadow: none !important; padding: 0 !important; margin-bottom: 30px !important;}
             .card { border: none !important; box-shadow: none !important; page-break-inside: avoid; }
             .chart-container, .chart-container-small { page-break-inside: avoid; }
+            table { page-break-inside: avoid; }
             .row { display: flex; flex-wrap: wrap; }
             .col-md-6, .col-lg-5, .col-lg-7 { width: 50% !important; float: left; }
+            .col-md-4 { width: 33.33% !important; float: left; }
+            .col-md-8 { width: 66.66% !important; float: left; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             @page { margin: 1cm; size: landscape; }
+        }
 
-            /* Warna Navbar & Sidebar */
-        .bg-custom-dark { background-color: #6f42c1; } /* Bisa diganti #6f42c1 agar ungu */
+        /* Warna Navbar & Sidebar */
+        .bg-custom-dark { background-color: #2c3e50; } 
         .sidebar-link { color: #333; text-decoration: none; transition: 0.2s; }
         .sidebar-link:hover { background-color: #f1f8ff; }
         .sidebar-link.active { font-weight: bold; background-color: #e9ecef; border-left: 4px solid #6f42c1; color: #6f42c1; }
-        }
     </style>
 </head>
 <body>
@@ -49,7 +52,8 @@
                     <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-chart-pie text-purple me-2" style="color: #6f42c1;"></i> Analitik Budaya Keselamatan</h4>
                     <p class="text-muted mb-0">Dasbor komprehensif profil responden dan capaian 12 Dimensi Keselamatan Pasien.</p>
                 </div>
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 align-items-center">
+                    <h5 class="mb-0 text-secondary me-3 border-end pe-3">Total Responden: <span class="badge bg-success fs-5 ms-2" id="totalResponden"><i class="fas fa-spinner fa-spin"></i></span></h5>
                     <button class="btn btn-info fw-bold text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#modalResponden">
                         <i class="fas fa-users me-1"></i> Daftar Responden
                     </button>
@@ -59,15 +63,25 @@
                 </div>
             </div>
             
-            <div class="row bg-light p-3 rounded border align-items-center">
-                <div class="col-md-6 col-lg-4">
-                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;">Filter Berdasarkan Unit Kerja:</label>
-                    <select id="filterUnit" class="form-select border-info fw-bold text-dark" onchange="updateDashboard()">
+            <div class="row bg-light p-3 rounded border align-items-end mt-3">
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;">Unit Kerja:</label>
+                    <select id="filterUnit" class="form-select border-info fw-bold text-dark">
                         <option value="SEMUA">-- Tampilkan Semua Unit --</option>
                     </select>
                 </div>
-                <div class="col-md-6 col-lg-8 text-md-end mt-3 mt-md-0">
-                     <h5 class="mb-0 text-secondary">Total Responden: <span class="badge bg-success fs-5 ms-2" id="totalResponden"><i class="fas fa-spinner fa-spin"></i></span></h5>
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;">Mulai Tanggal:</label>
+                    <input type="date" id="filterStartDate" class="form-control border-info text-dark">
+                </div>
+                <div class="col-md-3 mb-3 mb-md-0">
+                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;">Sampai Tanggal:</label>
+                    <input type="date" id="filterEndDate" class="form-control border-info text-dark">
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-info fw-bold w-100 text-white shadow-sm" onclick="updateDashboard()">
+                        <i class="fas fa-filter me-2"></i> Terapkan Filter
+                    </button>
                 </div>
             </div>
         </div>
@@ -81,14 +95,15 @@
             <div class="d-none d-print-block text-center mb-4 pb-2 border-bottom border-dark border-3">
                 <h3 class="fw-bold mb-1">LAPORAN ANALISIS BUDAYA KESELAMATAN PASIEN</h3>
                 <h5 class="text-uppercase mb-0" id="printUnitTitle">SEMUA UNIT</h5>
+                <p class="mb-0 text-muted" id="printDateTitle"></p>
             </div>
 
-            <h5 class="section-title"><i class="fas fa-star text-warning me-2"></i> 1. Skor 12 Dimensi Budaya Keselamatan (% Respon Positif)</h5>
+            <h5 class="section-title"><i class="fas fa-star text-warning me-2"></i> 1. Skor Empat Puncak Budaya & 12 Dimensi</h5>
             
             <div class="row mb-4">
                 <div class="col-lg-5 mb-4">
                     <div class="card card-custom h-100 p-3 border-0">
-                        <h6 class="fw-bold text-center mb-3 text-dark">Keseimbangan Dimensi (Radar)</h6>
+                        <h6 class="fw-bold text-center mb-3 text-dark">Keseimbangan Budaya (Radar)</h6>
                         <div class="chart-container">
                             <canvas id="radarChart"></canvas>
                         </div>
@@ -97,7 +112,7 @@
                 
                 <div class="col-lg-7 mb-4">
                     <div class="card card-custom h-100 p-3 border-0">
-                        <h6 class="fw-bold text-center mb-3 text-dark">Peringkat Dimensi (Bar)</h6>
+                        <h6 class="fw-bold text-center mb-3 text-dark">Peringkat 12 Dimensi (Bar)</h6>
                         <div class="chart-container">
                             <canvas id="barChart"></canvas>
                         </div>
@@ -105,25 +120,26 @@
                 </div>
             </div>
 
-            <div class="row mb-5">
+            <div class="row mb-4">
                 <div class="col-md-6">
-                    <div class="card card-custom p-3 border-0" style="border-top-color: #198754;">
+                    <div class="card card-custom p-3 border-0 h-100" style="border-top-color: #198754;">
                         <h6 class="fw-bold text-success border-bottom pb-2"><i class="fas fa-arrow-up me-2"></i> 3 Dimensi Terkuat</h6>
                         <ul id="listTerkuat" class="text-muted mb-0 ps-3" style="font-size: 0.95rem;"></ul>
                     </div>
                 </div>
                 <div class="col-md-6 mt-3 mt-md-0">
-                    <div class="card card-custom p-3 border-0" style="border-top-color: #dc3545;">
+                    <div class="card card-custom p-3 border-0 h-100" style="border-top-color: #dc3545;">
                         <h6 class="fw-bold text-danger border-bottom pb-2"><i class="fas fa-arrow-down me-2"></i> 3 Dimensi Prioritas Perbaikan</h6>
                         <ul id="listTerlemah" class="text-muted mb-0 ps-3" style="font-size: 0.95rem;"></ul>
                     </div>
                 </div>
             </div>
 
+            <div id="tabelDimensiWrapper"></div>
+
             <h5 class="section-title"><i class="fas fa-users text-info me-2"></i> 2. Distribusi & Profil Responden</h5>
             
-            <div class="row" id="distributionContainer">
-                </div>
+            <div class="row" id="distributionContainer"></div>
 
         </div>
     </div>
@@ -146,7 +162,7 @@
                             </tr>
                         </thead>
                         <tbody id="tabelRespondenBody">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
             </div>
@@ -204,10 +220,7 @@
                         document.getElementById('loadingMessage').style.display = 'none';
                         document.getElementById('dashboardContent').style.display = 'block';
                         
-                        // Isi Dropdown Unit
                         populateUnitDropdown();
-                        
-                        // Eksekusi Render Pertama (Semua Data)
                         updateDashboard();
                     } else {
                         throw new Error("Belum ada data");
@@ -225,32 +238,50 @@
             units.forEach(unit => { unitSelect.appendChild(new Option(unit, unit)); });
         }
 
-        // FUNGSI UTAMA: TRIGGER SAAT FILTER BERUBAH ATAU LOAD PERTAMA
         window.updateDashboard = function() {
             const selectedUnit = document.getElementById('filterUnit').value;
+            const startDateStr = document.getElementById('filterStartDate').value;
+            const endDateStr = document.getElementById('filterEndDate').value;
             
-            // 1. Filter Data
-            if (selectedUnit === 'SEMUA') {
-                filteredData = rawData;
-                document.getElementById('printUnitTitle').innerText = "RATA-RATA SELURUH UNIT";
-                document.getElementById('modalUnitTitle').innerText = "Seluruh Unit";
-            } else {
-                filteredData = rawData.filter(row => row['unit_kerja'] === selectedUnit);
-                document.getElementById('printUnitTitle').innerText = "UNIT " + selectedUnit.toUpperCase();
-                document.getElementById('modalUnitTitle').innerText = selectedUnit;
-            }
+            const startDate = startDateStr ? new Date(startDateStr) : null;
+            const endDate = endDateStr ? new Date(endDateStr) : null;
 
-            // Update Angka
+            if (endDate) endDate.setHours(23, 59, 59, 999);
+
+            filteredData = rawData.filter(row => {
+                let isUnitMatch = (selectedUnit === 'SEMUA') || (row['unit_kerja'] === selectedUnit);
+                let isDateMatch = true;
+
+                if (row['Timestamp']) {
+                    let rowDate = new Date(row['Timestamp']);
+                    if (startDate) isDateMatch = isDateMatch && (rowDate >= startDate);
+                    if (endDate) isDateMatch = isDateMatch && (rowDate <= endDate);
+                }
+                return isUnitMatch && isDateMatch;
+            });
+
+            let titleText = selectedUnit === 'SEMUA' ? "RATA-RATA SELURUH UNIT" : "UNIT " + selectedUnit.toUpperCase();
+            document.getElementById('printUnitTitle').innerText = titleText;
+            document.getElementById('modalUnitTitle').innerText = selectedUnit === 'SEMUA' ? "Seluruh Unit" : selectedUnit;
+            
+            let dateText = "Semua Waktu";
+            if(startDateStr && endDateStr) dateText = `Periode: ${startDateStr} s.d ${endDateStr}`;
+            else if(startDateStr) dateText = `Mulai dari: ${startDateStr}`;
+            else if(endDateStr) dateText = `Sampai dengan: ${endDateStr}`;
+            document.getElementById('printDateTitle').innerText = dateText;
+
             document.getElementById('totalResponden').innerText = filteredData.length + " Orang";
 
-            // 2. HANCURKAN GRAFIK LAMA AGAR TIDAK BERTUMPUK (PENTING!)
             chartInstances.forEach(chart => chart.destroy());
             chartInstances = [];
-            document.getElementById('distributionContainer').innerHTML = ''; // Bersihkan container distribusi
+            document.getElementById('distributionContainer').innerHTML = ''; 
+            document.getElementById('tabelDimensiWrapper').innerHTML = ''; 
 
-            if(filteredData.length === 0) return; // Stop jika filter kosong
+            if(filteredData.length === 0) {
+                document.getElementById('tabelRespondenBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">Tidak ada data untuk filter yang dipilih.</td></tr>';
+                return;
+            }
 
-            // 3. Eksekusi Gambar Ulang
             olahDataDimensi(filteredData);
             olahDataDistribusi(filteredData);
             buildTabelResponden(filteredData);
@@ -260,6 +291,7 @@
             let skorProporsiItem = {};
             let semuaPertanyaan = Object.values(dimensiBudaya).flat();
 
+            // Hitung skor positif tiap pertanyaan
             semuaPertanyaan.forEach(soal => {
                 let responPositifCount = 0;
                 let totalResponValid = 0;
@@ -274,6 +306,7 @@
                 skorProporsiItem[soal] = totalResponValid > 0 ? (responPositifCount / totalResponValid) * 100 : 0;
             });
 
+            // Hitung Rata-Rata per Dimensi (12 Dimensi)
             let skorRataRataDimensi = {};
             for (let namaDimensi in dimensiBudaya) {
                 let daftarSoal = dimensiBudaya[namaDimensi];
@@ -282,9 +315,56 @@
                 skorRataRataDimensi[namaDimensi] = (totalPersentase / daftarSoal.length).toFixed(1);
             }
 
+            // =========================================================
+            // KALKULASI 4 PILAR KESEIMBANGAN BUDAYA
+            // =========================================================
+            const getSkorDimensi = (nama) => parseFloat(skorRataRataDimensi[nama]) || 0;
+
+            let budayaLapor = getSkorDimensi("Pelaporan Insiden");
+            let budayaAdil = getSkorDimensi("Respon Tdk Menghakimi");
+            let budayaFleksibel = ((
+                getSkorDimensi("Kerjasama Antar Unit") + 
+                getSkorDimensi("Kerjasama dalam Unit") + 
+                getSkorDimensi("Aspek Ketenagaan") + 
+                getSkorDimensi("Serah Terima Jaga") + 
+                getSkorDimensi("Keterbukaan Komunikasi")
+            ) / 5).toFixed(1);
+            let budayaBelajar = ((
+                getSkorDimensi("Organisasi Pembelajar") + 
+                getSkorDimensi("Umpan Balik Komunikasi") + 
+                getSkorDimensi("Dukungan Manajemen") + 
+                getSkorDimensi("Harapan Manajer")
+            ) / 4).toFixed(1);
+
+            const labelBudaya = ["Budaya Lapor", "Budaya Adil", "Budaya Fleksibel", "Budaya Belajar"];
+            const dataBudaya = [budayaLapor, budayaAdil, parseFloat(budayaFleksibel), parseFloat(budayaBelajar)];
+            let radarLabelsWithPercentage = labelBudaya.map((lbl, i) => `${lbl}\n(${dataBudaya[i]}%)`);
+
+            // RENDER RADAR CHART (4 KESEIMBANGAN BUDAYA)
+            const ctxRadar = document.getElementById('radarChart').getContext('2d');
+            chartInstances.push(new Chart(ctxRadar, {
+                type: 'radar',
+                data: {
+                    labels: radarLabelsWithPercentage,
+                    datasets: [{
+                        label: '% Capaian', data: dataBudaya,
+                        backgroundColor: 'rgba(111, 66, 193, 0.3)', borderColor: '#6f42c1',
+                        pointBackgroundColor: '#ffc107', borderWidth: 2, pointRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { r: { min: 0, max: 100, ticks: { stepSize: 20, callback: v => v + "%" }, pointLabels: { font: { size: 12, weight: 'bold' } } } },
+                    plugins: { legend: { display: false } }
+                }
+            }));
+
+
+            // =========================================================
+            // LANJUTAN PROSES 12 DIMENSI (BAR CHART & TABEL)
+            // =========================================================
             const labelDimensi = Object.keys(skorRataRataDimensi);
             const dataSkor = Object.values(skorRataRataDimensi);
-
             let sortedDimensi = labelDimensi.map((label, i) => ({ label, skor: parseFloat(dataSkor[i]) })).sort((a, b) => b.skor - a.skor); 
             
             const listTerkuat = document.getElementById('listTerkuat'); listTerkuat.innerHTML = '';
@@ -297,34 +377,41 @@
                 listTerlemah.innerHTML += `<li class="mb-2 d-flex justify-content-between"><span>${item.label}</span> <span class="badge bg-danger">${item.skor}%</span></li>`;
             });
 
-            // Render Radar Chart
-            const ctxRadar = document.getElementById('radarChart').getContext('2d');
-            chartInstances.push(new Chart(ctxRadar, {
-                type: 'radar',
-                data: {
-                    labels: labelDimensi,
-                    datasets: [{
-                        label: '% Positif', data: dataSkor,
-                        backgroundColor: 'rgba(111, 66, 193, 0.2)', borderColor: '#6f42c1',
-                        pointBackgroundColor: '#ffc107', borderWidth: 2,
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { r: { min: 0, max: 100, ticks: { stepSize: 20, callback: v => v + "%" }, pointLabels: { font: { size: 10 } } } },
-                    plugins: { legend: { display: false } }
-                }
-            }));
+            let tabelHtml = `
+            <div class="card card-custom p-4 mb-5 border-0 bg-white">
+                <h5 class="fw-bold text-center text-dark mb-3">Tabel Tabulasi Capaian 12 Dimensi</h5>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover table-striped mb-0" style="font-size: 0.95rem;">
+                        <thead class="table-dark text-center">
+                            <tr>
+                                <th width="10%">Peringkat</th>
+                                <th width="60%">Dimensi Budaya Keselamatan Pasien</th>
+                                <th width="30%">Nilai Capaian (% Positif)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            sortedDimensi.forEach((item, index) => {
+                let badgeClass = item.skor >= 75 ? 'bg-success' : (item.skor >= 50 ? 'bg-warning text-dark' : 'bg-danger');
+                tabelHtml += `
+                    <tr>
+                        <td class="text-center fw-bold">${index + 1}</td>
+                        <td class="fw-bold">${item.label}</td>
+                        <td class="text-center"><span class="badge ${badgeClass} fs-6" style="min-width: 60px;">${item.skor}%</span></td>
+                    </tr>
+                `;
+            });
+            tabelHtml += `</tbody></table></div></div>`;
+            document.getElementById('tabelDimensiWrapper').innerHTML = tabelHtml;
 
-            // Render Bar Chart 
-            let sortedLabels = sortedDimensi.map(item => item.label);
+            // Render Bar Chart (12 Dimensi)
+            let sortedLabelsWithPercentage = sortedDimensi.map(item => `${item.label} (${item.skor}%)`);
             let sortedData = sortedDimensi.map(item => item.skor);
             const ctxBar = document.getElementById('barChart').getContext('2d');
-            
             chartInstances.push(new Chart(ctxBar, {
                 type: 'bar',
                 data: {
-                    labels: sortedLabels,
+                    labels: sortedLabelsWithPercentage,
                     datasets: [{
                         label: '% Positif', data: sortedData,
                         backgroundColor: sortedData.map(val => val >= 75 ? 'rgba(25, 135, 84, 0.7)' : (val >= 50 ? 'rgba(255, 193, 7, 0.7)' : 'rgba(220, 53, 69, 0.7)')),
@@ -357,14 +444,30 @@
                 let dataCounts = Object.values(frekuensi);
                 if (labels.length === 0) return;
 
-                let colClass = pertanyaan.type === 'pie' ? 'col-md-4' : 'col-md-8'; // Bar butuh ruang lebih luas
+                let totalValid = dataCounts.reduce((a, b) => a + b, 0);
+                let htmlTabelDistribusi = `
+                    <div class="table-responsive mt-4 border-top pt-3">
+                        <table class="table table-bordered table-sm mb-0" style="font-size: 0.8rem;">
+                            <thead class="table-light text-center">
+                                <tr><th>Kategori Jawaban</th><th width="20%">Jumlah</th><th width="20%">%</th></tr>
+                            </thead>
+                            <tbody>
+                `;
+                labels.forEach((lbl, i) => {
+                    let pct = totalValid > 0 ? ((dataCounts[i] / totalValid) * 100).toFixed(1) : 0;
+                    htmlTabelDistribusi += `<tr><td>${lbl}</td><td class="text-center fw-bold">${dataCounts[i]}</td><td class="text-center text-primary fw-bold">${pct}%</td></tr>`;
+                });
+                htmlTabelDistribusi += `</tbody></table></div>`;
+
+                let colClass = pertanyaan.type === 'pie' ? 'col-md-4' : 'col-md-8'; 
                 let canvasId = `chartDist_${pertanyaan.id}`;
                 
                 htmlDistribusi += `
-                    <div class="${colClass} mb-4">
-                        <div class="card card-custom h-100 p-3 border-0">
+                    <div class="${colClass} mb-4 d-flex align-items-stretch">
+                        <div class="card card-custom w-100 p-3 border-0 d-flex flex-column">
                             <h6 class="fw-bold text-center text-dark" style="font-size:0.9rem;">${pertanyaan.title}</h6>
-                            <div class="chart-container-small mt-2"><canvas id="${canvasId}"></canvas></div>
+                            <div class="chart-container-small mt-2 mb-3 flex-grow-1"><canvas id="${canvasId}"></canvas></div>
+                            ${htmlTabelDistribusi}
                         </div>
                     </div>
                 `;
@@ -396,30 +499,22 @@
                 chartConfigsToRender.push({ id: canvasId, config: chartConfig });
             });
 
-            // Tanam HTML ke DOM secara bersamaan
             container.innerHTML = htmlDistribusi;
-
-            // Render semua chart distribusi setelah Canvas-nya ada di DOM
             chartConfigsToRender.forEach(item => {
                 let ctx = document.getElementById(item.id).getContext('2d');
                 chartInstances.push(new Chart(ctx, item.config));
             });
         }
 
-        // FUNGSI UNTUK TABEL MODAL RESPONDEN
         function buildTabelResponden(dataToProcess) {
             const tbody = document.getElementById('tabelRespondenBody');
             tbody.innerHTML = '';
-            
             if(dataToProcess.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Belum ada data untuk unit ini.</td></tr>';
                 return;
             }
-
             dataToProcess.forEach((row, index) => {
-                // Mempercantik format tanggal dari format mentah (Timestamp)
                 let waktuSubmit = row['Timestamp'] ? new Date(row['Timestamp']).toLocaleString('id-ID', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '-';
-                
                 tbody.innerHTML += `
                     <tr>
                         <td class="text-center">${index + 1}</td>
