@@ -68,11 +68,17 @@
             <div class="row align-items-center bg-light p-3 rounded">
                 <div class="col-md-4">
                     <label class="form-label fw-bold" style="font-size: 0.85rem;">Filter Unit:</label>
-                    <select id="filterUnit" class="form-select border-secondary" onchange="renderTabelSupervisi()">
+                    <select id="filterUnit" class="form-select border-secondary fw-bold" onchange="renderTabelSupervisi()">
                         <option value="SEMUA">-- Seluruh Unit --</option>
                     </select>
                 </div>
-                <div class="col-md-8 text-md-end mt-3 mt-md-0">
+                <div class="col-md-3 mt-3 mt-md-0">
+                    <label class="form-label fw-bold" style="font-size: 0.85rem;">Filter Tahun:</label>
+                    <select id="filterTahun" class="form-select border-secondary fw-bold" onchange="renderTabelSupervisi()">
+                        <option value="SEMUA">-- Semua Tahun --</option>
+                    </select>
+                </div>
+                <div class="col-md-5 text-md-end mt-3 mt-md-0">
                     <small class="text-danger fw-bold"><i class="fas fa-info-circle me-1"></i> Centang kotak di kolom paling kanan untuk mengangkat risiko unit menjadi Profil Risiko RS.</small>
                 </div>
             </div>
@@ -99,7 +105,7 @@
                         </tr>
                     </thead>
                     <tbody id="tabelSupervisiBody">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
@@ -127,6 +133,7 @@
                         
                         prosesDataAuditTrail();
                         populateDropdownUnit();
+                        populateDropdownTahun(); // Panggil fungsi pembuat dropdown tahun
                         renderTabelSupervisi();
                     } else {
                         throw new Error("Kosong");
@@ -138,20 +145,28 @@
                 });
         });
 
-        // FUNGSI CERDAS: MENGAMBIL HANYA PEMBARUAN TERAKHIR (Menghindari Duplikat Edit)
+        // FUNGSI CERDAS: MENGAMBIL HANYA PEMBARUAN TERAKHIR DAN MENGEKSTRAK TAHUN
         function prosesDataAuditTrail() {
             let kumpulanUnik = {};
             
-            // Karena data dari Google Sheets berurutan dari atas ke bawah (waktu terlama ke terbaru),
-            // baris yang terbawah akan otomatis menimpa baris lama jika ID Risikonya sama.
             rawData.forEach(row => {
                 let id = row['ID Risiko'];
                 if (id) {
+                    // Cari tahu tahunnya. Jika kolom 'Tahun' kosong, curi dari ID (format RSK-Timestamp)
+                    let thn = row['Tahun'];
+                    if (!thn && id.includes('-')) {
+                        let ts = parseInt(id.split('-')[1]);
+                        if (!isNaN(ts)) thn = new Date(ts).getFullYear();
+                    }
+                    if (!thn) thn = new Date().getFullYear(); // Fallback terakhir
+
+                    row['EkstrakTahun'] = parseInt(thn); // Simpan di properti baru yang seragam
+                    
+                    // Timpa data lama dengan data baru (karena dibaca dari atas ke bawah)
                     kumpulanUnik[id] = row;
                 }
             });
 
-            // Ubah kembali menjadi array
             finalDataUnik = Object.values(kumpulanUnik);
         }
 
@@ -160,8 +175,30 @@
             const units = [...new Set(finalDataUnik.map(item => item['Unit Kerja']))].filter(Boolean).sort();
             units.forEach(unit => { unitSelect.appendChild(new Option(unit, unit)); });
             
-            // Hitung statistik Total Unit
+            // Hitung statistik Total Unit yang berpartisipasi (terlepas dari tahun berapa pun)
             document.getElementById('statUnit').innerText = units.length;
+        }
+
+        // FUNGSI BARU: MENGISI DROPDOWN TAHUN SECARA OTOMATIS
+        function populateDropdownTahun() {
+            const tahunSelect = document.getElementById('filterTahun');
+            let currentYear = new Date().getFullYear();
+            
+            // Kumpulkan semua tahun unik dari finalDataUnik
+            let uniqueYears = [...new Set(finalDataUnik.map(item => item['EkstrakTahun']))].filter(Boolean).sort().reverse();
+            
+            // Pastikan tahun saat ini ada
+            if (!uniqueYears.includes(currentYear)) {
+                uniqueYears.unshift(currentYear);
+            }
+
+            tahunSelect.innerHTML = '<option value="SEMUA">-- Semua Tahun --</option>';
+            uniqueYears.forEach(y => {
+                tahunSelect.add(new Option(y, y));
+            });
+            
+            // Atur agar default-nya menunjuk ke tahun berjalan
+            tahunSelect.value = currentYear.toString();
         }
 
         function penentuWarnaSkor(skor) {
@@ -171,12 +208,20 @@
             return 'bg-rendah';                   
         }
 
+        // FUNGSI RENDER TABEL YANG DIPERBARUI DENGAN FILTER TAHUN
         function renderTabelSupervisi() {
             const selectedUnit = document.getElementById('filterUnit').value;
+            const selectedTahun = document.getElementById('filterTahun').value;
             let dataTampil = finalDataUnik;
 
+            // Terapkan Filter Unit
             if (selectedUnit !== 'SEMUA') {
-                dataTampil = finalDataUnik.filter(row => row['Unit Kerja'] === selectedUnit);
+                dataTampil = dataTampil.filter(row => row['Unit Kerja'] === selectedUnit);
+            }
+            
+            // Terapkan Filter Tahun
+            if (selectedTahun !== 'SEMUA') {
+                dataTampil = dataTampil.filter(row => row['EkstrakTahun'].toString() === selectedTahun);
             }
 
             // Urutkan dari Skor Akhir Tertinggi (Ekstrem) ke Terendah
@@ -189,12 +234,13 @@
             let countTinggi = 0;
 
             if (dataTampil.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">Tidak ada data risiko untuk unit ini.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4">Tidak ada data risiko untuk filter yang dipilih.</td></tr>';
             } else {
                 dataTampil.forEach((row, index) => {
                     let skorDxF = parseInt(row['Skor Risiko (DxF)'] || 0);
                     let skorAkhir = parseInt(row['Skor Akhir'] || 0);
                     let warnaSR = penentuWarnaSkor(skorDxF);
+                    let tahunRisk = row['EkstrakTahun'];
                     
                     if (skorDxF >= 15) countEkstrem++;
                     if (skorDxF >= 10 && skorDxF < 15) countTinggi++;
@@ -202,7 +248,7 @@
                     tbody.innerHTML += `
                         <tr>
                             <td class="text-center fw-bold fs-5">${index + 1}</td>
-                            <td class="fw-bold text-primary">${row['Unit Kerja']}</td>
+                            <td class="fw-bold text-primary">${row['Unit Kerja']}<br><small class="text-muted fw-normal">(${tahunRisk})</small></td>
                             <td>${row['Risiko Teridentifikasi']}</td>
                             <td><small>${row['Penyebab']}</small></td>
                             <td class="text-center fs-6 ${warnaSR}">${skorDxF}</td>
@@ -217,7 +263,7 @@
                 });
             }
 
-            // Update Statistik Atas
+            // Update Statistik Atas (Sesuai dengan filter yang aktif)
             document.getElementById('statTotal').innerText = dataTampil.length;
             document.getElementById('statEkstrem').innerText = countEkstrem;
             document.getElementById('statTinggi').innerText = countTinggi;
@@ -237,7 +283,7 @@
             
             alert(`Berhasil menyeleksi ${idTerpilih.length} risiko ekstrem. Mengarahkan ke halaman perancangan Profil Risiko Rumah Sakit...`);
             
-            // window.location.href = "profil_risiko_rs.html"; // Akan diaktifkan di tahap selanjutnya
+            window.location.href = "profil_risiko_rs.html";
         }
     </script>
 </body>

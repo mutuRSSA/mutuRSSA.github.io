@@ -36,25 +36,28 @@
     <div class="container-fluid px-4">
         <div class="bg-white p-4 mb-4 card-custom">
             
-            <div class="d-flex justify-content-between align-items-center mb-3 d-print-none">
+            <div class="d-flex justify-content-between align-items-center mb-3 d-print-none flex-wrap gap-2">
                 <div>
                     <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-exclamation-triangle text-danger me-2"></i> Form Risk Register</h4>
                     <p class="text-muted mb-0">Identifikasi, analisis, dan evaluasi risiko di lingkungan Rumah Sakit.</p>
                 </div>
                 <div class="d-flex gap-2">
                     <button class="btn btn-secondary fw-bold shadow-sm" onclick="siapkanCetak()">
-                        <i class="fas fa-print me-2"></i> Cetak PDF
+                        <i class="fas fa-file-pdf me-1"></i> Cetak PDF
                     </button>
-                    <button class="btn btn-danger fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalRisiko" onclick="resetForm()">
-                        <i class="fas fa-plus me-2"></i> Tambah Risiko Baru
+                    <button class="btn btn-info text-white fw-bold shadow-sm" onclick="exportKeWord()">
+                        <i class="fas fa-file-word me-1"></i> Cetak Word
+                    </button>
+                    <button class="btn btn-danger fw-bold shadow-sm ms-2" data-bs-toggle="modal" data-bs-target="#modalRisiko" onclick="resetForm()">
+                        <i class="fas fa-plus me-1"></i> Tambah Risiko
                     </button>
                 </div>
             </div>
 
             <div class="row bg-light p-3 mt-3 mb-4 rounded border align-items-center d-print-none">
-                <div class="col-md-6 col-lg-4">
+                <div class="col-md-4">
                     <label class="form-label mb-1 fw-bold text-secondary">Filter / Unit Pelapor <span class="text-danger">*</span></label>
-                    <select id="pilihUnit" class="form-select border-danger fw-bold text-dark">
+                    <select id="pilihUnit" class="form-select border-danger fw-bold text-dark" onchange="renderTabelRisiko()">
                         <option value="">-- TAMPILKAN SEMUA UNIT --</option>
                         <option value="Unit Rawat Inap">Unit Rawat Inap</option>
                         <option value="Unit Gawat Darurat">Unit Gawat Darurat</option>
@@ -83,42 +86,50 @@
                         <option value="Unit Elektromedis">Unit Elektromedis</option>
                     </select>
                 </div>
-                <div class="col-md-6 col-lg-8 text-md-end mt-2 mt-md-0" id="pesanUnit">
+                <div class="col-md-3 mt-3 mt-md-0">
+                    <label class="form-label mb-1 fw-bold text-secondary">Filter Tahun</label>
+                    <select id="pilihTahun" class="form-select border-info fw-bold text-dark" onchange="renderTabelRisiko()">
+                        <option value="SEMUA">-- SEMUA TAHUN --</option>
+                    </select>
+                </div>
+                <div class="col-md-5 text-md-end mt-3 mt-md-0" id="pesanUnit">
                     <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Memuat hak akses...</small>
                 </div>
             </div>
 
-            <div class="d-none d-print-block text-center mb-4 pb-2 border-bottom border-dark border-3">
-                <h3 class="fw-bold mb-1">RISK REGISTER</h3>
-                <h4 class="text-uppercase mb-1" id="printUnitTitle">UNIT XXX</h4>
-                <h5 class="mb-0">RSUD SARAS ADYATMA TAHUN <span id="printYearTitle">202X</span></h5>
-            </div>
+            <div id="exportContentWrapper">
+                <div class="d-none d-print-block text-center mb-4 pb-2 border-bottom border-dark border-3">
+                    <h3 class="fw-bold mb-1">RISK REGISTER</h3>
+                    <h4 class="text-uppercase mb-1" id="printUnitTitle">UNIT XXX</h4>
+                    <h5 class="mb-0">RSUD SARAS ADYATMA TAHUN <span id="printYearTitle">202X</span></h5>
+                </div>
 
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover table-custom">
-                    <thead>
-                        <tr>
-                            <th rowspan="2" width="3%">Rank</th>
-                            <th rowspan="2" width="8%">Unit</th> <th rowspan="2" width="15%">Risiko Teridentifikasi</th>
-                            <th rowspan="2" width="15%">Penyebab Risiko</th>
-                            <th colspan="2">Analisis Dasar</th>
-                            <th rowspan="2" width="10%">Dampak Yang Timbul</th>
-                            <th rowspan="2" width="12%">Penanganan Risiko</th>
-                            <th rowspan="2" width="5%">Skor (DxF)</th>
-                            <th rowspan="2" width="5%">Kontrol</th>
-                            <th rowspan="2" width="5%">Skor Akhir</th>
-                            <th rowspan="2" width="8%" class="d-print-none">Aksi</th>
-                        </tr>
-                        <tr>
-                            <th width="5%" style="background-color: #34495e;">Dampak</th>
-                            <th width="5%" style="background-color: #34495e;">Frekuensi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabelRisikoBody">
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover table-custom" id="tabelRiskRegister">
+                        <thead>
+                            <tr>
+                                <th rowspan="2" width="3%">Rank</th>
+                                <th rowspan="2" width="8%">Unit</th> 
+                                <th rowspan="2" width="15%">Risiko Teridentifikasi</th>
+                                <th rowspan="2" width="15%">Penyebab Risiko</th>
+                                <th colspan="2">Analisis Dasar</th>
+                                <th rowspan="2" width="10%">Dampak Yang Timbul</th>
+                                <th rowspan="2" width="12%">Penanganan Saat Ini</th>
+                                <th rowspan="2" width="5%">Skor (DxF)</th>
+                                <th rowspan="2" width="5%">Kontrol</th>
+                                <th rowspan="2" width="5%">Skor Akhir</th>
+                                <th rowspan="2" width="8%" class="col-aksi d-print-none">Aksi</th>
+                            </tr>
+                            <tr>
+                                <th width="5%" style="background-color: #34495e;">Dampak</th>
+                                <th width="5%" style="background-color: #34495e;">Frekuensi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelRisikoBody">
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            
             <div class="mt-4 text-end d-print-none">
                 <button class="btn btn-success fw-bold px-4" onclick="kirimKeServer()"><i class="fas fa-save me-2"></i> Simpan & Kirim ke Server</button>
             </div>
@@ -217,32 +228,111 @@
                     pesanUnit.innerHTML = `<span class="text-success fw-bold"><i class="fas fa-user-lock me-1"></i> Terkunci otomatis untuk Unit ${userUnit}</span>`;
                 } 
                 else if (userRole === "Komite Mutu") {
-                    dropdownUnit.addEventListener('change', renderTabelRisiko);
-                    pesanUnit.innerHTML = `<span class="text-primary fw-bold"><i class="fas fa-filter me-1"></i> Mode Admin: Anda melihat semua data. Gunakan filter untuk memilih unit spesifik.</span>`;
+                    pesanUnit.innerHTML = `<span class="text-primary fw-bold"><i class="fas fa-filter me-1"></i> Mode Admin: Anda melihat semua data.</span>`;
                 }
             }
 
             tarikDataServer();
         });
 
-        // FUNGSI BARU UNTUK MENCETAK
+        // FUNGSI UNTUK MENGISI DROPDOWN TAHUN SECARA OTOMATIS
+        function populateTahunDropdown() {
+            const dropdownTahun = document.getElementById('pilihTahun');
+            let currentYear = new Date().getFullYear();
+            
+            // Kumpulkan tahun-tahun unik yang ada di data lokal
+            let uniqueYears = [...new Set(daftarRisikoLokal.map(r => r.tahun))].filter(Boolean).sort().reverse();
+            
+            // Pastikan tahun saat ini selalu ada di pilihan
+            if (!uniqueYears.includes(currentYear)) {
+                uniqueYears.unshift(currentYear);
+            }
+
+            // Bersihkan dropdown dan isi dengan daftar tahun
+            dropdownTahun.innerHTML = '<option value="SEMUA">-- SEMUA TAHUN --</option>';
+            uniqueYears.forEach(y => {
+                dropdownTahun.add(new Option(y, y));
+            });
+            
+            // Set default pilihan ke tahun saat ini
+            dropdownTahun.value = currentYear.toString();
+        }
+
+        // FUNGSI CETAK PDF
         window.siapkanCetak = function() {
             const dropdownUnit = document.getElementById('pilihUnit');
-            let unitCetak = "SELURUH UNIT";
+            const dropdownTahun = document.getElementById('pilihTahun');
             
-            // Cek unit siapa yang akan dicetak
-            if (userRole === "Komite Mutu") {
-                unitCetak = dropdownUnit.value === "" ? "SELURUH UNIT" : dropdownUnit.value;
-            } else {
-                unitCetak = userUnit;
-            }
+            let unitCetak = userRole === "Komite Mutu" ? (dropdownUnit.value || "SELURUH UNIT") : userUnit;
+            let tahunCetak = dropdownTahun.value === "SEMUA" ? "Semua Tahun" : dropdownTahun.value;
             
-            // Set teks pada KOP Surat
             document.getElementById('printUnitTitle').innerText = unitCetak.toUpperCase();
-            document.getElementById('printYearTitle').innerText = new Date().getFullYear(); // Ambil tahun saat ini
+            document.getElementById('printYearTitle').innerText = tahunCetak; 
             
-            // Panggil dialog print bawaan browser
             window.print();
+        };
+
+        // FUNGSI CETAK WORD (DOC)
+        window.exportKeWord = function() {
+            if (document.getElementById('tabelRisikoBody').innerHTML.includes('Belum ada identifikasi')) { 
+                alert("Tidak ada data untuk diekspor."); return; 
+            }
+
+            const dropdownUnit = document.getElementById('pilihUnit');
+            const dropdownTahun = document.getElementById('pilihTahun');
+            
+            let unitCetak = userRole === "Komite Mutu" ? (dropdownUnit.value || "SELURUH UNIT") : userUnit;
+            let tahunCetak = dropdownTahun.value === "SEMUA" ? "Semua_Tahun" : dropdownTahun.value;
+            let displayTahun = dropdownTahun.value === "SEMUA" ? "Semua Tahun" : dropdownTahun.value;
+
+            // 1. Clone tabel
+            const content = document.getElementById('exportContentWrapper').cloneNode(true);
+
+            // 2. Tampilkan Kop Surat
+            const kopSurat = content.querySelector('.d-none');
+            if (kopSurat) {
+                kopSurat.classList.remove('d-none', 'd-print-block');
+                content.querySelector('#printUnitTitle').innerText = unitCetak.toUpperCase();
+                content.querySelector('#printYearTitle').innerText = displayTahun;
+            }
+
+            // 3. Bersihkan kolom Aksi
+            const colAksiHeader = content.querySelector('.col-aksi');
+            if (colAksiHeader) colAksiHeader.remove();
+            const colAksiCells = content.querySelectorAll('td.d-print-none');
+            colAksiCells.forEach(cell => cell.remove());
+
+            // 4. Warnai background sesuai severity
+            const allCells = content.querySelectorAll('td, th');
+            allCells.forEach(cell => {
+                if(cell.classList.contains('bg-ekstrem')) { cell.style.backgroundColor = '#dc3545'; cell.style.color = '#fff'; }
+                else if(cell.classList.contains('bg-tinggi')) { cell.style.backgroundColor = '#fd7e14'; cell.style.color = '#fff'; }
+                else if(cell.classList.contains('bg-sedang')) { cell.style.backgroundColor = '#ffc107'; cell.style.color = '#000'; }
+                else if(cell.classList.contains('bg-rendah')) { cell.style.backgroundColor = '#198754'; cell.style.color = '#fff'; }
+            });
+
+            // 5. Build XML Document
+            const h1 = "<ht" + "ml xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><he" + "ad><meta charset='utf-8'><st" + "yle>";
+            const cssWord = `
+                @page { size: 29.7cm 21cm; margin: 2cm; mso-page-orientation: landscape; }
+                body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; } 
+                h3, h4, h5 { text-align: center; margin: 5px 0; } 
+                table { border-collapse: collapse; width: 100%; margin-top: 20px; font-size: 9pt; } 
+                th, td { border: 1px solid #000; padding: 6px; vertical-align: middle; } 
+                th { background-color: #f2f2f2; font-weight: bold; text-align: center; } 
+                .text-center { text-align: center; } 
+                .fw-bold { font-weight: bold; }
+                .badge { padding: 2px; }
+            `;
+            const h3 = "</st" + "yle></he" + "ad><bo" + "dy>";
+            const f1 = "</bo" + "dy></ht" + "ml>";
+                
+            // 6. Download
+            const blob = new Blob(['\ufeff', h1 + cssWord + h3 + content.innerHTML + f1], { type: 'application/msword' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob); 
+            link.download = "Risk_Register_" + unitCetak.replace(/ /g, "_") + "_" + tahunCetak + ".doc";
+            link.click();
         };
 
         function tarikDataServer() {
@@ -265,20 +355,31 @@
                         if (id) unikData[id] = row;
                     });
 
-                    daftarRisikoLokal = Object.values(unikData).map(row => ({
-                        id: row['ID Risiko'],
-                        unit: row['Unit Kerja'], 
-                        risiko: row['Risiko Teridentifikasi'],
-                        penyebab: row['Penyebab'],
-                        dampak: parseInt(row['Dampak (D)']),
-                        frekuensi: parseInt(row['Frekuensi (F)']),
-                        dampak_timbul: row['Dampak Timbul'],
-                        penanganan: row['Penanganan Saat Ini'],
-                        kontrol: parseInt(row['Kontrol (K)']),
-                        skor_risiko: parseInt(row['Skor Risiko (DxF)']),
-                        skor_akhir: parseInt(row['Skor Akhir']),
-                        status: 'terkirim'
-                    }));
+                    daftarRisikoLokal = Object.values(unikData).map(row => {
+                        // Mencari tahu Tahun dari data, jika tidak ada di kolom 'Tahun', ekstrak dari ID (RSK-Timestamp)
+                        let thn = row['Tahun'];
+                        if (!thn && row['ID Risiko'] && row['ID Risiko'].includes('-')) {
+                            let ts = parseInt(row['ID Risiko'].split('-')[1]);
+                            if (!isNaN(ts)) thn = new Date(ts).getFullYear();
+                        }
+                        if (!thn) thn = new Date().getFullYear(); // Fallback
+
+                        return {
+                            id: row['ID Risiko'],
+                            tahun: parseInt(thn),
+                            unit: row['Unit Kerja'], 
+                            risiko: row['Risiko Teridentifikasi'],
+                            penyebab: row['Penyebab'],
+                            dampak: parseInt(row['Dampak (D)']),
+                            frekuensi: parseInt(row['Frekuensi (F)']),
+                            dampak_timbul: row['Dampak Timbul'],
+                            penanganan: row['Penanganan Saat Ini'],
+                            kontrol: parseInt(row['Kontrol (K)']),
+                            skor_risiko: parseInt(row['Skor Risiko (DxF)']),
+                            skor_akhir: parseInt(row['Skor Akhir']),
+                            status: 'terkirim'
+                        };
+                    });
                 }
 
                 let draftLokal = JSON.parse(localStorage.getItem(storageKey)) || [];
@@ -288,11 +389,13 @@
                     else daftarRisikoLokal.push(draft);
                 });
 
+                populateTahunDropdown(); // Isi dropdown filter tahun
                 renderTabelRisiko();
             })
             .catch(err => {
                 console.error(err);
                 daftarRisikoLokal = JSON.parse(localStorage.getItem(storageKey)) || [];
+                populateTahunDropdown();
                 renderTabelRisiko();
             });
         }
@@ -337,6 +440,7 @@
             
             let dataBaru = {
                 id: idEdit ? idEdit : 'RSK-' + Date.now(),
+                tahun: new Date().getFullYear(), // Simpan tahun pembuatan
                 unit: userRole === "Komite Mutu" ? dropdownUnit.value : userUnit, 
                 risiko: document.getElementById('inputRisiko').value,
                 penyebab: document.getElementById('inputPenyebab').value,
@@ -351,13 +455,18 @@
             };
 
             if (idEdit) {
+                // Update preserve original year if editing
                 let index = daftarRisikoLokal.findIndex(r => r.id === idEdit);
+                if(index >= 0) dataBaru.tahun = daftarRisikoLokal[index].tahun; 
                 daftarRisikoLokal[index] = dataBaru;
             } else {
                 daftarRisikoLokal.push(dataBaru);
             }
 
             bootstrap.Modal.getInstance(document.getElementById('modalRisiko')).hide();
+            
+            // Refresh tahun dropdown incase new year was added
+            populateTahunDropdown(); 
             renderTabelRisiko();
         }
 
@@ -372,20 +481,26 @@
 
             let dataTampil = daftarRisikoLokal;
             const dropdownUnit = document.getElementById('pilihUnit');
+            const dropdownTahun = document.getElementById('pilihTahun');
             
+            // Filter Unit (Khusus Komite Mutu)
             if (userRole === "Komite Mutu" && dropdownUnit && dropdownUnit.value !== "") {
-                dataTampil = daftarRisikoLokal.filter(r => r.unit === dropdownUnit.value);
+                dataTampil = dataTampil.filter(r => r.unit === dropdownUnit.value);
+            }
+            
+            // Filter Tahun (Aktif untuk semua user)
+            if (dropdownTahun && dropdownTahun.value !== "SEMUA") {
+                dataTampil = dataTampil.filter(r => r.tahun.toString() === dropdownTahun.value);
             }
 
             if (dataTampil.length === 0) {
-                let pesanKosong = userRole === "Komite Mutu" ? 'Tidak ada riwayat data untuk filter yang dipilih.' : 'Belum ada identifikasi risiko di unit Anda.';
+                let pesanKosong = 'Tidak ada riwayat risiko untuk filter yang dipilih.';
                 tbody.innerHTML = `<tr><td colspan="12" class="text-center text-muted py-4">${pesanKosong}</td></tr>`;
                 return;
             }
 
             dataTampil.forEach((row, index) => {
                 let warnaSR = penentuWarnaSkor(row.skor_risiko);
-                // Badge status kita sembunyikan saat di-print (d-print-none) agar dokumen terlihat resmi
                 let badgeStatus = row.status === 'terkirim' 
                     ? '<span class="badge bg-success mt-2 d-block d-print-none"><i class="fas fa-check-double"></i> Tersimpan</span>' 
                     : '<span class="badge bg-warning text-dark mt-2 d-block d-print-none"><i class="fas fa-hourglass-half"></i> Draft</span>';
@@ -393,7 +508,7 @@
                 tbody.innerHTML += `
                     <tr>
                         <td class="text-center fw-bold fs-5">${index + 1}</td>
-                        <td class="text-center fw-bold text-primary">${row.unit || '-'}</td> 
+                        <td class="text-center fw-bold text-primary">${row.unit || '-'}<br><small class="text-muted d-print-none">(${row.tahun})</small></td> 
                         <td>${row.risiko} ${badgeStatus}</td>
                         <td>${row.penyebab}</td>
                         <td class="text-center">${row.dampak}</td>
@@ -455,6 +570,7 @@
 
             let unitTerkirim = userRole === "Komite Mutu" ? "Pembaruan Admin" : userUnit;
 
+            // Kita sertakan data 'tahun' di payload agar bisa ditangkap Apps Script
             const payload = {
                 action: "save_risk",
                 unit: unitTerkirim,

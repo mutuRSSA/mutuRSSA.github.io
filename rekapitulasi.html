@@ -52,7 +52,8 @@
                 <div><label class="form-label mb-0 fw-bold" style="font-size: 0.85rem;">Tanggal Akhir:</label><input type="date" id="endDate" class="form-control form-control-sm"></div>
                 <button id="btnFilter" class="btn btn-primary btn-sm px-3 fw-bold"><i class="fas fa-search me-1"></i> Terapkan</button>
                 <button id="btnReset" class="btn btn-secondary btn-sm px-3 fw-bold"><i class="fas fa-sync-alt me-1"></i> Reset</button>
-                <button id="btnExportPDF" class="btn btn-danger btn-sm px-3 fw-bold ms-2"><i class="fas fa-file-pdf me-1"></i> Export PDF</button>
+                <button id="btnExportPDF" class="btn btn-danger btn-sm px-3 fw-bold ms-3"><i class="fas fa-file-pdf me-1"></i> PDF</button>
+                <button id="btnExportWord" class="btn btn-info text-white btn-sm px-3 fw-bold"><i class="fas fa-file-word me-1"></i> Word</button>
             </div>
         </div>
 
@@ -60,92 +61,93 @@
             <i class="fas fa-spinner fa-spin me-2"></i> Menarik data analitik dari server...
         </div>
 
-        <div class="row g-3 mb-4" id="scorecardPanel" style="display: none;">
-            <div class="col-md-3">
-                <div class="card scorecard bg-primary text-white h-100 position-relative overflow-hidden">
-                    <div class="card-body">
-                        <h6 class="card-title text-uppercase fw-bold opacity-75">Total IKP</h6>
-                        <h2 class="display-5 fw-bold mb-0" id="valTotalIKP">0</h2>
-                        <i class="fas fa-file-medical icon-bg"></i>
+        <div id="exportContentWrapper">
+            <div class="row g-3 mb-4" id="scorecardPanel" style="display: none;">
+                <div class="col-md-3">
+                    <div class="card scorecard bg-primary text-white h-100 position-relative overflow-hidden">
+                        <div class="card-body">
+                            <h6 class="card-title text-uppercase fw-bold opacity-75">Total IKP</h6>
+                            <h2 class="display-5 fw-bold mb-0" id="valTotalIKP">0</h2>
+                            <i class="fas fa-file-medical icon-bg"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card scorecard bg-danger text-white h-100 position-relative overflow-hidden">
+                        <div class="card-body">
+                            <h6 class="card-title text-uppercase fw-bold opacity-75">IKP High & Extreme</h6>
+                            <h2 class="display-5 fw-bold mb-0" id="valIKPKritis">0</h2>
+                            <i class="fas fa-exclamation-triangle icon-bg"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card scorecard text-white h-100 position-relative overflow-hidden" style="background-color: #fd7e14;">
+                        <div class="card-body">
+                            <h6 class="card-title text-uppercase fw-bold opacity-75">Total Temuan KPC</h6>
+                            <h2 class="display-5 fw-bold mb-0" id="valTotalKPC">0</h2>
+                            <i class="fas fa-search-location icon-bg"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card scorecard bg-success text-white h-100 position-relative overflow-hidden">
+                        <div class="card-body">
+                            <h6 class="card-title text-uppercase fw-bold opacity-75">KPC Terselesaikan</h6>
+                            <h2 class="display-5 fw-bold mb-0" id="valKPCResolved">0</h2>
+                            <i class="fas fa-check-circle icon-bg"></i>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-3">
-                <div class="card scorecard bg-danger text-white h-100 position-relative overflow-hidden">
-                    <div class="card-body">
-                        <h6 class="card-title text-uppercase fw-bold opacity-75">IKP High & Extreme</h6>
-                        <h2 class="display-5 fw-bold mb-0" id="valIKPKritis">0</h2>
-                        <i class="fas fa-exclamation-triangle icon-bg"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card scorecard text-white h-100 position-relative overflow-hidden" style="background-color: #fd7e14;">
-                    <div class="card-body">
-                        <h6 class="card-title text-uppercase fw-bold opacity-75">Total Temuan KPC</h6>
-                        <h2 class="display-5 fw-bold mb-0" id="valTotalKPC">0</h2>
-                        <i class="fas fa-search-location icon-bg"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card scorecard bg-success text-white h-100 position-relative overflow-hidden">
-                    <div class="card-body">
-                        <h6 class="card-title text-uppercase fw-bold opacity-75">KPC Terselesaikan</h6>
-                        <h2 class="display-5 fw-bold mb-0" id="valKPCResolved">0</h2>
-                        <i class="fas fa-check-circle icon-bg"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <div class="row g-4 mb-4" id="dashboardPanel" style="display: none;">
-            <div class="col-md-4">
-                <div class="bg-white p-3 card-custom" style="border-top-color: #17a2b8;">
-                    <h6 class="text-center fw-bold text-secondary mb-3">Sebaran Jenis Insiden (IKP)</h6>
-                    <div class="chart-container"><canvas id="chartJenis"></canvas></div>
+            <div class="row g-4 mb-4" id="dashboardPanel" style="display: none;">
+                <div class="col-md-4">
+                    <div class="bg-white p-3 card-custom" style="border-top-color: #17a2b8;">
+                        <h6 class="text-center fw-bold text-secondary mb-3">Sebaran Jenis Insiden (IKP)</h6>
+                        <div class="chart-container"><canvas id="chartJenis"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-white p-3 card-custom" style="border-top-color: #dc3545;">
+                        <h6 class="text-center fw-bold text-secondary mb-3">Sebaran Grading Risiko (IKP)</h6>
+                        <div class="chart-container"><canvas id="chartGrading"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="bg-white p-3 card-custom" style="border-top-color: #fd7e14;">
+                        <h6 class="text-center fw-bold text-secondary mb-3">Status Penyelesaian KPC</h6>
+                        <div class="chart-container"><canvas id="chartStatusKPC"></canvas></div>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="bg-white p-3 card-custom" style="border-top-color: #dc3545;">
-                    <h6 class="text-center fw-bold text-secondary mb-3">Sebaran Grading Risiko (IKP)</h6>
-                    <div class="chart-container"><canvas id="chartGrading"></canvas></div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="bg-white p-3 card-custom" style="border-top-color: #fd7e14;">
-                    <h6 class="text-center fw-bold text-secondary mb-3">Status Penyelesaian KPC</h6>
-                    <div class="chart-container"><canvas id="chartStatusKPC"></canvas></div>
-                </div>
-            </div>
-        </div>
 
-        <div class="bg-white p-4 card-custom" id="tablePanel" style="display: none;">
-            <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
-                <li class="nav-item" role="presentation"><button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#ikp-pane" type="button">Rekapitulasi IKP</button></li>
-                <li class="nav-item" role="presentation"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#kpc-pane" type="button">Rekapitulasi KPC</button></li>
-            </ul>
-            
-            <div class="tab-content" id="myTabContent">
-                <div class="tab-pane fade show active" id="ikp-pane" role="tabpanel">
-                    <div class="table-responsive">
-                        <table id="tableRekapIKP" class="table table-bordered table-hover" style="width:100%; font-size: 0.85rem;">
-                            <thead class="table-light"><tr><th>Tgl Lapor</th><th>Insiden</th><th>Jenis</th><th>Dampak</th><th>Probabilitas</th><th>Grading</th><th>Ruangan</th></tr></thead>
-                            <tbody></tbody>
-                        </table>
+            <div class="bg-white p-4 card-custom" id="tablePanel" style="display: none;">
+                <ul class="nav nav-tabs mb-3" id="myTab" role="tablist">
+                    <li class="nav-item" role="presentation"><button class="nav-link active fw-bold" data-bs-toggle="tab" data-bs-target="#ikp-pane" type="button">Rekapitulasi IKP</button></li>
+                    <li class="nav-item" role="presentation"><button class="nav-link fw-bold" data-bs-toggle="tab" data-bs-target="#kpc-pane" type="button">Rekapitulasi KPC</button></li>
+                </ul>
+                
+                <div class="tab-content" id="myTabContent">
+                    <div class="tab-pane fade show active" id="ikp-pane" role="tabpanel">
+                        <div class="table-responsive">
+                            <table id="tableRekapIKP" class="table table-bordered table-hover" style="width:100%; font-size: 0.85rem;">
+                                <thead class="table-light"><tr><th>Tgl Lapor</th><th>Insiden</th><th>Jenis</th><th>Dampak</th><th>Probabilitas</th><th>Grading</th><th>Ruangan</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
-                <div class="tab-pane fade" id="kpc-pane" role="tabpanel">
-                    <div class="table-responsive">
-                        <table id="tableRekapKPC" class="table table-bordered table-hover" style="width:100%; font-size: 0.85rem;">
-                            <thead class="table-light"><tr><th>Tgl Penemuan</th><th>Lokasi</th><th>Deskripsi KPC</th><th>Pelapor</th><th>Tindakan Awal</th><th>Status</th></tr></thead>
-                            <tbody></tbody>
-                        </table>
+                    <div class="tab-pane fade" id="kpc-pane" role="tabpanel">
+                        <div class="table-responsive">
+                            <table id="tableRekapKPC" class="table table-bordered table-hover" style="width:100%; font-size: 0.85rem;">
+                                <thead class="table-light"><tr><th>Tgl Penemuan</th><th>Lokasi</th><th>Deskripsi KPC</th><th>Pelapor</th><th>Tindakan Awal</th><th>Status</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
+        </div> </div>
 
     <script src="components.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
@@ -188,7 +190,12 @@
                 const startData = new Date(start); startData.setHours(0,0,0,0);
                 const endData = new Date(end); endData.setHours(23,59,59,999);
 
-                const filterFn = row => { const d = new Date(row['Timestamp']); return d >= startData && d <= endData; };
+                const filterFn = row => { 
+                    const ts = row['Timestamp'] || row['Tgl & Waktu Penemuan'];
+                    if(!ts) return false;
+                    const d = new Date(ts); 
+                    return d >= startData && d <= endData; 
+                };
                 renderDashboard(rawDataIKP.filter(filterFn), rawDataKPC.filter(filterFn));
             });
 
@@ -201,6 +208,74 @@
                 if (rawDataIKP.length === 0 && rawDataKPC.length === 0) { alert("Data belum tersedia."); return; }
                 window.print();
             });
+
+            // ==========================================================
+            // LOGIKA CERDAS: EXPORT KE MS WORD (DOC) YANG SUDAH DIPERBAIKI
+            // ==========================================================
+            $('#btnExportWord').click(function() {
+                if (rawDataIKP.length === 0 && rawDataKPC.length === 0) { alert("Data belum tersedia."); return; }
+
+                // 1. Tampilkan semua data di DataTables
+                if(dtIKP) dtIKP.page.len(-1).draw();
+                if(dtKPC) dtKPC.page.len(-1).draw();
+
+                // 2. Clone kontainer
+                const content = document.getElementById('exportContentWrapper').cloneNode(true);
+
+                // 3. Konversi Canvas (Grafik) menjadi Tag Image HTML
+                const originalCanvases = document.querySelectorAll('canvas');
+                const clonedCanvases = content.querySelectorAll('canvas');
+                
+                clonedCanvases.forEach((canvas, index) => {
+                    const img = document.createElement('img');
+                    img.src = originalCanvases[index].toDataURL("image/png");
+                    img.style.width = '100%'; 
+                    img.style.maxWidth = '350px'; 
+                    img.style.display = 'block';
+                    img.style.margin = '0 auto';
+                    canvas.parentNode.replaceChild(img, canvas);
+                });
+
+                // 4. Bersihkan elemen navigasi
+                const elementsToRemove = content.querySelectorAll('.nav-tabs, .dataTables_filter, .dataTables_length, .dataTables_info, .dataTables_paginate');
+                elementsToRemove.forEach(el => el.remove());
+
+                // 5. Buka semua Tab
+                const tabPanes = content.querySelectorAll('.tab-pane');
+                tabPanes.forEach(pane => {
+                    pane.classList.add('show', 'active');
+                    pane.style.display = 'block';
+                    pane.style.opacity = '1';
+                    pane.style.visibility = 'visible';
+                    pane.style.marginBottom = '30px';
+                    
+                    const title = document.createElement('h3');
+                    title.innerHTML = pane.id === 'ikp-pane' ? '<br>REKAPITULASI IKP' : '<br>REKAPITULASI KPC';
+                    title.style.textAlign = 'center';
+                    pane.insertBefore(title, pane.firstChild);
+                });
+
+                // 6. Template XML MS Word (DIUBAH AGAR TIDAK ERROR DI BROWSER)
+                const h1 = "<ht" + "ml xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><he" + "ad><meta charset='utf-8'><st" + "yle>";
+                const h2 = "body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; } h2, h3, h5, h6 { text-align: center; color: #2c3e50; } table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-size: 9pt; } th, td { border: 1px solid #000; padding: 6px; } th { background-color: #f2f2f2; font-weight: bold; text-align: center; } .text-center { text-align: center; } .fw-bold { font-weight: bold; } .card { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; text-align: center; } .badge { font-weight: bold; padding: 2px 5px; border: 1px solid #333; }";
+                const h3 = "</st" + "yle></he" + "ad><bo" + "dy><h2 style='text-align:center;'>LAPORAN MANAJERIAL IKP & KPC</h2>";
+                const f1 = "</bo" + "dy></ht" + "ml>";
+                    
+                // 7. Jadikan File Blob dan Unduh
+                const blob = new Blob(['\ufeff', h1 + h2 + h3 + content.innerHTML + f1], { type: 'application/msword' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob); 
+                
+                const startStr = $('#startDate').val() || 'Awal';
+                const endStr = $('#endDate').val() || 'Akhir';
+                link.download = "Rekapitulasi_Insiden_" + startStr + "_sd_" + endStr + ".doc";
+                
+                link.click();
+
+                // 8. Kembalikan UI
+                if(dtIKP) dtIKP.page.len(5).draw();
+                if(dtKPC) dtKPC.page.len(5).draw();
+            });
         });
 
         function renderDashboard(dataIKP, dataKPC) {
@@ -209,57 +284,43 @@
             renderCharts(dataIKP, dataKPC); 
         }
 
-        // FUNGSI BARU: MENGHITUNG KARTU SKOR
         function renderScorecards(dataIKP, dataKPC) {
             $('#valTotalIKP').text(dataIKP.length);
-            
             const ikpKritis = dataIKP.filter(r => r['Grading Risiko'] === 'High' || r['Grading Risiko'] === 'Extreme').length;
             $('#valIKPKritis').text(ikpKritis);
             
             $('#valTotalKPC').text(dataKPC.length);
-            
             const kpcResolved = dataKPC.filter(r => r['Status KPC'] === 'Resolved').length;
             $('#valKPCResolved').text(kpcResolved);
         }
 
         function renderTables(dataIKP, dataKPC) {
-            // Render Tabel IKP
             if (dtIKP) dtIKP.destroy(); 
             let htmlIKP = '';
             dataIKP.forEach(row => {
                 let tgl = row['Timestamp'] ? new Date(row['Timestamp']).toLocaleDateString('id-ID') : '-';
                 let gradingHtml = row['Grading Risiko'] || '-';
-                if(gradingHtml === 'Low') gradingHtml = '<span class="badge bg-primary">Low</span>';
-                if(gradingHtml === 'Moderate') gradingHtml = '<span class="badge bg-success">Moderate</span>';
+                if(gradingHtml === 'Low') gradingHtml = '<span class="badge bg-primary text-white">Low</span>';
+                if(gradingHtml === 'Moderate') gradingHtml = '<span class="badge bg-success text-white">Moderate</span>';
                 if(gradingHtml === 'High') gradingHtml = '<span class="badge bg-warning text-dark">High</span>';
-                if(gradingHtml === 'Extreme') gradingHtml = '<span class="badge bg-danger">Extreme</span>';
+                if(gradingHtml === 'Extreme') gradingHtml = '<span class="badge bg-danger text-white">Extreme</span>';
 
-                htmlIKP += `<tr>
-                    <td>${tgl}</td><td>${row['Insiden']||'-'}</td><td>${row['Jenis Insiden']||'-'}</td>
-                    <td>${row['Dampak']||'-'}</td><td>${row['Probabilitas']||'-'}</td>
-                    <td class="text-center">${gradingHtml}</td><td>${row['Tempat Insiden']||'-'}</td>
-                </tr>`;
+                htmlIKP += "<tr><td class='text-center'>" + tgl + "</td><td>" + (row['Insiden']||'-') + "</td><td class='text-center'>" + (row['Jenis Insiden']||'-') + "</td><td class='text-center'>" + (row['Dampak']||'-') + "</td><td class='text-center'>" + (row['Probabilitas']||'-') + "</td><td class='text-center'>" + gradingHtml + "</td><td>" + (row['Tempat Insiden']||'-') + "</td></tr>";
             });
             $('#tableRekapIKP tbody').html(htmlIKP);
             dtIKP = $('#tableRekapIKP').DataTable({ "order": [[0, 'desc']], "pageLength": 5, "lengthMenu": [5, 10, 25] });
 
-            // Render Tabel KPC
             if (dtKPC) dtKPC.destroy();
             let htmlKPC = '';
             dataKPC.forEach(row => {
                 let tgl = row['Tgl & Waktu Penemuan'] ? new Date(row['Tgl & Waktu Penemuan']).toLocaleDateString('id-ID') : '-';
-                
                 let statusVal = row['Status KPC'] || 'Open';
                 let statusHtml = '';
-                if(statusVal === 'Open') statusHtml = '<span class="badge bg-danger">Open</span>';
+                if(statusVal === 'Open') statusHtml = '<span class="badge bg-danger text-white">Open</span>';
                 if(statusVal === 'On Progress') statusHtml = '<span class="badge bg-warning text-dark">On Prog</span>';
-                if(statusVal === 'Resolved') statusHtml = '<span class="badge bg-success">Resolved</span>';
+                if(statusVal === 'Resolved') statusHtml = '<span class="badge bg-success text-white">Resolved</span>';
 
-                htmlKPC += `<tr>
-                    <td>${tgl}</td><td>${row['Lokasi / Unit']||'-'}</td><td>${row['Deskripsi KPC']||'-'}</td>
-                    <td>${row['Nama Pelapor']||'-'}</td><td>${row['Tindakan yang Dilakukan']||'-'}</td>
-                    <td class="text-center">${statusHtml}</td>
-                </tr>`;
+                htmlKPC += "<tr><td class='text-center'>" + tgl + "</td><td>" + (row['Lokasi / Unit']||'-') + "</td><td>" + (row['Deskripsi KPC']||'-') + "</td><td class='text-center'>" + (row['Nama Pelapor']||'-') + "</td><td>" + (row['Tindakan yang Dilakukan']||'-') + "</td><td class='text-center'>" + statusHtml + "</td></tr>";
             });
             $('#tableRekapKPC tbody').html(htmlKPC);
             dtKPC = $('#tableRekapKPC').DataTable({ "order": [[0, 'desc']], "pageLength": 5, "lengthMenu": [5, 10, 25] });
@@ -287,21 +348,18 @@
             if(chartGradingInstance) chartGradingInstance.destroy();
             if(chartStatusKPCInstance) chartStatusKPCInstance.destroy();
 
-            // 1. Chart Jenis IKP
             chartJenisInstance = new Chart(document.getElementById('chartJenis'), {
                 type: 'doughnut',
                 data: { labels: Object.keys(countJenis), datasets: [{ data: Object.values(countJenis), backgroundColor: ['#17a2b8', '#ffc107', '#fd7e14', '#20c997', '#6c757d'] }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
             });
 
-            // 2. Chart Grading IKP
             chartGradingInstance = new Chart(document.getElementById('chartGrading'), {
                 type: 'pie',
                 data: { labels: ['Low', 'Moderate', 'High', 'Extreme'], datasets: [{ data: [countGrading['Low'], countGrading['Moderate'], countGrading['High'], countGrading['Extreme']], backgroundColor: ['#0d6efd', '#198754', '#ffc107', '#dc3545'] }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } } }
             });
 
-            // 3. Chart Status KPC
             chartStatusKPCInstance = new Chart(document.getElementById('chartStatusKPC'), {
                 type: 'pie',
                 data: { labels: ['Open', 'On Progress', 'Resolved'], datasets: [{ data: [countStatusKPC['Open'], countStatusKPC['On Progress'], countStatusKPC['Resolved']], backgroundColor: ['#dc3545', '#ffc107', '#198754'] }] },
