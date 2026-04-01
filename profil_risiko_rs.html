@@ -10,15 +10,21 @@
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
         .card-custom { box-shadow: 0 4px 6px rgba(0,0,0,.05); border-radius: 8px; border-top: 4px solid #ffc107; background: #fff;}
         
+        /* PERBAIKAN LAYOUT TABEL: Paksa tabel melebar agar tidak menumpuk */
+        #tabelProfil { min-width: 2200px; }
+        .table-responsive { overflow-x: auto; }
+        
         .table-custom { font-size: 0.8rem; }
-        .table-custom th { background-color: #2c3e50; color: white; vertical-align: middle; text-align: center; border: 1px solid #455a64; }
+        .table-custom th { background-color: #2c3e50; color: white; vertical-align: middle; text-align: center; border: 1px solid #455a64; padding: 10px 5px;}
         .table-custom td { vertical-align: middle; border: 1px solid #dee2e6; }
         
-        .input-profil { font-size: 0.8rem; border-radius: 4px; border: 1px solid #ccc; width: 100%; padding: 6px; }
+        .input-profil { font-size: 0.8rem; border-radius: 4px; border: 1px solid #ccc; width: 100%; padding: 6px; box-sizing: border-box; }
         .input-profil:focus { border-color: #6f42c1; outline: none; box-shadow: 0 0 0 0.2rem rgba(111,66,193,.25); }
 
         .bg-ekstrem { background-color: #dc3545 !important; color: white; font-weight: bold; } 
         .bg-tinggi { background-color: #fd7e14 !important; color: white; font-weight: bold; } 
+        .bg-sedang { background-color: #ffc107 !important; color: black; font-weight: bold; } 
+        .bg-rendah { background-color: #198754 !important; color: white; font-weight: bold; } 
 
         .status-select { font-weight: bold; cursor: pointer; }
         .status-belum { background-color: #f8d7da; color: #842029; }
@@ -46,7 +52,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3 d-print-none flex-wrap gap-2">
                 <div>
                     <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-crown text-warning me-2"></i> Profil Risiko RSUD Saras Adyatma</h4>
-                    <p class="text-muted mb-0">Rencana penanganan dan pemantauan risiko prioritas tingkat Rumah Sakit.</p>
+                    <p class="text-muted mb-0">Pengelompokan, rencana penanganan, dan pemantauan risiko tingkat korporat.</p>
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
                     <a href="dasbor_risiko.html" class="btn btn-outline-secondary fw-bold shadow-sm">
@@ -59,25 +65,35 @@
                         <i class="fas fa-file-word me-1"></i> Cetak Word
                     </button>
                     <button class="btn btn-success fw-bold shadow-sm ms-2" onclick="simpanProfilRS()">
-                        <i class="fas fa-save me-1"></i> Update Pemantauan
+                        <i class="fas fa-save me-1"></i> Update & Simpan
                     </button>
                 </div>
             </div>
 
             <div class="row bg-light p-3 rounded border align-items-center mb-4 d-print-none" id="filterContainer" style="display: none;">
                 <div class="col-md-3">
-                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;">Filter Tahun:</label>
+                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;"><i class="fas fa-calendar-alt me-1"></i> Filter Tahun:</label>
                     <select id="filterTahun" class="form-select border-info fw-bold text-dark" onchange="renderTabelProfil()">
                         <option value="SEMUA">-- Semua Tahun --</option>
                     </select>
                 </div>
-                <div class="col-md-9 text-md-end mt-3 mt-md-0">
-                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Menampilkan rekam jejak Profil Risiko RS berdasarkan tahun identifikasi unit.</small>
+                <div class="col-md-4 mt-3 mt-md-0">
+                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;"><i class="fas fa-sort-amount-down me-1"></i> Urutkan Berdasarkan:</label>
+                    <select id="sortData" class="form-select border-info fw-bold text-dark" onchange="renderTabelProfil()">
+                        <option value="kategori_skor">Kategori (A-Z) & Skor Tertinggi</option>
+                        <option value="skor_desc">Skor Akhir Tertinggi</option>
+                        <option value="skor_asc">Skor Akhir Terendah</option>
+                        <option value="kategori_asc">Kategori (A-Z)</option>
+                        <option value="status_asc" class="text-primary fw-bold">Status Penanganan (Belum -> Selesai)</option>
+                    </select>
+                </div>
+                <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Tabel bisa digeser (scroll) ke kanan untuk melihat selengkapnya.</small>
                 </div>
             </div>
 
             <div class="d-none d-print-block text-center mb-4 pb-2 border-bottom border-dark border-3" id="printHeader">
-                <h3 class="fw-bold mb-1">PROFIL RISIKO (RISK REGISTER)</h3>
+                <h3 class="fw-bold mb-1">PROFIL RISIKO (RISK REGISTER) KORPORAT</h3>
                 <h4 class="text-uppercase mb-1">RUMAH SAKIT UMUM DAERAH (RSUD) SARAS ADYATMA</h4>
                 <h5 class="mb-0">TAHUN <span id="printYearTitle"></span></h5>
             </div>
@@ -90,25 +106,27 @@
                 <table class="table table-bordered table-hover table-custom mb-0" id="tabelProfil">
                     <thead>
                         <tr>
-                            <th rowspan="2" width="2%">No</th>
-                            <th rowspan="2" width="10%">Risiko Teridentifikasi</th>
-                            <th rowspan="2" width="3%">Frekuensi</th>
-                            <th rowspan="2" width="3%">Dampak</th>
-                            <th rowspan="2" width="3%">Skor (DxF)</th>
-                            <th rowspan="2" width="5%">Pemilik Risiko (Unit)</th>
-                            <th colspan="3">Strategi Pengurangan Risiko</th>
-                            <th colspan="6" class="bg-primary text-white">Pemantauan Terhadap Rencana Penanganan</th>
+                            <th rowspan="2" style="min-width: 40px;">No</th>
+                            <th rowspan="2" style="min-width: 200px;">Kategori Risiko</th>
+                            <th rowspan="2" style="min-width: 200px;">Risiko Teridentifikasi</th>
+                            <th rowspan="2" style="min-width: 200px;">Dampak Yang Ditimbulkan</th>
+                            <th rowspan="2" style="min-width: 40px;">F</th>
+                            <th rowspan="2" style="min-width: 40px;">D</th>
+                            <th rowspan="2" style="min-width: 60px;">Skor<br>(DxF)</th>
+                            <th rowspan="2" style="min-width: 150px;">Pemilik (Unit)</th>
+                            <th colspan="3" class="bg-success text-white">Evaluasi & Rencana Penanganan</th>
+                            <th colspan="6" class="bg-primary text-white">Pemantauan Terhadap Rencana</th>
                         </tr>
                         <tr>
-                            <th width="10%">Penanganan Saat Ini</th>
-                            <th width="3%">Kontrol</th>
-                            <th width="3%">Skor Akhir</th>
-                            <th width="8%">Periode Program</th>
-                            <th width="8%">PIC Penanganan</th>
-                            <th width="10%">Realisasi</th>
-                            <th width="10%">Rencana Lanjutan</th>
-                            <th width="10%">Hasil Pemantauan</th>
-                            <th width="10%">Status Penanganan</th>
+                            <th style="min-width: 200px;">Rencana Penanganan</th>
+                            <th style="min-width: 70px;">Kontrol</th>
+                            <th style="min-width: 60px;">Skor<br>Akhir</th>
+                            <th style="min-width: 130px;">Periode Program</th>
+                            <th style="min-width: 130px;">PIC Penanganan</th>
+                            <th style="min-width: 160px;">Realisasi</th>
+                            <th style="min-width: 160px;">Rencana Lanjutan</th>
+                            <th style="min-width: 160px;">Hasil Pemantauan</th>
+                            <th style="min-width: 140px;">Status</th>
                         </tr>
                     </thead>
                     <tbody id="tabelProfilBody">
@@ -124,10 +142,17 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // MASUKKAN URL WEB APP RISK REGISTER ANDA
+        // MASUKKAN URL WEB APP RISK REGISTER ANDA DI SINI
         const scriptURL = "https://script.google.com/macros/s/AKfycbzGMUFIYrzzLMkWwx7fysIX9xFaM4IvBT7sedc70nn-t8pMFHal0HYv2G6jF05QT6l2lA/exec";
         
         let dataTampilArray = [];
+
+        const kategoriOptions = [
+            "A. RISIKO KLINIS", "B. RISIKO KESELAMATAN PASIEN", "C. RISIKO FASILITAS DAN PERALATAN MEDIS",
+            "D. RISIKO KEAMANAN", "E. RISIKO KESEHATAN KERJA STAF (K3RS)", "F. RISIKO INFEKSI",
+            "G. RISIKO KEUANGAN", "H. RISIKO HUKUM", "I. RISIKO REPUTASI",
+            "J. RISIKO TEKNOLOGI INFORMASI", "K. RISIKO BENCANA", "L. LAINNYA (BELUM DIKATEGORIKAN)"
+        ];
 
         document.addEventListener("DOMContentLoaded", function () {
             fetch(scriptURL)
@@ -136,19 +161,16 @@
                     document.getElementById('loadingMessage').style.display = 'none';
                     if (result.status === 'success') {
                         
-                        // 1. OLAH DATA UNIT
                         let dataUnitUnik = {};
                         (result.data || []).forEach(row => {
                             if (row['ID Risiko']) dataUnitUnik[row['ID Risiko']] = row;
                         });
 
-                        // 2. OLAH DATA PROFIL RS
                         let dataProfilUnik = {};
                         (result.data_profil || []).forEach(row => {
                             if (row['ID Risiko']) dataProfilUnik[row['ID Risiko']] = row;
                         });
 
-                        // 3. KUMPULKAN ID YANG AKAN DITAMPILKAN
                         let idUntukDitampilkan = new Set(Object.keys(dataProfilUnik));
                         const draftBaru = localStorage.getItem('draftProfilRS');
                         if (draftBaru) {
@@ -162,7 +184,6 @@
                             return;
                         }
 
-                        // 4. GABUNGKAN & EKSTRAK TAHUN
                         dataTampilArray = Array.from(idUntukDitampilkan).map(id => {
                             let base = dataUnitUnik[id] || {};
                             let pantauan = dataProfilUnik[id] || {};
@@ -177,9 +198,6 @@
                             return { base: base, pantauan: pantauan, id: id, tahun: parseInt(thn) };
                         });
 
-                        // Urutkan dari Skor Tertinggi
-                        dataTampilArray.sort((a, b) => parseInt(b.base['Skor Akhir'] || 0) - parseInt(a.base['Skor Akhir'] || 0));
-
                         populateDropdownTahun();
                         document.getElementById('filterContainer').style.display = 'flex';
                         document.getElementById('tabelContainer').style.display = 'block';
@@ -192,9 +210,6 @@
                 });
         });
 
-        // =========================================================
-        // FUNGSI ISI DROPDOWN TAHUN OTOMATIS
-        // =========================================================
         function populateDropdownTahun() {
             const tahunSelect = document.getElementById('filterTahun');
             let currentYear = new Date().getFullYear();
@@ -212,7 +227,18 @@
         function penentuWarnaSkor(skor) {
             if (skor >= 15) return 'bg-ekstrem';  
             if (skor >= 10) return 'bg-tinggi';   
-            return '';                   
+            if (skor >= 4) return 'bg-sedang';
+            return 'bg-rendah';                   
+        }
+
+        window.kalkulasiSkorAkhir = function(id, skorDxF) {
+            let kontrolVal = document.getElementById(`kontrol_${id}`).value;
+            let akhir = skorDxF * parseInt(kontrolVal || 0);
+            
+            let elemenSkorAkhir = document.getElementById(`skor_akhir_${id}`);
+            elemenSkorAkhir.innerText = akhir;
+            
+            elemenSkorAkhir.className = "text-center fw-bold fs-6 " + penentuWarnaSkor(akhir);
         }
 
         function updateWarnaStatus(selectElement) {
@@ -225,50 +251,114 @@
         }
 
         // =========================================================
-        // FUNGSI RENDER TABEL (DENGAN FILTER TAHUN)
+        // FUNGSI RENDER TABEL (DENGAN FILTER & SORTING STATUS)
         // =========================================================
         function renderTabelProfil() {
             const selectedTahun = document.getElementById('filterTahun').value;
+            const sortBy = document.getElementById('sortData').value;
             const tbody = document.getElementById('tabelProfilBody');
             tbody.innerHTML = '';
 
-            let dataTampil = dataTampilArray;
+            let dataTampil = [...dataTampilArray]; 
+
             if (selectedTahun !== 'SEMUA') {
                 dataTampil = dataTampil.filter(item => item.tahun.toString() === selectedTahun);
             }
 
-            // Update Teks Tahun di Kop Cetakan
+            // Aturan bobot untuk pengurutan Status Penanganan
+            const weightStatus = {
+                "Belum Ditangani": 1,
+                "On Proses": 2,
+                "Selesai Ditangani": 3,
+                "Dibatalkan": 4
+            };
+
+            dataTampil.sort((a, b) => {
+                let elemKatA = document.getElementById(`kat_${a.id}`);
+                let elemKatB = document.getElementById(`kat_${b.id}`);
+                let elemStatA = document.getElementById(`status_${a.id}`);
+                let elemStatB = document.getElementById(`status_${b.id}`);
+                
+                let catA = (elemKatA ? elemKatA.value : a.pantauan['Kategori Risiko']) || "L. LAINNYA (BELUM DIKATEGORIKAN)";
+                let catB = (elemKatB ? elemKatB.value : b.pantauan['Kategori Risiko']) || "L. LAINNYA (BELUM DIKATEGORIKAN)";
+                
+                let statA = (elemStatA ? elemStatA.value : a.pantauan['Status Penanganan']) || "Belum Ditangani";
+                let statB = (elemStatB ? elemStatB.value : b.pantauan['Status Penanganan']) || "Belum Ditangani";
+                
+                let skorA = parseInt(a.pantauan['Skor Akhir'] || a.base['Skor Akhir'] || 0);
+                let skorB = parseInt(b.pantauan['Skor Akhir'] || b.base['Skor Akhir'] || 0);
+
+                if (sortBy === 'kategori_skor') {
+                    if (catA < catB) return -1;
+                    if (catA > catB) return 1;
+                    return skorB - skorA; 
+                } 
+                else if (sortBy === 'skor_desc') {
+                    return skorB - skorA; 
+                } 
+                else if (sortBy === 'skor_asc') {
+                    return skorA - skorB; 
+                } 
+                else if (sortBy === 'kategori_asc') {
+                    if (catA < catB) return -1;
+                    if (catA > catB) return 1;
+                    return 0; 
+                }
+                else if (sortBy === 'status_asc') {
+                    let wA = weightStatus[statA] || 0;
+                    let wB = weightStatus[statB] || 0;
+                    if (wA !== wB) return wA - wB;
+                    return skorB - skorA; // Jika statusnya sama, kelompokkan berdasar skor tertinggi
+                }
+            });
+
             document.getElementById('printYearTitle').innerText = selectedTahun === 'SEMUA' ? 'SEMUA TAHUN' : selectedTahun;
 
             if (dataTampil.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="15" class="text-center text-muted py-4">Tidak ada data Profil RS pada tahun yang dipilih.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="16" class="text-center text-muted py-4">Tidak ada data Profil RS pada tahun yang dipilih.</td></tr>';
                 return;
             }
 
             dataTampil.forEach((item, index) => {
                 let id = item.id;
+                let f = item.base['Frekuensi (F)'] || '-';
+                let d = item.base['Dampak (D)'] || '-';
+                let dampakTimbul = item.base['Dampak Timbul'] || '-'; 
+                
                 let skorDxF = parseInt(item.base['Skor Risiko (DxF)'] || 0);
-                let warnaSR = penentuWarnaSkor(skorDxF);
+                let warnaDxF = penentuWarnaSkor(skorDxF);
+                
+                let prevKat = item.pantauan['Kategori Risiko'] || "L. LAINNYA (BELUM DIKATEGORIKAN)";
+                let prevRencana = item.pantauan['Rencana Penanganan'] || item.base['Penanganan Saat Ini'] || '';
+                let prevKontrol = item.pantauan['Kontrol'] || item.base['Kontrol (K)'] || '1';
+                let skorAkhirAwal = skorDxF * parseInt(prevKontrol);
+                let warnaAkhir = penentuWarnaSkor(skorAkhirAwal);
+
                 let prevStatus = item.pantauan['Status Penanganan'] || 'Belum Ditangani';
+
+                let opsiKategori = kategoriOptions.map(opt => `<option value="${opt}" ${prevKat === opt ? 'selected' : ''}>${opt}</option>`).join('');
+                let opsiKontrol = [1,2,3,4].map(num => `<option value="${num}" ${parseInt(prevKontrol) === num ? 'selected' : ''}>${num}</option>`).join('');
 
                 tbody.innerHTML += `
                     <tr>
                         <td class="text-center fw-bold">${index + 1}</td>
+                        <td><select class="form-select input-profil fw-bold text-primary" id="kat_${id}">${opsiKategori}</select></td>
                         <td class="fw-bold text-dark">${item.base['Risiko Teridentifikasi'] || '-'}</td>
-                        <td class="text-center">${item.base['Frekuensi (F)'] || '-'}</td>
-                        <td class="text-center">${item.base['Dampak (D)'] || '-'}</td>
-                        <td class="text-center fw-bold ${warnaSR}">${skorDxF}</td>
-                        <td class="text-center fw-bold text-primary">${item.base['Unit Kerja'] || '-'}</td>
+                        <td><small class="text-muted">${dampakTimbul}</small></td>
+                        <td class="text-center">${f}</td>
+                        <td class="text-center">${d}</td>
+                        <td class="text-center fw-bold fs-6 ${warnaDxF}">${skorDxF}</td>
+                        <td class="text-center fw-bold text-secondary"><small>${item.base['Unit Kerja'] || '-'}</small></td>
                         
-                        <td><small>${item.base['Penanganan Saat Ini'] || '-'}</small></td>
-                        <td class="text-center">${item.base['Kontrol (K)'] || '-'}</td>
-                        <td class="text-center fw-bold bg-light">${item.base['Skor Akhir'] || '-'}</td>
+                        <td><textarea class="input-profil border-success" id="rencana_${id}" rows="3">${prevRencana}</textarea></td>
+                        <td><select class="form-select input-profil text-center border-success" id="kontrol_${id}" onchange="kalkulasiSkorAkhir('${id}', ${skorDxF})">${opsiKontrol}</select></td>
+                        <td id="skor_akhir_${id}" class="text-center fw-bold fs-6 ${warnaAkhir}">${skorAkhirAwal}</td>
                         
-                        <td><textarea class="input-profil" id="periode_${id}" rows="2">${item.pantauan['Periode Program'] || ''}</textarea></td>
-                        <td><textarea class="input-profil" id="pic_${id}" rows="2">${item.pantauan['PIC Penanganan'] || ''}</textarea></td>
-                        <td><textarea class="input-profil" id="realisasi_${id}" rows="2">${item.pantauan['Realisasi'] || ''}</textarea></td>
-                        <td><textarea class="input-profil" id="lanjutan_${id}" rows="2">${item.pantauan['Rencana Pencegahan Lanjutan'] || ''}</textarea></td>
-                        <td><textarea class="input-profil" id="hasil_${id}" rows="2">${item.pantauan['Hasil Pemantauan'] || ''}</textarea></td>
+                        <td><textarea class="input-profil" id="periode_${id}" rows="3">${item.pantauan['Periode Program'] || ''}</textarea></td>
+                        <td><textarea class="input-profil" id="pic_${id}" rows="3">${item.pantauan['PIC Penanganan'] || ''}</textarea></td>
+                        <td><textarea class="input-profil" id="realisasi_${id}" rows="3">${item.pantauan['Realisasi'] || ''}</textarea></td>
+                        <td><textarea class="input-profil" id="lanjutan_${id}" rows="3">${item.pantauan['Rencana Pencegahan Lanjutan'] || ''}</textarea></td>
+                        <td><textarea class="input-profil" id="hasil_${id}" rows="3">${item.pantauan['Hasil Pemantauan'] || ''}</textarea></td>
                         <td>
                             <select class="form-select input-profil status-select" id="status_${id}" onchange="updateWarnaStatus(this)">
                                 <option value="Belum Ditangani" ${prevStatus === 'Belum Ditangani' ? 'selected' : ''}>Belum Ditangani</option>
@@ -285,18 +375,19 @@
         }
 
         function simpanProfilRS() {
-            // Karena kita mau simpan semua, kita looping dataTampilArray (bukan yang terfilter saja agar data lama tidak hilang)
             let finalDataUntukDisimpan = dataTampilArray.map(item => {
                 let id = item.id;
-                
-                // Ambil value dari DOM jika elemennya ada (sedang tampil), jika tidak ambil dari state lama
                 let elemPeriode = document.getElementById(`periode_${id}`);
                 
                 return {
                     id_risiko: id,
                     unit: item.base['Unit Kerja'],
                     risiko: item.base['Risiko Teridentifikasi'],
-                    skor_akhir: item.base['Skor Akhir'],
+                    kategori: elemPeriode ? document.getElementById(`kat_${id}`).value : item.pantauan['Kategori Risiko'],
+                    rencana: elemPeriode ? document.getElementById(`rencana_${id}`).value : item.pantauan['Rencana Penanganan'],
+                    skor_dxf: item.base['Skor Risiko (DxF)'],
+                    kontrol: elemPeriode ? document.getElementById(`kontrol_${id}`).value : item.pantauan['Kontrol'],
+                    skor_akhir: elemPeriode ? document.getElementById(`skor_akhir_${id}`).innerText : item.pantauan['Skor Akhir'],
                     periode: elemPeriode ? elemPeriode.value : item.pantauan['Periode Program'],
                     pic: elemPeriode ? document.getElementById(`pic_${id}`).value : item.pantauan['PIC Penanganan'],
                     realisasi: elemPeriode ? document.getElementById(`realisasi_${id}`).value : item.pantauan['Realisasi'],
@@ -309,7 +400,7 @@
             const payload = { action: "save_profil_rs", data: finalDataUntukDisimpan };
             const btnSubmit = document.querySelector('.btn-success');
             
-            btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memperbarui...';
+            btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
             btnSubmit.disabled = true;
 
             fetch(scriptURL, {
@@ -321,18 +412,25 @@
             .then(res => {
                 if (res.status === 'success') {
                     alert("Pembaruan Berhasil! Dasbor Profil Risiko RS telah tersimpan secara permanen.");
+                    dataTampilArray.forEach(item => {
+                        let id = item.id;
+                        let elemPeriode = document.getElementById(`periode_${id}`);
+                        if (elemPeriode) {
+                            item.pantauan['Kategori Risiko'] = document.getElementById(`kat_${id}`).value;
+                            item.pantauan['Status Penanganan'] = document.getElementById(`status_${id}`).value;
+                            item.pantauan['Skor Akhir'] = document.getElementById(`skor_akhir_${id}`).innerText;
+                        }
+                    });
+                    renderTabelProfil();
                 } else { alert("Sistem Gagal: " + res.message); }
             })
             .catch(err => alert("Gagal terhubung ke server. Periksa koneksi internet Anda."))
             .finally(() => {
-                btnSubmit.innerHTML = '<i class="fas fa-save me-1"></i> Update Pemantauan';
+                btnSubmit.innerHTML = '<i class="fas fa-save me-1"></i> Update & Simpan';
                 btnSubmit.disabled = false;
             });
         }
 
-        // =========================================================
-        // FUNGSI CERDAS: EXPORT KE MS WORD (DOC) MENGKONVERSI INPUT KE TEKS
-        // =========================================================
         window.exportKeWord = function() {
             if (document.getElementById('tabelProfilBody').innerHTML.includes('Tidak ada data')) { 
                 alert("Tidak ada data untuk diekspor."); return; 
@@ -341,18 +439,14 @@
             const selectedTahun = document.getElementById('filterTahun').value;
             let tahunCetak = selectedTahun === "SEMUA" ? "Semua_Tahun" : selectedTahun;
 
-            // 1. Buat kontainer bayangan
             const wrapper = document.createElement('div');
             
-            // 2. Clone Kop Surat dan tempelkan
             const headerClone = document.getElementById('printHeader').cloneNode(true);
             headerClone.classList.remove('d-none', 'd-print-block');
             wrapper.appendChild(headerClone);
             
-            // 3. Clone Tabel
             const tableClone = document.getElementById('tabelProfil').cloneNode(true);
             
-            // 4. LELEHKAN TEXTAREA & SELECT MENJADI TEKS BIASA
             const inputs = tableClone.querySelectorAll('textarea, select');
             inputs.forEach(input => {
                 let textVal = input.value || '-';
@@ -364,17 +458,18 @@
                 tdParent.style.textAlign = "left"; 
             });
 
-            // 5. Ubah class warna Bootstrap menjadi warna statis
             const allCells = tableClone.querySelectorAll('td, th');
             allCells.forEach(cell => {
                 if(cell.classList.contains('bg-ekstrem')) { cell.style.backgroundColor = '#dc3545'; cell.style.color = '#fff'; }
                 else if(cell.classList.contains('bg-tinggi')) { cell.style.backgroundColor = '#fd7e14'; cell.style.color = '#fff'; }
+                else if(cell.classList.contains('bg-sedang')) { cell.style.backgroundColor = '#ffc107'; cell.style.color = '#000'; }
+                else if(cell.classList.contains('bg-rendah')) { cell.style.backgroundColor = '#198754'; cell.style.color = '#fff'; }
+                else if(cell.classList.contains('bg-success')) { cell.style.backgroundColor = '#198754'; cell.style.color = '#fff'; }
                 else if(cell.classList.contains('bg-primary')) { cell.style.backgroundColor = '#0d6efd'; cell.style.color = '#fff'; }
             });
 
             wrapper.appendChild(tableClone);
 
-            // 6. Susun XML MS Word (Landscape, Kertas F4/Legal karena tabel panjang)
             const h1 = "<ht" + "ml xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><he" + "ad><meta charset='utf-8'><st" + "yle>";
             const cssWord = `
                 @page { size: 33cm 21.5cm; margin: 1.5cm; mso-page-orientation: landscape; }
@@ -382,14 +477,13 @@
                 h3, h4, h5 { text-align: center; margin: 5px 0; } 
                 table { border-collapse: collapse; width: 100%; margin-top: 20px; font-size: 8.5pt; } 
                 th, td { border: 1px solid #000; padding: 4px; vertical-align: top; } 
-                th { background-color: #f2f2f2; font-weight: bold; text-align: center; } 
+                th { font-weight: bold; text-align: center; } 
                 .text-center { text-align: center; } 
                 .fw-bold { font-weight: bold; }
             `;
             const h3 = "</st" + "yle></he" + "ad><bo" + "dy>";
             const f1 = "</bo" + "dy></ht" + "ml>";
                 
-            // 7. Unduh
             const blob = new Blob(['\ufeff', h1 + cssWord + h3 + wrapper.innerHTML + f1], { type: 'application/msword' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob); 
