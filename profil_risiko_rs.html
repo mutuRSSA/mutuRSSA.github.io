@@ -81,6 +81,7 @@
                     <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;"><i class="fas fa-sort-amount-down me-1"></i> Urutkan Berdasarkan:</label>
                     <select id="sortData" class="form-select border-info fw-bold text-dark" onchange="renderTabelProfil()">
                         <option value="kategori_skor">Kategori (A-Z) & Skor Tertinggi</option>
+                        <option value="pemilik_asc" class="fw-bold">Pemilik Risiko (Unit A-Z)</option> 
                         <option value="skor_desc">Skor Akhir Tertinggi</option>
                         <option value="skor_asc">Skor Akhir Terendah</option>
                         <option value="kategori_asc">Kategori (A-Z)</option>
@@ -250,9 +251,6 @@
             else if(val === "Dibatalkan") selectElement.classList.add("status-batal");
         }
 
-        // =========================================================
-        // FUNGSI RENDER TABEL (DENGAN FILTER & SORTING STATUS)
-        // =========================================================
         function renderTabelProfil() {
             const selectedTahun = document.getElementById('filterTahun').value;
             const sortBy = document.getElementById('sortData').value;
@@ -265,7 +263,6 @@
                 dataTampil = dataTampil.filter(item => item.tahun.toString() === selectedTahun);
             }
 
-            // Aturan bobot untuk pengurutan Status Penanganan
             const weightStatus = {
                 "Belum Ditangani": 1,
                 "On Proses": 2,
@@ -273,6 +270,7 @@
                 "Dibatalkan": 4
             };
 
+            // LOGIKA PENGURUTAN BARU TERMASUK UNIT
             dataTampil.sort((a, b) => {
                 let elemKatA = document.getElementById(`kat_${a.id}`);
                 let elemKatB = document.getElementById(`kat_${b.id}`);
@@ -288,11 +286,20 @@
                 let skorA = parseInt(a.pantauan['Skor Akhir'] || a.base['Skor Akhir'] || 0);
                 let skorB = parseInt(b.pantauan['Skor Akhir'] || b.base['Skor Akhir'] || 0);
 
+                let unitA = a.base['Unit Kerja'] || "Z";
+                let unitB = b.base['Unit Kerja'] || "Z";
+
                 if (sortBy === 'kategori_skor') {
                     if (catA < catB) return -1;
                     if (catA > catB) return 1;
                     return skorB - skorA; 
                 } 
+                else if (sortBy === 'pemilik_asc') {
+                    // Jika unit sama, urutkan berdasarkan skor akhir tertinggi
+                    if (unitA < unitB) return -1;
+                    if (unitA > unitB) return 1;
+                    return skorB - skorA;
+                }
                 else if (sortBy === 'skor_desc') {
                     return skorB - skorA; 
                 } 
@@ -308,7 +315,7 @@
                     let wA = weightStatus[statA] || 0;
                     let wB = weightStatus[statB] || 0;
                     if (wA !== wB) return wA - wB;
-                    return skorB - skorA; // Jika statusnya sama, kelompokkan berdasar skor tertinggi
+                    return skorB - skorA; 
                 }
             });
 
