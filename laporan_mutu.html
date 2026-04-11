@@ -88,7 +88,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-    const scriptURL = "https://script.google.com/macros/s/AKfycbwcFY6V-0JAUuOv79xyImDdw9-7jISWasq9UD6efGe_Odqqm5qyfUrjPkfsFa4omw2T/exec";
+        const scriptURL = "https://script.google.com/macros/s/AKfycbwcFY6V-0JAUuOv79xyImDdw9-7jISWasq9UD6efGe_Odqqm5qyfUrjPkfsFa4omw2T/exec";
         
         let rawData = [];
         let rawDataAnalisa = []; 
@@ -133,7 +133,7 @@
                     document.getElementById('chartCard').style.display = 'block';
                     
                     populateDropdowns(); 
-                    aturKunciUnitDanRender(); // Panggil fungsi pengunci unit yang baru
+                    aturKunciUnitDanRender();
                 }
             }).catch(err => {
                 document.getElementById('loadingMessage').innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-2"></i> Gagal memuat data dari server.';
@@ -150,25 +150,19 @@
             tahuns.forEach(thn => { tahunSelect.appendChild(new Option(thn, thn)); });
         }
 
-        // =====================================================================
-        // FUNGSI BARU: AUTO-LOCK UNIT SESUAI SESSION & LANGSUNG RENDER GRAFIK
-        // =====================================================================
         function aturKunciUnitDanRender() {
             const unitSelect = document.getElementById('filterUnit');
             
             if (userUnit && userUnit !== "Non-Unit" && userRole !== "Komite Mutu") {
-                // Pastikan unit user ada di dropdown, kalau tidak buat paksa
                 let optionExists = Array.from(unitSelect.options).some(opt => opt.value === userUnit);
                 if (!optionExists) {
                     unitSelect.add(new Option(userUnit, userUnit));
                 }
                 
-                // Set nilai, lalu kunci (disable)
                 unitSelect.value = userUnit;
                 unitSelect.setAttribute("disabled", "true");
                 unitSelect.classList.add("bg-light", "text-muted");
                 
-                // Tambahkan pesan agar user tahu
                 let colParent = unitSelect.parentElement;
                 let info = document.createElement("small");
                 info.className = "text-success fw-bold d-block mt-1 d-print-none";
@@ -176,16 +170,12 @@
                 colParent.appendChild(info);
             }
 
-            // Setelah dropdown diatur (dikunci atau dibiarkan bebas), langsung gambar grafiknya
             renderDashboard();
         }
 
         function renderDashboard() {
             const selectedTahun = document.getElementById('filterTahun').value;
-            // Penting: Jika dropdown unit disabled, .value mungkin tidak stabil di beberapa browser lama, 
-            // jadi kita ambil dari userUnit (session) jika dia bukan Komite Mutu.
             const selectedUnit = (userRole !== "Komite Mutu" && userUnit) ? userUnit : document.getElementById('filterUnit').value;
-            
             const selectedTipe = document.getElementById('filterTipeLaporan').value;
             const selectedDetail = document.getElementById('filterDetailPeriode').value;
             const namaBulan = kamusWaktu[selectedTipe][selectedDetail];
@@ -218,20 +208,31 @@
 
             let groupedData = {};
             filteredData.forEach(row => {
-                let jenis = row['Jenis Indikator'] || 'Lainnya'; let judul = row['Judul indikator'] || 'Tanpa Judul';
+                let jenis = row['Jenis Indikator'] || 'Lainnya'; 
+                let judul = row['Judul indikator'] || 'Tanpa Judul';
                 let satuan = (row['Satuan'] || '-').toString().trim();
                 let bulanNormalized = (row['Bulan'] || "").toString().trim().replace(/^\w/, c => c.toUpperCase());
+                
+                // Ambil Data Numerator & Denominator dari Kolom Google Sheets
+                let num = row['Numerator'] !== undefined ? row['Numerator'] : '';
+                let den = row['Denominator'] !== undefined ? row['Denominator'] : '';
+
                 if (!groupedData[jenis]) groupedData[jenis] = {};
                 if (!groupedData[jenis][judul]) {
                     groupedData[jenis][judul] = { satuan: satuan, bulans: {} };
-                    namaBulan.forEach(b => groupedData[jenis][judul].bulans[b] = { target: null, capai: null });
+                    namaBulan.forEach(b => groupedData[jenis][judul].bulans[b] = { target: null, capai: null, num: '', den: '' });
                 }
+                
                 if (groupedData[jenis][judul].bulans[bulanNormalized] !== undefined) {
                     let t = parseFloat((row['Target']||0).toString().replace(',', '.'));
                     let c = parseFloat((row['Pencapaian']||0).toString().replace(',', '.'));
                     if (satuan.includes('%')) { t *= 100; c *= 100; }
                     groupedData[jenis][judul].bulans[bulanNormalized].target = Math.round(t * 100) / 100;
                     groupedData[jenis][judul].bulans[bulanNormalized].capai = Math.round(c * 100) / 100;
+                    
+                    // Simpan Num & Den
+                    groupedData[jenis][judul].bulans[bulanNormalized].num = num;
+                    groupedData[jenis][judul].bulans[bulanNormalized].den = den;
                 }
             });
 
@@ -254,13 +255,27 @@
                 for (let judul in groupedData[jenis]) {
                     let item = groupedData[jenis][judul];
                     let tdHtml = namaBulan.map(b => {
-                        let t = item.bulans[b].target; let c = item.bulans[b].capai;
+                        let t = item.bulans[b].target; 
+                        let c = item.bulans[b].capai;
+                        let num = item.bulans[b].num;
+                        let den = item.bulans[b].den;
+
                         if (t === null) return "<td>-</td><td>-</td>";
                         let cl = c >= t ? 'status-tercapai' : 'status-gagal';
-                        return "<td class='target-text text-center'>" + t + "</td><td class='text-center " + cl + "'>" + c + "</td>";
+
+                        // LOGIKA CERDAS: Filter Khusus INM (Kecuali Kepuasan Pasien)
+                        let isINM = (jenis.trim().toLowerCase() === 'indikator mutu nasional');
+                        let isBukanKepuasan = !judul.toLowerCase().includes('kepuasan pasien');
+                        
+                        let infoNumDen = "";
+                        if (isINM && isBukanKepuasan && num !== '' && den !== '') {
+                            infoNumDen = `<br><small class='text-muted' style='font-size: 0.65rem;'>(N:${num} / D:${den})</small>`;
+                        }
+
+                        return "<td class='target-text text-center align-middle'>" + t + "</td><td class='text-center align-middle " + cl + "'>" + c + infoNumDen + "</td>";
                     }).join('');
 
-                    tableRows += "<tr><td class='text-center'>" + (nomor++) + "</td><td class='fw-bold'>" + judul + "</td><td class='text-center'>" + item.satuan + "</td>" + tdHtml + "</tr>";
+                    tableRows += "<tr><td class='text-center align-middle'>" + (nomor++) + "</td><td class='fw-bold align-middle'>" + judul + "</td><td class='text-center align-middle'>" + item.satuan + "</td>" + tdHtml + "</tr>";
 
                     let htmlAnalisaText = "";
                     if (isAnalyzed && analisaMap[judul]) {
@@ -303,9 +318,6 @@
             });
         }
 
-        // =========================================================
-        // BATAS FUNGSI BAWAAN YANG SAYA BIARKAN UTUH
-        // =========================================================
         window.toggleAnalisaMode = function() {
             const cont = document.querySelectorAll('.analisa-container');
             const foot = document.getElementById('analisaFooter');
@@ -350,7 +362,6 @@
         };
 
         window.kirimAnalisaKeServer = function() {
-            // Karena dropdown unit bisa jadi disabled (jika staf unit), kita harus mengambil dari userUnit
             const unit = (userRole !== "Komite Mutu" && userUnit) ? userUnit : document.getElementById('filterUnit').value;
             const kepala = document.getElementById('inputKepalaUnit').value;
             if (!kepala) return alert("Isi nama Kepala Unit!");
