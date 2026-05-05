@@ -8,88 +8,65 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/hyperformula/dist/hyperformula.full.min.js"></script>
 
     <style>
-    /* CSS Standar Halaman */
     body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
     .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.04); border-radius: 12px; border-top: 4px solid #0dcaf0; background: #fff;}
+    .handsontable { font-family: 'Segoe UI', Tahoma, sans-serif !important; font-size: 13px !important; color: #495057 !important; box-shadow: none !important; background-color: #ffffff !important;}
+    .handsontable .wtHolder, .handsontable .wtHider, .ht_master, .ht_clone_left, .ht_clone_top, .ht_clone_top_left_corner { background-color: #ffffff !important; background: #ffffff !important; }
+    .handsontableInput { color: #2c3e50 !important; background-color: #ffffff !important; font-size: 13px !important; box-shadow: 0 0 0 2px #0dcaf0 !important; padding: 4px !important; }
     
-    /* =======================================================
-       TEMA HANDSONTABLE: ANTI BLOK HITAM & BERSIH
-       ======================================================= */
-    .handsontable {
-        font-family: 'Segoe UI', Tahoma, sans-serif !important;
-        font-size: 13px !important;
-        color: #495057 !important;
-        box-shadow: none !important; 
-        background-color: #ffffff !important;
-    }
-
-    /* Paksa seluruh wadah dan area kosong menjadi putih murni */
-    .handsontable .wtHolder, 
-    .handsontable .wtHider, 
-    .ht_master, 
-    .ht_clone_left, 
-    .ht_clone_top, 
-    .ht_clone_top_left_corner {
-        background-color: #ffffff !important;
-        background: #ffffff !important;
-    }
-
-    /* FIX: Memastikan teks saat mengetik (Edit Mode) terlihat jelas */
-    .handsontableInput {
-        color: #2c3e50 !important;
-        background-color: #ffffff !important;
-        font-size: 13px !important;
-        box-shadow: 0 0 0 2px #0dcaf0 !important; /* Efek fokus biru saat mengetik */
-        padding: 4px !important;
-    }
-
-    /* FIX: Pastikan class readonly bawaan tidak berubah jadi hitam */
-    .handsontable .htDimmed {
-        background-color: #f1f3f5 !important;
-        color: #495057 !important;
-    }
-
-    /* Warna Header */
-    .handsontable th {
+    /* 1. KUNCI HEADER MELIPAT (WRAPPING) YANG LEBIH RAPI */
+    .handsontable th,
+    .handsontable th .colHeader { 
         background-color: #f8f9fa !important; 
-        color: #495057 !important;            
-        font-weight: 600 !important;
-        border-color: #dee2e6 !important;     
-        text-align: center;
-        vertical-align: middle !important;
-        padding: 10px 5px !important;
-        white-space: normal !important;
+        color: #495057 !important; 
+        font-weight: 600 !important; 
+        border-color: #dee2e6 !important; 
+        text-align: center; 
+        vertical-align: middle !important; 
+        
+        /* PENYEMPURNAAN UKURAN & SPASI */
+        padding: 6px 4px !important;       /* Kurangi padding agar lebih lega */
+        font-size: 11.5px !important;      /* Perkecil font khusus header */
+        line-height: 1.15 !important;      /* Rapatkan jarak antar baris teks */
+        
+        /* ATURAN TEKS BARU */
+        white-space: normal !important; 
+        word-wrap: normal !important;      /* Dilarang memotong paksa per-huruf */
+        overflow-wrap: normal !important;  
+        word-break: normal !important;
     }
-
-    /* Aksen Garis Biru Info di Bawah Header Kolom */
-    .handsontable thead th {
-        border-bottom: 2px solid #0dcaf0 !important;
+    
+    .handsontable thead th { border-bottom: 2px solid #0dcaf0 !important; }
+    
+    .handsontable td { 
+        border-color: #e9ecef !important; 
+        vertical-align: middle !important; 
+        padding: 6px 10px !important; 
+        white-space: normal !important; 
+        word-wrap: break-word !important; 
     }
-
-    /* Garis Antar Sel yang Sangat Halus */
-    .handsontable td {
-        border-color: #e9ecef !important;
-        vertical-align: middle !important;
-        padding: 6px 10px !important;
-    }
-
-    /* Area yang DI-BLOK/DIPILIH */
-    .handsontable .wtBorder.current, .handsontable .wtBorder.area {
-        background-color: #0dcaf0 !important; 
-    }
-    .handsontable td.area {
-        background-color: rgba(13, 202, 240, 0.08) !important; 
-    }
-
-    /* Styling Tab Navigation */
+    
+    .handsontable .wtBorder.current, .handsontable .wtBorder.area { background-color: #0dcaf0 !important; }
+    .handsontable td.area { background-color: rgba(13, 202, 240, 0.08) !important; }
     .nav-tabs .nav-link.active { border-top: 3px solid #0dcaf0; font-weight: bold; color: #2c3e50; background-color: #fff; border-bottom: none;}
     .nav-tabs .nav-link { color: #6c757d; font-size: 0.9rem; border: none; margin-right: 5px; }
     .nav-tabs { border-bottom: 2px solid #dee2e6; }
+
+   /* 2. KUNCI HEADER BEKU & TINGGI/LEBAR DINAMIS */
+    #spreadsheet {
+        /* Tabel akan mengambil 100% tinggi layar, dikurangi ruang untuk judul, navbar, dan tombol (~280px) */
+        height: calc(100vh - 280px) !important; 
+        min-height: 350px !important; /* Batas aman agar tabel tidak "tergencet" di layar laptop kecil */
+        overflow: hidden !important; 
+        width: 100%;
+    
+    }
     </style>
 </head>
 <body>
@@ -97,35 +74,27 @@
     <div id="sidebar-container"></div>
 
     <div class="container-fluid px-4">
-        
         <ul class="nav nav-tabs mb-3" id="formTabs"></ul>
-
         <div class="bg-white p-4 mb-4 card-custom">
             <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
                 <div>
                     <h4 class="mb-1 text-dark fw-bold" id="judulForm"><i class="fas fa-edit text-info me-2"></i> Input Data Observasi Mutu</h4>
                     <p class="text-muted mb-0 fw-bold text-uppercase" id="subJudulForm">Memuat formulir...</p>
                 </div>
-                <div>
-                    <span class="badge bg-secondary fs-6" id="badgeUnit"><i class="fas fa-hospital me-1"></i> Unit...</span>
+                <div class="text-end">
+                    <span class="badge bg-secondary fs-6 mb-2 d-block" id="badgeUnit"><i class="fas fa-hospital me-1"></i> Unit...</span>
+                    <button class="btn btn-outline-primary btn-sm fw-bold shadow-sm" onclick="scrollToEmptyRow()" id="btnScrollDown" style="display:none;">
+                        <i class="fas fa-arrow-down me-1"></i> Langsung ke Baris Kosong
+                    </button>
                 </div>
             </div>
-
-            <div id="loadingMessage" class="alert alert-info text-center fw-bold shadow-sm">
-                <i class="fas fa-spinner fa-spin me-2"></i> Sinkronisasi database...
-            </div>
-            
+            <div id="loadingMessage" class="alert alert-info text-center fw-bold shadow-sm"><i class="fas fa-spinner fa-spin me-2"></i> Sinkronisasi database...</div>
             <div id="spreadsheetContainer" style="display: none;">
-                <div id="spreadsheet" class="mb-4 w-100 hot"></div>
-
+                <div id="spreadsheet" class="mb-4 hot"></div>
+                
                 <div class="d-flex justify-content-between bg-light p-3 border rounded align-items-center mt-3">
-                    <small class="text-muted">
-                        <i class="fas fa-info-circle me-1"></i> Data status <strong>"Final"</strong> dikunci permanen.<br>
-                        Gunakan status <strong>"Draft"</strong> jika masih ingin diedit di kemudian waktu.
-                    </small>
-                    <button class="btn btn-success fw-bold px-4 shadow-sm" onclick="simpanDataMentah()" id="btnSimpan">
-                        <i class="fas fa-cloud-upload-alt me-2"></i> Simpan Laporan
-                    </button>
+                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Data status <strong>"Final"</strong> dikunci permanen.<br>Gunakan status <strong>"Draft"</strong> jika masih ingin diedit di kemudian waktu.</small>
+                    <button class="btn btn-success fw-bold px-4 shadow-sm" onclick="simpanDataMentah()" id="btnSimpan"><i class="fas fa-cloud-upload-alt me-2"></i> Simpan Laporan</button>
                 </div>
             </div>
         </div>
@@ -136,11 +105,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbw2nBiM7lILqUC-sxGsloXsn5v2amDFWugMjUN8qR6wF1ZFCBObrOA1qkH2V1E9KSPh/exec";
-        
+        const scriptURL = "https://script.google.com/macros/s/AKfycby6fKdeQGQSFEyadgdEQHL6px9zQHH9_z3DFKIHrI3SEKkLZdS9IYeia-PsZihoQ2ef/exec";
         let hot = null; 
         let activeFormType = new URLSearchParams(window.location.search).get('form');
-        
         if (!activeFormType) { window.location.href = "index.html"; }
         
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
@@ -163,134 +130,244 @@
                 .then(res => res.json())
                 .then(result => {
                     document.getElementById('loadingMessage').style.display = 'none';
-
                     if (result.status === 'success') {
                         let tabsHtml = '';
                         result.menu.forEach(form => {
                             let isActive = (form === activeFormType) ? 'active' : '';
-                            tabsHtml += `
-                                <li class="nav-item">
-                                    <a class="nav-link ${isActive}" href="input_mutu.html?form=${form}">
-                                        <i class="fas ${isActive ? 'fa-folder-open text-info' : 'fa-folder'} me-1"></i> ${form.replace(/_/g, ' ')}
-                                    </a>
-                                </li>`;
+                            tabsHtml += `<li class="nav-item"><a class="nav-link ${isActive}" href="input_mutu.html?form=${form}"><i class="fas ${isActive ? 'fa-folder-open text-info' : 'fa-folder'} me-1"></i> ${form.replace(/_/g, ' ')}</a></li>`;
                         });
                         document.getElementById('formTabs').innerHTML = tabsHtml;
 
-                        // Penerjemah Rumus
-                        result.data.forEach((row, rowIndex) => {
-                            result.columns.forEach((col, colIndex) => {
+                        const applyFormulasToRow = (rowArray, rowIndex, columnsDef) => {
+                            columnsDef.forEach((col, colIndex) => {
                                 if (col.formula && col.formula.trim() !== "") {
                                     let excelFormula = col.formula
                                         .replace(/\[(\d+):(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (rowIndex + 1) + ":" + colToLetter(parseInt(e)) + (rowIndex + 1))
                                         .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (rowIndex + 1));
-                                    
-                                    row[colIndex] = excelFormula.startsWith('=') ? excelFormula : "=" + excelFormula;
+                                    rowArray[colIndex] = excelFormula.startsWith('=') ? excelFormula : "=" + excelFormula;
                                 }
                             });
+                        };
+
+                        result.data.forEach((row, rowIndex) => { applyFormulasToRow(row, rowIndex, result.columns); });
+
+                        // Pemetaan Tipe Kolom 
+                        let hotColumns = result.columns.map(c => {
+                            let rawType = (c.type || 'text').toString().toLowerCase().trim();
+                            let config = { type: 'text', readOnly: c.readOnly || false, wordWrap: true }; 
+                            
+                            if (rawType === 'dropdown') {
+                                config.type = 'dropdown';
+                                config.source = c.source;
+                            } 
+                            else if (rawType === 'checkbox') {
+                                config.type = 'checkbox';
+                                config.checkedTemplate = 'Ya'; 
+                                config.uncheckedTemplate = 'Tidak';
+                                config.className = 'htCenter htMiddle';
+                            }
+                            else if (rawType === 'calendar' || rawType === 'date') {
+                                config.type = 'date'; 
+                                config.dateFormat = 'DD/MM/YYYY'; 
+                                config.correctFormat = true;
+                            }
+                            else if (rawType === 'durasi_hm') {
+                                config.type = 'text'; 
+                                config.validator = /^[0-9]+:[0-5][0-9]$/;
+                            }
+                            else if (rawType === 'durasi_hms') {
+                                config.type = 'text'; 
+                                config.validator = /^[0-9]+:[0-5][0-9]:[0-5][0-9]$/;
+                            }
+                            else if (rawType === 'durasi_ms') {
+                                config.type = 'text'; 
+                                config.validator = /^[0-9]+:[0-5][0-9]$/;
+                            }
+                            else if (rawType === 'time') {
+                                config.type = 'time'; 
+                                config.timeFormat = 'HH:mm:ss'; 
+                                config.correctFormat = true;
+                            }
+                            
+                            return config;
                         });
 
-                        let hotColumns = result.columns.map(c => {
-                        // Gunakan tipe dari backend, jika kosong jadikan text
-                        let config = { type: c.type || 'text', readOnly: c.readOnly || false };
-                        
-                        if (c.type === 'dropdown') {
-                            config.source = c.source;
-                        } 
-                        else if (c.type === 'checkbox') {
-                            // Ubah output centang menjadi Ya/Tidak agar rumus Excel Anda tetap berfungsi
-                            config.checkedTemplate = 'Ya';
-                            config.uncheckedTemplate = 'Tidak';
-                            config.className = 'htCenter htMiddle'; // Buat letak kotak centang rapi di tengah
-                        }
-                        
-                        return config;
-                    });
-
                         document.getElementById('spreadsheetContainer').style.display = 'block';
-                        
+                        document.getElementById('btnScrollDown').style.display = 'inline-block'; 
                         const container = document.getElementById('spreadsheet');
+                        
+                        // 3. KUNCI LEBAR KOLOM (MEMAKSA HT UNTUK PATUH PADA SCRIPT)
+                        // Ekstrak langsung lebar menjadi array murni (contoh: [undefined, 100, 100, undefined])
+                        let exactWidths = result.columns.map(c => c.width ? parseInt(c.width) : undefined);
+
                         hot = new Handsontable(container, {
                             data: result.data,
                             colHeaders: result.columns.map(c => c.title),
                             columns: hotColumns,
+                            
+                            // MASUKKAN ARRAY LEBAR SECARA EKSPLISIT DI SINI
+                            colWidths: exactWidths,
+                            
                             rowHeaders: true,
                             width: '100%',
-                            height: 'auto', 
+                            
+                            // Paksa tabel 100% mengikuti tinggi CSS container div-nya
+                            height: '100%', 
+
+                            stretchH: 'all',
+                            
+                            renderAllRows: false, 
                             viewportRowRenderingOffset: 100, 
                             minSpareRows: 3,
                             contextMenu: true,
-                            formulas: {
-                                engine: HyperFormula, 
-                            },
+                            formulas: { engine: HyperFormula },
                             licenseKey: 'non-commercial-and-evaluation', 
+                            filters: true,
+                            dropdownMenu: ['filter_by_condition', 'filter_by_value', 'filter_action_bar'],
+                            columnSorting: true,
                             
+                            autoColumnSize: true,
+                            manualColumnResize: true,
+                            wordWrap: true, // Pastikan engine melipat kata aktif
+
+                            afterPaste: function(data, coords) {
+                                const hotInstance = this;
+                                setTimeout(() => {
+                                    let updates = [];
+                                    const rowCount = hotInstance.countRows();
+                                    
+                                    for (let r = 0; r < rowCount; r++) {
+                                        result.columns.forEach((col, c) => {
+                                            if (col.formula && col.formula.trim() !== "") {
+                                                let val = hotInstance.getDataAtCell(r, c);
+                                                if (val === null || val === "" || (typeof val === 'string' && !val.startsWith('='))) {
+                                                     let excelFormula = col.formula
+                                                        .replace(/\[(\d+):(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (r + 1) + ":" + colToLetter(parseInt(e)) + (r + 1))
+                                                        .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (r + 1));
+                                                     
+                                                     updates.push([r, c, "=" + excelFormula]);
+                                                }
+                                            }
+                                        });
+                                    }
+                                    if (updates.length > 0) { 
+                                        hotInstance.setDataAtCell(updates, 'autoFormulaSweep'); 
+                                    }
+                                }, 200); 
+                            },
+
+                            afterCreateRow: function(index, amount, source) {
+                                if (source === 'loadData' || source === 'auto' || source === 'CopyPaste.paste') return;
+                                
+                                let updates = [];
+                                for (let i = 0; i < amount; i++) {
+                                    let rowIndex = index + i;
+                                    result.columns.forEach((col, colIndex) => {
+                                        if (col.formula && col.formula.trim() !== "") {
+                                            let excelFormula = col.formula
+                                                .replace(/\[(\d+):(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (rowIndex + 1) + ":" + colToLetter(parseInt(e)) + (rowIndex + 1))
+                                                .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (rowIndex + 1));
+                                            
+                                            updates.push([rowIndex, colIndex, "=" + excelFormula]);
+                                        }
+                                    });
+                                }
+                                if(updates.length > 0) { 
+                                    setTimeout(() => { this.setDataAtCell(updates, 'autoFormula'); }, 100); 
+                                }
+                            },
+
                             cells: function(row, col) {
                                 var cellProperties = {};
                                 cellProperties.renderer = function(instance, td, r, c, prop, value, cellProps) {
-                                    Handsontable.renderers.TextRenderer.apply(this, arguments);
+                                    var cellType = cellProps.type || 'text';
+                                    var baseRenderer = Handsontable.renderers.getRenderer(cellType);
+                                    baseRenderer.apply(this, arguments);
                                     
                                     let statusColIndex = instance.getSettings().columns.length - 1;
                                     let status = instance.getDataAtCell(r, statusColIndex);
-                                    
-                                    // Reset gaya default
-                                    td.style.fontStyle = 'normal';
-                                    td.style.fontWeight = 'normal';
+                                    td.style.fontStyle = 'normal'; td.style.fontWeight = 'normal';
 
-                                    // Logika Pewarnaan Baru
-                                    if (status === 'Final') {
-                                        td.style.backgroundColor = '#e9ecef'; 
-                                        td.style.color = '#adb5bd';
-                                        td.style.fontStyle = 'italic';
-                                    } 
-                                    else if (cellProps.readOnly) {
-                                        td.style.backgroundColor = '#f1f3f5'; // Abu-abu terang & stabil
-                                        td.style.color = '#0dcaf0';           // Aksen teks cyan
-                                        td.style.fontWeight = 'bold';
-                                    } 
-                                    else {
-                                        td.style.backgroundColor = '#ffffff'; 
-                                        td.style.color = '#2c3e50';           
+                                    if (status === 'Final') { 
+                                        td.style.backgroundColor = '#e9ecef'; td.style.color = '#adb5bd'; td.style.fontStyle = 'italic'; 
+                                    } else if (cellProps.readOnly) { 
+                                        td.style.backgroundColor = '#f1f3f5'; td.style.color = '#0dcaf0'; td.style.fontWeight = 'bold'; 
+                                    } else { 
+                                        td.style.backgroundColor = '#ffffff'; td.style.color = '#2c3e50'; 
                                     }
 
-                                    // Penyelarasan teks
-                                    if (!isNaN(value) && value !== "" && value !== null) {
-                                        td.style.textAlign = 'right';
-                                    } else {
-                                        td.style.textAlign = 'left';
+                                    if (cellType !== 'checkbox') {
+                                        if (!isNaN(value) && value !== "" && value !== null) { 
+                                            td.style.textAlign = 'right'; 
+                                        } else { 
+                                            td.style.textAlign = 'left'; 
+                                        }
                                     }
                                     
-                                    // Bersihkan error rumus
-                                    if (value === '#DIV/0!' || value === '#VALUE!' || value === '#CYCLE!') {
-                                        td.innerHTML = '<span style="color:#dee2e6">-</span>';
+                                    if (value === '#DIV/0!' || value === '#VALUE!' || value === '#CYCLE!') { 
+                                        td.innerHTML = '<span style="color:#dee2e6">-</span>'; 
                                     } 
                                 };
                                 return cellProperties;
                             },
 
                             beforeChange: function (changes, source) {
-                                if (source === 'loadData' || !changes) return;
-                                
+                                if (!changes) return;
                                 let statusColIndex = this.getSettings().columns.length - 1;
                                 let isBlocked = false;
 
                                 changes.forEach(change => {
-                                    let row = change[0];
-                                    let col = change[1];
+                                    let row = change[0]; let col = change[1];
+                                    let oldVal = change[2]; let newVal = change[3];
                                     let status = this.getDataAtCell(row, statusColIndex);
+                                    let colSettings = this.getSettings().columns[col];
+                                    let colDef = result.columns[col];
                                     
                                     if (status === 'Final' && col !== statusColIndex) {
-                                        change[3] = change[2]; 
+                                        change[3] = oldVal; 
                                         isBlocked = true;
+                                        return;
+                                    }
+
+                                    if (colSettings.type === 'checkbox' && newVal !== null && newVal !== undefined) {
+                                        let strVal = newVal.toString().trim().toLowerCase();
+                                        if (['true', '1', 'yes', 'y', 'benar'].includes(strVal)) {
+                                            change[3] = 'Ya';
+                                        } else if (['false', '0', 'no', 'n', 'salah', ''].includes(strVal)) {
+                                            change[3] = 'Tidak';
+                                        }
+                                    }    
+
+                                    if (newVal && typeof newVal === 'string' && newVal.trim() !== "") {
+                                        if (colSettings.type === 'time' || colDef.type === 'durasi_hm' || colDef.type === 'durasi_hms' || colDef.type === 'durasi_ms') {
+                                            change[3] = newVal.replace(/\./g, ':');
+                                        }
+                                        else if (colSettings.type === 'date' || colDef.type === 'date' || colDef.type === 'calendar') {
+                                            let tebakanTanggal = moment(newVal, ["YYYY-MM-DD", "DD/MM/YYYY", "DD-MM-YYYY", "YYYY/MM/DD", "D/M/YY", "D/M/YYYY", moment.ISO_8601], true);
+                                            if (!tebakanTanggal.isValid()) {
+                                                tebakanTanggal = moment(newVal); 
+                                            }
+                                            if (tebakanTanggal.isValid()) {
+                                                change[3] = tebakanTanggal.format('DD/MM/YYYY'); 
+                                            }
+                                        }
+                                    }
+
+                                    if (colSettings && colSettings.readOnly && (source === 'CopyPaste.paste' || source === 'Autofill.fill')) {
+                                        if (colDef && colDef.formula && colDef.formula.trim() !== "") {
+                                            let excelFormula = colDef.formula
+                                                .replace(/\[(\d+):(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (row + 1) + ":" + colToLetter(parseInt(e)) + (row + 1))
+                                                .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (row + 1));
+                                            
+                                            change[3] = "=" + excelFormula;
+                                        }
                                     }
                                 });
 
                                 if(isBlocked) alert("Tindakan dibatalkan. Baris ini telah berstatus Final.");
                             }
                         });
-                    } else {
-                        document.getElementById('loadingMessage').innerHTML = `<i class="fas fa-lock me-2"></i> ${result.message}`;
-                    }
+                    } else { document.getElementById('loadingMessage').innerHTML = `<i class="fas fa-lock me-2"></i> ${result.message}`; }
                 });
         });
 
@@ -301,30 +378,46 @@
             btn.disabled = true;
 
             const rawData = hot.getData();
-            const dataToSave = rawData.filter(row => row.some(cell => cell !== null && cell !== ""));
-            const headers = hot.getColHeader(); 
+            const columnsConfig = hot.getSettings().columns; 
+            
+            const dataToSave = rawData.filter(row => {
+                let hasValidInput = false;
+                for (let i = 0; i < row.length; i++) {
+                    let isStatusCol = (i === row.length - 1);  
+                    let isReadOnly = columnsConfig[i].readOnly; 
+                    let cellValue = row[i];
+                    if (!isReadOnly && !isStatusCol && cellValue !== null && cellValue !== "") { hasValidInput = true; break; }
+                }
+                return hasValidInput;
+            });
 
-            fetch(scriptURL, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({
-                    action: 'save_raw_data',
-                    formType: activeFormType,
-                    unit: userUnit,
-                    data: [headers, ...dataToSave]
-                })
-            })
+            if (dataToSave.length === 0) {
+                alert("⚠️ Tidak ada data observasi yang valid untuk disimpan.");
+                btn.innerHTML = `<i class="fas fa-cloud-upload-alt me-2"></i> Simpan Laporan`;
+                btn.disabled = false; return;
+            }
+
+            const headers = hot.getColHeader(); 
+            fetch(scriptURL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: 'save_raw_data', formType: activeFormType, unit: userUnit, data: [headers, ...dataToSave] }) })
             .then(res => res.json())
             .then(res => {
-                if(res.status === 'success') {
-                    alert("✅ Data berhasil disimpan!");
-                    window.location.reload();
-                } else { alert("❌ Gagal: " + res.message); }
-            })
-            .finally(() => {
-                btn.innerHTML = `<i class="fas fa-cloud-upload-alt me-2"></i> Simpan Laporan`;
-                btn.disabled = false;
-            });
+                if(res.status === 'success') { alert("✅ Data berhasil disimpan!"); window.location.reload(); } 
+                else { alert("❌ Gagal: " + res.message); }
+            }).finally(() => { btn.innerHTML = `<i class="fas fa-cloud-upload-alt me-2"></i> Simpan Laporan`; btn.disabled = false; });
+        };
+        
+        window.scrollToEmptyRow = function() {
+            if (!hot) return;
+            const rowCount = hot.countRows();
+            let targetRow = rowCount - 1;
+            for (let r = 0; r < rowCount; r++) {
+                if (hot.isEmptyRow(r)) {
+                    targetRow = r;
+                    break;
+                }
+            }
+            hot.selectCell(targetRow, 0);
+            hot.scrollViewportTo(targetRow, 0);
         };
     </script>
 </body>
