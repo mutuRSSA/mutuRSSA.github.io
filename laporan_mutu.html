@@ -265,8 +265,12 @@
                 let isHAI = judulUpper.includes('CAUTI') || judulUpper.includes('VAP') || judulUpper.includes('CLABSI') || judulUpper.includes('PHLEBITIS') || judulUpper.includes('FLEBITIS');
                 let isSSI = judulUpper.includes('SSI ');
 
-                if (isHAI) judul = "Total Insidensi HAIs 🔍";
-                if (isSSI) judul = "Total Insidensi SSI 🔍";
+                // LOGIKA CERDAS: Jika yang dipilih Komite PPI, biarkan tampil apa adanya. Jika bukan, lebur menjadi tombol.
+                if (selectedUnit !== "Komite PPI") {
+                    if (isHAI) judul = "Total Insidensi HAIs 🔍";
+                    if (isSSI) judul = "Total Insidensi SSI 🔍";
+                }
+                // -----------------------------------------------
                 // -----------------------------------------------
 
                 if (!groupedData[jenis]) groupedData[jenis] = {};
@@ -320,6 +324,83 @@
                 "<button class='btn btn-primary fw-bold px-3 ms-2' onclick='exportKeWord()'><i class='fas fa-file-word me-1'></i> Export Word</button></div></div>";
 
             let chartConfigs = []; let chartIdCounter = 0;
+            // =================================================================
+            // --- SUNTIKAN BARU: SCORECARD RINGKASAN EKSEKUTIF ---
+            // =================================================================
+            let stats = { total: 0, hit: 0, miss: 0, sumInmCpa: 0, countInm: 0 };
+
+            // Mesin penghitung statistik
+            for (let jenis in groupedData) {
+                let isINM = jenis.toLowerCase().includes("nasional") || jenis.toLowerCase().includes("inm");
+                for (let judul in groupedData[jenis]) {
+                    stats.total++;
+                    let item = groupedData[jenis][judul];
+                    
+                    let avgC = 0; let t = 0; let valid = 0;
+                    namaBulan.forEach(b => {
+                        if (item.bulans[b].capai !== null && item.bulans[b].target !== null) {
+                            avgC += parseFloat(item.bulans[b].capai);
+                            t = parseFloat(item.bulans[b].target); 
+                            valid++;
+                        }
+                    });
+                    
+                    if (valid > 0) {
+                        avgC = avgC / valid; // Rata-rata capaian di periode ini
+                        if (avgC >= t) stats.hit++; else stats.miss++;
+                        
+                        if (isINM) {
+                            stats.sumInmCpa += avgC;
+                            stats.countInm++;
+                        }
+                    }
+                }
+            }
+            
+            let avgInmText = stats.countInm > 0 ? (stats.sumInmCpa / stats.countInm).toFixed(1) + "<small>%</small>" : "-";
+            let persenHit = stats.total > 0 ? Math.round((stats.hit / stats.total) * 100) : 0;
+
+            // HTML untuk Scorecard
+            fullHtml += `
+            <div class="row g-3 mb-5 d-print-none">
+                <div class="col-md-3 col-sm-6">
+                    <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #3c8dbc, #2980b9); color: white; border-radius: 12px;">
+                        <div class="card-body text-center p-4">
+                            <h6 class="text-uppercase fw-bold opacity-75 mb-3" style="font-size: 0.8rem;"><i class="fas fa-list me-2"></i>Total Indikator</h6>
+                            <h2 class="display-5 fw-bold mb-0">${stats.total}</h2>
+                            <div class="mt-2" style="font-size: 0.85rem;">dievaluasi pada periode ini</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #198754, #20c997); color: white; border-radius: 12px;">
+                        <div class="card-body text-center p-4">
+                            <h6 class="text-uppercase fw-bold opacity-75 mb-3" style="font-size: 0.8rem;"><i class="fas fa-check-circle me-2"></i>Tercapai</h6>
+                            <h2 class="display-5 fw-bold mb-0">${stats.hit}</h2>
+                            <div class="mt-2 fw-bold text-warning" style="font-size: 0.85rem;">${persenHit}% dari total</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #dc3545, #f8d7da); color: white; border-radius: 12px;">
+                        <div class="card-body text-center p-4">
+                            <h6 class="text-uppercase fw-bold mb-3" style="color: #842029; font-size: 0.8rem;"><i class="fas fa-exclamation-triangle me-2"></i>Tidak Tercapai</h6>
+                            <h2 class="display-5 fw-bold mb-0" style="color: #842029;">${stats.miss}</h2>
+                            <div class="mt-2" style="color: #842029; font-size: 0.85rem;">butuh tindak lanjut</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #ffc107, #fd7e14); color: white; border-radius: 12px;">
+                        <div class="card-body text-center p-4">
+                            <h6 class="text-uppercase fw-bold opacity-75 mb-3" style="font-size: 0.8rem;"><i class="fas fa-star me-2"></i>Rata-Rata Capaian INM</h6>
+                            <h2 class="display-5 fw-bold mb-0">${avgInmText}</h2>
+                            <div class="mt-2" style="font-size: 0.85rem;">dari ${stats.countInm} Indikator Nasional</div>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            // =================================================================
             let thBulan = namaBulan.map(b => "<th colspan='2' style='min-width:90px;'>" + b + "</th>").join('');
             let thTargetCapai = namaBulan.map(() => "<th>Tgt</th><th>Cpa</th>").join('');
 
@@ -448,7 +529,8 @@
                 return j.includes('CAUTI') || j.includes('VAP') || j.includes('CLABSI') || j.includes('PHLEBITIS') || j.includes('FLEBITIS');
             }).map(r => r['Unit']))].filter(Boolean).sort();
 
-            if (selectedUnit === "RS_ALL" || haisUnits.includes(selectedUnit)) {
+            // TAMBAHKAN SYARAT: selectedUnit !== "Komite PPI"
+            if (selectedUnit !== "Komite PPI" && (selectedUnit === "RS_ALL" || haisUnits.includes(selectedUnit))) {
                 let innerHtmlHAIs = "<div class='table-responsive mb-0'><table class='table table-bordered table-hover mb-0' style='font-size: 0.85rem; background:#fff; min-width: 1200px;'>" +
                     "<thead class='text-center bg-light'><tr><th rowspan='2' class='align-middle'>Ruang</th><th colspan='3'>CAUTI</th><th colspan='3'>VAP</th><th colspan='3'>CLABSI</th><th colspan='3'>Phlebitis</th></tr>" +
                     "<tr><th class='align-middle'>Jumlah<br>Kasus</th><th class='align-middle text-muted' style='font-size:0.75rem;'>Jumlah lama hari pemakaian<br>kateter urin menetap</th><th class='align-middle'>Insiden(%)</th>" +
@@ -508,7 +590,9 @@
             }
 
             // MODAL SSI
-            if (selectedUnit === "RS_ALL" || selectedUnit.toUpperCase().includes("BEDAH") || selectedUnit.toUpperCase().includes("OPERASI")) {
+           // MODAL SSI
+            // TAMBAHKAN SYARAT: selectedUnit !== "Komite PPI"
+            if (selectedUnit !== "Komite PPI" && (selectedUnit === "RS_ALL" || selectedUnit.toUpperCase().includes("BEDAH") || selectedUnit.toUpperCase().includes("OPERASI"))) {
                 let innerHtmlSSI = "<div class='table-responsive mb-0'><table class='table table-bordered table-hover mb-0' style='font-size: 0.85rem; background:#fff;'>" +
                     "<thead class='text-center bg-light'><tr><th rowspan='2' class='align-middle'>Jenis Tindakan Operasi di RS</th><th colspan='3'>SSI</th></tr>" +
                     "<tr><th class='align-middle'>Jumlah Kasus</th><th class='align-middle'>Jumlah Tindakan Operasi</th><th class='align-middle'>Insiden (%)</th></tr></thead><tbody>";
