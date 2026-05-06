@@ -89,7 +89,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbxYIxi4QJp7IXoYF2YahdJnxVY80JlbA2jYY-RlhMPvZJN7MBirHI-RbUS87GJ7QU4H/exec";
+        const scriptURL = "https://script.google.com/macros/s/AKfycbwA00bHBk_Z6l1FViGbK0fkhU03ssARn2jzwmvTb-Wt5bHN-YtAUsxw-mAMG_cQkvVn/exec";
         
         let rawData = [];
         let rawDataAnalisa = []; 
@@ -322,6 +322,9 @@
             if (!isAnalyzed) fullHtml += "<button id='btnToggleAnalisa' class='btn btn-warning fw-bold text-dark px-3 me-2' onclick='toggleAnalisaMode()'><i class='fas fa-edit me-1'></i> Mode Analisa</button>";
             fullHtml += "<button class='btn btn-danger fw-bold px-3' onclick='window.print()'><i class='fas fa-print me-1'></i> Cetak Dokumen</button>" +
                 "<button class='btn btn-primary fw-bold px-3 ms-2' onclick='exportKeWord()'><i class='fas fa-file-word me-1'></i> Export Word</button></div></div>";
+                // --- SUNTIKAN TOMBOL BACKUP ---
+            // Tombol ini disembunyikan secara default (class d-none)
+            fullHtml += "<button id='btnBackupTahunan' class='btn btn-dark fw-bold px-3 ms-2 d-none' onclick='jalankanBackupAkhirTahun()'><i class='fas fa-database me-1'></i> Backup Arsip & Reset</button>";
 
             let chartConfigs = []; let chartIdCounter = 0;
             // =================================================================
@@ -739,6 +742,67 @@
                 btnSimpan.innerHTML = "<i class='fas fa-save me-2'></i> SIMPAN ANALISA"; btnSimpan.disabled = false;
             });
         };
+        // Fungsi ini dipanggil setiap kali Dasbor selesai di-render
+        function cekAksesTombolBackup() {
+            let tombolBackup = document.getElementById('btnBackupTahunan');
+            if (tombolBackup) {
+                // HANYA MUNCUL JIKA YANG LOGIN ADALAH KOMITE MUTU
+                if (selectedUnit === "Komite Mutu") {
+                    tombolBackup.classList.remove('d-none');
+                } else {
+                    tombolBackup.classList.add('d-none');
+                }
+            }
+        }
+
+        // Panggil fungsi cek akses di akhir fungsi renderDashboard() Anda
+        // ... (letakkan pemanggilan cekAksesTombolBackup(); di bagian paling bawah renderDashboard) ...
+
+        // Fungsi yang berjalan saat tombol Backup diklik
+        function jalankanBackupAkhirTahun() {
+            // Peringatan Berlapis agar tidak tidak sengaja terpencet
+            let konfirmasi1 = confirm("⚠️ PERINGATAN KRITIKAL!\n\nApakah Anda yakin ingin melakukan Backup Tahunan? Tindakan ini akan MENGHAPUS seluruh data mentah operasional di file unit Anda untuk persiapan tahun baru.");
+            if (!konfirmasi1) return;
+
+            let konfirmasi2 = prompt("Ketik kata 'SETUJU' untuk melanjutkan proses Backup & Reset Data:", "");
+            if (konfirmasi2 !== "SETUJU") {
+                alert("Proses Backup dibatalkan.");
+                return;
+            }
+
+            // Ganti tombol jadi Loading
+            let btn = document.getElementById('btnBackupTahunan');
+            let originalText = btn.innerHTML;
+            btn.innerHTML = "<i class='fas fa-spinner fa-spin me-1'></i> Memproses Arsip (Bisa makan waktu 1-3 Menit)...";
+            btn.disabled = true;
+
+            // Tembak ke API Apps Script
+            const payload = {
+                action: 'trigger_backup',
+                unit: selectedUnit // Mengirim data pengakses untuk divalidasi oleh server
+            };
+
+            fetch("URL_WEB_APP_ANDA_DISINI", {  // <--- PASTIKAN URL WEB APP ANDA BENAR
+                method: "POST",
+                body: JSON.stringify(payload)
+            })
+            .then(response => response.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    alert("✅ BERHASIL: " + res.message);
+                    window.location.reload(); // Refresh halaman agar data terupdate
+                } else {
+                    alert("❌ GAGAL: " + res.message);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            })
+            .catch(err => {
+                alert("Terjadi kesalahan koneksi saat memproses backup.");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        }
     </script>
 </body>
 </html>
