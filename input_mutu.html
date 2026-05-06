@@ -3,80 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Peningkatan Mutu - Komite Mutu</title>
+    <title>Input Laporan Mutu</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/hyperformula/dist/hyperformula.full.min.js"></script>
+
     <style>
-        body { 
-            background-color: #f4f6f9; 
-            padding-top: 80px; 
-            padding-bottom: 40px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-        }
-        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 8px; border-top: 4px solid #3c8dbc; border-bottom: none; border-left: none; border-right: none;}
+    body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.04); border-radius: 12px; border-top: 4px solid #0dcaf0; background: #fff;}
+    .handsontable { font-family: 'Segoe UI', Tahoma, sans-serif !important; font-size: 13px !important; color: #495057 !important; box-shadow: none !important; background-color: #ffffff !important;}
+    .handsontable .wtHolder, .handsontable .wtHider, .ht_master, .ht_clone_left, .ht_clone_top, .ht_clone_top_left_corner { background-color: #ffffff !important; background: #ffffff !important; }
+    .handsontableInput { color: #2c3e50 !important; background-color: #ffffff !important; font-size: 13px !important; box-shadow: 0 0 0 2px #0dcaf0 !important; padding: 4px !important; }
+    
+    /* 1. KUNCI HEADER MELIPAT (WRAPPING) YANG LEBIH RAPI */
+    .handsontable th,
+    .handsontable th .colHeader { 
+        background-color: #f8f9fa !important; 
+        color: #495057 !important; 
+        font-weight: 600 !important; 
+        border-color: #dee2e6 !important; 
+        text-align: center; 
+        vertical-align: middle !important; 
         
-        /* Tema Header dan Sidebar */
-        .bg-custom-dark { background-color: #3c8dbc; } 
-        .sidebar-link.active { background-color: #f4f6f9; color: #3c8dbc; border-left: 4px solid #3c8dbc; font-weight: bold; }
-        .sidebar-link { color: #333; font-weight: 500; transition: 0.2s; }
-        .sidebar-link:hover { background-color: #e9ecef; }
-        .navbar-brand { font-size: 1.25rem; letter-spacing: 0.5px; }
+        /* PENYEMPURNAAN UKURAN & SPASI */
+        padding: 6px 4px !important;       /* Kurangi padding agar lebih lega */
+        font-size: 11.5px !important;      /* Perkecil font khusus header */
+        line-height: 1.15 !important;      /* Rapatkan jarak antar baris teks */
+        
+        /* ATURAN TEKS BARU */
+        white-space: normal !important; 
+        word-wrap: normal !important;      /* Dilarang memotong paksa per-huruf */
+        overflow-wrap: normal !important;  
+        word-break: normal !important;
+    }
+    
+    .handsontable thead th { border-bottom: 2px solid #0dcaf0 !important; }
+    
+    .handsontable td { 
+        border-color: #e9ecef !important; 
+        vertical-align: middle !important; 
+        padding: 6px 10px !important; 
+        white-space: normal !important; 
+        word-wrap: break-word !important; 
+    }
+    
+    .handsontable .wtBorder.current, .handsontable .wtBorder.area { background-color: #0dcaf0 !important; }
+    .handsontable td.area { background-color: rgba(13, 202, 240, 0.08) !important; }
+    .nav-tabs .nav-link.active { border-top: 3px solid #0dcaf0; font-weight: bold; color: #2c3e50; background-color: #fff; border-bottom: none;}
+    .nav-tabs .nav-link { color: #6c757d; font-size: 0.9rem; border: none; margin-right: 5px; }
+    .nav-tabs { border-bottom: 2px solid #dee2e6; }
 
-        /* Gaya Pencarian */
-        .search-box { position: relative; max-width: 400px; }
-        .search-box i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #6c757d; }
-        .search-box input { padding-left: 40px; border-radius: 20px; border: 1px solid #ced4da; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); }
-        .search-box input:focus { box-shadow: 0 0 0 0.25rem rgba(60, 141, 188, 0.25); border-color: #3c8dbc; }
-
-        /* Gaya Tombol Dokumen */
-        .btn-dokumen {
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            text-align: left;
-            padding: 15px;
-            font-weight: 600;
-            color: #495057;
-            background-color: #fff;
-            border: 1px solid #e0e6ed;
-            border-radius: 8px;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-            text-decoration: none;
-            height: 100%;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        /* Aksen warna hijau Excel di pinggir kiri saat hover */
-        .btn-dokumen::before {
-            content: ''; position: absolute; left: 0; top: 0; height: 100%; width: 4px; background-color: #21a366;
-            transform: scaleY(0); transition: transform 0.3s ease; transform-origin: bottom;
-        }
-        
-        .btn-dokumen:hover {
-            border-color: #21a366;
-            color: #21a366;
-            transform: translateY(-3px);
-            box-shadow: 0 6px 12px rgba(33, 163, 102, 0.15);
-        }
-        
-        .btn-dokumen:hover::before { transform: scaleY(1); }
-        
-        .btn-dokumen i.main-icon {
-            font-size: 1.8rem;
-            color: #21a366; /* Warna hijau khas Excel/Sheets */
-            margin-right: 15px;
-            transition: transform 0.3s ease;
-        }
-        .btn-dokumen:hover i.main-icon { transform: scale(1.1); }
-        
-        .btn-dokumen i.external-icon {
-            position: absolute; right: 15px; font-size: 0.8rem; color: #adb5bd; opacity: 0; transition: 0.3s;
-        }
-        .btn-dokumen:hover i.external-icon { opacity: 1; transform: translateX(3px); color: #21a366; }
-
-        .section-title { font-size: 1rem; font-weight: 700; color: #6c757d; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; border-bottom: 2px dashed #e9ecef; padding-bottom: 8px; }
+   /* 2. KUNCI HEADER BEKU & TINGGI/LEBAR DINAMIS */
+    #spreadsheet {
+        /* Tabel akan mengambil 100% tinggi layar, dikurangi ruang untuk judul, navbar, dan tombol (~280px) */
+        height: calc(100vh - 280px) !important; 
+        min-height: 350px !important; /* Batas aman agar tabel tidak "tergencet" di layar laptop kecil */
+        overflow: hidden !important; 
+        width: 100%;
+    
+    }
     </style>
 </head>
 <body>
@@ -84,116 +74,351 @@
     <div id="sidebar-container"></div>
 
     <div class="container-fluid px-4">
-        <div class="bg-white p-4 card-custom mb-4">
-            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <ul class="nav nav-tabs mb-3" id="formTabs"></ul>
+        <div class="bg-white p-4 mb-4 card-custom">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
                 <div>
-                    <h4 class="mb-1 text-secondary d-flex align-items-center">
-                        <i class="fas fa-chart-line me-3 text-primary"></i>
-                        <span class="fs-4 fw-bold text-dark">Portal Dokumen Mutu Unit</span> 
-                    </h4>
-                    <p class="text-muted mb-0">Pilih unit kerja di bawah ini untuk menginput data Sensus/Indikator Mutu bulanan.</p>
+                    <h4 class="mb-1 text-dark fw-bold" id="judulForm"><i class="fas fa-edit text-info me-2"></i> Input Data Observasi Mutu</h4>
+                    <p class="text-muted mb-0 fw-bold text-uppercase" id="subJudulForm">Memuat formulir...</p>
                 </div>
+                <div class="text-end">
+                    <span class="badge bg-secondary fs-6 mb-2 d-block" id="badgeUnit"><i class="fas fa-hospital me-1"></i> Unit...</span>
+                    <button class="btn btn-outline-primary btn-sm fw-bold shadow-sm" onclick="scrollToEmptyRow()" id="btnScrollDown" style="display:none;">
+                        <i class="fas fa-arrow-down me-1"></i> Langsung ke Baris Kosong
+                    </button>
+                </div>
+            </div>
+            <div id="loadingMessage" class="alert alert-info text-center fw-bold shadow-sm"><i class="fas fa-spinner fa-spin me-2"></i> Sinkronisasi database...</div>
+            <div id="spreadsheetContainer" style="display: none;">
+                <div id="spreadsheet" class="mb-4 hot"></div>
                 
-                <div class="search-box w-100">
-                    <i class="fas fa-search"></i>
-                    <input type="text" class="form-control" id="searchInput" placeholder="Ketik nama unit/ruangan (misal: Farmasi)...">
+                <div class="d-flex justify-content-between bg-light p-3 border rounded align-items-center mt-3">
+                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Data status <strong>"Final"</strong> dikunci permanen.<br>Gunakan status <strong>"Draft"</strong> jika masih ingin diedit di kemudian waktu.</small>
+                    <button class="btn btn-success fw-bold px-4 shadow-sm" onclick="simpanDataMentah()" id="btnSimpan"><i class="fas fa-cloud-upload-alt me-2"></i> Simpan Laporan</button>
                 </div>
             </div>
-            
-            <div id="noResultMessage" class="alert alert-warning text-center fw-bold" style="display: none;">
-                <i class="fas fa-search-minus me-2"></i> Unit tidak ditemukan. Coba kata kunci lain.
-            </div>
-
-            <div class="doc-section mb-5" id="sectionKlinis">
-                <div class="section-title text-primary"><i class="fas fa-stethoscope me-2"></i> Pelayanan Klinis / Penunjang Medis</div>
-                <div class="row g-3 doc-container">
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="ambulans"><a href="https://docs.google.com/spreadsheets/d/1jeFgSmyj34zJtg4bUzU_zNdgshCnrF7th_cLdyom7Vo/edit?usp=drive_link" target="_blank" class="btn-dokumen" title="Buka Spreadsheet Ambulans"><i class="fas fa-file-excel main-icon"></i> <span>Ambulans</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="bangsal ranap rawat inap"><a href="https://docs.google.com/spreadsheets/d/1iTFXQrB1YVd7Ud5EpgNhYIHS3Gp9mOVZfdvsvQY2ziA/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Bangsal (Ranap)</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="farmasi apotek obat"><a href="https://docs.google.com/spreadsheets/d/1qh-F0iYaYXMOwUi0RyhbFtZrbe_pbx-e2kfgiH-UY18/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Farmasi</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="gizi dapur makanan"><a href="https://docs.google.com/spreadsheets/d/1-5cdXLTY27w0ueHyMNuw-Vtb0WOrY92MyifMw9MdwL8/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Gizi</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="kamar operasi ok bedah"><a href="https://docs.google.com/spreadsheets/d/1tWY-cMIOXYEelgRVsIe70cDWvaB-Qj83acdRT7uuCmM/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Kamar Operasi (OK)</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="laboratorium lab"><a href="https://docs.google.com/spreadsheets/d/1jNCSeLUdvOqW3LxXL4XEBphVAPSQOXIYFWyUU6jsGTc/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Laboratorium</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="perinatologi nicu bayi"><a href="https://docs.google.com/spreadsheets/d/1j7Jwqo-iuG1SSSuttQF7qL4R31GvUnbE-pVjFKrsUjc/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Perinatologi</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="radiologi rontgen"><a href="https://docs.google.com/spreadsheets/d/1jDQ0Q985VIGx7FDm9tee-l2_4fvQ5o4GwJBNlOpMEJM/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Radiologi</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="rawat jalan poli klinik"><a href="https://docs.google.com/spreadsheets/d/1cXuMOnD7Q7VtORqymqYvpYQDoxWHVLAdr3NEi9TVdHk/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Rawat Jalan (Poli)</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="ruang intensif icu hcu"><a href="https://docs.google.com/spreadsheets/d/1OI0LkEQum2gR4OugPEnORZfrF2z-ICydjdoshUYmIxE/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Ruang Intensif (ICU)</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="ugd igd gawat darurat"><a href="https://docs.google.com/spreadsheets/d/1DlRZFhUgLD8yo4zIdAbOcXl6MNGOk5U-VH908YsfWpw/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>IGD / UGD</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="vk bersalin ibu"><a href="https://docs.google.com/spreadsheets/d/1AC5tlIHy44chAvLeBHxtvYBmuPQf0s9_V7Lp2IKpBlc/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>VK (Ruang Bersalin)</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                </div>
-            </div>
-
-            <div class="doc-section" id="sectionManajemen">
-                <div class="section-title text-success"><i class="fas fa-briefcase me-2"></i> Pelayanan Manajemen / Non-Klinis</div>
-                <div class="row g-3 doc-container">
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="admin umum kepegawaian sdm"><a href="https://docs.google.com/spreadsheets/d/1iDYOZCQkVJDWAA0eS_xf0ajaEh7g3YDavSnv8AKV2_g/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Admin & Kepegawaian</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="ppi infeksi"><a href="https://docs.google.com/spreadsheets/d/1LhkpUAaRB8pePHOpI8J1fwUTDLc9icT5WMd0lB65BSE/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>PPI</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="cssd sterilisasi alat"><a href="https://docs.google.com/spreadsheets/d/1DJwoJaLm7FdWOlQKniKs6v6gLxY2sJdk471rlgr4Ca8/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>CSSD</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="elektromedis alat medis"><a href="https://docs.google.com/spreadsheets/d/1vSu7CPTbAXubykThI45QVyXvYxY4sUCDLLDbAhquiXM/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Elektromedis</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="ipsrs sarpras teknik pemeliharaan"><a href="https://docs.google.com/spreadsheets/d/1F71x9ENHb3pTmVUwAt7gHN86TD_Q-vScnzQH2VEA8I4/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>IPSRS</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="kamar jenazah forensik"><a href="https://docs.google.com/spreadsheets/d/1Ar4-BVcu3qQcuVihveiO4lTwTMsOlPzwL-HVa9tPk5c/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Kamar Jenazah</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="kasir billing pembayaran"><a href="https://docs.google.com/spreadsheets/d/1leBAx2OKWeGuAuuXk71pY0P5kQvnAXkBXx_xwA3zV_I/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Kasir</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="keamanan satpam security"><a href="https://docs.google.com/spreadsheets/d/1tDK_PdXocvtDL-pXOeT3iPk5KPOxA7qmXSPwzAV2Dws/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Keamanan (Satpam)</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="kesehatan lingkungan kesling limbah sampah"><a href="https://docs.google.com/spreadsheets/d/1lf_M34wzzkM3fW8pLoUqmwQmOnwRPXTV_ujODL-Xe5Y/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Kesling</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="keuangan aset bendahara"><a href="https://docs.google.com/spreadsheets/d/1hH7Wis7uO250OPZahKaHTyBlb8yDilWMfBoZEPfmGQo/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Keuangan & Aset</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="pengadaan barang jasa logistik"><a href="https://docs.google.com/spreadsheets/d/1Et0PiGl_ZIsgjSnjaV6RHQSA_v-u4Um8Xpg4pAa_VhM/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Pengadaan Barang & Jasa</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="penjaminan verifikasi bpjs asuransi"><a href="https://docs.google.com/spreadsheets/d/1qUCIR487biOKVp_nrzh5jq0ctW4WiYUSUMZk0T8NfWc/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Penjaminan & Verifikasi</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="promosi kesehatan pkrs edukasi"><a href="https://docs.google.com/spreadsheets/d/1yLJFEdw_iLGB0Dn80vJqcah_xpK8_H8FC_dpm3By64I/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Promosi Kesehatan</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                    <div class="col-12 col-md-6 col-lg-4 col-xl-3 doc-item" data-nama="rekam medis rm"><a href="https://docs.google.com/spreadsheets/d/1uGizTpl7_ZhGbriBLMXIwTyJHj3J8d_kLus2eiS31Q8/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel main-icon"></i> <span>Rekam Medis</span> <i class="fas fa-external-link-alt external-icon"></i></a></div>
-                </div>
-            </div>
-
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script src="auth.js"></script>
     <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('searchInput');
-            const docItems = document.querySelectorAll('.doc-item');
-            const sections = document.querySelectorAll('.doc-section');
-            const noResultMsg = document.getElementById('noResultMessage');
+        const scriptURL = "https://script.google.com/macros/s/AKfycbwA00bHBk_Z6l1FViGbK0fkhU03ssARn2jzwmvTb-Wt5bHN-YtAUsxw-mAMG_cQkvVn/exec";
+        let hot = null; 
+        let activeFormType = new URLSearchParams(window.location.search).get('form');
+        if (!activeFormType) { window.location.href = "index.html"; }
+        
+        const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        const userUnit = sessionMutu.unit || "GUEST";
 
-            // FITUR PENCARIAN (LIVE SEARCH)
-            searchInput.addEventListener('input', function() {
-                const keyword = this.value.toLowerCase().trim();
-                let isAnyVisible = false;
+        const colToLetter = (index) => {
+            let letter = '';
+            while (index >= 0) {
+                letter = String.fromCharCode((index % 26) + 65) + letter;
+                index = Math.floor(index / 26) - 1;
+            }
+            return letter;
+        };
 
-                // 1. Saring setiap tombol dokumen
-                docItems.forEach(item => {
-                    // Cek berdasarkan atribut data-nama (berisi kata kunci tersembunyi)
-                    const dataNama = item.getAttribute('data-nama').toLowerCase();
-                    if (dataNama.includes(keyword)) {
-                        item.style.display = 'block';
-                        isAnyVisible = true;
-                    } else {
-                        item.style.display = 'none';
-                    }
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById('badgeUnit').innerHTML = `<i class="fas fa-hospital me-1"></i> ${userUnit}`;
+            document.getElementById('subJudulForm').innerText = `FORMULIR: ${activeFormType.replace(/_/g, ' ')}`;
+
+            fetch(`${scriptURL}?unit=${encodeURIComponent(userUnit)}&formType=${encodeURIComponent(activeFormType)}`)
+                .then(res => res.json())
+                .then(result => {
+                    document.getElementById('loadingMessage').style.display = 'none';
+                    if (result.status === 'success') {
+                        let tabsHtml = '';
+                        result.menu.forEach(form => {
+                            let isActive = (form === activeFormType) ? 'active' : '';
+                            tabsHtml += `<li class="nav-item"><a class="nav-link ${isActive}" href="input_mutu.html?form=${form}"><i class="fas ${isActive ? 'fa-folder-open text-info' : 'fa-folder'} me-1"></i> ${form.replace(/_/g, ' ')}</a></li>`;
+                        });
+                        document.getElementById('formTabs').innerHTML = tabsHtml;
+
+                        const applyFormulasToRow = (rowArray, rowIndex, columnsDef) => {
+                            columnsDef.forEach((col, colIndex) => {
+                                if (col.formula && col.formula.trim() !== "") {
+                                    let excelFormula = col.formula
+                                        .replace(/\[(\d+):(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (rowIndex + 1) + ":" + colToLetter(parseInt(e)) + (rowIndex + 1))
+                                        .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (rowIndex + 1));
+                                    rowArray[colIndex] = excelFormula.startsWith('=') ? excelFormula : "=" + excelFormula;
+                                }
+                            });
+                        };
+
+                        result.data.forEach((row, rowIndex) => { applyFormulasToRow(row, rowIndex, result.columns); });
+
+                        // Pemetaan Tipe Kolom 
+                        let hotColumns = result.columns.map(c => {
+                            let rawType = (c.type || 'text').toString().toLowerCase().trim();
+                            let config = { type: 'text', readOnly: c.readOnly || false, wordWrap: true }; 
+                            
+                            if (rawType === 'dropdown') {
+                                config.type = 'dropdown';
+                                config.source = c.source;
+                            } 
+                            else if (rawType === 'checkbox') {
+                                config.type = 'checkbox';
+                                config.checkedTemplate = 'Ya'; 
+                                config.uncheckedTemplate = 'Tidak';
+                                config.className = 'htCenter htMiddle';
+                            }
+                            else if (rawType === 'calendar' || rawType === 'date') {
+                                config.type = 'date'; 
+                                config.dateFormat = 'DD/MM/YYYY'; 
+                                config.correctFormat = true;
+                            }
+                            else if (rawType === 'durasi_hm') {
+                                config.type = 'text'; 
+                                config.validator = /^[0-9]+:[0-5][0-9]$/;
+                            }
+                            else if (rawType === 'durasi_hms') {
+                                config.type = 'text'; 
+                                config.validator = /^[0-9]+:[0-5][0-9]:[0-5][0-9]$/;
+                            }
+                            else if (rawType === 'durasi_ms') {
+                                config.type = 'text'; 
+                                config.validator = /^[0-9]+:[0-5][0-9]$/;
+                            }
+                            else if (rawType === 'time') {
+                                config.type = 'time'; 
+                                config.timeFormat = 'HH:mm:ss'; 
+                                config.correctFormat = true;
+                            }
+                            
+                            return config;
+                        });
+
+                        document.getElementById('spreadsheetContainer').style.display = 'block';
+                        document.getElementById('btnScrollDown').style.display = 'inline-block'; 
+                        const container = document.getElementById('spreadsheet');
+                        
+                        // 3. KUNCI LEBAR KOLOM (MEMAKSA HT UNTUK PATUH PADA SCRIPT)
+                        // Ekstrak langsung lebar menjadi array murni (contoh: [undefined, 100, 100, undefined])
+                        let exactWidths = result.columns.map(c => c.width ? parseInt(c.width) : undefined);
+
+                        hot = new Handsontable(container, {
+                            data: result.data,
+                            colHeaders: result.columns.map(c => c.title),
+                            columns: hotColumns,
+                            
+                            // MASUKKAN ARRAY LEBAR SECARA EKSPLISIT DI SINI
+                            colWidths: exactWidths,
+                            
+                            rowHeaders: true,
+                            width: '100%',
+                            
+                            // Paksa tabel 100% mengikuti tinggi CSS container div-nya
+                            height: '100%', 
+
+                            stretchH: 'all',
+                            
+                            renderAllRows: false, 
+                            viewportRowRenderingOffset: 100, 
+                            minSpareRows: 3,
+                            contextMenu: true,
+                            formulas: { engine: HyperFormula },
+                            licenseKey: 'non-commercial-and-evaluation', 
+                            filters: true,
+                            dropdownMenu: ['filter_by_condition', 'filter_by_value', 'filter_action_bar'],
+                            columnSorting: true,
+                            
+                            autoColumnSize: true,
+                            manualColumnResize: true,
+                            wordWrap: true, // Pastikan engine melipat kata aktif
+
+                            afterPaste: function(data, coords) {
+                                const hotInstance = this;
+                                setTimeout(() => {
+                                    let updates = [];
+                                    const rowCount = hotInstance.countRows();
+                                    
+                                    for (let r = 0; r < rowCount; r++) {
+                                        result.columns.forEach((col, c) => {
+                                            if (col.formula && col.formula.trim() !== "") {
+                                                let val = hotInstance.getDataAtCell(r, c);
+                                                if (val === null || val === "" || (typeof val === 'string' && !val.startsWith('='))) {
+                                                     let excelFormula = col.formula
+                                                        .replace(/\[(\d+):(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (r + 1) + ":" + colToLetter(parseInt(e)) + (r + 1))
+                                                        .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (r + 1));
+                                                     
+                                                     updates.push([r, c, "=" + excelFormula]);
+                                                }
+                                            }
+                                        });
+                                    }
+                                    if (updates.length > 0) { 
+                                        hotInstance.setDataAtCell(updates, 'autoFormulaSweep'); 
+                                    }
+                                }, 200); 
+                            },
+
+                            afterCreateRow: function(index, amount, source) {
+                                if (source === 'loadData' || source === 'auto' || source === 'CopyPaste.paste') return;
+                                
+                                let updates = [];
+                                for (let i = 0; i < amount; i++) {
+                                    let rowIndex = index + i;
+                                    result.columns.forEach((col, colIndex) => {
+                                        if (col.formula && col.formula.trim() !== "") {
+                                            let excelFormula = col.formula
+                                                .replace(/\[(\d+):(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (rowIndex + 1) + ":" + colToLetter(parseInt(e)) + (rowIndex + 1))
+                                                .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (rowIndex + 1));
+                                            
+                                            updates.push([rowIndex, colIndex, "=" + excelFormula]);
+                                        }
+                                    });
+                                }
+                                if(updates.length > 0) { 
+                                    setTimeout(() => { this.setDataAtCell(updates, 'autoFormula'); }, 100); 
+                                }
+                            },
+
+                            cells: function(row, col) {
+                                var cellProperties = {};
+                                cellProperties.renderer = function(instance, td, r, c, prop, value, cellProps) {
+                                    var cellType = cellProps.type || 'text';
+                                    var baseRenderer = Handsontable.renderers.getRenderer(cellType);
+                                    baseRenderer.apply(this, arguments);
+                                    
+                                    let statusColIndex = instance.getSettings().columns.length - 1;
+                                    let status = instance.getDataAtCell(r, statusColIndex);
+                                    td.style.fontStyle = 'normal'; td.style.fontWeight = 'normal';
+
+                                    if (status === 'Final') { 
+                                        td.style.backgroundColor = '#e9ecef'; td.style.color = '#adb5bd'; td.style.fontStyle = 'italic'; 
+                                    } else if (cellProps.readOnly) { 
+                                        td.style.backgroundColor = '#f1f3f5'; td.style.color = '#0dcaf0'; td.style.fontWeight = 'bold'; 
+                                    } else { 
+                                        td.style.backgroundColor = '#ffffff'; td.style.color = '#2c3e50'; 
+                                    }
+
+                                    if (cellType !== 'checkbox') {
+                                        if (!isNaN(value) && value !== "" && value !== null) { 
+                                            td.style.textAlign = 'right'; 
+                                        } else { 
+                                            td.style.textAlign = 'left'; 
+                                        }
+                                    }
+                                    
+                                    if (value === '#DIV/0!' || value === '#VALUE!' || value === '#CYCLE!') { 
+                                        td.innerHTML = '<span style="color:#dee2e6">-</span>'; 
+                                    } 
+                                };
+                                return cellProperties;
+                            },
+
+                            beforeChange: function (changes, source) {
+                                if (!changes) return;
+                                let statusColIndex = this.getSettings().columns.length - 1;
+                                let isBlocked = false;
+
+                                changes.forEach(change => {
+                                    let row = change[0]; let col = change[1];
+                                    let oldVal = change[2]; let newVal = change[3];
+                                    let status = this.getDataAtCell(row, statusColIndex);
+                                    let colSettings = this.getSettings().columns[col];
+                                    let colDef = result.columns[col];
+                                    
+                                    if (status === 'Final' && col !== statusColIndex) {
+                                        change[3] = oldVal; 
+                                        isBlocked = true;
+                                        return;
+                                    }
+
+                                    if (colSettings.type === 'checkbox' && newVal !== null && newVal !== undefined) {
+                                        let strVal = newVal.toString().trim().toLowerCase();
+                                        if (['true', '1', 'yes', 'y', 'benar'].includes(strVal)) {
+                                            change[3] = 'Ya';
+                                        } else if (['false', '0', 'no', 'n', 'salah', ''].includes(strVal)) {
+                                            change[3] = 'Tidak';
+                                        }
+                                    }    
+
+                                    if (newVal && typeof newVal === 'string' && newVal.trim() !== "") {
+                                        if (colSettings.type === 'time' || colDef.type === 'durasi_hm' || colDef.type === 'durasi_hms' || colDef.type === 'durasi_ms') {
+                                            change[3] = newVal.replace(/\./g, ':');
+                                        }
+                                        else if (colSettings.type === 'date' || colDef.type === 'date' || colDef.type === 'calendar') {
+                                            let tebakanTanggal = moment(newVal, ["YYYY-MM-DD", "DD/MM/YYYY", "DD-MM-YYYY", "YYYY/MM/DD", "D/M/YY", "D/M/YYYY", moment.ISO_8601], true);
+                                            if (!tebakanTanggal.isValid()) {
+                                                tebakanTanggal = moment(newVal); 
+                                            }
+                                            if (tebakanTanggal.isValid()) {
+                                                change[3] = tebakanTanggal.format('DD/MM/YYYY'); 
+                                            }
+                                        }
+                                    }
+
+                                    if (colSettings && colSettings.readOnly && (source === 'CopyPaste.paste' || source === 'Autofill.fill')) {
+                                        if (colDef && colDef.formula && colDef.formula.trim() !== "") {
+                                            let excelFormula = colDef.formula
+                                                .replace(/\[(\d+):(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (row + 1) + ":" + colToLetter(parseInt(e)) + (row + 1))
+                                                .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (row + 1));
+                                            
+                                            change[3] = "=" + excelFormula;
+                                        }
+                                    }
+                                });
+
+                                if(isBlocked) alert("Tindakan dibatalkan. Baris ini telah berstatus Final.");
+                            }
+                        });
+                    } else { document.getElementById('loadingMessage').innerHTML = `<i class="fas fa-lock me-2"></i> ${result.message}`; }
                 });
-
-                // 2. Sembunyikan Header Grup (Klinis/Manajemen) jika semua isinya tersembunyi
-                sections.forEach(section => {
-                    const visibleItemsInGroup = section.querySelectorAll('.doc-item[style="display: block;"]').length;
-                    // Jika tidak ada kata kunci (kotak pencarian kosong), semuanya visible karena style ditarik
-                    const allVisible = section.querySelectorAll('.doc-item[style=""]').length; 
-                    
-                    if (visibleItemsInGroup > 0 || allVisible > 0) {
-                        section.style.display = 'block';
-                    } else {
-                        section.style.display = 'none';
-                    }
-                });
-
-                // 3. Tampilkan pesan "Tidak Ditemukan" jika benar-benar kosong
-                if (!isAnyVisible && keyword !== '') {
-                    noResultMsg.style.display = 'block';
-                } else {
-                    noResultMsg.style.display = 'none';
-                }
-            });
         });
+
+        window.simpanDataMentah = function() {
+            if (!hot) return;
+            const btn = document.getElementById('btnSimpan');
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...`;
+            btn.disabled = true;
+
+            const rawData = hot.getData();
+            const columnsConfig = hot.getSettings().columns; 
+            
+            const dataToSave = rawData.filter(row => {
+                let hasValidInput = false;
+                for (let i = 0; i < row.length; i++) {
+                    let isStatusCol = (i === row.length - 1);  
+                    let isReadOnly = columnsConfig[i].readOnly; 
+                    let cellValue = row[i];
+                    if (!isReadOnly && !isStatusCol && cellValue !== null && cellValue !== "") { hasValidInput = true; break; }
+                }
+                return hasValidInput;
+            });
+
+            if (dataToSave.length === 0) {
+                alert("⚠️ Tidak ada data observasi yang valid untuk disimpan.");
+                btn.innerHTML = `<i class="fas fa-cloud-upload-alt me-2"></i> Simpan Laporan`;
+                btn.disabled = false; return;
+            }
+
+            const headers = hot.getColHeader(); 
+            fetch(scriptURL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: 'save_raw_data', formType: activeFormType, unit: userUnit, data: [headers, ...dataToSave] }) })
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') { alert("✅ Data berhasil disimpan!"); window.location.reload(); } 
+                else { alert("❌ Gagal: " + res.message); }
+            }).finally(() => { btn.innerHTML = `<i class="fas fa-cloud-upload-alt me-2"></i> Simpan Laporan`; btn.disabled = false; });
+        };
+        
+        window.scrollToEmptyRow = function() {
+            if (!hot) return;
+            const rowCount = hot.countRows();
+            let targetRow = rowCount - 1;
+            for (let r = 0; r < rowCount; r++) {
+                if (hot.isEmptyRow(r)) {
+                    targetRow = r;
+                    break;
+                }
+            }
+            hot.selectCell(targetRow, 0);
+            hot.scrollViewportTo(targetRow, 0);
+        };
     </script>
 </body>
 </html>

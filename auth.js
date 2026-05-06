@@ -1,6 +1,5 @@
 // =====================================================================
 // auth.js - PENJAGA GERBANG UTAMA (HANYA CEK LOGIN)
-// Pengecekan Hak Akses (Role) dipindahkan ke components.js
 // =====================================================================
 
 document.addEventListener("DOMContentLoaded", function() {

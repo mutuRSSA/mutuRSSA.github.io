@@ -4,30 +4,30 @@ function loadNavigation() {
     const isLoggedIn = sessionStr !== null;
     let userData = null;
     let role = "";
+    let unit = "";
     
     if (isLoggedIn) {
         userData = JSON.parse(sessionStr);
         role = userData.role.trim();
+        unit = userData.unit;
     }
 
-    // MENDAPATKAN NAMA HALAMAN SAAT INI
+    const scriptURL = "https://script.google.com/macros/s/AKfycbxRcpdb3tnHFWXWVLBzIymqAQnmygkxc_QoRVR43At859Yi6ZwYNkN0mSJaaKa5i4GJ/exec";
     const page = window.location.pathname.split("/").pop(); 
 
     // =========================================================================
-    // 2. FRONTEND SECURITY GUARD (PENJAGA PINTU HALAMAN RAHASIA)
+    // 2. FRONTEND SECURITY GUARD
     // =========================================================================
-    // Menambahkan Dasbor Supervisi & Profil Risiko RS ke daftar halaman terkunci
     const adminPages = ['daftar_insiden.html', 'analisis.html', 'daftar_kpc.html', 'analisis_kpc.html', 'rekapitulasi.html', 'dasbor_budaya.html', 'dasbor_risiko.html', 'profil_risiko_rs.html'];
     
-    // Jika user mencoba mengakses halaman admin tapi dia bukan Komite Mutu (atau belum login)
     if (adminPages.includes(page) && role !== "Komite Mutu") {
         alert("Akses Ditolak! Halaman ini hanya dapat diakses oleh Tim Komite Mutu.");
         window.location.href = isLoggedIn ? "index.html" : "login.html";
-        return; // Hentikan eksekusi script agar halaman tidak dimuat
+        return; 
     }
 
     // =========================================================================
-    // 3. SUSUNAN LOGIKA MENU
+    // 3. SUSUNAN LOGIKA MENU DASAR (Semua Orang Bisa Lihat Wujud Menunya)
     // =========================================================================
 
     // Profil Kanan Atas
@@ -43,22 +43,21 @@ function loadNavigation() {
            </div>` 
         : `<a href="login.html" class="btn btn-light btn-sm fw-bold text-primary px-3 rounded-pill shadow-sm"><i class="fas fa-sign-in-alt me-1"></i> Login</a>`;
 
-    // Menu Peningkatan Mutu (Terkunci jika belum login)
+    // Menu Peningkatan Mutu (Wadah Kosong untuk diisi JS nanti)
     let menuMutu = isLoggedIn 
-        ? `<a class="list-group-item list-group-item-action py-3 sidebar-link" data-bs-toggle="collapse" href="#collapseMutu" role="button" aria-expanded="false">
+        ? `<a class="list-group-item list-group-item-action py-3 sidebar-link" data-bs-toggle="collapse" href="#collapseMutu" role="button" aria-expanded="false" id="parent-mutu">
                 <i class="fas fa-chart-line me-3 text-secondary"></i> Peningkatan Mutu <i class="fas fa-chevron-down float-end mt-1" style="font-size: 0.8rem;"></i>
            </a>
            <div class="collapse" id="collapseMutu">
-                <div class="list-group list-group-flush bg-light">
-                    <a href="input_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-input-mutu" style="font-size: 0.95rem;"><i class="fas fa-edit me-2"></i> Input Laporan Mutu</a>
-                    <a href="laporan_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-laporan-triwulan" style="font-size: 0.95rem;"><i class="fas fa-file-alt me-2"></i> Laporan Capaian Mutu</a>
+                <div class="list-group list-group-flush bg-light" id="wadahMenuDinamis">
+                    <div class="text-center p-2"><i class="fas fa-spinner fa-spin text-muted"></i></div>
                 </div>
            </div>`
         : `<a href="#" onclick="alert('Akses Terkunci! Silakan Login terlebih dahulu.'); window.location.href='login.html';" class="list-group-item list-group-item-action py-3 sidebar-link bg-light text-muted">
                 <i class="fas fa-chart-line me-3 text-secondary"></i> Peningkatan Mutu <i class="fas fa-lock float-end mt-1 text-danger" style="font-size: 0.8rem;"></i>
            </a>`;
 
-    // Menu Manajemen Risiko (Terkunci jika belum login)
+    // Menu Manajemen Risiko
     let menuRisiko = isLoggedIn
         ? `<a class="list-group-item list-group-item-action py-3 sidebar-link" data-bs-toggle="collapse" href="#collapseRisiko" role="button" aria-expanded="false">
                 <i class="fas fa-exclamation-triangle me-3 text-secondary"></i> Manajemen Risiko <i class="fas fa-chevron-down float-end mt-1" style="font-size: 0.8rem;"></i>
@@ -72,7 +71,6 @@ function loadNavigation() {
                 <i class="fas fa-exclamation-triangle me-3 text-secondary"></i> Manajemen Risiko <i class="fas fa-lock float-end mt-1 text-danger" style="font-size: 0.8rem;"></i>
            </a>`;
 
-    // Menu Panel Khusus Komite Mutu (Berdiri Sendiri)
     let menuRahasiaKomite = '';
     if (role === "Komite Mutu") {
         menuRahasiaKomite = `
@@ -104,7 +102,6 @@ function loadNavigation() {
             <div class="d-flex align-items-center">
                 <button class="navbar-toggler border-0 me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu"><span class="navbar-toggler-icon"></span></button>
                 <span class="navbar-brand fw-bold mb-0 d-none d-sm-block">Portal Komite Mutu</span>
-                <span class="navbar-brand fw-bold mb-0 d-block d-sm-none">KMKP</span>
             </div>
             <div>${navbarRightHTML}</div>
         </div>
@@ -145,53 +142,105 @@ function loadNavigation() {
     document.getElementById('sidebar-container').innerHTML = sidebarHTML;
 
     // =========================================================================
-    // 5. PENYALAAN WARNA MENU (ACTIVE STATE)
+    // 5. PROSES PENGAMBILAN MENU DINAMIS (SMART CACHE & FILTER ROLE)
+    // =========================================================================
+    if (isLoggedIn) {
+        
+        // JIKA YANG LOGIN ADALAH KOMITE MUTU
+        if (role === "Komite Mutu") {
+            // Komite Mutu HANYA melihat menu Laporan (tanpa form input)
+            let htmlSubMenu = `<a href="laporan_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-laporan-triwulan" style="font-size: 0.95rem;"><i class="fas fa-file-alt me-2 text-primary"></i> Laporan Capaian Mutu</a>`;
+            const wadah = document.getElementById('wadahMenuDinamis');
+            if(wadah) wadah.innerHTML = htmlSubMenu;
+            
+            if (page === 'laporan_mutu.html') {
+                document.getElementById('collapseMutu')?.classList.add('show');
+            }
+        } 
+        // JIKA YANG LOGIN ADALAH UNIT BIASA
+        else {
+            const renderMenuMutu = function(menuArray) {
+                const parentMenu = document.getElementById('parent-mutu');
+                if(parentMenu) {
+                    parentMenu.addEventListener('click', function(e) {
+                         if (e.target.tagName !== 'I') { 
+                             window.location.href = `input_mutu.html?form=${menuArray[0]}`;
+                         }
+                    });
+                }
+
+                let htmlSubMenu = '';
+                // Render List Form Input
+                menuArray.forEach(formID => {
+                    let namaForm = formID.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                    let activeSub = (new URLSearchParams(window.location.search).get('form') === formID) ? 'active fw-bold' : '';
+                    
+                    htmlSubMenu += `
+                    <a href="input_mutu.html?form=${formID}" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link ${activeSub}" style="font-size: 0.95rem;">
+                        <i class="fas fa-edit me-2"></i> Input ${namaForm}
+                    </a>`;
+                });
+
+                // Tambahkan Menu Laporan di paling bawah
+                htmlSubMenu += `<a href="laporan_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-top mt-1" id="menu-laporan-triwulan" style="font-size: 0.95rem;"><i class="fas fa-file-alt me-2 text-primary"></i> Laporan Capaian Mutu</a>`;
+                
+                const wadah = document.getElementById('wadahMenuDinamis');
+                if(wadah) wadah.innerHTML = htmlSubMenu;
+
+                if (page === 'input_mutu.html' || page === 'laporan_mutu.html') {
+                    document.getElementById('collapseMutu')?.classList.add('show');
+                }
+            };
+
+            const cacheMenu = localStorage.getItem("menuMutu");
+            
+            if (cacheMenu) {
+                renderMenuMutu(JSON.parse(cacheMenu));
+            } else {
+                fetch(`${scriptURL}?action=get_menu&unit=${encodeURIComponent(unit)}`)
+                    .then(res => res.json())
+                    .then(result => {
+                        if (result.status === 'success' && result.menu.length > 0) {
+                            localStorage.setItem("menuMutu", JSON.stringify(result.menu));
+                            renderMenuMutu(result.menu);
+                        }
+                    });
+            }
+        }
+    }
+
+    // =========================================================================
+    // 6. PENYALAAN WARNA MENU (ACTIVE STATE)
     // =========================================================================
     if (page === 'index.html' || page === '') { 
         document.getElementById('menu-home')?.classList.add('active'); 
     } 
-    else if (page === 'input_mutu.html') { 
-        document.getElementById('menu-input-mutu')?.classList.add('active'); document.getElementById('collapseMutu')?.classList.add('show'); 
-    } 
-    else if (page === 'laporan_mutu.html' || page === 'laporan_triwulan.html') { 
-        document.getElementById('menu-laporan-triwulan')?.classList.add('active'); document.getElementById('collapseMutu')?.classList.add('show'); 
+    else if (page === 'laporan_mutu.html') { 
+        document.getElementById('menu-laporan-triwulan')?.classList.add('active'); 
+        document.getElementById('collapseMutu')?.classList.add('show');
     } 
     else if (page === 'risk_register.html') { 
-        document.getElementById('menu-risk-register')?.classList.add('active'); document.getElementById('collapseRisiko')?.classList.add('show'); 
+        document.getElementById('menu-risk-register')?.classList.add('active'); 
+        document.getElementById('collapseRisiko')?.classList.add('show'); 
     } 
     else if (page === 'ikp.html') { 
-        document.getElementById('menu-ikp')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); 
+        document.getElementById('menu-ikp')?.classList.add('active'); 
+        document.getElementById('collapseKeselamatan')?.classList.add('show'); 
     } 
     else if (page === 'kpc.html') { 
-        document.getElementById('menu-kpc')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); 
+        document.getElementById('menu-kpc')?.classList.add('active'); 
+        document.getElementById('collapseKeselamatan')?.classList.add('show'); 
     } 
     else if (page === 'survey_budaya.html') { 
-        document.getElementById('menu-survey-budaya')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); 
-    }
-    // Bagian Menu Panel Admin Mutu
-    else if (page === 'daftar_insiden.html' || page === 'analisis.html') { 
-        document.getElementById('menu-daftar-ikp')?.classList.add('active', 'fw-bold'); document.getElementById('collapseAdmin')?.classList.add('show'); 
-    } 
-    else if (page === 'daftar_kpc.html' || page === 'analisis_kpc.html') { 
-        document.getElementById('menu-daftar-kpc')?.classList.add('active', 'fw-bold'); document.getElementById('collapseAdmin')?.classList.add('show'); 
-    } 
-    else if (page === 'rekapitulasi.html') { 
-        document.getElementById('menu-rekap')?.classList.add('active', 'fw-bold'); document.getElementById('collapseAdmin')?.classList.add('show'); 
-    }
-    else if (page === 'dasbor_budaya.html') { 
-        document.getElementById('menu-dasbor-budaya')?.classList.add('active', 'fw-bold'); document.getElementById('collapseAdmin')?.classList.add('show'); 
-    }
-    else if (page === 'dasbor_risiko.html') { 
-        document.getElementById('menu-dasbor-risiko')?.classList.add('active', 'fw-bold'); document.getElementById('collapseAdmin')?.classList.add('show'); 
-    }
-    else if (page === 'profil_risiko_rs.html') { 
-        document.getElementById('menu-profil-risiko')?.classList.add('active', 'fw-bold'); document.getElementById('collapseAdmin')?.classList.add('show'); 
+        document.getElementById('menu-survey-budaya')?.classList.add('active'); 
+        document.getElementById('collapseKeselamatan')?.classList.add('show'); 
     }
 }
 
 window.logoutSystem = function() {
     if(confirm("Apakah Anda yakin ingin keluar dari sistem?")) {
         localStorage.removeItem("sessionMutu");
+        localStorage.removeItem("menuMutu");
         window.location.href = "login.html";
     }
 };
