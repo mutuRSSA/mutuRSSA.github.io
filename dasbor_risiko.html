@@ -6,6 +6,8 @@
     <title>Dasbor Supervisi Risiko RS</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tambahkan SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
         .card-custom { box-shadow: 0 4px 6px rgba(0,0,0,.05); border-radius: 8px; border-top: 4px solid #2c3e50; background: #fff;}
@@ -111,13 +113,15 @@
         </div>
     </div>
 
+    <!-- Script Pusat Konfigurasi & Autentikasi -->
+    <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // MASUKKAN URL WEB APP RISK REGISTER ANDA DI SINI
-        const scriptURL = "https://script.google.com/macros/s/AKfycbw5AIpb23MiMTHlJ57zipzdEyCsR7wMVDgk9MMN687UQ1IkdyyfIUlJP5u4tayGftxm8g/exec";
+        // MENGGUNAKAN VARIABEL GLOBAL DARI config.js
+        const scriptURL = API_CONFIG.RISK;
         
         let rawData = [];
         let finalDataUnik = [];
@@ -133,7 +137,7 @@
                         
                         prosesDataAuditTrail();
                         populateDropdownUnit();
-                        populateDropdownTahun(); // Panggil fungsi pembuat dropdown tahun
+                        populateDropdownTahun(); 
                         renderTabelSupervisi();
                     } else {
                         throw new Error("Kosong");
@@ -272,7 +276,12 @@
         function kumpulkanProfilRS() {
             const checkboxes = document.querySelectorAll('.check-profil-rs:checked');
             if (checkboxes.length === 0) {
-                alert("Pilih minimal satu risiko (centang kotak di kolom paling kanan) untuk dijadikan Profil Risiko RS.");
+                // Menggunakan SweetAlert2
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Pilih Risiko!',
+                    text: 'Pilih minimal satu risiko (centang kotak di kolom paling kanan) untuk dijadikan Profil Risiko RS.'
+                });
                 return;
             }
 
@@ -281,9 +290,16 @@
             // Simpan sementara ID yang terpilih ke localStorage untuk dibawa ke halaman Profil RS
             localStorage.setItem('draftProfilRS', JSON.stringify(idTerpilih));
             
-            alert(`Berhasil menyeleksi ${idTerpilih.length} risiko ekstrem. Mengarahkan ke halaman perancangan Profil Risiko Rumah Sakit...`);
-            
-            window.location.href = "profil_risiko_rs.html";
+            // Menggunakan SweetAlert2 untuk transisi
+            Swal.fire({
+                icon: 'success',
+                title: 'Berhasil Diseleksi!',
+                text: `Membawa ${idTerpilih.length} risiko ke halaman perancangan Profil RS...`,
+                timer: 2000,
+                showConfirmButton: false
+            }).then(() => {
+                window.location.href = "profil_risiko_rs.html";
+            });
         }
     </script>
 </body>

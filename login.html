@@ -6,6 +6,8 @@
     <title>Login - Portal Komite Mutu</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tambahkan SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #f4f6f9; height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', Tahoma, sans-serif;}
         .login-card { max-width: 400px; width: 100%; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 5px solid #6f42c1; }
@@ -49,10 +51,10 @@
         </form>
     </div>
 
-    <script>
-        // MASUKKAN URL APPS SCRIPT DATABASE USER ANDA DI SINI
-        const scriptURL = "https://script.google.com/macros/s/AKfycbwnQ4Fjx98BJSR2SNt3PwwYgqcjx6R6HtBIfPscWQFuuW1c1QagJYJD9Q9p04fJRdyk5w/exec";
+    <!-- Script Pusat Konfigurasi & Autentikasi -->
+    <script src="config.js"></script>
 
+    <script>
         // Fitur Toggle Show/Hide Password
         document.getElementById('togglePasswordBtn').addEventListener('click', function() {
             const passInput = document.getElementById('password');
@@ -79,7 +81,8 @@
 
             const payload = { action: "login", username: user, password: pass };
 
-            fetch(scriptURL, {
+            // Menggunakan API_CONFIG.AUTH dari config.js
+            fetch(API_CONFIG.AUTH, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify(payload)
@@ -97,13 +100,36 @@
                         unit: result.unit // <--- MENYIMPAN DATA UNIT
                     }));
                     
-                    alert("Login Berhasil! Selamat datang, " + result.username + " dari " + result.unit);
-                    window.location.href = "index.html"; 
+                    // Menggunakan SweetAlert2 untuk Notifikasi Login Berhasil
+                    Swal.fire({
+                        title: 'Login Berhasil!',
+                        text: `Selamat datang, ${result.username} dari unit ${result.unit}`,
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.href = "index.html"; 
+                    });
                 } else {
-                    alert("Akses Ditolak: " + result.message);
+                    // Menggunakan SweetAlert2 untuk Notifikasi Login Gagal
+                    Swal.fire({
+                        title: 'Akses Ditolak!',
+                        text: result.message,
+                        icon: 'error',
+                        confirmButtonText: 'Coba Lagi',
+                        confirmButtonColor: '#6f42c1'
+                    });
                 }
             })
-            .catch(err => alert("Gangguan koneksi ke server pusat. Silakan coba lagi."))
+            .catch(err => {
+                Swal.fire({
+                    title: 'Gangguan Koneksi',
+                    text: 'Tidak dapat terhubung ke server pusat. Silakan coba lagi.',
+                    icon: 'warning',
+                    confirmButtonText: 'Tutup',
+                    confirmButtonColor: '#6f42c1'
+                });
+            })
             .finally(() => { 
                 btn.innerHTML = 'MASUK KE SISTEM'; 
                 btn.disabled = false; 

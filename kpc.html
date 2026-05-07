@@ -3,17 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulir KPC - Komite Mutu</title>
+    <title>Formulir IKP - Komite Mutu</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tambahkan SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
         body { 
             background-color: #f4f6f9; 
-            padding-top: 80px; /* Jarak untuk header fixed */
-            padding-bottom: 40px; 
-            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            padding-top: 80px; /* Jarak agar konten tidak tertutup header */
+            padding-bottom: 40px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
         }
-        .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 4px; border-top: 3px solid #ffc107; /* Warna Kuning untuk KPC */ }
+        .form-section-title { color: #5a5c69; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; margin-top: 30px; }
+        .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 4px; border-top: 3px solid #3c8dbc; }
+        .btn-simpan { background-color: #3c8dbc; border-color: #367fa9; color: white; width: 120px; }
+        .btn-simpan:hover { background-color: #367fa9; color: white; }
         
         /* Tema Header dan Sidebar */
         .bg-custom-dark { background-color: #3c8dbc; } 
@@ -27,177 +33,419 @@
     <div id="navbar-container"></div>
     <div id="sidebar-container"></div>
 
-    <div class="container" style="max-width: 900px;">
+    <div class="container">
         <div class="bg-white p-4 card-custom">
-            <h4 class="mb-2 text-dark fw-bold"><i class="fas fa-exclamation-triangle text-warning me-2"></i> FORMULIR LAPORAN KPC</h4>
-            <p class="text-muted border-bottom pb-3 mb-4">Kondisi Potensial Cedera (KPC) adalah kondisi yang sangat berpotensi untuk menimbulkan cedera, tetapi belum terjadi insiden.</p>
+            <h4 class="mb-4 text-secondary d-flex align-items-center">
+                <span class="fs-3 me-2 text-dark">IKP</span> 
+                <small class="text-muted fs-6 mt-1">FORMULIR LAPORAN INSIDEN KE TIM KESELAMATAN PASIEN DI RUMAH SAKIT SARAS ADYATMA</small>
+            </h4>
             
-            <form id="formKPC">
+            <form id="ikpForm">
+                <h5 class="form-section-title">A. DATA PASIEN</h5>
                 <div class="row">
                     <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">1. Tanggal & Waktu Ditemukan</label>
-                        <input type="datetime-local" class="form-control" name="tgl_waktu" required>
+                        <label class="form-label fw-bold">1. Umur</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="number" class="form-control" name="umur_hari" style="width: 80px;"> <span class="fw-bold">Hari</span>
+                            <input type="number" class="form-control" name="umur_bulan" style="width: 80px;"> <span class="fw-bold">Bulan</span>
+                            <input type="number" class="form-control" name="umur_tahun" style="width: 80px;"> <span class="fw-bold">Tahun</span>
+                        </div>
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">2. Lokasi / Unit Ditemukan</label>
-                        <input type="text" class="form-control" name="lokasi" placeholder="Misal: Selasar Lantai 2, Kamar Mandi IGD" required>
+                        <label class="form-label fw-bold">3. Jenis Kelamin</label>
+                        <select class="form-select" name="jenis_kelamin">
+                            <option value="Perempuan">Perempuan</option>
+                            <option value="Laki-laki">Laki-laki</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">2. Penanggung Biaya Pasien</label>
+                        <select class="form-select" name="penanggung_biaya">
+                            <option value=""></option>
+                            <option value="BPJS">BPJS</option>
+                            <option value="Umum/Pribadi">Umum/Pribadi</option>
+                            <option value="Asuransi Lain">Asuransi Lain</option>
+                            <option value="Jamkesda">Jamkesda</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">4. Tanggal Mendapatkan Pelayanan</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-white"><i class="fa-regular fa-calendar"></i></span>
+                            <input type="datetime-local" class="form-control" name="tanggal_pelayanan">
+                        </div>
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label fw-bold">3. Rincian / Deskripsi Kondisi (KPC)</label>
-                    <textarea class="form-control" name="deskripsi" rows="3" placeholder="Jelaskan kondisi yang membahayakan tersebut secara rinci..." required></textarea>
-                </div>
-
-                <div class="mb-4">
-                    <label class="form-label fw-bold">4. Tindakan yang langsung dilakukan (Jika ada)</label>
-                    <textarea class="form-control" name="tindakan" rows="2" placeholder="Misal: Memasang papan peringatan lantai licin, memindahkan barang..."></textarea>
-                </div>
-
+                <h5 class="form-section-title">B. RINCIAN KEJADIAN</h5>
                 <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">5. Nama Pelapor</label>
-                        <input type="text" class="form-control" name="nama_pelapor" required>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">1. Tanggal dan Waktu Insiden</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="fa-regular fa-calendar"></i></span>
+                                <input type="datetime-local" class="form-control" name="tgl_waktu_insiden">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">2. Insiden</label>
+                            <input type="text" class="form-control" name="insiden">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">3. Kronologis Insiden</label>
+                            <small class="d-block fw-bold text-dark mb-2">(Di Dalam Kronologis Nama pasien,Nama fasyankes,Nama Dokter,Nama Perawat,Nama Petugas Semua Harus Berupa Inisial)</small>
+                            <textarea class="form-control" name="kronologis" rows="4"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">4. Jenis Insiden</label>
+                            <select class="form-select" name="jenis_insiden">
+                                <option value=""></option>
+                                <option value="KNC">KNC</option>
+                                <option value="KTC">KTC</option>
+                                <option value="KTD">KTD</option>
+                                <option value="Sentinel">Sentinel</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">5. Insiden Terjadi Pada Pasien</label>
+                            <select class="form-select" name="terjadi_pada">
+                                <option value=""></option>
+                                <option value="Penyakit Dalam">Penyakit Dalam</option>
+                                <option value="Bedah">Bedah</option>
+                                <option value="THT">THT</option>
+                                <option value="Anak">Kesehatan Anak</option>
+                                <option value="Obgyn">Obstetri dan Ginekologi</option>
+                                <option value="Saraf">Saraf</option>
+                                <option value="Orthopedi">Orthopedi</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">6. Dampak Insiden Terhadap Pasien</label>
+                            <select class="form-select" name="dampak">
+                                <option value=""></option>
+                                <option value="Tidak Signifikan">1 - Tidak Signifikan (Tidak ada cedera)</option>
+                                <option value="Minor">2 - Minor (Cedera ringan, mis. luka lecet, dpt diatasi dgn pertolongan pertama)</option>
+                                <option value="Moderat">3 - Moderat (Cedera sedang, fungsi berkurang reversibel, perpanjang perawatan)</option>
+                                <option value="Mayor">4 - Mayor (Cedera luas/berat, cacat/lumpuh, fungsi hilang irreversibel)</option>
+                                <option value="Katastropik">5 - Katastropik (Kematian yg tidak berhubungan dgn perjalanan penyakit)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">7. Probabilitas</label>
+                            <select class="form-select" name="probabilitas">
+                                <option value=""></option>
+                                <option value="Sangat Jarang">1 - Sangat Jarang (> 5 tahun / 1x)</option>
+                                <option value="Jarang">2 - Jarang (> 2 - 5 tahun / 1x)</option>
+                                <option value="Mungkin">3 - Mungkin (1 - 2 tahun / 1x)</option>
+                                <option value="Sering">4 - Sering (Beberapa kali / tahun)</option>
+                                <option value="Sangat Sering">5 - Sangat Sering (Tiap minggu / bulan)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3 p-3 rounded" id="boxGrading" style="background-color: #f8f9fa; border: 1px solid #dee2e6;">
+                            <label class="form-label fw-bold text-secondary mb-1">Hasil Grading Risiko:</label>
+                            <div id="hasilGrading" class="fs-5 fw-bold text-center py-2 rounded">-</div>
+                            <input type="hidden" name="grading_risiko" id="inputGrading">
+                        </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">6. Unit Kerja Pelapor</label>
-                        <input type="text" class="form-control" name="unit_pelapor" required>
+
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">8. Orang Pertama Yang Melaporkan Insiden</label>
+                            <select class="form-select" name="pelapor_pertama">
+                                <option value=""></option>
+                                <option value="Dokter">Dokter</option>
+                                <option value="Perawat">Perawat</option>
+                                <option value="Pasien">Pasien</option>
+                                <option value="Karyawan">Karyawan</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">9. Insiden menyangkut pasien</label>
+                            <select class="form-select" name="menyangkut_pasien">
+                                <option value=""></option>
+                                <option value="Rawat Inap">Rawat Inap</option>
+                                <option value="Rawat Jalan">Rawat Jalan</option>
+                                <option value="UGD">UGD</option>
+                                <option value="Lainnya">Lain-lain</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">10. Tempat Insiden</label>
+                            <select class="form-select" name="tempat_insiden">
+                                <option value=""></option>
+                                <option value="Intrahospital">Di Dalam Rumah Sakit</option>
+                                <option value="Ekstrahospital">Di Luar Rumah Sakit</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">11. Unit/Departement terkait penyebab insiden</label>
+                            <select class="form-select" name="unit_terkait">
+                                <option value=""></option>
+                                <option value="Farmasi">Farmasi</option>
+                                <option value="Laboratorium">Laboratorium</option>
+                                <option value="Radiologi">Radiologi</option>
+                                <option value="Rekam Medis">Rekam Medis</option>
+                                <option value="Gizi">Gizi</option>
+                                <option value="UGD">UGD</option>
+                                <option value="Rawat Inap">Rawat Inap</option>
+                                <option value="Rawat Jalan">Rawat Jalan</option>
+                                <option value="IPSRS">IPSRS</option>
+                                <option value="CSSD">CSSD</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">12. Tindak lanjut yang dilakukan segera setelah kejadian, dan hasilnya</label>
+                            <textarea class="form-control" name="tindak_lanjut" rows="4"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">13. Tindak Lanjut Dilakukan Oleh</label>
+                            <select class="form-select" name="dilakukan_oleh">
+                                <option value=""></option>
+                                <option value="Tim">Tim</option>
+                                <option value="Dokter">Dokter</option>
+                                <option value="Perawat">Perawat</option>
+                                <option value="Bidan">Bidan</option>
+                                <option value="Karyawan">Karyawan lain</option>
+                            </select>
+                        </div>
+                        <div class="mb-4 p-3 bg-light border rounded">
+                            <label class="form-label fw-bold">14. Apakah kejadian yang sama pernah terjadi di Unit Kerja lain? <span class="text-danger">*</span></label>
+                            
+                            <div class="form-check mb-1">
+                                <input class="form-check-input" type="radio" name="pernah_terjadi" id="radioTidak" value="Tidak" required>
+                                <label class="form-check-label" for="radioTidak">Tidak</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="pernah_terjadi" id="radioYa" value="Ya" required>
+                                <label class="form-check-label" for="radioYa">Ya</label>
+                            </div>
+
+                            <div id="tindakanPencegahanContainer" class="mt-3 pt-3 border-top" style="display: none; border-color: #dee2e6;">
+                                <label for="tindakanPencegahan" class="form-label fw-bold text-primary">
+                                    <i class="fas fa-clipboard-check me-1"></i> Langkah/tindakan apa yang telah diambil pada pelayanan tersebut untuk mencegah terulangnya kejadian yang sama? <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control" id="tindakanPencegahan" name="tindakanPencegahan" rows="3" placeholder="Jelaskan langkah atau tindakan preventif yang telah diambil..."></textarea>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="mb-4 p-3 border rounded bg-light">
-                    <label class="form-label fw-bold text-primary"><i class="fas fa-camera"></i> 7. Upload Bukti Foto Kondisi (Opsional)</label>
-                    <input class="form-control" type="file" id="buktiFoto" accept="image/*, .pdf">
-                    <div class="form-text text-danger" id="fileWarning">Ukuran file maksimal 2 MB agar proses upload lancar.</div>
-                </div>
-
-                <div class="d-flex justify-content-end mt-4 p-3 bg-light border-top">
-                    <button type="submit" class="btn btn-warning fw-bold px-4" id="btnSimpan">KIRIM LAPORAN KPC</button>
+                <div class="d-flex justify-content-end mt-4 border-top pt-3">
+                    <button type="submit" class="btn btn-simpan fw-bold shadow-sm" id="submitBtn"><i class="fas fa-save me-2"></i>SIMPAN</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Panggil config.js sebelum file js lainnya -->
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            // MASUKKAN URL WEB APP KPC ANDA DI SINI
-            const scriptURL = "https://script.google.com/macros/s/AKfycbxuu_u_pYsmfSYAoy9arI76xSrGddgSSQMsBzjknysotJF2b0Rk5n7v25AjAe6LbBpi/exec";
-            
-            const editDataStr = localStorage.getItem('editDataKPC');
+            // MENGGUNAKAN VARIABEL GLOBAL DARI config.js
+            const scriptURL = API_CONFIG.IKP;
+
+            // ========================================================
+            // 1. VARIABEL & ELEMEN DOM
+            // ========================================================
+            const form = document.getElementById("ikpForm");
+            const submitBtn = document.getElementById("submitBtn");
+            const dampakEl = document.querySelector('[name="dampak"]');
+            const probEl = document.querySelector('[name="probabilitas"]');
+            const hasilDiv = document.getElementById('hasilGrading');
+            const boxDiv = document.getElementById('boxGrading');
+            const inputGrading = document.getElementById('inputGrading');
+            const radioPernahTerjadi = document.querySelectorAll('input[name="pernah_terjadi"]');
+            const containerTindakan = document.getElementById('tindakanPencegahanContainer');
+            const inputTindakan = document.getElementById('tindakanPencegahan');
+
+            const editDataStr = localStorage.getItem('editDataIKP');
             let isEditMode = false;
             let editTargetId = null;
 
-            const submitBtn = document.getElementById("btnSimpan");
-            const form = document.getElementById("formKPC");
-            const fileInput = document.getElementById("buktiFoto");
+            // ========================================================
+            // 2. FUNGSI PEMBANTU
+            // ========================================================
+            function formatDateTimeLocal(isoString) {
+                if (!isoString) return '';
+                const d = new Date(isoString);
+                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                return d.toISOString().slice(0, 16);
+            }
 
-            // --- JIKA HALAMAN DIBUKA UNTUK EDIT LAPORAN LAMA ---
+            function hitungGrading() {
+                const nilaiDampak = { "Tidak Signifikan": 1, "Minor": 2, "Moderat": 3, "Mayor": 4, "Katastropik": 5 };
+                const nilaiProbabilitas = { "Sangat Jarang": 1, "Jarang": 2, "Mungkin": 3, "Sering": 4, "Sangat Sering": 5 };
+
+                const d_val = nilaiDampak[dampakEl.value];
+                const p_val = nilaiProbabilitas[probEl.value];
+
+                if (d_val && p_val) {
+                    const matrix = {
+                        5: ["Moderate", "Moderate", "High", "Extreme", "Extreme"],
+                        4: ["Moderate", "Moderate", "High", "Extreme", "Extreme"],
+                        3: ["Low", "Moderate", "High", "Extreme", "Extreme"],
+                        2: ["Low", "Low", "Moderate", "High", "Extreme"],
+                        1: ["Low", "Low", "Moderate", "High", "Extreme"]
+                    };
+
+                    const hasil = matrix[p_val][d_val - 1]; 
+                    inputGrading.value = hasil;
+
+                    hasilDiv.classList.remove('text-dark', 'text-white');
+                    if (hasil === 'Low') {
+                        hasilDiv.innerText = "LOW (Rendah)";
+                        hasilDiv.style.backgroundColor = "#0d6efd";
+                        hasilDiv.classList.add('text-white');
+                    } else if (hasil === 'Moderate') {
+                        hasilDiv.innerText = "MODERATE (Sedang)";
+                        hasilDiv.style.backgroundColor = "#198754";
+                        hasilDiv.classList.add('text-white');
+                    } else if (hasil === 'High') {
+                        hasilDiv.innerText = "HIGH (Tinggi)";
+                        hasilDiv.style.backgroundColor = "#ffc107";
+                        hasilDiv.classList.add('text-dark');
+                    } else if (hasil === 'Extreme') {
+                        hasilDiv.innerText = "EXTREME (Sangat Tinggi)";
+                        hasilDiv.style.backgroundColor = "#dc3545";
+                        hasilDiv.classList.add('text-white');
+                    }
+                } else {
+                    hasilDiv.innerText = "-";
+                    hasilDiv.style.backgroundColor = "transparent";
+                    hasilDiv.classList.remove('text-white', 'text-dark');
+                    inputGrading.value = "";
+                }
+            }
+
+            // ========================================================
+            // 3. INISIALISASI EVENT LISTENER
+            // ========================================================
+            if(dampakEl && probEl) {
+                dampakEl.addEventListener('change', hitungGrading);
+                probEl.addEventListener('change', hitungGrading);
+            }
+
+            radioPernahTerjadi.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'Ya') {
+                        containerTindakan.style.display = 'block';
+                        inputTindakan.setAttribute('required', 'required');
+                    } else {
+                        containerTindakan.style.display = 'none';
+                        inputTindakan.removeAttribute('required');
+                        inputTindakan.value = ''; 
+                    }
+                });
+            });
+
+            // ========================================================
+            // 4. MODE EDIT (JIKA ADA DATA DARI LOCAL STORAGE)
+            // ========================================================
             if (editDataStr) {
                 isEditMode = true;
                 const data = JSON.parse(editDataStr);
                 editTargetId = data.Timestamp;
 
-                submitBtn.innerHTML = "UPDATE LAPORAN KPC";
-                const headerDesc = document.querySelector('.text-muted.border-bottom');
-                if(headerDesc) headerDesc.innerHTML += ` <span class="badge bg-warning text-dark ms-2">MODE EDIT</span>`;
+                document.querySelector('.form-section-title').innerHTML = `A. DATA PASIEN <span class="badge bg-warning text-dark ms-2">MODE EDIT</span>`;
+                submitBtn.innerHTML = "<i class='fas fa-save me-2'></i> UPDATE DATA";
+                submitBtn.classList.replace('btn-simpan', 'btn-warning');
 
-                if (data['Tgl & Waktu Penemuan']) {
-                    const d = new Date(data['Tgl & Waktu Penemuan']);
-                    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-                    const tglInput = document.querySelector('[name="tgl_waktu"]');
-                    if(tglInput) tglInput.value = d.toISOString().slice(0, 16);
-                }
+                document.querySelector('[name="umur_hari"]').value = data['Umur (Hari)'] || '';
+                document.querySelector('[name="umur_bulan"]').value = data['Umur (Bulan)'] || '';
+                document.querySelector('[name="umur_tahun"]').value = data['Umur (Tahun)'] || '';
+                document.querySelector('[name="jenis_kelamin"]').value = data['Jenis Kelamin'] || '';
+                document.querySelector('[name="penanggung_biaya"]').value = data['Penanggung Biaya'] || '';
+                document.querySelector('[name="tanggal_pelayanan"]').value = formatDateTimeLocal(data['Tanggal pelayanan']);
+                document.querySelector('[name="tgl_waktu_insiden"]').value = formatDateTimeLocal(data['Tgl & Waktu insiden']);
+                document.querySelector('[name="insiden"]').value = data['Insiden'] || '';
+                document.querySelector('[name="kronologis"]').value = data['Kronologis'] || '';
+                document.querySelector('[name="jenis_insiden"]').value = data['Jenis Insiden'] || '';
+                document.querySelector('[name="terjadi_pada"]').value = data['Terjadi Pada'] || '';
+                document.querySelector('[name="dampak"]').value = data['Dampak'] || '';
+                document.querySelector('[name="probabilitas"]').value = data['Probabilitas'] || '';
+                document.querySelector('[name="pelapor_pertama"]').value = data['Pelapor Pertama'] || '';
+                document.querySelector('[name="menyangkut_pasien"]').value = data['Menyangkut Pasien'] || '';
+                document.querySelector('[name="tempat_insiden"]').value = data['Tempat Insiden'] || '';
+                document.querySelector('[name="unit_terkait"]').value = data['Unit Terkait'] || '';
+                document.querySelector('[name="tindak_lanjut"]').value = data['Tindak Lanjut'] || '';
+                document.querySelector('[name="dilakukan_oleh"]').value = data['Dilakukan Oleh'] || '';
+                document.querySelector('[name="tindakanPencegahan"]').value = data['Tindakan Pencegahan'] || '';
                 
-                const fill = (name, val) => { const el = document.querySelector(`[name="${name}"]`); if(el && val) el.value = val; };
-                fill('lokasi', data['Lokasi / Unit']);
-                fill('deskripsi', data['Deskripsi KPC']);
-                fill('tindakan', data['Tindakan yang Dilakukan']);
-                fill('nama_pelapor', data['Nama Pelapor']);
-                fill('unit_pelapor', data['Unit Pelapor']);
+                if (data['Pernah terjadi?'] === "Ya") {
+                    document.getElementById('radioYa').checked = true;
+                    containerTindakan.style.display = 'block'; 
+                } else if (data['Pernah terjadi?'] === "Tidak") {
+                    document.getElementById('radioTidak').checked = true;
+                    containerTindakan.style.display = 'none'; 
+                }
             }
 
-            // --- PROSES SAAT TOMBOL DIKLIK ---
-            form.addEventListener("submit", function (e) {
-                e.preventDefault();
-                
-                // Cek ukuran file (Maks 2MB)
-                if (fileInput.files.length > 0 && fileInput.files[0].size > 2 * 1024 * 1024) {
-                    alert("Ukuran file terlalu besar! Maksimal 2 MB.");
-                    return;
-                }
+            // Panggil hitung grading setelah load (penting untuk mode edit)
+            setTimeout(hitungGrading, 500);
 
-                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Mengirim...';
+            // ========================================================
+            // 5. PROSES PENGIRIMAN FORM
+            // ========================================================
+            form.addEventListener("submit", function (e) {
+                e.preventDefault(); 
+                
+                submitBtn.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i> Menyimpan...";
                 submitBtn.disabled = true;
 
-                // Ambil data form
-                const inputData = Object.fromEntries(new FormData(form).entries());
+                const formData = new FormData(form);
+                const inputData = Object.fromEntries(formData.entries());
 
-                // Siapkan paket data (payload)
-                const payload = { 
-                    action: isEditMode ? 'update' : 'create', 
-                    data: inputData 
+                const payload = {
+                    action: isEditMode ? 'update' : 'create',
+                    id: editTargetId,
+                    data: inputData
                 };
-                if (isEditMode) payload.id = editTargetId; // Tambahkan ID jika sedang edit
 
-                // Jika ada foto yang di-upload
-                if (fileInput.files.length > 0) {
-                    const file = fileInput.files[0];
-                    const reader = new FileReader();
-                    
-                    reader.onload = function(event) {
-                        payload.data.fileData = event.target.result;
-                        payload.data.fileName = file.name;
-                        kirimDataKeServer(payload); // Foto selesai dibaca, kirim ke server
-                    };
-                    reader.onerror = function() {
-                        alert("Gagal membaca file foto.");
-                        resetTombol();
-                    };
-                    
-                    reader.readAsDataURL(file);
-                } else {
-                    kirimDataKeServer(payload); // Jika tanpa foto, langsung kirim
-                }
-            });
-
-            function resetTombol() {
-                submitBtn.innerHTML = isEditMode ? "UPDATE LAPORAN KPC" : "KIRIM LAPORAN KPC";
-                submitBtn.disabled = false;
-            }
-
-            // --- FUNGSI MENGIRIM KE GOOGLE APPS SCRIPT ---
-            function kirimDataKeServer(payloadData) {
                 fetch(scriptURL, {
                     method: "POST",
                     headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify(payloadData),
+                    body: JSON.stringify(payload),
                 })
-                .then(response => response.json())
-                .then(result => {
+                .then((response) => response.json())
+                .then((result) => {
                     if (result.status === "success") {
-                        alert("Laporan KPC berhasil terkirim!");
-                        if(isEditMode) {
-                            localStorage.removeItem('editDataKPC');
-                            window.location.href = 'daftar_kpc.html'; // Kembali ke daftar jika habis edit
-                        } else {
-                            form.reset(); // Kosongkan form jika laporan baru
-                        }
+                        // Notifikasi SweetAlert
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: isEditMode ? 'Data Insiden berhasil diperbarui!' : 'Laporan Insiden (IKP) berhasil disimpan!',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            if(isEditMode) {
+                                localStorage.removeItem('editDataIKP'); 
+                                window.location.href = 'daftar_insiden.html'; 
+                            } else {
+                                form.reset(); 
+                                hitungGrading(); // Reset tampilan grading
+                                containerTindakan.style.display = 'none'; // Sembunyikan textbox pencegahan
+                                window.scrollTo(0, 0); // Scroll kembali ke atas
+                            }
+                        });
                     } else {
-                        alert("Terjadi kesalahan server: " + result.message);
+                        Swal.fire('Gagal!', 'Terjadi kesalahan: ' + result.message, 'error');
                     }
                 })
-                .catch(error => {
-                    console.error(error);
-                    alert("Gagal terhubung ke server. Pastikan URL Apps Script benar.");
+                .catch((error) => {
+                    Swal.fire('Kesalahan Jaringan', 'Gagal terhubung ke server. Periksa koneksi internet Anda.', 'error');
                 })
                 .finally(() => {
-                    resetTombol();
+                    submitBtn.innerHTML = isEditMode ? "<i class='fas fa-save me-2'></i> UPDATE DATA" : "<i class='fas fa-save me-2'></i> SIMPAN";
+                    submitBtn.disabled = false;
                 });
-            }
+            });
         });
     </script>
-    <script src="components.js"></script>
 </body>
 </html>

@@ -6,6 +6,8 @@
     <title>Laporan Capaian Mutu - Komite Mutu</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tambahkan SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
         .card-custom { box-shadow: 0 4px 6px rgba(0,0,0,.05); border-radius: 8px; border-top: 4px solid #0dcaf0; }
@@ -82,6 +84,8 @@
         </div>
     </div>
 
+    <!-- Script Pusat Konfigurasi & Autentikasi -->
+    <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
@@ -89,7 +93,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbwA00bHBk_Z6l1FViGbK0fkhU03ssARn2jzwmvTb-Wt5bHN-YtAUsxw-mAMG_cQkvVn/exec";
+        // MENGGUNAKAN VARIABEL GLOBAL DARI config.js
+        const scriptURL = API_CONFIG.MUTU;
         
         let rawData = [];
         let rawDataAnalisa = []; 
@@ -107,23 +112,6 @@
             'semester': { '1': ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni'], '2': ['Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] },
             'tahunan': { '1': ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] }
         };
-
-        // KAMUS URUTAN INM (Berdasarkan Daftar Prioritas Anda)
-        const urutanINM = [
-            "Kepatuhan Kebersihan Tangan",
-            "Kepatuhan Penggunaan Alat Pelindung Diri",
-            "Kepatuhan Identifikasi Pasien",
-            "Waktu Tanggap Operasi Seksio Sesarea Emergensi",
-            "Waktu Tunggu Rawat Jalan",
-            "Penundaan Operasi Elektif",
-            "Kepatuhan Waktu Visite Dokter",
-            "Pelaporan Hasil Kritis Laboratorium",
-            "Kepatuhan Penggunaan Formularium Nasional",
-            "Kepatuhan Terhadap Alur Klinis",
-            "Kepatuhan Upaya Pencegahan Risiko Pasien Jatuh",
-            "Kecepatan Waktu Tanggap Komplain",
-            "Kepuasan Pasien"
-        ];
 
         document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('filterTipeLaporan').addEventListener('change', function() {
@@ -218,19 +206,29 @@
             const dashboardContent = document.getElementById('dashboardContent');
             dashboardContent.innerHTML = '';
 
-            let filteredData = rawData.filter(row => {
-            let matchUnit = (selectedUnit === "RS_ALL") ? true : (row['Unit'] === selectedUnit);
-            let matchTahun = ((row['Tahun'] || "").toString().trim() === selectedTahun);
-            let bulanNormalized = (row['Bulan'] || "").toString().trim().replace(/^\w/, c => c.toUpperCase());
-            let matchBulan = namaBulan.includes(bulanNormalized);
+            // ==============================================================
+            // PERBAIKAN LOGIKA FILTER (Memisahkan periodData & filteredData)
+            // ==============================================================
+            
+            // 1. periodData: Ambil SEMUA data di periode waktu yang dipilih (tanpa filter unit)
+            let periodData = rawData.filter(row => {
+                let matchTahun = ((row['Tahun'] || "").toString().trim() === selectedTahun);
+                let bulanNormalized = (row['Bulan'] || "").toString().trim().replace(/^\w/, c => c.toUpperCase());
+                let matchBulan = namaBulan.includes(bulanNormalized);
+                return matchTahun && matchBulan;
+            });
 
-            // LOGIKA CERDAS: Jika mode RS_ALL, sembunyikan indikator level unit (IMP-Unit)
-            if (selectedUnit === "RS_ALL") {
-                let jenis = (row['Jenis Indikator'] || "").toUpperCase();
-                if (jenis.includes("UNIT")) return false; // Jangan tampilkan IMP-Unit di laporan global
-            }
+            // 2. filteredData: Data spesifik yang akan tampil di Tabel Utama & Grafik (Filter Unit aktif)
+            let filteredData = periodData.filter(row => {
+                let matchUnit = (selectedUnit === "RS_ALL") ? true : (row['Unit'] === selectedUnit);
 
-            return matchUnit && matchTahun && matchBulan;
+                // LOGIKA CERDAS: Jika mode RS_ALL, sembunyikan indikator level unit (IMP-Unit) di tabel utama
+                if (selectedUnit === "RS_ALL") {
+                    let jenis = (row['Jenis Indikator'] || "").toUpperCase();
+                    if (jenis.includes("UNIT")) return false; 
+                }
+
+                return matchUnit;
             });
 
             if (filteredData.length === 0) {
@@ -257,26 +255,22 @@
                 let t = parseFloat((row['Target'] || 0).toString().replace(',', '.'));
                 let c = parseFloat((row['Pencapaian'] || 0).toString().replace(',', '.'));
 
-                // Deteksi jika ini adalah indikator survei/indeks tanpa pecahan
                 let isKepuasan = judul.toLowerCase().includes('kepuasan');
 
-                // --- SUNTIKAN 1: PELEBURAN TOTAL HAIs & SSI ---
+                // --- PELEBURAN TOTAL HAIs & SSI ---
                 let judulUpper = judul.toUpperCase();
                 let isHAI = judulUpper.includes('CAUTI') || judulUpper.includes('VAP') || judulUpper.includes('CLABSI') || judulUpper.includes('PHLEBITIS') || judulUpper.includes('FLEBITIS');
                 let isSSI = judulUpper.includes('SSI ');
 
-                // LOGIKA CERDAS: Jika yang dipilih Komite PPI, biarkan tampil apa adanya. Jika bukan, lebur menjadi tombol.
+                // Jika bukan Komite PPI yang melihat dashboard-nya sendiri, jadikan tombol gabungan
                 if (selectedUnit !== "Komite PPI") {
                     if (isHAI) judul = "Total Insidensi HAIs 🔍";
                     if (isSSI) judul = "Total Insidensi SSI 🔍";
                 }
-                // -----------------------------------------------
-                // -----------------------------------------------
 
                 if (!groupedData[jenis]) groupedData[jenis] = {};
                 if (!groupedData[jenis][judul]) {
                     groupedData[jenis][judul] = { satuan: satuan, bulans: {} };
-                    // Tambahkan sumC dan countC untuk keperluan rata-rata indeks
                     namaBulan.forEach(b => groupedData[jenis][judul].bulans[b] = { target: null, capai: null, num: 0, den: 0, sumC: 0, countC: 0 });
                 }
                 
@@ -289,14 +283,11 @@
                         pointer.num += num;
                         pointer.den += den;
                         
-                        // LOGIKA CERDAS: Jika ini Kepuasan Pasien ATAU tidak punya N/D
                         if (isKepuasan || (num === 0 && den === 0 && c > 0)) {
                             pointer.sumC += c;
                             pointer.countC += 1;
-                            // Jangan dibagi num/den, langsung rata-ratakan nilai capaiannya
                             pointer.capai = Math.round((pointer.sumC / pointer.countC) * 100) / 100;
                         } else {
-                            // HITUNG ULANG NORMAL (N/D)
                             if (pointer.den > 0) {
                                 let hitungUlang = pointer.num / pointer.den;
                                 if (satuan.includes('%')) hitungUlang *= 100;
@@ -322,17 +313,16 @@
             if (!isAnalyzed) fullHtml += "<button id='btnToggleAnalisa' class='btn btn-warning fw-bold text-dark px-3 me-2' onclick='toggleAnalisaMode()'><i class='fas fa-edit me-1'></i> Mode Analisa</button>";
             fullHtml += "<button class='btn btn-danger fw-bold px-3' onclick='window.print()'><i class='fas fa-print me-1'></i> Cetak Dokumen</button>" +
                 "<button class='btn btn-primary fw-bold px-3 ms-2' onclick='exportKeWord()'><i class='fas fa-file-word me-1'></i> Export Word</button></div></div>";
-                // --- SUNTIKAN TOMBOL BACKUP ---
-            // Tombol ini disembunyikan secara default (class d-none)
+                
             fullHtml += "<button id='btnBackupTahunan' class='btn btn-dark fw-bold px-3 ms-2 d-none' onclick='jalankanBackupAkhirTahun()'><i class='fas fa-database me-1'></i> Backup Arsip & Reset</button>";
 
             let chartConfigs = []; let chartIdCounter = 0;
+            
             // =================================================================
-            // --- SUNTIKAN BARU: SCORECARD RINGKASAN EKSEKUTIF ---
+            // SCORECARD RINGKASAN EKSEKUTIF 
             // =================================================================
             let stats = { total: 0, hit: 0, miss: 0, sumInmCpa: 0, countInm: 0 };
 
-            // Mesin penghitung statistik
             for (let jenis in groupedData) {
                 let isINM = jenis.toLowerCase().includes("nasional") || jenis.toLowerCase().includes("inm");
                 for (let judul in groupedData[jenis]) {
@@ -349,7 +339,7 @@
                     });
                     
                     if (valid > 0) {
-                        avgC = avgC / valid; // Rata-rata capaian di periode ini
+                        avgC = avgC / valid; 
                         if (avgC >= t) stats.hit++; else stats.miss++;
                         
                         if (isINM) {
@@ -363,7 +353,6 @@
             let avgInmText = stats.countInm > 0 ? (stats.sumInmCpa / stats.countInm).toFixed(1) + "<small>%</small>" : "-";
             let persenHit = stats.total > 0 ? Math.round((stats.hit / stats.total) * 100) : 0;
 
-            // HTML untuk Scorecard
             fullHtml += `
             <div class="row g-3 mb-5 d-print-none">
                 <div class="col-md-3 col-sm-6">
@@ -403,42 +392,32 @@
                     </div>
                 </div>
             </div>`;
+            
             // =================================================================
             let thBulan = namaBulan.map(b => "<th colspan='2' style='min-width:90px;'>" + b + "</th>").join('');
             let thTargetCapai = namaBulan.map(() => "<th>Tgt</th><th>Cpa</th>").join('');
 
             for (let jenis in groupedData) {
                 let tableRows = ''; let nomor = 1; let cardsHtml = '';
-                
-                // 1. Ambil semua judul indikator
                 let daftarJudul = Object.keys(groupedData[jenis]);
 
-                // 2. MESIN PENGURUTAN SAPU JAGAT
                 daftarJudul.sort((a, b) => {
                     let textA = a.toLowerCase();
                     let textB = b.toLowerCase();
-
-                    // Menggunakan kata kunci pendek agar kebal typo (Urutan 1 - 13)
                     const keywords = [
                         "kebersihan tangan", "pelindung diri", "identifikasi pasien", 
                         "seksio sesarea", "alur klinis", "tunggu rawat jalan", "penundaan operasi", 
                         "visite dokter", "kritis", "formularium", "risiko pasien jatuh", 
                         "tanggap komplain", "kepuasan"
                     ];
-
                     let indexA = keywords.findIndex(k => textA.includes(k));
                     let indexB = keywords.findIndex(k => textB.includes(k));
-
-                    // Jika tidak ada di daftar 13 INM, lempar ke urutan paling bawah
                     if (indexA === -1) indexA = 999;
                     if (indexB === -1) indexB = 999;
-
-                    // Urutkan berdasarkan prioritas kata kunci, sisanya urut abjad
                     if (indexA !== indexB) return indexA - indexB;
                     return textA.localeCompare(textB);
                 });
 
-                // 3. Gunakan for...of untuk membaca data yang SUDAH DIURUTKAN
                 for (let judul of daftarJudul) {
                     let item = groupedData[jenis][judul];
                     let tdHtml = namaBulan.map(b => {
@@ -450,7 +429,6 @@
                         if (t === null) return "<td>-</td><td>-</td>";
                         let cl = c >= t ? 'status-tercapai' : 'status-gagal';
 
-                        // LOGIKA CERDAS: Sembunyikan N & D khusus untuk Kepuasan Pasien
                         let infoNumDen = "";
                         let isKepuasan = judul.toLowerCase().includes('kepuasan');
                         
@@ -461,7 +439,6 @@
                         return "<td class='target-text text-center align-middle'>" + t + "</td><td class='text-center align-middle " + cl + "'>" + c + infoNumDen + "</td>";
                     }).join('');
 
-                    // --- SUNTIKAN 2: TOMBOL KLIK MODAL ---
                     let judulDisplay = judul;
                     if (judul.includes("HAIs 🔍")) {
                         judulDisplay = `<a href="#" class="text-decoration-none text-primary" data-bs-toggle="modal" data-bs-target="#modalHAIs"><i class="fas fa-hand-pointer me-2"></i>${judul}</a>`;
@@ -470,7 +447,6 @@
                     }
                     
                     tableRows += "<tr><td class='text-center align-middle'>" + (nomor++) + "</td><td class='fw-bold align-middle'>" + judulDisplay + "</td><td class='text-center align-middle'>" + item.satuan + "</td>" + tdHtml + "</tr>";
-                    // --------------------------------------
 
                     let htmlAnalisaText = "";
                     if (isAnalyzed && analisaMap[judul]) {
@@ -482,40 +458,36 @@
                     }
 
                     let canvasId = "chart-" + (chartIdCounter++);
-                    
-                    // Jika bulanan pakai lebar penuh, jika lainnya pakai separuh layar (col-md-6)
                     let colWidth = (selectedTipe === 'tahunan' || selectedTipe === 'bulanan') ? 'col-12' : 'col-md-6';
-                    
-                    // Sembunyikan div Chart jika laporannya Bulanan
                     let chartAreaHtml = selectedTipe === 'bulanan' ? "" : "<div class='chart-container'><canvas id='" + canvasId + "'></canvas></div>";
                     
                     cardsHtml += "<div class='" + colWidth + " mb-4'><div class='card h-100 shadow-sm'><div class='card-body'><h6 class='text-center fw-bold'>" + judul + "</h6>" + chartAreaHtml + htmlAnalisaText + "</div></div></div>";
                     
-                    // Jangan perintahkan Chart.js untuk menggambar jika modenya Bulanan
                     if (selectedTipe !== 'bulanan') {
                         chartConfigs.push({ id: canvasId, labels: namaBulan, target: namaBulan.map(b => item.bulans[b].target), capai: namaBulan.map(b => item.bulans[b].capai), satuan: item.satuan });
-                    }}
+                    }
+                }
                 
                 fullHtml += "<div class='mt-4 mb-2'><h5 class='fw-bold text-primary border-start border-4 border-primary ps-2'>" + jenis + "</h5></div>" +
                     "<div class='table-responsive mb-4 shadow-sm'><table class='table table-bordered table-hover mb-0' style='font-size: 0.8rem; background:#fff;'><thead class='text-center bg-light'><tr><th rowspan='2' class='align-middle'>No</th><th rowspan='2' class='align-middle'>Indikator</th><th rowspan='2' class='align-middle'>Sat</th>" + thBulan + "</tr><tr>" + thTargetCapai + "</tr></thead><tbody>" + tableRows + "</tbody></table></div><div class='row'>" + cardsHtml + "</div>";
             }
 
             // =================================================================
-            // --- SUNTIKAN 3: TABEL KHUSUS HAIs & SSI (VERSI MODAL POP-UP) ---
+            // TABEL KHUSUS HAIs & SSI (VERSI MODAL POP-UP)
             // =================================================================
             
-            // FUNGSI PENCARI DATA YANG LEBIH CERDAS (Mendukung banyak kata kunci & Anti-Typo)
+            // FUNGSI PENCARI DATA (Mencari dari periodData, bukan filteredData)
             function getSumNumDen(keywordsIndikator, keywordUnit) {
                 let num = 0; let den = 0; let found = false;
                 let keys = Array.isArray(keywordsIndikator) ? keywordsIndikator : [keywordsIndikator];
                 
-                filteredData.forEach(r => {
+                periodData.forEach(r => {
                     let u = (r['Unit'] || "").toUpperCase();
                     let j = (r['Judul indikator'] || "").toUpperCase();
                     
                     let matchIndikator = keys.some(k => j.includes(k));
                     
-                    if ((keywordUnit === "ALL" || u.includes(keywordUnit)) && matchIndikator) {
+                    if ((keywordUnit === "ALL" || u === keywordUnit || u.includes(keywordUnit)) && matchIndikator) {
                         num += parseFloat((r['Numerator'] || 0).toString().replace(',', '.')) || 0;
                         den += parseFloat((r['Denominator'] || 0).toString().replace(',', '.')) || 0;
                         found = true;
@@ -526,13 +498,11 @@
             }
 
             // MODAL HAIs
-            // LOGIKA BARU: Cari SECARA OTOMATIS ruangan mana saja yang mengirim data HAIs
-            let haisUnits = [...new Set(filteredData.filter(r => {
+            let haisUnits = [...new Set(periodData.filter(r => {
                 let j = (r['Judul indikator'] || "").toUpperCase();
                 return j.includes('CAUTI') || j.includes('VAP') || j.includes('CLABSI') || j.includes('PHLEBITIS') || j.includes('FLEBITIS');
             }).map(r => r['Unit']))].filter(Boolean).sort();
 
-            // TAMBAHKAN SYARAT: selectedUnit !== "Komite PPI"
             if (selectedUnit !== "Komite PPI" && (selectedUnit === "RS_ALL" || haisUnits.includes(selectedUnit))) {
                 let innerHtmlHAIs = "<div class='table-responsive mb-0'><table class='table table-bordered table-hover mb-0' style='font-size: 0.85rem; background:#fff; min-width: 1200px;'>" +
                     "<thead class='text-center bg-light'><tr><th rowspan='2' class='align-middle'>Ruang</th><th colspan='3'>CAUTI</th><th colspan='3'>VAP</th><th colspan='3'>CLABSI</th><th colspan='3'>Phlebitis</th></tr>" +
@@ -542,13 +512,12 @@
                     "<th class='align-middle'>Jumlah<br>Kasus</th><th class='align-middle text-muted' style='font-size:0.75rem;'>Jumlah lama hari pemakaian<br>kateter vena perifer</th><th class='align-middle'>Insiden(%)</th></tr></thead><tbody>";
 
                 let targetUnits = selectedUnit === "RS_ALL" ? haisUnits : [selectedUnit];
-                if (targetUnits.length === 0) targetUnits = ['-']; // Fallback
+                if (targetUnits.length === 0) targetUnits = ['-']; 
 
-                // Variabel untuk menghitung total keseluruhan agar sama persis dengan tabel depan
                 let tH = { cn:0, cd:0, vn:0, vd:0, cln:0, cld:0, pn:0, pd:0 };
 
                 targetUnits.forEach(u => {
-                    let unitKey = selectedUnit === "RS_ALL" ? u.toUpperCase() : "ALL"; 
+                    let unitKey = u.toUpperCase(); 
                     let cauti = getSumNumDen(['CAUTI'], unitKey); 
                     let vap = getSumNumDen(['VAP'], unitKey); 
                     let clabsi = getSumNumDen(['CLABSI'], unitKey);
@@ -564,7 +533,6 @@
                         "<td class='text-center align-middle'>" + phlebitis.n + "</td><td class='text-center align-middle'>" + phlebitis.d + "</td><td class='text-center align-middle'>" + phlebitis.c + " %</td></tr>";
                 });
 
-                // Tampilkan Baris TOTAL di bawah
                 if (targetUnits.length > 1) {
                     let cc = tH.cd > 0 ? ((tH.cn/tH.cd)*100).toFixed(2) : 0; let vc = tH.vd > 0 ? ((tH.vn/tH.vd)*100).toFixed(2) : 0;
                     let clc = tH.cld > 0 ? ((tH.cln/tH.cld)*100).toFixed(2) : 0; let pc = tH.pd > 0 ? ((tH.pn/tH.pd)*100).toFixed(2) : 0;
@@ -593,14 +561,11 @@
             }
 
             // MODAL SSI
-           // MODAL SSI
-            // TAMBAHKAN SYARAT: selectedUnit !== "Komite PPI"
             if (selectedUnit !== "Komite PPI" && (selectedUnit === "RS_ALL" || selectedUnit.toUpperCase().includes("BEDAH") || selectedUnit.toUpperCase().includes("OPERASI"))) {
                 let innerHtmlSSI = "<div class='table-responsive mb-0'><table class='table table-bordered table-hover mb-0' style='font-size: 0.85rem; background:#fff;'>" +
                     "<thead class='text-center bg-light'><tr><th rowspan='2' class='align-middle'>Jenis Tindakan Operasi di RS</th><th colspan='3'>SSI</th></tr>" +
                     "<tr><th class='align-middle'>Jumlah Kasus</th><th class='align-middle'>Jumlah Tindakan Operasi</th><th class='align-middle'>Insiden (%)</th></tr></thead><tbody>";
 
-                // LOGIKA BARU: Dictionary yang mendeteksi ejaan Indonesia maupun ejaan Typo
                 const opsSSI = [
                     { label: 'Bedah Orthopedi (ORIF atau Total Hip Replacement)', keys: ['ORTHO'] }, 
                     { label: 'Seksio Sesarea', keys: ['SEKSI', 'SECTI', 'SESAR'] },
@@ -614,7 +579,7 @@
                 let tSsiN = 0; let tSsiD = 0;
 
                 opsSSI.forEach(op => {
-                    let sum = getSumNumDen(op.keys, "ALL");
+                    let sum = getSumNumDen(op.keys, selectedUnit === "RS_ALL" ? "ALL" : selectedUnit.toUpperCase());
                     if (!sum.exist) {
                         innerHtmlSSI += "<tr><td class='fw-bold align-middle'>" + op.label + "</td><td colspan='3' class='text-center text-muted fw-bold align-middle bg-light'>N/A</td></tr>";
                     } else {
@@ -623,7 +588,6 @@
                     }
                 });
 
-                // Tampilkan Baris TOTAL di bawah
                 let tC = tSsiD > 0 ? ((tSsiN/tSsiD)*100).toFixed(2) : 0;
                 innerHtmlSSI += "<tr class='bg-warning bg-opacity-10'><td class='fw-bold text-end align-middle'>TOTAL</td><td class='text-center fw-bold align-middle'>" + tSsiN + "</td><td class='text-center fw-bold align-middle'>" + tSsiD + "</td><td class='text-center fw-bold align-middle'>" + tC + " %</td></tr>";
 
@@ -642,9 +606,6 @@
                   </div>
                 </div>`;
             }
-            // =================================================================
-            // --- AKHIR SUNTIKAN TABEL KHUSUS ---
-            // =================================================================
 
             if (!isAnalyzed) {
                 fullHtml += "<div id='analisaFooter' class='mt-5 p-4 bg-white border rounded shadow-sm d-print-none' style='display:none; border-top: 4px solid #ffc107 !important;'><h5 class='fw-bold mb-3'>Pengesahan Analisa</h5><div class='row align-items-end'><div class='col-md-6'><label class='fw-bold'>Kepala Unit:</label><input type='text' id='inputKepalaUnit' class='form-control' placeholder='Nama & Gelar...'></div><div class='col-md-6 text-md-end'><button class='btn btn-success fw-bold px-4' onclick='kirimAnalisaKeServer()'><i class='fas fa-save me-2'></i> SIMPAN ANALISA</button></div></div></div>";
@@ -654,6 +615,8 @@
             fullHtml += "<div class='mt-5 pt-4 d-none d-print-block' style='page-break-inside: avoid;'><div class='row'><div class='col-8'></div><div class='col-4 text-center'><p class='mb-5'>Mengetahui,<br>Kepala Unit</p><br><br><br><p class='mb-0'>" + printName + "</p></div></div></div>";
 
             dashboardContent.innerHTML = fullHtml;
+
+            cekAksesTombolBackup();
 
             chartConfigs.forEach(conf => {
                 let ctx = document.getElementById(conf.id).getContext('2d');
@@ -714,7 +677,11 @@
         window.kirimAnalisaKeServer = function() {
             const unit = (userRole !== "Komite Mutu" && userUnit) ? userUnit : document.getElementById('filterUnit').value;
             const kepala = document.getElementById('inputKepalaUnit').value;
-            if (!kepala) return alert("Isi nama Kepala Unit!");
+            
+            if (!kepala) {
+                Swal.fire('Perhatian', 'Isi nama Kepala Unit!', 'warning');
+                return;
+            }
             
             const details = [];
             document.querySelectorAll('.input-analisa').forEach((el, i) => {
@@ -722,32 +689,41 @@
                 if (a || tl) details.push({ judul: el.dataset.judul, analisa: a, tl: tl });
             });
 
-            if (details.length === 0) return alert("Anda belum mengisi analisa apapun.");
+            if (details.length === 0) {
+                Swal.fire('Perhatian', 'Anda belum mengisi analisa apapun.', 'warning');
+                return;
+            }
 
             const btnSimpan = document.querySelector('.btn-success');
             btnSimpan.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i> Menyimpan...";
             btnSimpan.disabled = true;
 
-            fetch(scriptURL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: 'analisa', unit: unit, triwulan: activePeriodeTitle, kepala: kepala, details: details }) })
+            fetch(API_CONFIG.MUTU, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: 'analisa', unit: unit, triwulan: activePeriodeTitle, kepala: kepala, details: details }) })
             .then(res => res.json())
             .then(res => {
                 if(res.status === 'success') {
-                    alert('Analisa berhasil disimpan!'); location.reload();
+                    Swal.fire({
+                        title: 'Sukses!',
+                        text: 'Analisa berhasil disimpan!',
+                        icon: 'success',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => location.reload());
                 } else {
-                    alert('Gagal menyimpan: ' + res.message);
+                    Swal.fire('Gagal!', res.message, 'error');
                     btnSimpan.innerHTML = "<i class='fas fa-save me-2'></i> SIMPAN ANALISA"; btnSimpan.disabled = false;
                 }
             }).catch(err => {
-                alert('Gangguan jaringan!');
+                Swal.fire('Error', 'Gangguan jaringan!', 'error');
                 btnSimpan.innerHTML = "<i class='fas fa-save me-2'></i> SIMPAN ANALISA"; btnSimpan.disabled = false;
             });
         };
-        // Fungsi ini dipanggil setiap kali Dasbor selesai di-render
+
         function cekAksesTombolBackup() {
             let tombolBackup = document.getElementById('btnBackupTahunan');
             if (tombolBackup) {
-                // HANYA MUNCUL JIKA YANG LOGIN ADALAH KOMITE MUTU
-                if (selectedUnit === "Komite Mutu") {
+                const selectedUnit = document.getElementById('filterUnit').value;
+                if (userRole === "Komite Mutu" && selectedUnit === "RS_ALL") {
                     tombolBackup.classList.remove('d-none');
                 } else {
                     tombolBackup.classList.add('d-none');
@@ -755,52 +731,80 @@
             }
         }
 
-        // Panggil fungsi cek akses di akhir fungsi renderDashboard() Anda
-        // ... (letakkan pemanggilan cekAksesTombolBackup(); di bagian paling bawah renderDashboard) ...
+        window.jalankanBackupAkhirTahun = function() {
+            const selectedUnit = document.getElementById('filterUnit').value;
+            
+            Swal.fire({
+                title: '⚠️ PERINGATAN KRITIKAL!',
+                html: "Apakah Anda yakin ingin melakukan Backup Tahunan?<br><br><strong class='text-danger'>Tindakan ini akan MENGHAPUS seluruh data mentah operasional di file unit Anda untuk persiapan tahun baru.</strong>",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Lanjutkan',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    
+                    Swal.fire({
+                        title: 'Konfirmasi Keamanan',
+                        input: 'text',
+                        inputLabel: "Ketik kata 'SETUJU' untuk melanjutkan proses Backup & Reset Data:",
+                        inputPlaceholder: 'SETUJU',
+                        showCancelButton: true,
+                        confirmButtonText: 'Proses Backup',
+                        cancelButtonText: 'Batal',
+                        inputValidator: (value) => {
+                            if (value !== 'SETUJU') {
+                                return 'Anda harus mengetik SETUJU (huruf besar semua)'
+                            }
+                        }
+                    }).then((inputResult) => {
+                        if (inputResult.isConfirmed && inputResult.value === 'SETUJU') {
+                            
+                            let btn = document.getElementById('btnBackupTahunan');
+                            let originalText = btn.innerHTML;
+                            btn.innerHTML = "<i class='fas fa-spinner fa-spin me-1'></i> Memproses Arsip...";
+                            btn.disabled = true;
 
-        // Fungsi yang berjalan saat tombol Backup diklik
-        function jalankanBackupAkhirTahun() {
-            // Peringatan Berlapis agar tidak tidak sengaja terpencet
-            let konfirmasi1 = confirm("⚠️ PERINGATAN KRITIKAL!\n\nApakah Anda yakin ingin melakukan Backup Tahunan? Tindakan ini akan MENGHAPUS seluruh data mentah operasional di file unit Anda untuk persiapan tahun baru.");
-            if (!konfirmasi1) return;
+                            Swal.fire({
+                                title: 'Memproses Arsip & Reset Data',
+                                html: 'Bisa memakan waktu 1-3 Menit.<br><b>JANGAN TUTUP HALAMAN INI...</b>',
+                                allowOutsideClick: false,
+                                didOpen: () => { Swal.showLoading(); }
+                            });
 
-            let konfirmasi2 = prompt("Ketik kata 'SETUJU' untuk melanjutkan proses Backup & Reset Data:", "");
-            if (konfirmasi2 !== "SETUJU") {
-                alert("Proses Backup dibatalkan.");
-                return;
-            }
+                            const payload = {
+                                action: 'trigger_backup',
+                                unit: selectedUnit 
+                            };
 
-            // Ganti tombol jadi Loading
-            let btn = document.getElementById('btnBackupTahunan');
-            let originalText = btn.innerHTML;
-            btn.innerHTML = "<i class='fas fa-spinner fa-spin me-1'></i> Memproses Arsip (Bisa makan waktu 1-3 Menit)...";
-            btn.disabled = true;
-
-            // Tembak ke API Apps Script
-            const payload = {
-                action: 'trigger_backup',
-                unit: selectedUnit // Mengirim data pengakses untuk divalidasi oleh server
-            };
-
-            fetch("URL_WEB_APP_ANDA_DISINI", {  // <--- PASTIKAN URL WEB APP ANDA BENAR
-                method: "POST",
-                body: JSON.stringify(payload)
-            })
-            .then(response => response.json())
-            .then(res => {
-                if(res.status === 'success') {
-                    alert("✅ BERHASIL: " + res.message);
-                    window.location.reload(); // Refresh halaman agar data terupdate
-                } else {
-                    alert("❌ GAGAL: " + res.message);
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
+                            fetch(API_CONFIG.MUTU, {  
+                                method: "POST",
+                                body: JSON.stringify(payload)
+                            })
+                            .then(response => response.json())
+                            .then(res => {
+                                if(res.status === 'success') {
+                                    Swal.fire({
+                                        title: 'BERHASIL',
+                                        text: res.message,
+                                        icon: 'success'
+                                    }).then(() => window.location.reload());
+                                } else {
+                                    Swal.fire('GAGAL', res.message, 'error');
+                                    btn.innerHTML = originalText;
+                                    btn.disabled = false;
+                                }
+                            })
+                            .catch(err => {
+                                Swal.fire('Error Koneksi', 'Terjadi kesalahan koneksi saat memproses backup.', 'error');
+                                btn.innerHTML = originalText;
+                                btn.disabled = false;
+                            });
+                        }
+                    });
                 }
-            })
-            .catch(err => {
-                alert("Terjadi kesalahan koneksi saat memproses backup.");
-                btn.innerHTML = originalText;
-                btn.disabled = false;
             });
         }
     </script>

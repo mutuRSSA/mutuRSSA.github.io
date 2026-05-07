@@ -7,6 +7,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <!-- Tambahkan SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
         .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 4px; border-top: 3px solid #ffc107; }
@@ -34,7 +36,10 @@
     <div class="container-fluid px-4">
         <div class="bg-white p-4 card-custom">
             <h5 class="mb-4 text-secondary text-uppercase border-bottom pb-2">Riwayat Kondisi Potensial Cedera (KPC)</h5>
-            <div id="loadingMessage" class="alert alert-info text-center">Mengambil data KPC dari server...</div>
+            
+            <div id="loadingMessage" class="alert alert-info text-center fw-bold shadow-sm">
+                <i class="fas fa-spinner fa-spin me-2"></i> Mengambil data KPC dari server...
+            </div>
 
             <div class="table-responsive">
                 <table id="kpcTable" class="table table-bordered table-striped" style="width:100%; display: none; font-size: 0.85rem;">
@@ -59,6 +64,9 @@
 
     <div id="printArea" style="display: none;"></div>
 
+    <!-- Script Pusat Konfigurasi & Autentikasi -->
+    <script src="config.js"></script>
+
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
@@ -68,8 +76,8 @@
         window.kpcData = [];
 
         $(document).ready(function() {
-            // MASUKKAN URL WEB APP KPC ANDA DI SINI
-            const scriptURL = "https://script.google.com/macros/s/AKfycbxuu_u_pYsmfSYAoy9arI76xSrGddgSSQMsBzjknysotJF2b0Rk5n7v25AjAe6LbBpi/exec";
+            // MENGGUNAKAN VARIABEL GLOBAL DARI config.js
+            const scriptURL = API_CONFIG.KPC;
 
             fetch(scriptURL, { redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" }})
             .then(res => res.text())
@@ -98,18 +106,18 @@
 
                         let sudahDianalisis = row['Penyebab Langsung'] && row['Penyebab Langsung'].toString().trim() !== '';
                         let tombolAksi = sudahDianalisis ? 
-                            `<button onclick="printKPC(${index})" class="btn btn-info btn-sm text-white mb-1" title="Cetak PDF"><i class="fas fa-print"></i></button>
-                             <button onclick="analisisKPC(${index})" class="btn btn-warning btn-sm text-dark mb-1" title="Update Progress"><i class="fas fa-edit"></i></button>` 
+                            `<button onclick="printKPC(${index})" class="btn btn-info btn-sm text-white mb-1 w-100" title="Cetak PDF"><i class="fas fa-print me-1"></i> Cetak</button>
+                             <button onclick="analisisKPC(${index})" class="btn btn-warning btn-sm text-dark mb-1 w-100" title="Update Progress"><i class="fas fa-edit me-1"></i> Update</button>` 
                             : 
                             `<button onclick="printKPC(${index})" class="btn btn-info btn-sm text-white mb-1" title="Cetak PDF"><i class="fas fa-print"></i></button>
                              <button onclick="analisisKPC(${index})" class="btn btn-success btn-sm text-white mb-1" title="Investigasi & Update"><i class="fas fa-search"></i></button>
-                             <button onclick="editKPC(${index})" class="btn btn-warning btn-sm text-white mb-1" title="Edit"><i class="fas fa-edit"></i></button>
+                             <button onclick="editKPC(${index})" class="btn btn-warning btn-sm text-dark mb-1" title="Edit"><i class="fas fa-edit"></i></button>
                              <button onclick="deleteKPC(${index})" class="btn btn-danger btn-sm text-white mb-1" title="Hapus"><i class="fas fa-trash"></i></button>`;
 
                         html += `
                             <tr>
                                 <td class="text-center">${index + 1}</td>
-                                <td class="text-center" style="min-width: 100px;">${tombolAksi}</td>
+                                <td class="text-center" style="min-width: 110px;">${tombolAksi}</td>
                                 <td>${tglWaktu}</td>
                                 <td>${row['Lokasi / Unit'] || '-'}</td>
                                 <td>${row['Deskripsi KPC'] || '-'}</td>
@@ -125,13 +133,46 @@
                     $('#kpcTable').DataTable({ "ordering": true, "order": [[0, 'desc']], "columnDefs": [{ "targets": [1, 7], "orderable": false }] });
                 }
             })
-            .catch(err => alert("Gagal memuat data: " + err));
+            .catch(err => {
+                $('#loadingMessage').removeClass('alert-info').addClass('alert-danger').html(`<i class="fas fa-exclamation-triangle me-2"></i> Gagal memuat data: ${err}`);
+            });
 
-            // FUNGSI AKSI
+            // FUNGSI AKSI (MENGGUNAKAN SWEETALERT2)
             window.deleteKPC = function(index) {
-                if(!confirm("Yakin ingin menghapus laporan KPC ini?")) return;
-                fetch(scriptURL, { method: 'POST', body: JSON.stringify({ action: 'delete', id: window.kpcData[index].Timestamp })})
-                .then(res => res.json()).then(res => { alert("Dihapus!"); location.reload(); });
+                Swal.fire({
+                    title: 'Yakin ingin menghapus?',
+                    text: "Laporan KPC ini akan dihapus permanen!",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, Hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Menghapus Data...',
+                            allowOutsideClick: false,
+                            didOpen: () => { Swal.showLoading(); }
+                        });
+                        
+                        fetch(scriptURL, { 
+                            method: 'POST', 
+                            body: JSON.stringify({ action: 'delete', id: window.kpcData[index].Timestamp })
+                        })
+                        .then(res => res.json())
+                        .then(res => { 
+                            if(res.status === 'success') {
+                                Swal.fire('Terhapus!', 'Laporan KPC berhasil dihapus.', 'success').then(() => {
+                                    location.reload(); 
+                                });
+                            } else {
+                                Swal.fire('Gagal!', 'Terjadi kesalahan: ' + res.message, 'error');
+                            }
+                        })
+                        .catch(err => Swal.fire('Error!', 'Gagal menyambung ke server.', 'error'));
+                    }
+                });
             };
 
             window.editKPC = function(index) {
