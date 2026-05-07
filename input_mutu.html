@@ -8,7 +8,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Tambahkan SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
@@ -35,6 +34,11 @@
     }
     .btn-dokumen:hover { background-color: #198754; color: #fff; border-color: #198754; }
     
+    /* GAYA UNTUK TAB BULAN DINAMIS */
+    .month-tab-btn { border-radius: 20px; transition: 0.2s; background-color: #fff; border: 1px solid #dee2e6; cursor: pointer;}
+    .month-tab-btn:hover { background-color: #e9ecef; }
+    .month-tab-btn.active { background-color: #0dcaf0 !important; color: #fff !important; border-color: #0dcaf0 !important; box-shadow: 0 2px 4px rgba(13,202,240,0.3);}
+
     .handsontable { font-family: 'Segoe UI', Tahoma, sans-serif !important; font-size: 13px !important; color: #495057 !important; box-shadow: none !important; background-color: #ffffff !important;}
     .handsontable .wtHolder, .handsontable .wtHider, .ht_master, .ht_clone_left, .ht_clone_top, .ht_clone_top_left_corner { background-color: #ffffff !important; background: #ffffff !important; }
     .handsontableInput { color: #2c3e50 !important; background-color: #ffffff !important; font-size: 13px !important; box-shadow: 0 0 0 2px #0dcaf0 !important; padding: 4px !important; }
@@ -73,7 +77,7 @@
     .nav-tabs { border-bottom: 2px solid #dee2e6; }
 
     #spreadsheet {
-        height: calc(100vh - 280px) !important; 
+        height: calc(100vh - 350px) !important; 
         min-height: 350px !important; 
         overflow: hidden !important; 
         width: 100%;
@@ -88,71 +92,57 @@
         <ul class="nav nav-tabs mb-3" id="formTabs"></ul>
         <div class="bg-white p-4 mb-4 card-custom">
             
-            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4 flex-wrap gap-2">
                 <div>
                     <h4 class="mb-1 text-dark fw-bold" id="judulForm"><i class="fas fa-edit text-info me-2"></i> Input Data Observasi Mutu</h4>
                     <p class="text-muted mb-0 fw-bold text-uppercase" id="subJudulForm">Memuat formulir...</p>
                 </div>
-                <div class="text-end">
+                <div class="text-md-end">
                     <span class="badge bg-secondary fs-6 mb-2 d-block" id="badgeUnit"><i class="fas fa-hospital me-1"></i> Unit...</span>
-                    <!-- Tambahan Dropdown Bulan -->
-                    <select id="filterBulan" class="form-select form-select-sm mb-2 shadow-sm border-info" onchange="muatDataBulanIni()">
-                        <option value="01">Januari</option>
-                        <option value="02">Februari</option>
-                        <option value="03">Maret</option>
-                        <option value="04">April</option>
-                        <option value="05">Mei</option>
-                        <option value="06">Juni</option>
-                        <option value="07">Juli</option>
-                        <option value="08">Agustus</option>
-                        <option value="09">September</option>
-                        <option value="10">Oktober</option>
-                        <option value="11">November</option>
-                        <option value="12">Desember</option>
-                    </select>
                     <button class="btn btn-outline-primary btn-sm fw-bold shadow-sm" onclick="scrollToEmptyRow()" id="btnScrollDown" style="display:none;">
-                        <i class="fas fa-arrow-down me-1"></i> Ke Baris Kosong
+                        <i class="fas fa-arrow-down me-1"></i> Langsung ke Baris Kosong
                     </button>
                 </div>
             </div>
 
-            <!-- PENGUMUMAN MIGRASI DATA LAMA -->
-            <div class="alert alert-warning border-warning shadow-sm d-flex align-items-center justify-content-between mb-4">
+            <div class="alert alert-warning border-warning shadow-sm d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
                 <div>
                     <h6 class="fw-bold mb-1"><i class="fas fa-info-circle me-2"></i> Informasi Migrasi Sistem</h6>
-                    <p class="mb-0 text-dark" style="font-size: 0.85rem;">Input data mutu saat ini dialihkan sepenuhnya ke dalam sistem terpadu (Handsontable). Jika Anda membutuhkan data dari format Spreadsheet lama untuk disalin/dipindahkan kemari, silakan akses arsip lama Anda melalui tombol di samping.</p>
+                    <p class="mb-0 text-dark" style="font-size: 0.85rem;">Input data mutu saat ini dialihkan sepenuhnya ke dalam sistem terpadu. Jika Anda membutuhkan data dari format Spreadsheet lama untuk disalin (Copy-Paste) kemari, silakan akses arsip lama Anda melalui tombol di samping.</p>
                 </div>
-                <button class="btn btn-warning fw-bold text-dark shadow-sm ms-3" style="min-width: 140px;" data-bs-toggle="modal" data-bs-target="#modalLinkLama">
-                    <i class="fas fa-archive me-1"></i> Arsip Data Lama
+                <button class="btn btn-warning fw-bold text-dark shadow-sm" style="min-width: 160px;" data-bs-toggle="modal" data-bs-target="#modalLinkLama">
+                    <i class="fas fa-archive me-1"></i> Buka Arsip Lama
                 </button>
             </div>
 
             <div id="loadingMessage" class="alert alert-info text-center fw-bold shadow-sm"><i class="fas fa-spinner fa-spin me-2"></i> Sinkronisasi database...</div>
             
             <div id="spreadsheetContainer" style="display: none;">
+                
+                <div id="monthFilterContainer" style="display:none;" class="mb-3 p-3 bg-light rounded border">
+                    <label class="fw-bold text-secondary mb-2 d-block"><i class="fas fa-calendar-check me-1"></i> Pilih Bulan Entri Data:</label>
+                    <ul class="nav nav-pills gap-2" id="monthTabsList">
+                        </ul>
+                </div>
+
                 <div id="spreadsheet" class="mb-4 hot"></div>
                 
-                <div class="d-flex justify-content-between bg-light p-3 border rounded align-items-center mt-3">
-                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Data <strong>Final</strong> akan dikunci permanen.<br>Gunakan <strong>Draft</strong> jika ingin dilanjutkan besok.</small>
+                <div class="d-flex justify-content-between bg-light p-3 border rounded align-items-center mt-3 flex-wrap gap-3">
+                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Data berstatus <strong class="text-danger">"Final"</strong> telah dikunci permanen.<br>Gunakan <strong class="text-primary">"Simpan Draft"</strong> jika masih ingin mengedit atau menambah data.</small>
                     <div class="d-flex gap-2">
-                        <button class="btn btn-outline-primary fw-bold px-4 bg-white" onclick="simpanDataMentah('Draft')" id="btnDraft">
-                            <i class="fas fa-save me-2"></i> Simpan Draft
-                        </button>
-                        <button class="btn btn-success fw-bold px-4 shadow-sm" onclick="simpanDataMentah('Final')" id="btnFinal">
-                            <i class="fas fa-lock me-2"></i> Simpan Final (Kunci Bulan)
-                        </button>
+                        <button class="btn btn-outline-primary fw-bold px-4 shadow-sm" onclick="simpanDataMentah(false)" id="btnSimpanDraft"><i class="fas fa-save me-2"></i> Simpan Draft</button>
+                        <button class="btn btn-success fw-bold px-4 shadow-sm" onclick="simpanDataMentah(true)" id="btnSimpanPermanen"><i class="fas fa-lock me-2"></i> Simpan Permanen</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     
-    <!-- MODAL LINK SPREADSHEET LAMA -->
-    <div class="modal fade" id="modalLinkLama" tabindex="-1" aria-labelledby="modalLinkLamaLabel" aria-hidden="true">
+    <div class="modal fade" id="modalLinkLama" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header bg-warning text-dark border-0">
-                    <h5 class="modal-title fw-bold" id="modalLinkLamaLabel"><i class="fas fa-archive me-2"></i> Arsip Google Sheets Lama (Read-Only)</h5>
+                    <h5 class="modal-title fw-bold"><i class="fas fa-archive me-2"></i> Arsip Google Sheets Lama (Read-Only)</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body bg-light p-4">
@@ -190,8 +180,7 @@
             </div>
         </div>
     </div>
-
-    <!-- Script Pusat Konfigurasi & Autentikasi -->
+    
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
@@ -208,12 +197,13 @@
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
         const userUnit = sessionMutu.unit || "GUEST";
 
-        // Variabel Global Baru untuk Fitur Kunci Bulan
-        let activeMonth = new Date().getMonth() + 1;
-        activeMonth = activeMonth < 10 ? '0' + activeMonth : activeMonth.toString();
-        let isMonthLocked = false;
-        // Simpan metadata asli kolom
-        let originalColumnsDef = [];
+        // Variabel untuk Logika Filter Bulan (Period Locking)
+        let isDailyForm = false;
+        let dateColumnIndex = -1;
+        let activeMonthFilter = new Date().getMonth() + 1; // Default ke bulan saat ini (1-12)
+        
+        // Dictionary header pencarian otomatis untuk kolom tanggal harian
+        const DATE_HEADERS = ['tanggal', 'tanggal pasien pulang', 'tanggal pengajuan klaim', 'jadwal distribusi', 'tanggal pengambilan linen', 'tanggal penyerahan berkas ke verifikator'];
 
         const colToLetter = (index) => {
             let letter = '';
@@ -227,33 +217,14 @@
         document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('badgeUnit').innerHTML = `<i class="fas fa-hospital me-1"></i> ${userUnit}`;
             document.getElementById('subJudulForm').innerText = `FORMULIR: ${activeFormType.replace(/_/g, ' ')}`;
-            
-            // Set dropdown ke bulan aktif saat ini
-            document.getElementById('filterBulan').value = activeMonth;
 
-            // Panggil fungsi utama untuk load data
-            muatDataBulanIni();
-        });
-
-        window.muatDataBulanIni = function() {
-            activeMonth = document.getElementById('filterBulan').value;
-            document.getElementById('loadingMessage').style.display = 'block';
-            document.getElementById('spreadsheetContainer').style.display = 'none';
-            document.getElementById('btnScrollDown').style.display = 'none';
-            
-            // Bersihkan instance lama jika ganti bulan
-            if (hot) {
-                hot.destroy();
-                hot = null;
-            }
-
-            fetch(`${scriptURL}?unit=${encodeURIComponent(userUnit)}&formType=${encodeURIComponent(activeFormType)}&bulan=${activeMonth}`)
+            fetch(`${scriptURL}?unit=${encodeURIComponent(userUnit)}&formType=${encodeURIComponent(activeFormType)}`)
                 .then(res => res.json())
                 .then(result => {
                     document.getElementById('loadingMessage').style.display = 'none';
                     if (result.status === 'success') {
-                        originalColumnsDef = result.columns;
-
+                        
+                        // 1. Render Menu Tab Antar Formulir
                         let tabsHtml = '';
                         result.menu.forEach(form => {
                             let isActive = (form === activeFormType) ? 'active' : '';
@@ -261,24 +232,14 @@
                         });
                         document.getElementById('formTabs').innerHTML = tabsHtml;
 
-                        // Cek apakah bulan ini sudah Final
-                        isMonthLocked = result.data.some(row => row[row.length - 1] === 'Final');
-
-                        const btnDraft = document.getElementById('btnDraft');
-                        const btnFinal = document.getElementById('btnFinal');
-
-                        if (isMonthLocked) {
-                            btnDraft.disabled = true;
-                            btnFinal.disabled = true;
-                            btnFinal.innerHTML = `<i class="fas fa-check-circle me-2"></i> Bulan Terkunci`;
-                            btnFinal.className = "btn btn-secondary fw-bold px-4 shadow-sm";
-                        } else {
-                            btnDraft.disabled = false;
-                            btnFinal.disabled = false;
-                            btnFinal.innerHTML = `<i class="fas fa-lock me-2"></i> Simpan Final (Kunci Bulan)`;
-                            btnFinal.className = "btn btn-success fw-bold px-4 shadow-sm";
+                        // 2. TENTUKAN APAKAH INI FORMULIR HARIAN ATAU BULANAN
+                        dateColumnIndex = result.columns.findIndex(c => DATE_HEADERS.includes(c.title.toLowerCase().trim()));
+                        if (dateColumnIndex !== -1) {
+                            isDailyForm = true;
+                            renderMonthTabsUI(); // Munculkan tab bulan
                         }
 
+                        // 3. Proses Data & Formula
                         const applyFormulasToRow = (rowArray, rowIndex, columnsDef) => {
                             columnsDef.forEach((col, colIndex) => {
                                 if (col.formula && col.formula.trim() !== "") {
@@ -289,19 +250,12 @@
                                 }
                             });
                         };
-
                         result.data.forEach((row, rowIndex) => { applyFormulasToRow(row, rowIndex, result.columns); });
 
-<<<<<<< Updated upstream
-=======
-                        // Pemetaan Tipe Kolom dengan Override Lock
->>>>>>> Stashed changes
+                        // 4. Pemetaan Tipe Kolom Handsontable
                         let hotColumns = result.columns.map(c => {
                             let rawType = (c.type || 'text').toString().toLowerCase().trim();
-                            // Jika bulan terkunci, paksa semua sel menjadi readOnly
-                            let isColReadOnly = isMonthLocked ? true : (c.readOnly || false);
-                            
-                            let config = { type: 'text', readOnly: isColReadOnly, wordWrap: true }; 
+                            let config = { type: 'text', readOnly: c.readOnly || false, wordWrap: true }; 
                             
                             if (rawType === 'dropdown') {
                                 config.type = 'dropdown';
@@ -318,7 +272,7 @@
                                 config.dateFormat = 'DD/MM/YYYY'; 
                                 config.correctFormat = true;
                             }
-                            else if (['durasi_hm', 'durasi_ms'].includes(rawType)) {
+                            else if (rawType === 'durasi_hm') {
                                 config.type = 'text'; 
                                 config.validator = /^[0-9]+:[0-5][0-9]$/;
                             }
@@ -326,12 +280,15 @@
                                 config.type = 'text'; 
                                 config.validator = /^[0-9]+:[0-5][0-9]:[0-5][0-9]$/;
                             }
+                            else if (rawType === 'durasi_ms') {
+                                config.type = 'text'; 
+                                config.validator = /^[0-9]+:[0-5][0-9]$/;
+                            }
                             else if (rawType === 'time') {
                                 config.type = 'time'; 
                                 config.timeFormat = 'HH:mm:ss'; 
                                 config.correctFormat = true;
                             }
-                            
                             return config;
                         });
 
@@ -341,6 +298,7 @@
                         
                         let exactWidths = result.columns.map(c => c.width ? parseInt(c.width) : undefined);
 
+                        // 5. INISIALISASI HANDSONTABLE
                         hot = new Handsontable(container, {
                             data: result.data,
                             colHeaders: result.columns.map(c => c.title),
@@ -352,20 +310,17 @@
                             stretchH: 'all',
                             renderAllRows: false, 
                             viewportRowRenderingOffset: 100, 
-                            minSpareRows: isMonthLocked ? 0 : 3, // Jangan sediakan baris kosong jika terkunci
-                            contextMenu: !isMonthLocked, // Matikan klik kanan jika terkunci
+                            minSpareRows: 3,
+                            contextMenu: true,
                             formulas: { engine: HyperFormula },
                             licenseKey: 'non-commercial-and-evaluation', 
                             filters: true,
+                            hiddenRows: true, // Wajib diaktifkan untuk fitur filter bulan
                             dropdownMenu: ['filter_by_condition', 'filter_by_value', 'filter_action_bar'],
                             columnSorting: true,
                             autoColumnSize: true,
                             manualColumnResize: true,
-<<<<<<< Updated upstream
                             wordWrap: true, 
-=======
-                            wordWrap: true,
->>>>>>> Stashed changes
 
                             afterPaste: function(data, coords) {
                                 const hotInstance = this;
@@ -425,7 +380,7 @@
                                     let status = instance.getDataAtCell(r, statusColIndex);
                                     td.style.fontStyle = 'normal'; td.style.fontWeight = 'normal';
 
-                                    if (status === 'Final' || isMonthLocked) { 
+                                    if (status === 'Final') { 
                                         td.style.backgroundColor = '#e9ecef'; td.style.color = '#adb5bd'; td.style.fontStyle = 'italic'; 
                                     } else if (cellProps.readOnly) { 
                                         td.style.backgroundColor = '#f1f3f5'; td.style.color = '#0dcaf0'; td.style.fontWeight = 'bold'; 
@@ -449,7 +404,7 @@
                             },
 
                             beforeChange: function (changes, source) {
-                                if (!changes || isMonthLocked) return; // Jika bulan terkunci, jangan izinkan perubahan apa pun
+                                if (!changes) return;
                                 let statusColIndex = this.getSettings().columns.length - 1;
                                 let isBlocked = false;
 
@@ -476,13 +431,17 @@
                                     }    
 
                                     if (newVal && typeof newVal === 'string' && newVal.trim() !== "") {
-                                        if (colSettings.type === 'time' || ['durasi_hm', 'durasi_hms', 'durasi_ms'].includes(colDef.type)) {
+                                        if (colSettings.type === 'time' || colDef.type === 'durasi_hm' || colDef.type === 'durasi_hms' || colDef.type === 'durasi_ms') {
                                             change[3] = newVal.replace(/\./g, ':');
                                         }
                                         else if (colSettings.type === 'date' || colDef.type === 'date' || colDef.type === 'calendar') {
                                             let tebakanTanggal = moment(newVal, ["YYYY-MM-DD", "DD/MM/YYYY", "DD-MM-YYYY", "YYYY/MM/DD", "D/M/YY", "D/M/YYYY", moment.ISO_8601], true);
-                                            if (!tebakanTanggal.isValid()) { tebakanTanggal = moment(newVal); }
-                                            if (tebakanTanggal.isValid()) { change[3] = tebakanTanggal.format('DD/MM/YYYY'); }
+                                            if (!tebakanTanggal.isValid()) {
+                                                tebakanTanggal = moment(newVal); 
+                                            }
+                                            if (tebakanTanggal.isValid()) {
+                                                change[3] = tebakanTanggal.format('DD/MM/YYYY'); 
+                                            }
                                         }
                                     }
 
@@ -508,65 +467,154 @@
                                 }
                             }
                         });
+
+                        // 6. Jika harian, terapkan filter bulan yang aktif sekarang
+                        if (isDailyForm) {
+                            applyMonthFilter(activeMonthFilter);
+                        }
+
                     } else { 
                         document.getElementById('loadingMessage').innerHTML = `<i class="fas fa-lock me-2"></i> ${result.message}`; 
                     }
                 });
-        };
+        });
 
-        window.simpanDataMentah = function(statusTarget) {
-            if (!hot) return;
+        // =====================================================================
+        // FUNGSI FILTER BULAN KHUSUS FORMULIR HARIAN (HIDDEN ROWS)
+        // =====================================================================
+        function renderMonthTabsUI() {
+            const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            let html = '';
+            months.forEach((m, idx) => {
+                let monthNum = idx + 1;
+                html += `<li class="nav-item">
+                            <span class="nav-link month-tab-btn px-3 py-1 fw-bold text-secondary" id="tabBulan_${monthNum}" onclick="applyMonthFilter(${monthNum})">${m}</span>
+                         </li>`;
+            });
+            document.getElementById('monthTabsList').innerHTML = html;
+            document.getElementById('monthFilterContainer').style.display = 'block';
+        }
+
+        window.applyMonthFilter = function(monthNum) {
+            if (!hot || !isDailyForm || dateColumnIndex === -1) return;
+            activeMonthFilter = monthNum;
+
+            // Update UI Active Tab
+            document.querySelectorAll('.month-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('tabBulan_' + monthNum).classList.add('active');
+
+            const rowCount = hot.countRows();
+            const rowsToHide = [];
             
-            if (statusTarget === 'Final') {
-                const yakin = confirm(`Apakah Anda yakin ingin mem-FINAL-kan data bulan ini?\n\nData tidak akan bisa diubah atau ditambah lagi setelah disimpan permanen.`);
-                if (!yakin) return;
+            for(let r = 0; r < rowCount; r++) {
+                // Jangan sembunyikan baris kosong (agar user bisa tetap mengisi data baru)
+                if(hot.isEmptyRow(r)) continue;
+
+                let dateVal = hot.getDataAtCell(r, dateColumnIndex);
+                if(dateVal) {
+                    let parts = dateVal.split('/');
+                    if(parts.length === 3) {
+                        if(parseInt(parts[1]) !== monthNum) {
+                            rowsToHide.push(r);
+                        }
+                    }
+                }
             }
 
-            const btnDraft = document.getElementById('btnDraft');
-            const btnFinal = document.getElementById('btnFinal');
-            
-            const btnActive = statusTarget === 'Draft' ? btnDraft : btnFinal;
-            const originalText = btnActive.innerHTML;
-            
-            btnActive.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i> Memproses...`;
-            btnDraft.disabled = true;
-            btnFinal.disabled = true;
+            // Tampilkan kembali semua baris, lalu sembunyikan yang tidak sesuai
+            const plugin = hot.getPlugin('hiddenRows');
+            plugin.showRows(Array.from({length: rowCount}, (_, i) => i));
+            plugin.hideRows(rowsToHide);
+            hot.render();
+        };
 
-            const rawData = hot.getData();
+        // =====================================================================
+        // FUNGSI PENYIMPANAN DATA DENGAN 2 MODE (DRAFT & FINAL/PERMANEN)
+        // =====================================================================
+        window.simpanDataMentah = function(isFinal) {
+            if (!hot) return;
+
+            if (isFinal) {
+                let bulanAktifText = isDailyForm ? document.getElementById('tabBulan_' + activeMonthFilter).innerText : "Tabel Ini";
+                let htmlPesan = isDailyForm 
+                    ? `Anda akan mengunci seluruh data pada bulan <strong class='text-danger'>${bulanAktifText}</strong>.<br><br>Data yang berstatus Final tidak dapat diubah lagi.`
+                    : `Anda akan mengunci seluruh data di tabel ini secara permanen.<br><br>Data yang berstatus Final tidak dapat diubah lagi.`;
+
+                Swal.fire({
+                    title: 'Kunci Data Permanen?',
+                    html: htmlPesan,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, Kunci Permanen!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        eksekusiSimpan(true);
+                    }
+                });
+            } else {
+                eksekusiSimpan(false);
+            }
+        };
+
+        function eksekusiSimpan(isFinal) {
+            const btnDraft = document.getElementById('btnSimpanDraft');
+            const btnFinal = document.getElementById('btnSimpanPermanen');
+            const targetBtn = isFinal ? btnFinal : btnDraft;
+            const originalText = targetBtn.innerHTML;
+
+            btnDraft.disabled = true; 
+            btnFinal.disabled = true;
+            targetBtn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...`;
+
+            let rawData = hot.getData(); // Mengambil SELURUH data, termasuk yang di-hidden (Sangat aman)
             const columnsConfig = hot.getSettings().columns; 
-            let statusColIndex = columnsConfig.length - 1;
+            const statusColIndex = rawData[0].length - 1; 
             
-            const dataToSave = rawData.filter((row, index) => {
+            let dataKosong = true;
+
+            // Filter baris yang benar-benar ada isinya & ubah status jika isFinal = true
+            const dataToSave = rawData.filter((row, rIndex) => {
                 let hasValidInput = false;
                 for (let i = 0; i < row.length; i++) {
-                    let isStatusCol = (i === statusColIndex);  
-                    // Cek readOnly dari setting asli, bukan dari setting kuncian
-                    let isReadOnly = originalColumnsDef[i].readOnly; 
+                    let isStatusCol = (i === row.length - 1);  
+                    let isReadOnly = columnsConfig[i].readOnly; 
                     let cellValue = row[i];
                     if (!isReadOnly && !isStatusCol && cellValue !== null && cellValue !== "") { hasValidInput = true; break; }
                 }
                 
                 if (hasValidInput) {
-                    row[statusColIndex] = statusTarget; // Timpa status sesuai tombol yang ditekan
+                    dataKosong = false;
+                    // Lakukan penguncian (Ubah status ke Final)
+                    if (isFinal) {
+                        let lockThisRow = false;
+                        if (isDailyForm && dateColumnIndex !== -1) {
+                            let dateVal = row[dateColumnIndex];
+                            if (dateVal) {
+                                let parts = dateVal.split('/');
+                                // Hanya ubah status baris yang sesuai dengan bulan yang sedang dilihat
+                                if (parts.length === 3 && parseInt(parts[1]) === activeMonthFilter) {
+                                    lockThisRow = true;
+                                }
+                            }
+                        } else {
+                            lockThisRow = true; // Jika form bulanan, kunci semua data yang ada
+                        }
+
+                        if (lockThisRow && row[statusColIndex] !== 'Final') {
+                            row[statusColIndex] = 'Final';
+                        }
+                    }
+                    return true;
                 }
-                return hasValidInput;
+                return false;
             });
 
-            if (dataToSave.length === 0) {
-<<<<<<< Updated upstream
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Data Kosong',
-                    text: 'Tidak ada data observasi yang valid untuk disimpan.'
-                });
-                btn.innerHTML = `<i class="fas fa-cloud-upload-alt me-2"></i> Simpan Laporan`;
-                btn.disabled = false; 
-=======
-                alert("⚠️ Tidak ada data observasi yang valid untuk disimpan.");
-                btnActive.innerHTML = originalText;
-                btnDraft.disabled = false;
-                btnFinal.disabled = false;
->>>>>>> Stashed changes
+            if (dataKosong) {
+                Swal.fire({ icon: 'warning', title: 'Data Kosong', text: 'Tidak ada data observasi yang valid untuk disimpan.' });
+                resetButtons();
                 return;
             }
 
@@ -574,25 +622,14 @@
             fetch(scriptURL, { 
                 method: "POST", 
                 headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-<<<<<<< Updated upstream
                 body: JSON.stringify({ action: 'save_raw_data', formType: activeFormType, unit: userUnit, data: [headers, ...dataToSave] }) 
-=======
-                body: JSON.stringify({ 
-                    action: 'save_raw_data', 
-                    formType: activeFormType, 
-                    unit: userUnit, 
-                    bulan: activeMonth, // Sisipkan filter bulan
-                    data: [headers, ...dataToSave] 
-                }) 
->>>>>>> Stashed changes
             })
             .then(res => res.json())
             .then(res => {
                 if(res.status === 'success') { 
-<<<<<<< Updated upstream
                     Swal.fire({
                         title: 'Berhasil!',
-                        text: 'Data observasi mutu berhasil disimpan.',
+                        text: isFinal ? 'Data berhasil dikunci secara permanen.' : 'Draft data berhasil disimpan.',
                         icon: 'success',
                         timer: 1500,
                         showConfirmButton: false
@@ -601,29 +638,19 @@
                     });
                 } else { 
                     Swal.fire('Gagal!', res.message, 'error'); 
-                }
-            })
-            .finally(() => { 
-                btn.innerHTML = `<i class="fas fa-cloud-upload-alt me-2"></i> Simpan Laporan`; 
-                btn.disabled = false; 
-=======
-                    alert("✅ Data berhasil disimpan!"); 
-                    muatDataBulanIni(); // Refresh tabel tanpa mereload seluruh halaman
-                } 
-                else { 
-                    alert("❌ Gagal: " + res.message); 
-                    btnActive.innerHTML = originalText;
-                    btnDraft.disabled = false;
-                    btnFinal.disabled = false;
+                    resetButtons();
                 }
             })
             .catch(err => {
-                alert("❌ Terjadi kesalahan pada server.");
-                btnActive.innerHTML = originalText;
-                btnDraft.disabled = false;
-                btnFinal.disabled = false;
->>>>>>> Stashed changes
+                Swal.fire('Error Jaringan', 'Gagal menyambung ke server.', 'error');
+                resetButtons();
             });
+
+            function resetButtons() {
+                btnDraft.innerHTML = `<i class="fas fa-save me-2"></i> Simpan Draft`;
+                btnFinal.innerHTML = `<i class="fas fa-lock me-2"></i> Simpan Permanen`;
+                btnDraft.disabled = false; btnFinal.disabled = false;
+            }
         };
         
         window.scrollToEmptyRow = function() {
