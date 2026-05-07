@@ -6,6 +6,8 @@
     <title>Formulir IKP - Komite Mutu</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tambahkan SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
         body { 
@@ -20,7 +22,7 @@
         .btn-simpan:hover { background-color: #367fa9; color: white; }
         
         /* Tema Header dan Sidebar */
-        .bg-custom-dark { background-color: #3c8dbc; } /* Mengikuti warna biru tema dashboard */
+        .bg-custom-dark { background-color: #3c8dbc; } 
         .sidebar-link.active { background-color: #f4f6f9; color: #3c8dbc; border-left: 4px solid #3c8dbc; font-weight: bold; }
         .sidebar-link { color: #333; font-weight: 500; transition: 0.2s; }
         .sidebar-link:hover { background-color: #e9ecef; }
@@ -208,70 +210,82 @@
                                 <option value="Karyawan">Karyawan lain</option>
                             </select>
                         </div>
-            <div class="mb-4 p-3 bg-light border rounded">
-                <label class="form-label fw-bold">14. Apakah kejadian yang sama pernah terjadi di Unit Kerja lain? <span class="text-danger">*</span></label>
-                
-                <div class="form-check mb-1">
-                    <input class="form-check-input" type="radio" name="pernah_terjadi" id="radioTidak" value="Tidak" required>
-                    <label class="form-check-label" for="radioTidak">Tidak</label>
-                </div>
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="radio" name="pernah_terjadi" id="radioYa" value="Ya" required>
-                    <label class="form-check-label" for="radioYa">Ya</label>
-                </div>
+                        <div class="mb-4 p-3 bg-light border rounded">
+                            <label class="form-label fw-bold">14. Apakah kejadian yang sama pernah terjadi di Unit Kerja lain? <span class="text-danger">*</span></label>
+                            
+                            <div class="form-check mb-1">
+                                <input class="form-check-input" type="radio" name="pernah_terjadi" id="radioTidak" value="Tidak" required>
+                                <label class="form-check-label" for="radioTidak">Tidak</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="pernah_terjadi" id="radioYa" value="Ya" required>
+                                <label class="form-check-label" for="radioYa">Ya</label>
+                            </div>
 
-                <div id="tindakanPencegahanContainer" class="mt-3 pt-3 border-top" style="display: none; border-color: #dee2e6;">
-                    <label for="tindakanPencegahan" class="form-label fw-bold text-primary">
-                        <i class="fas fa-clipboard-check me-1"></i> Langkah/tindakan apa yang telah diambil pada pelayanan tersebut untuk mencegah terulangnya kejadian yang sama? <span class="text-danger">*</span>
-                    </label>
-                    <textarea class="form-control" id="tindakanPencegahan" name="tindakanPencegahan" rows="3" placeholder="Jelaskan langkah atau tindakan preventif yang telah diambil..."></textarea>
-                </div>
-            </div>
+                            <div id="tindakanPencegahanContainer" class="mt-3 pt-3 border-top" style="display: none; border-color: #dee2e6;">
+                                <label for="tindakanPencegahan" class="form-label fw-bold text-primary">
+                                    <i class="fas fa-clipboard-check me-1"></i> Langkah/tindakan apa yang telah diambil pada pelayanan tersebut untuk mencegah terulangnya kejadian yang sama? <span class="text-danger">*</span>
+                                </label>
+                                <textarea class="form-control" id="tindakanPencegahan" name="tindakanPencegahan" rows="3" placeholder="Jelaskan langkah atau tindakan preventif yang telah diambil..."></textarea>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <div class="d-flex justify-content-end mt-4">
-                    <button type="submit" class="btn btn-simpan fw-bold" id="submitBtn">SIMPAN</button>
+                    <button type="submit" class="btn btn-simpan fw-bold" id="submitBtn"><i class="fas fa-save me-2"></i>SIMPAN</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Panggil config.js sebelum file js lainnya -->
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            // MENGGUNAKAN VARIABEL GLOBAL DARI config.js
+            const scriptURL = API_CONFIG.IKP;
+
+            // ========================================================
+            // 1. VARIABEL & ELEMEN DOM
+            // ========================================================
+            const form = document.getElementById("ikpForm");
+            const submitBtn = document.getElementById("submitBtn");
             const dampakEl = document.querySelector('[name="dampak"]');
             const probEl = document.querySelector('[name="probabilitas"]');
             const hasilDiv = document.getElementById('hasilGrading');
             const boxDiv = document.getElementById('boxGrading');
             const inputGrading = document.getElementById('inputGrading');
+            const radioPernahTerjadi = document.querySelectorAll('input[name="pernah_terjadi"]');
+            const containerTindakan = document.getElementById('tindakanPencegahanContainer');
+            const inputTindakan = document.getElementById('tindakanPencegahan');
+
+            const editDataStr = localStorage.getItem('editDataIKP');
+            let isEditMode = false;
+            let editTargetId = null;
+
+            // ========================================================
+            // 2. FUNGSI PEMBANTU
+            // ========================================================
+            function formatDateTimeLocal(isoString) {
+                if (!isoString) return '';
+                const d = new Date(isoString);
+                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+                return d.toISOString().slice(0, 16);
+            }
 
             function hitungGrading() {
-                // 1. Buat kamus (mapping) nilai teks menjadi angka
-                const nilaiDampak = {
-                    "Tidak Signifikan": 1,
-                    "Minor": 2,
-                    "Moderat": 3,
-                    "Mayor": 4,
-                    "Katastropik": 5
-                };
-                
-                const nilaiProbabilitas = {
-                    "Sangat Jarang": 1,
-                    "Jarang": 2,
-                    "Mungkin": 3,
-                    "Sering": 4,
-                    "Sangat Sering": 5
-                };
+                const nilaiDampak = { "Tidak Signifikan": 1, "Minor": 2, "Moderat": 3, "Mayor": 4, "Katastropik": 5 };
+                const nilaiProbabilitas = { "Sangat Jarang": 1, "Jarang": 2, "Mungkin": 3, "Sering": 4, "Sangat Sering": 5 };
 
-                // 2. Ambil angka berdasarkan pilihan user saat ini
                 const d_val = nilaiDampak[dampakEl.value];
                 const p_val = nilaiProbabilitas[probEl.value];
 
-                // 3. Jika keduanya sudah dipilih, hitung matriksnya
                 if (d_val && p_val) {
-                    // Matriks berdasarkan gambar: Baris=Probabilitas(1-5), Kolom=Dampak(1-5)
                     const matrix = {
                         5: ["Moderate", "Moderate", "High", "Extreme", "Extreme"],
                         4: ["Moderate", "Moderate", "High", "Extreme", "Extreme"],
@@ -280,33 +294,28 @@
                         1: ["Low", "Low", "Moderate", "High", "Extreme"]
                     };
 
-                    // Ambil hasil dari matriks (d_val - 1 karena index array dimulai dari 0)
                     const hasil = matrix[p_val][d_val - 1]; 
-                    
-                    // Simpan hasil ke input tersembunyi untuk dikirim ke Google Sheets
                     inputGrading.value = hasil;
 
-                    // Mengatur Teks dan Warna sesuai Matriks
                     hasilDiv.classList.remove('text-dark', 'text-white');
                     if (hasil === 'Low') {
                         hasilDiv.innerText = "LOW (Rendah)";
-                        hasilDiv.style.backgroundColor = "#0d6efd"; // Biru
+                        hasilDiv.style.backgroundColor = "#0d6efd";
                         hasilDiv.classList.add('text-white');
                     } else if (hasil === 'Moderate') {
                         hasilDiv.innerText = "MODERATE (Sedang)";
-                        hasilDiv.style.backgroundColor = "#198754"; // Hijau
+                        hasilDiv.style.backgroundColor = "#198754";
                         hasilDiv.classList.add('text-white');
                     } else if (hasil === 'High') {
                         hasilDiv.innerText = "HIGH (Tinggi)";
-                        hasilDiv.style.backgroundColor = "#ffc107"; // Kuning
+                        hasilDiv.style.backgroundColor = "#ffc107";
                         hasilDiv.classList.add('text-dark');
                     } else if (hasil === 'Extreme') {
                         hasilDiv.innerText = "EXTREME (Sangat Tinggi)";
-                        hasilDiv.style.backgroundColor = "#dc3545"; // Merah
+                        hasilDiv.style.backgroundColor = "#dc3545";
                         hasilDiv.classList.add('text-white');
                     }
                 } else {
-                    // Jika salah satu belum dipilih, kembalikan ke kondisi kosong
                     hasilDiv.innerText = "-";
                     hasilDiv.style.backgroundColor = "transparent";
                     hasilDiv.classList.remove('text-white', 'text-dark');
@@ -314,34 +323,128 @@
                 }
             }
 
-            // Jalankan fungsi hitungGrading setiap kali pilihan dropdown diubah
+            // ========================================================
+            // 3. INISIALISASI EVENT LISTENER
+            // ========================================================
             if(dampakEl && probEl) {
                 dampakEl.addEventListener('change', hitungGrading);
                 probEl.addEventListener('change', hitungGrading);
             }
-            
-            // Panggil sekali saat halaman dimuat (berguna saat mode Edit data)
-            setTimeout(hitungGrading, 500); 
-        });
 
-       // LOGIKA TAMPIL/SEMBUNYIKAN PERTANYAAN 14
-        const radioPernahTerjadi = document.querySelectorAll('input[name="pernah_terjadi"]'); // <--- INI YANG DIUBAH
-        const containerTindakan = document.getElementById('tindakanPencegahanContainer');
-        const inputTindakan = document.getElementById('tindakanPencegahan');
+            radioPernahTerjadi.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'Ya') {
+                        containerTindakan.style.display = 'block';
+                        inputTindakan.setAttribute('required', 'required');
+                    } else {
+                        containerTindakan.style.display = 'none';
+                        inputTindakan.removeAttribute('required');
+                        inputTindakan.value = ''; 
+                    }
+                });
+            });
 
-        radioPernahTerjadi.forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'Ya') {
-                    containerTindakan.style.display = 'block';
-                    inputTindakan.setAttribute('required', 'required');
-                } else {
-                    containerTindakan.style.display = 'none';
-                    inputTindakan.removeAttribute('required');
-                    inputTindakan.value = ''; 
+            // ========================================================
+            // 4. MODE EDIT (JIKA ADA DATA DARI LOCAL STORAGE)
+            // ========================================================
+            if (editDataStr) {
+                isEditMode = true;
+                const data = JSON.parse(editDataStr);
+                editTargetId = data.Timestamp;
+
+                document.querySelector('.form-section-title').innerHTML = `A. DATA PASIEN <span class="badge bg-warning text-dark ms-2">MODE EDIT</span>`;
+                submitBtn.innerHTML = "<i class='fas fa-save me-2'></i> UPDATE DATA";
+                submitBtn.classList.replace('btn-simpan', 'btn-warning');
+
+                document.querySelector('[name="umur_hari"]').value = data['Umur (Hari)'] || '';
+                document.querySelector('[name="umur_bulan"]').value = data['Umur (Bulan)'] || '';
+                document.querySelector('[name="umur_tahun"]').value = data['Umur (Tahun)'] || '';
+                document.querySelector('[name="jenis_kelamin"]').value = data['Jenis Kelamin'] || '';
+                document.querySelector('[name="penanggung_biaya"]').value = data['Penanggung Biaya'] || '';
+                document.querySelector('[name="tanggal_pelayanan"]').value = formatDateTimeLocal(data['Tanggal pelayanan']);
+                document.querySelector('[name="tgl_waktu_insiden"]').value = formatDateTimeLocal(data['Tgl & Waktu insiden']);
+                document.querySelector('[name="insiden"]').value = data['Insiden'] || '';
+                document.querySelector('[name="kronologis"]').value = data['Kronologis'] || '';
+                document.querySelector('[name="jenis_insiden"]').value = data['Jenis Insiden'] || '';
+                document.querySelector('[name="terjadi_pada"]').value = data['Terjadi Pada'] || '';
+                document.querySelector('[name="dampak"]').value = data['Dampak'] || '';
+                document.querySelector('[name="probabilitas"]').value = data['Probabilitas'] || '';
+                document.querySelector('[name="pelapor_pertama"]').value = data['Pelapor Pertama'] || '';
+                document.querySelector('[name="menyangkut_pasien"]').value = data['Menyangkut Pasien'] || '';
+                document.querySelector('[name="tempat_insiden"]').value = data['Tempat Insiden'] || '';
+                document.querySelector('[name="unit_terkait"]').value = data['Unit Terkait'] || '';
+                document.querySelector('[name="tindak_lanjut"]').value = data['Tindak Lanjut'] || '';
+                document.querySelector('[name="dilakukan_oleh"]').value = data['Dilakukan Oleh'] || '';
+                document.querySelector('[name="tindakanPencegahan"]').value = data['Tindakan Pencegahan'] || '';
+                
+                if (data['Pernah terjadi?'] === "Ya") {
+                    document.getElementById('radioYa').checked = true;
+                    containerTindakan.style.display = 'block'; 
+                } else if (data['Pernah terjadi?'] === "Tidak") {
+                    document.getElementById('radioTidak').checked = true;
+                    containerTindakan.style.display = 'none'; 
                 }
+            }
+
+            // Panggil hitung grading setelah load (penting untuk mode edit)
+            setTimeout(hitungGrading, 500);
+
+            // ========================================================
+            // 5. PROSES PENGIRIMAN FORM
+            // ========================================================
+            form.addEventListener("submit", function (e) {
+                e.preventDefault(); 
+                
+                submitBtn.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i> Menyimpan...";
+                submitBtn.disabled = true;
+
+                const formData = new FormData(form);
+                const inputData = Object.fromEntries(formData.entries());
+
+                const payload = {
+                    action: isEditMode ? 'update' : 'create',
+                    id: editTargetId,
+                    data: inputData
+                };
+
+                fetch(scriptURL, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify(payload),
+                })
+                .then((response) => response.json())
+                .then((result) => {
+                    if (result.status === "success") {
+                        // Notifikasi SweetAlert
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: isEditMode ? 'Data Insiden berhasil diperbarui!' : 'Laporan Insiden (IKP) berhasil disimpan!',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        }).then(() => {
+                            if(isEditMode) {
+                                localStorage.removeItem('editDataIKP'); 
+                                window.location.href = 'daftar_insiden.html'; 
+                            } else {
+                                form.reset(); 
+                                hitungGrading(); // Reset tampilan grading
+                                containerTindakan.style.display = 'none'; // Sembunyikan textbox pencegahan
+                            }
+                        });
+                    } else {
+                        Swal.fire('Gagal!', 'Terjadi kesalahan: ' + result.message, 'error');
+                    }
+                })
+                .catch((error) => {
+                    Swal.fire('Kesalahan Jaringan', 'Gagal terhubung ke server. Periksa koneksi internet Anda.', 'error');
+                })
+                .finally(() => {
+                    submitBtn.innerHTML = isEditMode ? "<i class='fas fa-save me-2'></i> UPDATE DATA" : "<i class='fas fa-save me-2'></i> SIMPAN";
+                    submitBtn.disabled = false;
+                });
             });
         });
     </script>
-    <script src="components.js"></script>
 </body>
 </html>

@@ -6,6 +6,8 @@
     <title>Risk Register Unit</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tambahkan SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
         .card-custom { box-shadow: 0 4px 6px rgba(0,0,0,.05); border-radius: 8px; border-top: 4px solid #dc3545; background: #fff;}
@@ -198,13 +200,15 @@
         </div>
     </div>
 
+    <!-- Script Pusat Konfigurasi & Autentikasi -->
+    <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        // MASUKKAN URL WEB APP RISK REGISTER ANDA DI SINI
-        const scriptURL = "https://script.google.com/macros/s/AKfycbw5AIpb23MiMTHlJ57zipzdEyCsR7wMVDgk9MMN687UQ1IkdyyfIUlJP5u4tayGftxm8g/exec";
+        // MENGGUNAKAN VARIABEL GLOBAL DARI config.js
+        const scriptURL = API_CONFIG.RISK;
 
         let daftarRisikoLokal = [];
         let sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
@@ -274,8 +278,9 @@
 
         // FUNGSI CETAK WORD (DOC)
         window.exportKeWord = function() {
-            if (document.getElementById('tabelRisikoBody').innerHTML.includes('Belum ada identifikasi')) { 
-                alert("Tidak ada data untuk diekspor."); return; 
+            if (daftarRisikoLokal.length === 0 || document.getElementById('tabelRisikoBody').innerHTML.includes('Tidak ada riwayat risiko')) { 
+                Swal.fire('Info', 'Tidak ada data untuk diekspor.', 'info'); 
+                return; 
             }
 
             const dropdownUnit = document.getElementById('pilihUnit');
@@ -428,8 +433,9 @@
             
             const dropdownUnit = document.getElementById('pilihUnit');
             if (userRole === "Komite Mutu" && dropdownUnit.value === "") {
-                alert("Mode Admin: Mohon pilih satu Unit Pelapor spesifik pada dropdown sebelum menyimpan risiko baru.");
-                dropdownUnit.focus();
+                Swal.fire('Peringatan', 'Mode Admin: Mohon pilih satu Unit Pelapor spesifik pada dropdown sebelum menyimpan risiko baru.', 'warning').then(() => {
+                    dropdownUnit.focus();
+                });
                 return;
             }
 
@@ -468,6 +474,14 @@
             // Refresh tahun dropdown incase new year was added
             populateTahunDropdown(); 
             renderTabelRisiko();
+
+            Swal.fire({
+                title: 'Tersimpan di Draft',
+                text: 'Data ditambahkan ke tabel. Jangan lupa klik "Simpan & Kirim ke Server" agar permanen.',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
         }
 
         function renderTabelRisiko() {
@@ -550,17 +564,29 @@
         }
 
         function hapusRisiko(id) {
-            if(confirm("Yakin ingin menghapus risiko ini?")) {
-                daftarRisikoLokal = daftarRisikoLokal.filter(r => r.id !== id);
-                renderTabelRisiko();
-            }
+            Swal.fire({
+                title: 'Yakin ingin menghapus?',
+                text: "Risiko ini akan dihapus dari draf tabel.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    daftarRisikoLokal = daftarRisikoLokal.filter(r => r.id !== id);
+                    renderTabelRisiko();
+                    Swal.fire('Terhapus!', 'Risiko dihapus dari draft.', 'success');
+                }
+            });
         }
 
         function kirimKeServer() {
             const dataDraft = daftarRisikoLokal.filter(r => r.status === 'draft');
 
             if (dataDraft.length === 0) {
-                alert("Semua data risiko di tabel sudah terkirim. Tambahkan atau edit risiko baru jika ingin memperbarui data.");
+                Swal.fire('Info', 'Semua data risiko di tabel sudah terkirim. Tambahkan atau edit risiko baru jika ingin memperbarui data.', 'info');
                 return;
             }
 
@@ -585,15 +611,22 @@
             .then(res => res.json())
             .then(res => {
                 if (res.status === 'success') {
-                    alert(`Pembaruan Berhasil disimpan ke Server!`);
-                    daftarRisikoLokal.forEach(r => r.status = 'terkirim');
-                    localStorage.removeItem(storageKey); 
-                    renderTabelRisiko(); 
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: 'Pembaruan Berhasil disimpan ke Server!',
+                        icon: 'success',
+                        timer: 2000,
+                        showConfirmButton: false
+                    }).then(() => {
+                        daftarRisikoLokal.forEach(r => r.status = 'terkirim');
+                        localStorage.removeItem(storageKey); 
+                        renderTabelRisiko(); 
+                    });
                 } else {
-                    alert("Sistem Gagal: " + res.message);
+                    Swal.fire('Gagal!', 'Sistem Gagal: ' + res.message, 'error');
                 }
             })
-            .catch(err => alert("Gagal terhubung ke server. Periksa koneksi internet Anda."))
+            .catch(err => Swal.fire('Error Jaringan', 'Gagal terhubung ke server. Periksa koneksi internet Anda.', 'error'))
             .finally(() => {
                 btnSubmit.innerHTML = '<i class="fas fa-save me-2"></i> Simpan & Kirim ke Server';
                 btnSubmit.disabled = false;

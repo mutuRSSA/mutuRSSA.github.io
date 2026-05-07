@@ -6,6 +6,8 @@
     <title>Analisis Insiden - Komite Mutu</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tambahkan SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 0.9rem;}
         .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 4px; border-top: 3px solid #3c8dbc; }
@@ -260,25 +262,37 @@
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-end mt-4 p-3 bg-light border-top">
-                    <button type="submit" class="btn btn-primary fw-bold px-4" id="btnSimpanAnalisis">SIMPAN</button>
+                <div class="d-flex justify-content-end mt-4 p-3 bg-light border-top rounded">
+                    <button type="submit" class="btn btn-primary fw-bold px-4 shadow-sm" id="btnSimpanAnalisis"><i class="fas fa-save me-2"></i>SIMPAN</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Script Pusat Konfigurasi & Autentikasi -->
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            // PASTIKAN URL INI ADALAH URL TERBARU ANDA
-            const scriptURL = "https://script.google.com/macros/s/AKfycbwpBwmFGTKTKOElHOtK3C_ISOhfKxnFgePqhKu3b2beAT7Qxwnyr8BER54BG3-J3qiJ/exec";
+            // MENGGUNAKAN VARIABEL GLOBAL DARI config.js
+            const scriptURL = API_CONFIG.IKP;
             
             // =========================================================================
             // 1. AMBIL DATA DARI MEMORI TERLEBIH DAHULU
             // =========================================================================
             const analisisDataStr = localStorage.getItem('analisisDataIKP');
             if (!analisisDataStr) {
-                alert("Data tidak ditemukan. Kembali ke halaman daftar.");
-                window.location.href = 'daftar_insiden.html';
+                Swal.fire({
+                    title: 'Data Tidak Ditemukan!',
+                    text: 'Mengarahkan kembali ke daftar insiden...',
+                    icon: 'warning',
+                    timer: 2000,
+                    showConfirmButton: false
+                }).then(() => {
+                    window.location.href = 'daftar_insiden.html';
+                });
                 return;
             }
 
@@ -629,7 +643,8 @@
                 document.getElementById('hidden_risiko_lingkungan').value = gabungkanCheckboxPilihan('.chk-risiko-ling');
                 document.getElementById('hidden_risiko_faktor').value = gabungkanCheckboxPilihan('.chk-risiko-faktor');
                 
-                submitBtn.innerHTML = "Menyimpan..."; submitBtn.disabled = true;
+                submitBtn.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i> Menyimpan..."; 
+                submitBtn.disabled = true;
 
                 // Menyusun urutan data secara paksa berdasarkan atribut 'name' agar tidak bergeser
                 const inputData = {
@@ -666,19 +681,30 @@
                     data: inputData
                 };
 
-                fetch(scriptURL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) })
+                fetch(API_CONFIG.IKP, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) })
                 .then(res => res.json())
                 .then(result => {
                     if (result.status === "success") {
-                        alert("Data Hasil Investigasi dan Analisa berhasil disimpan!"); window.location.href = 'daftar_insiden.html';
-                    } else { alert("Terjadi kesalahan: " + result.message); }
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: 'Data Hasil Investigasi dan Analisa berhasil disimpan.',
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.href = 'daftar_insiden.html';
+                        });
+                    } else { 
+                        Swal.fire('Gagal!', 'Terjadi kesalahan: ' + result.message, 'error'); 
+                    }
                 })
-                .catch(err => alert("Gagal terhubung ke server."))
-                .finally(() => { submitBtn.innerHTML = "SIMPAN"; submitBtn.disabled = false; });
+                .catch(err => Swal.fire('Kesalahan Jaringan', 'Gagal terhubung ke server. Pastikan koneksi internet Anda stabil.', 'error'))
+                .finally(() => { 
+                    submitBtn.innerHTML = "<i class='fas fa-save me-2'></i>SIMPAN"; 
+                    submitBtn.disabled = false; 
+                });
             });
         });
     </script>
-    <script src="auth.js"></script>
-    <script src="components.js"></script>
 </body>
 </html>

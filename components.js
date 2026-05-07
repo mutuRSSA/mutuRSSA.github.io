@@ -1,3 +1,25 @@
+// =====================================================================
+// components.js - PEMBANGUN ANTARMUKA & NAVIGASI DINAMIS
+// =====================================================================
+
+// Helper untuk menampilkan alert jika menu terkunci
+window.showLockAlert = function() {
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Akses Terkunci!',
+            text: 'Silakan Login terlebih dahulu untuk mengakses menu ini.',
+            icon: 'warning',
+            confirmButtonColor: '#6f42c1',
+            confirmButtonText: 'Ke Halaman Login'
+        }).then(() => {
+            window.location.href = 'login.html';
+        });
+    } else {
+        alert('Akses Terkunci! Silakan Login terlebih dahulu.');
+        window.location.href = 'login.html';
+    }
+};
+
 function loadNavigation() {
     // 1. CEK STATUS & ROLE LOGIN
     const sessionStr = localStorage.getItem("sessionMutu");
@@ -12,7 +34,8 @@ function loadNavigation() {
         unit = userData.unit;
     }
 
-    const scriptURL = "https://script.google.com/macros/s/AKfycbxRcpdb3tnHFWXWVLBzIymqAQnmygkxc_QoRVR43At859Yi6ZwYNkN0mSJaaKa5i4GJ/exec";
+    // Menggunakan variabel global dari config.js
+    const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MENU : "";
     const page = window.location.pathname.split("/").pop(); 
 
     // =========================================================================
@@ -21,8 +44,20 @@ function loadNavigation() {
     const adminPages = ['daftar_insiden.html', 'analisis.html', 'daftar_kpc.html', 'analisis_kpc.html', 'rekapitulasi.html', 'dasbor_budaya.html', 'dasbor_risiko.html', 'profil_risiko_rs.html'];
     
     if (adminPages.includes(page) && role !== "Komite Mutu") {
-        alert("Akses Ditolak! Halaman ini hanya dapat diakses oleh Tim Komite Mutu.");
-        window.location.href = isLoggedIn ? "index.html" : "login.html";
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'Akses Ditolak!',
+                text: 'Halaman ini hanya dapat diakses oleh Tim Komite Mutu.',
+                icon: 'error',
+                confirmButtonColor: '#dc3545',
+                allowOutsideClick: false
+            }).then(() => {
+                window.location.href = isLoggedIn ? "index.html" : "login.html";
+            });
+        } else {
+            alert("Akses Ditolak! Halaman ini hanya dapat diakses oleh Tim Komite Mutu.");
+            window.location.href = isLoggedIn ? "index.html" : "login.html";
+        }
         return; 
     }
 
@@ -53,7 +88,7 @@ function loadNavigation() {
                     <div class="text-center p-2"><i class="fas fa-spinner fa-spin text-muted"></i></div>
                 </div>
            </div>`
-        : `<a href="#" onclick="alert('Akses Terkunci! Silakan Login terlebih dahulu.'); window.location.href='login.html';" class="list-group-item list-group-item-action py-3 sidebar-link bg-light text-muted">
+        : `<a href="#" onclick="window.showLockAlert(); return false;" class="list-group-item list-group-item-action py-3 sidebar-link bg-light text-muted">
                 <i class="fas fa-chart-line me-3 text-secondary"></i> Peningkatan Mutu <i class="fas fa-lock float-end mt-1 text-danger" style="font-size: 0.8rem;"></i>
            </a>`;
 
@@ -67,7 +102,7 @@ function loadNavigation() {
                     <a href="risk_register.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-risk-register" style="font-size: 0.95rem;"><i class="fas fa-clipboard-check me-2"></i> Risk Register Unit</a>
                 </div>
            </div>`
-        : `<a href="#" onclick="alert('Akses Terkunci! Silakan Login terlebih dahulu.'); window.location.href='login.html';" class="list-group-item list-group-item-action py-3 sidebar-link bg-light text-muted">
+        : `<a href="#" onclick="window.showLockAlert(); return false;" class="list-group-item list-group-item-action py-3 sidebar-link bg-light text-muted">
                 <i class="fas fa-exclamation-triangle me-3 text-secondary"></i> Manajemen Risiko <i class="fas fa-lock float-end mt-1 text-danger" style="font-size: 0.8rem;"></i>
            </a>`;
 
@@ -196,7 +231,7 @@ function loadNavigation() {
             
             if (cacheMenu) {
                 renderMenuMutu(JSON.parse(cacheMenu));
-            } else {
+            } else if (scriptURL !== "") {
                 fetch(`${scriptURL}?action=get_menu&unit=${encodeURIComponent(unit)}`)
                     .then(res => res.json())
                     .then(result => {
@@ -237,11 +272,37 @@ function loadNavigation() {
     }
 }
 
+// Fungsi Keluar Sistem dengan SweetAlert2
 window.logoutSystem = function() {
-    if(confirm("Apakah Anda yakin ingin keluar dari sistem?")) {
-        localStorage.removeItem("sessionMutu");
-        localStorage.removeItem("menuMutu");
-        window.location.href = "login.html";
+    if (typeof Swal !== 'undefined') {
+        Swal.fire({
+            title: 'Keluar Sistem?',
+            text: "Apakah Anda yakin ingin mengakhiri sesi dan keluar dari sistem?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#dc3545',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Ya, Logout',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.removeItem("sessionMutu");
+                localStorage.removeItem("menuMutu");
+                // Hapus juga sisa-sisa cache jika ada
+                localStorage.removeItem('editDataIKP');
+                localStorage.removeItem('editDataKPC');
+                localStorage.removeItem('analisisDataIKP');
+                localStorage.removeItem('analisisDataKPC');
+                
+                window.location.href = "login.html";
+            }
+        });
+    } else {
+        if(confirm("Apakah Anda yakin ingin keluar dari sistem?")) {
+            localStorage.removeItem("sessionMutu");
+            localStorage.removeItem("menuMutu");
+            window.location.href = "login.html";
+        }
     }
 };
 

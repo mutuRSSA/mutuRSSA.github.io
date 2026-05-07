@@ -6,6 +6,8 @@
     <title>Survei Budaya Keselamatan Pasien</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tambahkan SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
         .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 8px; border-top: 4px solid #6f42c1; }
@@ -106,6 +108,9 @@
             </form>
         </div>
     </div>
+
+    <!-- Script Pusat Konfigurasi & Autentikasi -->
+    <script src="config.js"></script>
 
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -345,8 +350,8 @@
 
             console.log("Data JSON Mentah untuk dikirim ke Apps Script:", dataSurvey);
             
-            // URL BACKEND ANDA
-            const scriptURL = "https://script.google.com/macros/s/AKfycbzs7-x6GGX8dMqLgYOXZfNDY3127xbSDEnibba5yM0YcXWiShBWo9Yh1yS9JQrsoEU2/exec";
+            // URL BACKEND ANDA - Diambil dari config.js
+            const scriptURL = API_CONFIG.SURVEY;
 
             fetch(scriptURL, {
                 method: "POST",
@@ -356,15 +361,22 @@
             .then(res => res.json())
             .then(result => {
                 if (result.status === "success") {
-                    alert("Terima kasih! Survei budaya keselamatan pasien berhasil dikirim.");
-                    document.getElementById("formSurveyBudaya").reset();
-                    window.scrollTo(0, 0);
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: 'Terima kasih! Survei budaya keselamatan pasien berhasil dikirim.',
+                        icon: 'success',
+                        timer: 2500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        document.getElementById("formSurveyBudaya").reset();
+                        window.scrollTo(0, 0);
+                    });
                 } else {
-                    alert("Terjadi kesalahan sistem: " + result.message);
+                    Swal.fire('Gagal!', 'Terjadi kesalahan sistem: ' + result.message, 'error');
                 }
             })
             .catch(error => {
-                alert("Gagal terhubung ke server. Pastikan koneksi internet stabil.");
+                Swal.fire('Kesalahan Jaringan', 'Gagal terhubung ke server. Pastikan koneksi internet stabil.', 'error');
                 console.error("Error!", error.message);
             })
             .finally(() => {

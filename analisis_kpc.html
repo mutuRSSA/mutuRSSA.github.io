@@ -6,10 +6,13 @@
     <title>Analisis KPC - Komite Mutu</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Tambahkan SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; }
-        .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 4px; border-top: 3px solid #198754; }
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif;}
+        .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 8px; border-top: 4px solid #198754; }
         .bg-custom-dark { background-color: #3c8dbc; } 
+        .form-label { font-weight: 600; color: #333; margin-top: 10px; margin-bottom: 5px; }
     </style>
 </head>
 <body>
@@ -26,7 +29,7 @@
             
             <form id="formAnalisisKPC">
                 <div class="mb-4 p-3 bg-light border border-warning rounded">
-                    <label class="form-label fw-bold text-dark"><i class="fas fa-tasks text-warning me-2"></i>Status Perbaikan / Penyelesaian saat ini:</label>
+                    <label class="form-label fw-bold text-dark mt-0"><i class="fas fa-tasks text-warning me-2"></i>Status Perbaikan / Penyelesaian saat ini:</label>
                     <select class="form-select border-warning fw-bold text-dark" name="Status KPC" required>
                         <option value="Open">🔴 OPEN (Belum Ditangani / Bahaya Masih Ada)</option>
                         <option value="On Progress">🟡 ON PROGRESS (Sedang Diperbaiki / Dikerjakan)</option>
@@ -34,52 +37,61 @@
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label fw-bold">Penyebab Langsung Insiden :</label>
+                    <label class="form-label">Penyebab Langsung Insiden :</label>
                     <textarea class="form-control" name="penyebab_langsung" rows="3" required></textarea>
                 </div>
                 
                 <div class="mb-4">
-                    <label class="form-label fw-bold">Penyebab Yang Melatar Belakangi / Akar Masalah Insiden :</label>
+                    <label class="form-label">Penyebab Yang Melatar Belakangi / Akar Masalah Insiden :</label>
                     <textarea class="form-control" name="akar_masalah" rows="3" required></textarea>
                 </div>
 
-                <table class="table table-bordered align-middle">
-                    <thead class="table-light text-center">
-                        <tr><th width="50%">Rekomendasi</th><th width="30%">Penanggung Jawab</th><th width="20%">Tanggal</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><textarea class="form-control form-control-sm" name="rekomendasi" rows="2" required></textarea></td>
-                            <td><input type="text" class="form-control form-control-sm" name="pj_rekomendasi" required></td>
-                            <td><input type="date" class="form-control form-control-sm" name="tgl_rekomendasi" required></td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light text-center">
+                            <tr><th width="50%">Rekomendasi</th><th width="30%">Penanggung Jawab</th><th width="20%">Tanggal</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><textarea class="form-control form-control-sm" name="rekomendasi" rows="2" required></textarea></td>
+                                <td><input type="text" class="form-control form-control-sm" name="pj_rekomendasi" required></td>
+                                <td><input type="date" class="form-control form-control-sm" name="tgl_rekomendasi" required></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-                <table class="table table-bordered align-middle mb-4">
-                    <thead class="table-light text-center">
-                        <tr><th width="50%">Tindakan Yang Akan Dilakukan</th><th width="30%">Penanggung Jawab</th><th width="20%">Tanggal</th></tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><textarea class="form-control form-control-sm" name="tindakan_akan_dilakukan" rows="2" required></textarea></td>
-                            <td><input type="text" class="form-control form-control-sm" name="pj_tindakan" required></td>
-                            <td><input type="date" class="form-control form-control-sm" name="tgl_tindakan" required></td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table table-bordered align-middle mb-4">
+                        <thead class="table-light text-center">
+                            <tr><th width="50%">Tindakan Yang Akan Dilakukan</th><th width="30%">Penanggung Jawab</th><th width="20%">Tanggal</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><textarea class="form-control form-control-sm" name="tindakan_akan_dilakukan" rows="2" required></textarea></td>
+                                <td><input type="text" class="form-control form-control-sm" name="pj_tindakan" required></td>
+                                <td><input type="date" class="form-control form-control-sm" name="tgl_tindakan" required></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
-                <div class="d-flex justify-content-end mt-3 p-3 bg-light border-top">
-                    <button type="submit" class="btn btn-success fw-bold px-4" id="btnSimpan">SIMPAN INVESTIGASI</button>
+                <div class="d-flex justify-content-end mt-3 p-3 bg-light border-top rounded">
+                    <button type="submit" class="btn btn-success fw-bold px-4 shadow-sm" id="btnSimpan"><i class="fas fa-save me-2"></i>SIMPAN INVESTIGASI</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- Script Pusat Konfigurasi & Autentikasi -->
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            // MASUKKAN URL WEB APP KPC ANDA DI SINI
-            const scriptURL = "https://script.google.com/macros/s/AKfycbxuu_u_pYsmfSYAoy9arI76xSrGddgSSQMsBzjknysotJF2b0Rk5n7v25AjAe6LbBpi/exec";
+            // MENGGUNAKAN VARIABEL GLOBAL DARI config.js
+            const scriptURL = API_CONFIG.KPC;
             
             const dataStr = localStorage.getItem('analisisDataKPC');
             if (!dataStr) { window.location.href = 'daftar_kpc.html'; return; }
@@ -105,24 +117,41 @@
 
             form.addEventListener("submit", function (e) {
                 e.preventDefault();
-                submitBtn.innerHTML = "Menyimpan..."; submitBtn.disabled = true;
+                submitBtn.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i>Menyimpan..."; 
+                submitBtn.disabled = true;
 
                 const inputData = Object.fromEntries(new FormData(form).entries());
                 const payload = { action: 'update', id: targetId, data: inputData };
 
                 fetch(scriptURL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) })
-                .then(res => res.json()).then(result => {
+                .then(res => res.json())
+                .then(result => {
                     if (result.status === "success") {
-                        alert("Investigasi Sederhana KPC berhasil disimpan!");
-                        window.location.href = 'daftar_kpc.html';
-                    } else alert("Error: " + result.message);
+                        // Menggunakan SweetAlert2 untuk notifikasi sukses
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: 'Investigasi Sederhana KPC telah disimpan.',
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.href = 'daftar_kpc.html';
+                        });
+                    } else {
+                        // Menggunakan SweetAlert2 untuk error API
+                        Swal.fire('Gagal!', 'Terjadi kesalahan: ' + result.message, 'error');
+                    }
                 })
-                .catch(err => alert("Gagal koneksi."))
-                .finally(() => { submitBtn.innerHTML = "SIMPAN INVESTIGASI"; submitBtn.disabled = false; });
+                .catch(err => {
+                    // Menggunakan SweetAlert2 untuk error koneksi jaringan
+                    Swal.fire('Kesalahan Jaringan', 'Gagal terhubung ke server. Pastikan koneksi internet Anda stabil.', 'error');
+                })
+                .finally(() => { 
+                    submitBtn.innerHTML = "<i class='fas fa-save me-2'></i>SIMPAN INVESTIGASI"; 
+                    submitBtn.disabled = false; 
+                });
             });
         });
     </script>
-    <script src="auth.js"></script>
-    <script src="components.js"></script>
 </body>
 </html>
