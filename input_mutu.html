@@ -95,8 +95,23 @@
                 </div>
                 <div class="text-end">
                     <span class="badge bg-secondary fs-6 mb-2 d-block" id="badgeUnit"><i class="fas fa-hospital me-1"></i> Unit...</span>
+                    <!-- Tambahan Dropdown Bulan -->
+                    <select id="filterBulan" class="form-select form-select-sm mb-2 shadow-sm border-info" onchange="muatDataBulanIni()">
+                        <option value="01">Januari</option>
+                        <option value="02">Februari</option>
+                        <option value="03">Maret</option>
+                        <option value="04">April</option>
+                        <option value="05">Mei</option>
+                        <option value="06">Juni</option>
+                        <option value="07">Juli</option>
+                        <option value="08">Agustus</option>
+                        <option value="09">September</option>
+                        <option value="10">Oktober</option>
+                        <option value="11">November</option>
+                        <option value="12">Desember</option>
+                    </select>
                     <button class="btn btn-outline-primary btn-sm fw-bold shadow-sm" onclick="scrollToEmptyRow()" id="btnScrollDown" style="display:none;">
-                        <i class="fas fa-arrow-down me-1"></i> Langsung ke Baris Kosong
+                        <i class="fas fa-arrow-down me-1"></i> Ke Baris Kosong
                     </button>
                 </div>
             </div>
@@ -118,8 +133,15 @@
                 <div id="spreadsheet" class="mb-4 hot"></div>
                 
                 <div class="d-flex justify-content-between bg-light p-3 border rounded align-items-center mt-3">
-                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Data status <strong>"Final"</strong> dikunci permanen.<br>Gunakan status <strong>"Draft"</strong> jika masih ingin diedit di kemudian waktu.</small>
-                    <button class="btn btn-success fw-bold px-4 shadow-sm" onclick="simpanDataMentah()" id="btnSimpan"><i class="fas fa-cloud-upload-alt me-2"></i> Simpan Laporan</button>
+                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Data <strong>Final</strong> akan dikunci permanen.<br>Gunakan <strong>Draft</strong> jika ingin dilanjutkan besok.</small>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary fw-bold px-4 bg-white" onclick="simpanDataMentah('Draft')" id="btnDraft">
+                            <i class="fas fa-save me-2"></i> Simpan Draft
+                        </button>
+                        <button class="btn btn-success fw-bold px-4 shadow-sm" onclick="simpanDataMentah('Final')" id="btnFinal">
+                            <i class="fas fa-lock me-2"></i> Simpan Final (Kunci Bulan)
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -186,6 +208,13 @@
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
         const userUnit = sessionMutu.unit || "GUEST";
 
+        // Variabel Global Baru untuk Fitur Kunci Bulan
+        let activeMonth = new Date().getMonth() + 1;
+        activeMonth = activeMonth < 10 ? '0' + activeMonth : activeMonth.toString();
+        let isMonthLocked = false;
+        // Simpan metadata asli kolom
+        let originalColumnsDef = [];
+
         const colToLetter = (index) => {
             let letter = '';
             while (index >= 0) {
@@ -198,18 +227,57 @@
         document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('badgeUnit').innerHTML = `<i class="fas fa-hospital me-1"></i> ${userUnit}`;
             document.getElementById('subJudulForm').innerText = `FORMULIR: ${activeFormType.replace(/_/g, ' ')}`;
+            
+            // Set dropdown ke bulan aktif saat ini
+            document.getElementById('filterBulan').value = activeMonth;
 
-            fetch(`${scriptURL}?unit=${encodeURIComponent(userUnit)}&formType=${encodeURIComponent(activeFormType)}`)
+            // Panggil fungsi utama untuk load data
+            muatDataBulanIni();
+        });
+
+        window.muatDataBulanIni = function() {
+            activeMonth = document.getElementById('filterBulan').value;
+            document.getElementById('loadingMessage').style.display = 'block';
+            document.getElementById('spreadsheetContainer').style.display = 'none';
+            document.getElementById('btnScrollDown').style.display = 'none';
+            
+            // Bersihkan instance lama jika ganti bulan
+            if (hot) {
+                hot.destroy();
+                hot = null;
+            }
+
+            fetch(`${scriptURL}?unit=${encodeURIComponent(userUnit)}&formType=${encodeURIComponent(activeFormType)}&bulan=${activeMonth}`)
                 .then(res => res.json())
                 .then(result => {
                     document.getElementById('loadingMessage').style.display = 'none';
                     if (result.status === 'success') {
+                        originalColumnsDef = result.columns;
+
                         let tabsHtml = '';
                         result.menu.forEach(form => {
                             let isActive = (form === activeFormType) ? 'active' : '';
                             tabsHtml += `<li class="nav-item"><a class="nav-link ${isActive}" href="input_mutu.html?form=${form}"><i class="fas ${isActive ? 'fa-folder-open text-info' : 'fa-folder'} me-1"></i> ${form.replace(/_/g, ' ')}</a></li>`;
                         });
                         document.getElementById('formTabs').innerHTML = tabsHtml;
+
+                        // Cek apakah bulan ini sudah Final
+                        isMonthLocked = result.data.some(row => row[row.length - 1] === 'Final');
+
+                        const btnDraft = document.getElementById('btnDraft');
+                        const btnFinal = document.getElementById('btnFinal');
+
+                        if (isMonthLocked) {
+                            btnDraft.disabled = true;
+                            btnFinal.disabled = true;
+                            btnFinal.innerHTML = `<i class="fas fa-check-circle me-2"></i> Bulan Terkunci`;
+                            btnFinal.className = "btn btn-secondary fw-bold px-4 shadow-sm";
+                        } else {
+                            btnDraft.disabled = false;
+                            btnFinal.disabled = false;
+                            btnFinal.innerHTML = `<i class="fas fa-lock me-2"></i> Simpan Final (Kunci Bulan)`;
+                            btnFinal.className = "btn btn-success fw-bold px-4 shadow-sm";
+                        }
 
                         const applyFormulasToRow = (rowArray, rowIndex, columnsDef) => {
                             columnsDef.forEach((col, colIndex) => {
@@ -224,9 +292,16 @@
 
                         result.data.forEach((row, rowIndex) => { applyFormulasToRow(row, rowIndex, result.columns); });
 
+<<<<<<< Updated upstream
+=======
+                        // Pemetaan Tipe Kolom dengan Override Lock
+>>>>>>> Stashed changes
                         let hotColumns = result.columns.map(c => {
                             let rawType = (c.type || 'text').toString().toLowerCase().trim();
-                            let config = { type: 'text', readOnly: c.readOnly || false, wordWrap: true }; 
+                            // Jika bulan terkunci, paksa semua sel menjadi readOnly
+                            let isColReadOnly = isMonthLocked ? true : (c.readOnly || false);
+                            
+                            let config = { type: 'text', readOnly: isColReadOnly, wordWrap: true }; 
                             
                             if (rawType === 'dropdown') {
                                 config.type = 'dropdown';
@@ -243,17 +318,13 @@
                                 config.dateFormat = 'DD/MM/YYYY'; 
                                 config.correctFormat = true;
                             }
-                            else if (rawType === 'durasi_hm') {
+                            else if (['durasi_hm', 'durasi_ms'].includes(rawType)) {
                                 config.type = 'text'; 
                                 config.validator = /^[0-9]+:[0-5][0-9]$/;
                             }
                             else if (rawType === 'durasi_hms') {
                                 config.type = 'text'; 
                                 config.validator = /^[0-9]+:[0-5][0-9]:[0-5][0-9]$/;
-                            }
-                            else if (rawType === 'durasi_ms') {
-                                config.type = 'text'; 
-                                config.validator = /^[0-9]+:[0-5][0-9]$/;
                             }
                             else if (rawType === 'time') {
                                 config.type = 'time'; 
@@ -281,8 +352,8 @@
                             stretchH: 'all',
                             renderAllRows: false, 
                             viewportRowRenderingOffset: 100, 
-                            minSpareRows: 3,
-                            contextMenu: true,
+                            minSpareRows: isMonthLocked ? 0 : 3, // Jangan sediakan baris kosong jika terkunci
+                            contextMenu: !isMonthLocked, // Matikan klik kanan jika terkunci
                             formulas: { engine: HyperFormula },
                             licenseKey: 'non-commercial-and-evaluation', 
                             filters: true,
@@ -290,7 +361,11 @@
                             columnSorting: true,
                             autoColumnSize: true,
                             manualColumnResize: true,
+<<<<<<< Updated upstream
                             wordWrap: true, 
+=======
+                            wordWrap: true,
+>>>>>>> Stashed changes
 
                             afterPaste: function(data, coords) {
                                 const hotInstance = this;
@@ -350,7 +425,7 @@
                                     let status = instance.getDataAtCell(r, statusColIndex);
                                     td.style.fontStyle = 'normal'; td.style.fontWeight = 'normal';
 
-                                    if (status === 'Final') { 
+                                    if (status === 'Final' || isMonthLocked) { 
                                         td.style.backgroundColor = '#e9ecef'; td.style.color = '#adb5bd'; td.style.fontStyle = 'italic'; 
                                     } else if (cellProps.readOnly) { 
                                         td.style.backgroundColor = '#f1f3f5'; td.style.color = '#0dcaf0'; td.style.fontWeight = 'bold'; 
@@ -374,7 +449,7 @@
                             },
 
                             beforeChange: function (changes, source) {
-                                if (!changes) return;
+                                if (!changes || isMonthLocked) return; // Jika bulan terkunci, jangan izinkan perubahan apa pun
                                 let statusColIndex = this.getSettings().columns.length - 1;
                                 let isBlocked = false;
 
@@ -401,17 +476,13 @@
                                     }    
 
                                     if (newVal && typeof newVal === 'string' && newVal.trim() !== "") {
-                                        if (colSettings.type === 'time' || colDef.type === 'durasi_hm' || colDef.type === 'durasi_hms' || colDef.type === 'durasi_ms') {
+                                        if (colSettings.type === 'time' || ['durasi_hm', 'durasi_hms', 'durasi_ms'].includes(colDef.type)) {
                                             change[3] = newVal.replace(/\./g, ':');
                                         }
                                         else if (colSettings.type === 'date' || colDef.type === 'date' || colDef.type === 'calendar') {
                                             let tebakanTanggal = moment(newVal, ["YYYY-MM-DD", "DD/MM/YYYY", "DD-MM-YYYY", "YYYY/MM/DD", "D/M/YY", "D/M/YYYY", moment.ISO_8601], true);
-                                            if (!tebakanTanggal.isValid()) {
-                                                tebakanTanggal = moment(newVal); 
-                                            }
-                                            if (tebakanTanggal.isValid()) {
-                                                change[3] = tebakanTanggal.format('DD/MM/YYYY'); 
-                                            }
+                                            if (!tebakanTanggal.isValid()) { tebakanTanggal = moment(newVal); }
+                                            if (tebakanTanggal.isValid()) { change[3] = tebakanTanggal.format('DD/MM/YYYY'); }
                                         }
                                     }
 
@@ -441,29 +512,48 @@
                         document.getElementById('loadingMessage').innerHTML = `<i class="fas fa-lock me-2"></i> ${result.message}`; 
                     }
                 });
-        });
+        };
 
-        window.simpanDataMentah = function() {
+        window.simpanDataMentah = function(statusTarget) {
             if (!hot) return;
-            const btn = document.getElementById('btnSimpan');
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...`;
-            btn.disabled = true;
+            
+            if (statusTarget === 'Final') {
+                const yakin = confirm(`Apakah Anda yakin ingin mem-FINAL-kan data bulan ini?\n\nData tidak akan bisa diubah atau ditambah lagi setelah disimpan permanen.`);
+                if (!yakin) return;
+            }
+
+            const btnDraft = document.getElementById('btnDraft');
+            const btnFinal = document.getElementById('btnFinal');
+            
+            const btnActive = statusTarget === 'Draft' ? btnDraft : btnFinal;
+            const originalText = btnActive.innerHTML;
+            
+            btnActive.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i> Memproses...`;
+            btnDraft.disabled = true;
+            btnFinal.disabled = true;
 
             const rawData = hot.getData();
             const columnsConfig = hot.getSettings().columns; 
+            let statusColIndex = columnsConfig.length - 1;
             
-            const dataToSave = rawData.filter(row => {
+            const dataToSave = rawData.filter((row, index) => {
                 let hasValidInput = false;
                 for (let i = 0; i < row.length; i++) {
-                    let isStatusCol = (i === row.length - 1);  
-                    let isReadOnly = columnsConfig[i].readOnly; 
+                    let isStatusCol = (i === statusColIndex);  
+                    // Cek readOnly dari setting asli, bukan dari setting kuncian
+                    let isReadOnly = originalColumnsDef[i].readOnly; 
                     let cellValue = row[i];
                     if (!isReadOnly && !isStatusCol && cellValue !== null && cellValue !== "") { hasValidInput = true; break; }
+                }
+                
+                if (hasValidInput) {
+                    row[statusColIndex] = statusTarget; // Timpa status sesuai tombol yang ditekan
                 }
                 return hasValidInput;
             });
 
             if (dataToSave.length === 0) {
+<<<<<<< Updated upstream
                 Swal.fire({
                     icon: 'warning',
                     title: 'Data Kosong',
@@ -471,6 +561,12 @@
                 });
                 btn.innerHTML = `<i class="fas fa-cloud-upload-alt me-2"></i> Simpan Laporan`;
                 btn.disabled = false; 
+=======
+                alert("⚠️ Tidak ada data observasi yang valid untuk disimpan.");
+                btnActive.innerHTML = originalText;
+                btnDraft.disabled = false;
+                btnFinal.disabled = false;
+>>>>>>> Stashed changes
                 return;
             }
 
@@ -478,11 +574,22 @@
             fetch(scriptURL, { 
                 method: "POST", 
                 headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+<<<<<<< Updated upstream
                 body: JSON.stringify({ action: 'save_raw_data', formType: activeFormType, unit: userUnit, data: [headers, ...dataToSave] }) 
+=======
+                body: JSON.stringify({ 
+                    action: 'save_raw_data', 
+                    formType: activeFormType, 
+                    unit: userUnit, 
+                    bulan: activeMonth, // Sisipkan filter bulan
+                    data: [headers, ...dataToSave] 
+                }) 
+>>>>>>> Stashed changes
             })
             .then(res => res.json())
             .then(res => {
                 if(res.status === 'success') { 
+<<<<<<< Updated upstream
                     Swal.fire({
                         title: 'Berhasil!',
                         text: 'Data observasi mutu berhasil disimpan.',
@@ -499,6 +606,23 @@
             .finally(() => { 
                 btn.innerHTML = `<i class="fas fa-cloud-upload-alt me-2"></i> Simpan Laporan`; 
                 btn.disabled = false; 
+=======
+                    alert("✅ Data berhasil disimpan!"); 
+                    muatDataBulanIni(); // Refresh tabel tanpa mereload seluruh halaman
+                } 
+                else { 
+                    alert("❌ Gagal: " + res.message); 
+                    btnActive.innerHTML = originalText;
+                    btnDraft.disabled = false;
+                    btnFinal.disabled = false;
+                }
+            })
+            .catch(err => {
+                alert("❌ Terjadi kesalahan pada server.");
+                btnActive.innerHTML = originalText;
+                btnDraft.disabled = false;
+                btnFinal.disabled = false;
+>>>>>>> Stashed changes
             });
         };
         
