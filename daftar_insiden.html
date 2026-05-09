@@ -94,11 +94,10 @@
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
     <script>
-// Deklarasi array global untuk menyimpan data sementara agar bisa dipanggil tombol Edit/Hapus
+        // Deklarasi array global
         window.insidenData = [];
 
         $(document).ready(function() {
-            // MENGGUNAKAN VARIABEL GLOBAL DARI config.js
             const scriptURL = API_CONFIG.IKP;
 
             fetch(scriptURL, { redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" } })
@@ -110,15 +109,16 @@
                     $('#insidenTable').show(); 
                     
                     if(result.status === 'success') {
-                        window.insidenData = result.data; // Simpan data ke memori
+                        window.insidenData = result.data; 
                         let html = '';
                         
                         result.data.forEach((row, index) => {
                             let umurTeks = `${row['Umur (Tahun)'] || 0} Tahun ${row['Umur (Bulan)'] || 0} Bulan ${row['Umur (Hari)'] || 0} Hari`;
-                            let tglInsiden = row['Tgl & Waktu insiden'] ? new Date(row['Tgl & Waktu insiden']).toLocaleString('id-ID') : '-';
+                            let tglInsidenRaw = row['Tgl & Waktu insiden'];
+                            let tglInsiden = tglInsidenRaw ? new Date(tglInsidenRaw).toLocaleString('id-ID') : '-';
                             let tglPelayanan = row['Tanggal pelayanan'] ? new Date(row['Tanggal pelayanan']).toLocaleDateString('id-ID') : '-';
 
-                            // Menentukan warna badge Grading
+                            // 1. TENTUKAN WARNA GRADING
                             let gradingVal = row['Grading Risiko'] || '-';
                             let gradingBadge = gradingVal;
                             if (gradingVal === 'Low') gradingBadge = '<span class="badge bg-primary w-100 py-2">Low</span>';
@@ -126,10 +126,32 @@
                             else if (gradingVal === 'High') gradingBadge = '<span class="badge bg-warning text-dark w-100 py-2">High</span>';
                             else if (gradingVal === 'Extreme') gradingBadge = '<span class="badge bg-danger w-100 py-2">Extreme</span>';
 
-                            // --- LOGIKA PENYEMBUNYIAN TOMBOL ---
-                            // Mengecek apakah form analisis sudah diisi (berdasarkan kolom Tipe Insiden)
+                            // 2. FITUR BARU: COUNTDOWN TIMER (SISA WAKTU KIRIM)
+                            let sisaWaktuHtml = '<span class="badge bg-secondary">N/A</span>';
                             let sudahDianalisis = row['Tipe & Sub Tipe Insiden'] && row['Tipe & Sub Tipe Insiden'].toString().trim() !== '';
 
+                            if (tglInsidenRaw && gradingVal !== '-') {
+                                if (sudahDianalisis) {
+                                    sisaWaktuHtml = '<span class="badge bg-success"><i class="fas fa-check"></i> Selesai</span>';
+                                } else {
+                                    let tglKejadian = new Date(tglInsidenRaw);
+                                    // Aturan: Biru/Hijau max 7 hari, Kuning/Merah max 45 hari
+                                    let batasHari = (gradingVal === 'High' || gradingVal === 'Extreme') ? 45 : 7;
+                                    
+                                    let batasTgl = new Date(tglKejadian.getTime() + (batasHari * 24 * 60 * 60 * 1000));
+                                    let sisaHari = Math.ceil((batasTgl - new Date()) / (1000 * 60 * 60 * 24));
+                                    
+                                    if (sisaHari < 0) {
+                                        sisaWaktuHtml = `<span class="badge bg-danger shadow-sm blink-me">Overdue ${Math.abs(sisaHari)} Hari</span>`;
+                                    } else if (sisaHari <= 3) {
+                                        sisaWaktuHtml = `<span class="badge bg-warning text-dark shadow-sm">Sisa ${sisaHari} Hari</span>`;
+                                    } else {
+                                        sisaWaktuHtml = `<span class="badge bg-info text-dark shadow-sm">Sisa ${sisaHari} Hari</span>`;
+                                    }
+                                }
+                            }
+
+                            // 3. FITUR BARU: SMART ROUTING TOMBOL ANALISIS
                             let tombolAksi = '';
                             if (sudahDianalisis) {
                                 tombolAksi = `
@@ -138,12 +160,20 @@
                                     <span class="btn-aksi text-success w-100 d-inline-block text-center mt-1" style="font-size: 0.75rem;"><i class="fas fa-check-circle me-1"></i> Analisa Selesai</span>
                                 `;
                             } else {
+                                // Tentukan arah link dan warna tombol berdasarkan grading
+                                let fungsiAnalisis = (gradingVal === 'High' || gradingVal === 'Extreme') ? `analisisData(${index})` : `analisisSederhana(${index})`;
+                                let ikonAnalisis = (gradingVal === 'High' || gradingVal === 'Extreme') ? 'fa-search-plus' : 'fa-search';
+                                let titleAnalisis = (gradingVal === 'High' || gradingVal === 'Extreme') ? 'Lakukan RCA Komprehensif' : 'Lakukan Investigasi Sederhana';
+                                let btnWarna = (gradingVal === 'High' || gradingVal === 'Extreme') ? 'btn-danger' : 'btn-success';
+
                                 tombolAksi = `
                                     <button onclick="showDetail(${index})" class="btn btn-primary btn-sm text-white mb-1" title="Lihat Detail"><i class="fas fa-eye"></i></button>
                                     <button onclick="printData(${index})" class="btn btn-info btn-sm text-white mb-1" title="Cetak PDF"><i class="fas fa-print"></i></button>
-                                    <button onclick="analisisData(${index})" class="btn btn-success btn-sm text-white mb-1" title="Analisis RCA/Investigasi"><i class="fas fa-search-plus"></i></button>
-                                    <button onclick="editData(${index})" class="btn btn-warning btn-sm text-white mb-1" title="Edit"><i class="fas fa-edit"></i></button>
-                                    <button onclick="deleteData(${index})" class="btn btn-danger btn-sm text-white mb-1" title="Hapus"><i class="fas fa-trash"></i></button><br>
+                                    
+                                    <button onclick="${fungsiAnalisis}" class="btn ${btnWarna} btn-sm text-white mb-1" title="${titleAnalisis}"><i class="fas ${ikonAnalisis}"></i></button>
+                                    
+                                    <button onclick="editData(${index})" class="btn btn-warning btn-sm text-white mb-1" title="Edit Data Insiden"><i class="fas fa-edit"></i></button>
+                                    <button onclick="deleteData(${index})" class="btn btn-secondary btn-sm text-white mb-1" title="Hapus"><i class="fas fa-trash"></i></button><br>
                                     <span class="btn-aksi text-muted w-100 d-inline-block text-center mt-1" style="font-size: 0.75rem;"><i class="fas fa-paper-plane me-1"></i>Laporan Terkirim</span>
                                 `;
                             }
@@ -151,12 +181,9 @@
                             html += `
                                 <tr>
                                     <td class="text-center">${index + 1}</td>
-                                    <td class="text-center" style="min-width: 140px;">
-                                        ${tombolAksi}
-                                    </td>
-                                    <td class="text-center">-</td>
-                                    <td class="text-center">-</td>
-                                    <td>${tglInsiden}</td>
+                                    <td class="text-center" style="min-width: 140px;">${tombolAksi}</td>
+                                    <td class="text-center align-middle">${sisaWaktuHtml}</td>
+                                    <td class="text-center align-middle d-none">Sisa Waktu Kirim</td> <td>${tglInsiden}</td>
                                     <td>${umurTeks}</td>
                                     <td>${row['Jenis Insiden'] || '-'}</td>
                                     <td>${row['Insiden'] || '-'}</td>
@@ -172,7 +199,10 @@
                         $('#insidenTable').DataTable({
                             "language": { "search": "Search:" },
                             "ordering": true, "order": [[0, 'asc']], 
-                            "columnDefs": [{ "targets": [1, 2], "orderable": false }]
+                            "columnDefs": [
+                                { "targets": [1, 2], "orderable": false },
+                                { "targets": [3], "visible": false } // Menyembunyikan kolom sorting cadangan
+                            ]
                         });
                     }
                 } catch (error) {
@@ -182,7 +212,7 @@
                 $('#loadingMessage').removeClass('alert-info').addClass('alert-danger').html(`<i class="fas fa-wifi me-2"></i> Terjadi kesalahan jaringan: ${err}`);
             });
             
-            // --- FUNGSI HAPUS DATA (DENGAN SWEETALERT2) ---
+            // FUNGSI HAPUS, EDIT, TAMPIL DETAIL, CETAK, TETAP SAMA SEPERTI SEBELUMNYA
             window.deleteData = function(index) {
                 Swal.fire({
                     title: 'Yakin ingin menghapus?',
@@ -196,64 +226,32 @@
                 }).then((result) => {
                     if (result.isConfirmed) {
                         const targetTimestamp = window.insidenData[index].Timestamp;
-                        
-                        // Menampilkan Loading
-                        Swal.fire({
-                            title: 'Menghapus Data...',
-                            text: 'Mohon tunggu sebentar',
-                            allowOutsideClick: false,
-                            didOpen: () => {
-                                Swal.showLoading();
-                            }
-                        });
-                        
-                        fetch(scriptURL, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                            body: JSON.stringify({ action: 'delete', id: targetTimestamp })
-                        })
+                        Swal.fire({ title: 'Menghapus Data...', text: 'Mohon tunggu sebentar', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+                        fetch(scriptURL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'delete', id: targetTimestamp }) })
                         .then(res => res.json())
-                        .then(res => {
-                            if(res.status === 'success') {
-                                Swal.fire('Terhapus!', 'Data insiden berhasil dihapus.', 'success').then(() => {
-                                    location.reload(); // Muat ulang halaman agar tabel ter-update
-                                });
-                            } else {
-                                Swal.fire('Gagal!', 'Gagal menghapus data: ' + res.message, 'error');
-                            }
-                        }).catch(err => {
-                            Swal.fire('Error Jaringan!', 'Gagal menyambung ke server.', 'error');
-                        });
+                        .then(res => { if(res.status === 'success') { Swal.fire('Terhapus!', 'Data insiden berhasil dihapus.', 'success').then(() => { location.reload(); }); } else { Swal.fire('Gagal!', 'Gagal menghapus data: ' + res.message, 'error'); } })
+                        .catch(err => { Swal.fire('Error Jaringan!', 'Gagal menyambung ke server.', 'error'); });
                     }
                 });
             };
 
-            // --- FUNGSI EDIT DATA ---
             window.editData = function(index) {
-                const targetData = window.insidenData[index];
-                // Simpan data baris tersebut ke localStorage Browser
-                localStorage.setItem('editDataIKP', JSON.stringify(targetData));
-                // Pindah ke halaman formulir
-                window.location.href = 'index.html'; 
+                localStorage.setItem('editDataIKP', JSON.stringify(window.insidenData[index]));
+                window.location.href = 'ikp.html'; // Mengarahkan kembali ke form ikp
             };
 
-            // --- FUNGSI TAMPILKAN DETAIL (MODAL) ---
             window.showDetail = function(index) {
+                // (KODE SAMA SEPERTI MILIK ANDA SEBELUMNYA)
                 const data = window.insidenData[index];
-                
-                // Format teks
                 let umurTeks = `${data['Umur (Tahun)'] || 0} Tahun ${data['Umur (Bulan)'] || 0} Bulan ${data['Umur (Hari)'] || 0} Hari`;
                 let tglPelayanan = data['Tanggal pelayanan'] ? new Date(data['Tanggal pelayanan']).toLocaleString('id-ID') : '-';
                 let tglInsiden = data['Tgl & Waktu insiden'] ? new Date(data['Tgl & Waktu insiden']).toLocaleString('id-ID') : '-';
-                
-                // Format warna Grading
                 let gradingHtml = data['Grading Risiko'] || '-';
                 if(gradingHtml === 'Low') gradingHtml = '<span class="badge bg-primary">Low</span>';
                 if(gradingHtml === 'Moderate') gradingHtml = '<span class="badge bg-success">Moderate</span>';
                 if(gradingHtml === 'High') gradingHtml = '<span class="badge bg-warning text-dark">High</span>';
                 if(gradingHtml === 'Extreme') gradingHtml = '<span class="badge bg-danger">Extreme</span>';
 
-                // Menyusun baris tabel detail
                 const tbody = document.getElementById('detailTableBody');
                 tbody.innerHTML = `
                     <tr><th class="bg-light" style="width: 35%;">1. Umur Pasien</th><td>${umurTeks}</td></tr>
@@ -277,38 +275,44 @@
                     <tr><th class="bg-light">19. Pernah Terjadi?</th><td>${data['Pernah terjadi?'] || '-'}</td></tr>
                     <tr><th class="bg-light">20. Tindakan Pencegahan</th><td style="text-align: justify;">${data['Tindakan Pencegahan'] ? data['Tindakan Pencegahan'] : '<i class="text-muted">Tidak ada tindakan / Tidak relevan</i>'}</td></tr>
                 `;
-
-                // Panggil Modal Bootstrap untuk muncul
-                var detailModal = new bootstrap.Modal(document.getElementById('modalDetail'));
-                detailModal.show();
+                new bootstrap.Modal(document.getElementById('modalDetail')).show();
             };
 
-            // --- FUNGSI ANALISIS DATA ---
+            // FUNGSI RCA KOMPREHENSIF (Untuk Insiden Kuning/Merah)
             window.analisisData = function(index) {
-                const targetData = window.insidenData[index];
-                localStorage.setItem('analisisDataIKP', JSON.stringify(targetData));
+                localStorage.setItem('analisisDataIKP', JSON.stringify(window.insidenData[index]));
                 window.location.href = 'analisis.html'; 
             };
 
-            // --- FUNGSI CETAK DATA (PDF) ---
+            // FUNGSI BARU: INVESTIGASI SEDERHANA (Untuk Insiden Biru/Hijau)
+            window.analisisSederhana = function(index) {
+                localStorage.setItem('analisisDataIKP', JSON.stringify(window.insidenData[index]));
+                window.location.href = 'analisis_sederhana.html'; 
+            };
+
             window.printData = function(index) {
                 const data = window.insidenData[index];
                 
-                // Format Tanggal dan Umur
+                // Format Data Dasar
                 let umurTeks = `${data['Umur (Tahun)'] || 0} Tahun ${data['Umur (Bulan)'] || 0} Bulan ${data['Umur (Hari)'] || 0} Hari`;
                 let tglInsiden = data['Tgl & Waktu insiden'] ? new Date(data['Tgl & Waktu insiden']).toLocaleString('id-ID') : '-';
                 let tglPelayanan = data['Tanggal pelayanan'] ? new Date(data['Tanggal pelayanan']).toLocaleDateString('id-ID') : '-';
-
-                // Tentukan Warna Grading
+                
+                // Tentukan Warna Grading & Tipe Template
                 let gradingVal = data['Grading Risiko'] || '';
                 let circleColor = 'transparent';
-                if (gradingVal === 'Low') circleColor = '#0d6efd';
-                else if (gradingVal === 'Moderate') circleColor = '#198754';
-                else if (gradingVal === 'High') circleColor = '#ffc107';
-                else if (gradingVal === 'Extreme') circleColor = '#dc3545';
+                let isRCA = false; // Flag untuk menentukan jenis template cetak
 
-                // Susun Template HTML persis seperti Screenshot
+                if (gradingVal === 'Low') { circleColor = '#0d6efd'; }
+                else if (gradingVal === 'Moderate') { circleColor = '#198754'; }
+                else if (gradingVal === 'High') { circleColor = '#ffc107'; isRCA = true; }
+                else if (gradingVal === 'Extreme') { circleColor = '#dc3545'; isRCA = true; }
+
+                // ========================================================
+                // BAGIAN 1: INFORMASI PASIEN & INSIDEN (SAMA UNTUK SEMUA)
+                // ========================================================
                 let printHtml = `
+                    <h3 style="text-align: center; margin-bottom: 20px;">LAPORAN INSIDEN KESELAMATAN PASIEN (IKP)</h3>
                     <table class="print-table">
                         <tr><th colspan="2">DATA PASIEN :</th></tr>
                         <tr><td class="print-label">Umur</td><td class="print-value">${umurTeks}</td></tr>
@@ -319,7 +323,7 @@
                         <tr><th colspan="2">RINCIAN KEJADIAN :</th></tr>
                         <tr><td class="print-label">1. Tanggal Dan Waktu Insiden</td><td class="print-value">${tglInsiden}</td></tr>
                         <tr><td class="print-label">2. Insiden</td><td class="print-value">${data['Insiden'] || '-'}</td></tr>
-                        <tr><td class="print-label">3. Kronologis Insiden</td><td class="print-value">${data['Kronologis'] || '-'}</td></tr>
+                        <tr><td class="print-label">3. Kronologis Insiden</td><td class="print-value" style="text-align: justify;">${data['Kronologis'] || '-'}</td></tr>
                         <tr><td class="print-label">4. Jenis Insiden</td><td class="print-value">${data['Jenis Insiden'] || '-'}</td></tr>
                         <tr><td class="print-label">5. Insiden Terjadi Pada Pasien...</td><td class="print-value">${data['Terjadi Pada'] || '-'}</td></tr>
                         <tr><td class="print-label">6. Dampak Insiden Terhadap Pasien</td><td class="print-value">${data['Dampak'] || '-'}</td></tr>
@@ -328,11 +332,10 @@
                         <tr><td class="print-label">9. Insiden Menyangkut Pasien</td><td class="print-value">${data['Menyangkut Pasien'] || '-'}</td></tr>
                         <tr><td class="print-label">10. Tempat Insiden</td><td class="print-value">${data['Tempat Insiden'] || '-'}</td></tr>
                         <tr><td class="print-label">11. Unit / Departemen Terkait</td><td class="print-value">${data['Unit Terkait'] || '-'}</td></tr>
-                        <tr><td class="print-label">12. Tindakan Lanjut...</td><td class="print-value">${data['Tindak Lanjut'] || '-'}</td></tr>
+                        <tr><td class="print-label">12. Tindakan Lanjut...</td><td class="print-value" style="text-align: justify;">${data['Tindak Lanjut'] || '-'}</td></tr>
                         <tr><td class="print-label">13. Tindak Dilakukan Oleh</td><td class="print-value">${data['Dilakukan Oleh'] || '-'}</td></tr>
                         <tr><td class="print-label">14. Apakah kejadian insiden sama pernah terjadi?</td><td class="print-value">${data['Pernah terjadi?'] || '-'}</td></tr>
-                        
-                        <tr><td class="print-label">15. Tindakan Pencegahan</td><td class="print-value">${data['Tindakan Pencegahan'] || '-'}</td></tr>
+                        <tr><td class="print-label">15. Tindakan Pencegahan</td><td class="print-value" style="text-align: justify;">${data['Tindakan Pencegahan'] || '-'}</td></tr>
                         
                         <tr>
                             <td colspan="2" style="text-align: right; border: none; padding-top: 20px; padding-bottom: 20px;">
@@ -340,8 +343,15 @@
                                 <span class="print-grading-circle" style="background-color: ${circleColor};"></span>
                             </td>
                         </tr>
+                `;
 
-                        <tr><th colspan="2">HASIL INVESTIGASI :</th></tr>
+                // ========================================================
+                // BAGIAN 2: BLOK INVESTIGASI (DINAMIS SESUAI GRADING)
+                // ========================================================
+                if (isRCA) {
+                    // CETAK FORMAT RCA KOMPREHENSIF (Kuning / Merah)
+                    printHtml += `
+                        <tr><th colspan="2">HASIL ROOT CAUSE ANALYSIS (RCA) :</th></tr>
                         <tr><td class="print-label">1. Tipe Insiden Dan Sub Tipe Insiden</td><td class="print-value">${data['Tipe & Sub Tipe Insiden'] || '-'}</td></tr>
                         <tr><td class="print-label">2. Tipe harm</td><td class="print-value">${data['Tipe Harm'] || '-'}</td></tr>
                         <tr>
@@ -355,12 +365,12 @@
                             <td class="print-label">4. Penyebab Insiden</td>
                             <td class="print-value">
                                 <strong>A. Penyebab Langsung:</strong><br>${data['Penyebab Langsung'] || '-'}<br><br>
-                                <strong>B. Akar Masalah:</strong><br>${data['Akar Masalah'] || '-'}
+                                <strong>B. Akar Masalah:</strong><br>${(data['Akar Masalah'] || '-').replace(/\n/g, '<br>')}
                             </td>
                         </tr>
                         <tr><td class="print-label">5. Orang Yang Terlibat...</td><td class="print-value">${data['Orang Terlibat'] || '-'}</td></tr>
                         <tr><td class="print-label">6. Proses / Fase Pelayanan...</td><td class="print-value">${data['Proses/Fase Pelayanan'] || '-'}</td></tr>
-                        <tr><td class="print-label">7. Faktor Kontributor</td><td class="print-value">${data['Faktor Kontributor'] || '-'}</td></tr>
+                        <tr><td class="print-label">7. Faktor Kontributor</td><td class="print-value">${(data['Faktor Kontributor'] || '-').replace(/\n/g, '<br>')}</td></tr>
                         <tr>
                             <td class="print-label">8. Faktor Mitigasi</td>
                             <td class="print-value">
@@ -371,8 +381,8 @@
                         </tr>
                         <tr><td class="print-label">9. Cara Mendeteksi Insiden</td><td class="print-value">${data['Cara Mendeteksi'] || '-'}</td></tr>
                         <tr><td class="print-label">10. Dampak Pada Fasyankes</td><td class="print-value">${data['Dampak Fasyankes'] || '-'}</td></tr>
-                        <tr><td class="print-label">11. Rekomendasi</td><td class="print-value">${data['Rekomendasi'] || '-'}</td></tr>
-                        <tr><td class="print-label">12. Tindakan Yang Akan Dilakukan</td><td class="print-value">${data['Tindakan Akan Dilakukan'] || '-'}</td></tr>
+                        <tr><td class="print-label">11. Rekomendasi</td><td class="print-value" style="text-align: justify;">${(data['Rekomendasi'] || '-').replace(/\n/g, '<br>')}</td></tr>
+                        <tr><td class="print-label">12. Tindakan Yang Akan Dilakukan</td><td class="print-value" style="text-align: justify;">${(data['Tindakan Akan Dilakukan'] || '-').replace(/\n/g, '<br>')}</td></tr>
                         <tr>
                             <td class="print-label">13. Tindakan Perbaikan</td>
                             <td class="print-value">
@@ -392,17 +402,36 @@
                         <tr><td class="print-label">15. Pembelajaran</td><td class="print-value">${data['Pembelajaran'] || '-'}</td></tr>
                         <tr><td class="print-label">16. Safety Alert</td><td class="print-value">${data['Safety Alert'] || '-'}</td></tr>
                     </table>
-                `;
+                    `;
+                } else {
+                    // CETAK FORMAT INVESTIGASI SEDERHANA (Biru / Hijau)
+                    printHtml += `
+                        <tr><th colspan="2">HASIL INVESTIGASI SEDERHANA :</th></tr>
+                        <tr><td class="print-label">1. Tipe Insiden</td><td class="print-value">${data['Tipe & Sub Tipe Insiden'] || '-'}</td></tr>
+                        <tr><td class="print-label">2. Penyebab Langsung</td><td class="print-value" style="text-align: justify;">${(data['Penyebab Langsung'] || '-').replace(/\n/g, '<br>')}</td></tr>
+                        <tr><td class="print-label">3. Akar Masalah</td><td class="print-value" style="text-align: justify;">${(data['Akar Masalah'] || '-').replace(/\n/g, '<br>')}</td></tr>
+                        <tr><td class="print-label">4. Rekomendasi / Usulan Perbaikan</td><td class="print-value" style="text-align: justify;">${(data['Rekomendasi'] || '-').replace(/\n/g, '<br>')}</td></tr>
+                        <tr><td class="print-label">5. Tindakan Yang Akan Dilakukan</td><td class="print-value" style="text-align: justify;">${(data['Tindakan Akan Dilakukan'] || '-').replace(/\n/g, '<br>')}</td></tr>
+                    </table>
+                    `;
+                }
 
-                // Tampilkan di area cetak
+                // ========================================================
+                // BAGIAN 3: PENGESAHAN DAN PROSES CETAK
+                // ========================================================
+                printHtml += `
+                    <div style="margin-top: 50px; width: 100%; text-align: right;">
+                        <p style="margin-bottom: 70px;">Kepala Unit / Ketua Tim Investigasi</p>
+                        <p><b>( ......................................... )</b></p>
+                    </div>
+                `;
+                
                 const printContainer = document.getElementById('printArea');
                 printContainer.innerHTML = printHtml;
-                printContainer.style.display = 'block'; // Pastikan container muncul (secara teknis tersembunyi oleh CSS non-print)
-
-                // Panggil perintah Print Browser
+                printContainer.style.display = 'block'; 
+                
                 window.print();
-
-                // Bersihkan kembali setelah print dialog ditutup
+                
                 setTimeout(() => {
                     printContainer.innerHTML = '';
                     printContainer.style.display = 'none';

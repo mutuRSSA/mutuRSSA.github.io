@@ -337,9 +337,29 @@
             container.innerHTML = htmlContent;
         });
 
-        // 3. FUNGSI PENGIRIMAN DATA
+        // 3. FUNGSI PENGIRIMAN DATA DENGAN VALIDASI CERDAS (Tanpa Kunci Browser)
         document.getElementById("formSurveyBudaya").addEventListener("submit", function(e) {
             e.preventDefault();
+            
+            // INOVASI: Validasi cerdas untuk mencari soal yang terlewat
+            if (!this.checkValidity()) {
+                const firstInvalid = this.querySelector(':invalid');
+                if (firstInvalid) {
+                    // Cari kontainer terdekat dan beri efek merah
+                    const container = firstInvalid.closest('tr') || firstInvalid.closest('.pg-container');
+                    if (container) {
+                        container.style.backgroundColor = '#f8d7da';
+                        container.style.transition = '0.5s';
+                        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        
+                        // Hilangkan warna merah setelah 3 detik
+                        setTimeout(() => { container.style.backgroundColor = ''; }, 3000);
+                        
+                        Swal.fire('Ada yang Terlewat!', 'Mohon periksa kembali pertanyaan yang ditandai warna merah.', 'warning');
+                    }
+                }
+                return; // Hentikan proses pengiriman
+            }
             
             const btnSubmit = document.getElementById("btnSubmitSurvey");
             btnSubmit.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> MENGIRIM JAWABAN...';
@@ -347,10 +367,7 @@
 
             const formData = new FormData(this);
             const dataSurvey = Object.fromEntries(formData.entries());
-
-            console.log("Data JSON Mentah untuk dikirim ke Apps Script:", dataSurvey);
             
-            // URL BACKEND ANDA - Diambil dari config.js
             const scriptURL = API_CONFIG.SURVEY;
 
             fetch(scriptURL, {
@@ -365,24 +382,27 @@
                         title: 'Berhasil!',
                         text: 'Terima kasih! Survei budaya keselamatan pasien berhasil dikirim.',
                         icon: 'success',
-                        timer: 2500,
+                        timer: 3000,
                         showConfirmButton: false
                     }).then(() => {
+                        // Kosongkan form agar komputer siap dipakai orang berikutnya
                         document.getElementById("formSurveyBudaya").reset();
-                        window.scrollTo(0, 0);
+                        window.scrollTo({ top: 0, behavior: 'smooth' }); 
                     });
                 } else {
                     Swal.fire('Gagal!', 'Terjadi kesalahan sistem: ' + result.message, 'error');
+                    resetTombol(btnSubmit);
                 }
             })
             .catch(error => {
                 Swal.fire('Kesalahan Jaringan', 'Gagal terhubung ke server. Pastikan koneksi internet stabil.', 'error');
-                console.error("Error!", error.message);
-            })
-            .finally(() => {
-                btnSubmit.innerHTML = '<i class="fas fa-paper-plane me-2"></i> KIRIM JAWABAN SURVEI';
-                btnSubmit.disabled = false;
+                resetTombol(btnSubmit);
             });
+            
+            function resetTombol(btn) {
+                btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> KIRIM JAWABAN SURVEI';
+                btn.disabled = false;
+            }
         });
     </script>
 </body>

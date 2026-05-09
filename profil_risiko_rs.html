@@ -365,7 +365,7 @@
                         <td><select class="form-select input-profil text-center border-success" id="kontrol_${id}" onchange="kalkulasiSkorAkhir('${id}', ${skorDxF})">${opsiKontrol}</select></td>
                         <td id="skor_akhir_${id}" class="text-center fw-bold fs-6 ${warnaAkhir}">${skorAkhirAwal}</td>
                         
-                        <td><textarea class="input-profil" id="periode_${id}" rows="3">${item.pantauan['Periode Program'] || ''}</textarea></td>
+                        <td><input type="date" class="input-profil border-primary fw-bold" id="periode_${id}" value="${item.pantauan['Periode Program'] || ''}"></td>
                         <td><textarea class="input-profil" id="pic_${id}" rows="3">${item.pantauan['PIC Penanganan'] || ''}</textarea></td>
                         <td><textarea class="input-profil" id="realisasi_${id}" rows="3">${item.pantauan['Realisasi'] || ''}</textarea></td>
                         <td><textarea class="input-profil" id="lanjutan_${id}" rows="3">${item.pantauan['Rencana Pencegahan Lanjutan'] || ''}</textarea></td>

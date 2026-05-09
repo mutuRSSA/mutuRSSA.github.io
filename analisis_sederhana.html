@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investigasi Sederhana IKP - Komite Mutu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif;}
+        .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 8px; border-top: 4px solid #198754; }
+        .bg-custom-dark { background-color: #3c8dbc; } 
+        .form-label { font-weight: 600; color: #333; margin-top: 10px; margin-bottom: 5px; }
+
+        /* ================= CSS KHUSUS CETAK PDF ================= */
+        @media print {
+            body { background-color: #fff !important; padding-top: 0 !important; font-size: 12px !important;}
+            #navbar-container, #sidebar-container, .d-print-none, .btn { display: none !important; }
+            .card-custom { border: none !important; box-shadow: none !important; padding: 0 !important; }
+            .form-control { border: none !important; background: transparent !important; resize: none; overflow: hidden; -webkit-appearance: none; appearance: none; padding: 0;}
+            .border { border: none !important; }
+            .shadow-sm { box-shadow: none !important; }
+            @page { margin: 1cm; }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container" style="max-width: 900px;">
+        
+        <div class="d-none d-print-block text-center mb-4 pb-2 border-bottom border-dark border-3">
+            <h3 class="fw-bold mb-1">LEMBAR KERJA INVESTIGASI SEDERHANA</h3>
+            <h4 class="text-uppercase mb-1">INSIDEN KESELAMATAN PASIEN (IKP)</h4>
+        </div>
+
+        <div class="alert alert-success py-3 mb-3 shadow-sm border-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h6 class="fw-bold mb-1"><i class="fas fa-file-medical-alt me-2"></i> Info Insiden</h6>
+                <span style="font-size: 0.9rem;">
+                    <strong>Insiden:</strong> <span id="infoInsiden">-</span> <br>
+                    <strong>Waktu:</strong> <span id="infoTanggal">-</span> | 
+                    <strong>Grading:</strong> <span id="infoGrading">-</span>
+                </span>
+            </div>
+            <button class="btn btn-outline-success btn-sm fw-bold bg-white d-print-none" onclick="window.print()">
+                <i class="fas fa-print me-1"></i> Cetak Laporan
+            </button>
+        </div>
+
+        <div class="bg-white p-4 card-custom">
+            <h5 class="mb-4 text-center text-uppercase fw-bold text-success d-print-none">FORMULIR INVESTIGASI SEDERHANA</h5>
+            <p class="text-center text-muted mb-4 d-print-none" style="font-size: 0.85rem;">Digunakan khusus untuk insiden dengan Grading Risiko Rendah (Biru) atau Sedang (Hijau).</p>
+            
+            <form id="formInvestigasiSederhana">
+                <div class="mb-3">
+                    <label class="form-label text-primary"><i class="fas fa-sitemap me-1"></i> Tipe Insiden (Kategori Utama) :</label>
+                    <input type="text" class="form-control" name="tipe_insiden" placeholder="Contoh: Proses/Prosedur Klinis, Medikasi, dll...">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-search me-1"></i> Penyebab Langsung Insiden :</label>
+                    <textarea class="form-control" name="penyebab_langsung" rows="3" placeholder="Fakta langsung mengapa insiden terjadi..." required></textarea>
+                </div>
+                
+                <div class="mb-4">
+                    <label class="form-label"><i class="fas fa-project-diagram me-1"></i> Penyebab Yang Melatar Belakangi / Akar Masalah :</label>
+                    <textarea class="form-control" name="akar_masalah" rows="4" placeholder="Uraikan akar masalah yang mendasari terjadinya penyebab langsung..." required></textarea>
+                </div>
+
+                <div class="mb-3 border-top pt-3">
+                    <label class="form-label text-success"><i class="fas fa-lightbulb me-1"></i> Rekomendasi / Usulan Perbaikan :</label>
+                    <textarea class="form-control" name="rekomendasi" rows="3" placeholder="Apa yang disarankan untuk mencegah insiden ini terulang kembali?" required></textarea>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label text-success"><i class="fas fa-tools me-1"></i> Tindakan Yang Akan Dilakukan :</label>
+                    <textarea class="form-control" name="tindakan_dilakukan" rows="3" placeholder="Langkah konkrit yang akan diambil oleh unit beserta nama Penanggung Jawab dan tenggat waktu..." required></textarea>
+                </div>
+
+                <input type="hidden" name="proses_pelayanan" value="Selesai Investigasi Sederhana">
+
+                <div class="d-flex justify-content-end mt-4 p-3 bg-light border-top rounded d-print-none">
+                    <button type="submit" class="btn btn-success fw-bold px-4 shadow-sm" id="btnSimpan"><i class="fas fa-save me-2"></i>SIMPAN INVESTIGASI</button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="mt-5 pt-4 d-none d-print-block" style="page-break-inside: avoid;">
+            <div class="row">
+                <div class="col-8"></div>
+                <div class="col-4 text-center">
+                    <p class="mb-5">Ketua Tim Investigasi / Kepala Unit</p>
+                    <br><br><br>
+                    <p class="mb-0">( ......................................... )</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Kita pakai API IKP karena data ini masuknya ke file IKP
+            const scriptURL = API_CONFIG.IKP;
+            
+            // Ambil data yang dilempar dari halaman daftar_insiden.html
+            const dataStr = localStorage.getItem('analisisDataIKP');
+            if (!dataStr) { 
+                window.location.href = 'daftar_insiden.html'; 
+                return; 
+            }
+
+            const data = JSON.parse(dataStr);
+            const targetId = data.Timestamp;
+
+            // Isi informasi Header
+            document.getElementById('infoInsiden').innerText = data['Insiden'] || '-';
+            document.getElementById('infoTanggal').innerText = data['Tgl & Waktu insiden'] ? new Date(data['Tgl & Waktu insiden']).toLocaleString('id-ID') : '-';
+            
+            let gradingVal = data['Grading Risiko'] || '-';
+            let gradingHtml = gradingVal;
+            if(gradingVal === 'Low') gradingHtml = '<span class="badge bg-primary">Low (Biru)</span>';
+            if(gradingVal === 'Moderate') gradingHtml = '<span class="badge bg-success">Moderate (Hijau)</span>';
+            document.getElementById('infoGrading').innerHTML = gradingHtml;
+
+            // Auto-fill form jika sudah pernah diisi sebagian sebelumnya
+            const fill = (name, dbHeader) => { 
+                const el = document.querySelector(`[name="${name}"]`); 
+                if(el && data[dbHeader]) el.value = data[dbHeader]; 
+            };
+            
+            fill('tipe_insiden', 'Tipe & Sub Tipe Insiden');
+            fill('penyebab_langsung', 'Penyebab Langsung'); 
+            fill('akar_masalah', 'Akar Masalah');
+            fill('rekomendasi', 'Rekomendasi'); 
+            fill('tindakan_dilakukan', 'Tindakan Akan Dilakukan');
+
+            const form = document.getElementById("formInvestigasiSederhana");
+            const submitBtn = document.getElementById("btnSimpan");
+
+            form.addEventListener("submit", function (e) {
+                e.preventDefault();
+                submitBtn.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i>Menyimpan..."; 
+                submitBtn.disabled = true;
+
+                // Ambil data dari form UI
+                const formData = new FormData(form);
+                const inputData = Object.fromEntries(formData.entries());
+
+                // Payload ini akan dikirim ke doPost API_CONFIG.IKP
+                // Dia hanya menimpa field-field di atas, sisa data IKP awal tetap aman
+                const payload = { 
+                    action: 'update', 
+                    id: targetId, 
+                    data: inputData 
+                };
+
+                fetch(scriptURL, { 
+                    method: "POST", 
+                    headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+                    body: JSON.stringify(payload) 
+                })
+                .then(res => res.json())
+                .then(result => {
+                    if (result.status === "success") {
+                        Swal.fire({
+                            title: 'Berhasil!',
+                            text: 'Investigasi Sederhana IKP telah disimpan.',
+                            icon: 'success',
+                            timer: 1500,
+                            showConfirmButton: false
+                        }).then(() => {
+                            window.location.href = 'daftar_insiden.html';
+                        });
+                    } else {
+                        Swal.fire('Gagal!', 'Terjadi kesalahan: ' + result.message, 'error');
+                    }
+                })
+                .catch(err => {
+                    Swal.fire('Kesalahan Jaringan', 'Gagal terhubung ke server. Pastikan koneksi internet Anda stabil.', 'error');
+                })
+                .finally(() => { 
+                    submitBtn.innerHTML = "<i class='fas fa-save me-2'></i>SIMPAN INVESTIGASI"; 
+                    submitBtn.disabled = false; 
+                });
+            });
+        });
+    </script>
+</body>
+</html>

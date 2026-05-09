@@ -409,17 +409,38 @@
                 type: 'bar',
                 data: {
                     labels: sortedLabelsWithPercentage,
-                    datasets: [{
-                        label: '% Positif', data: sortedData,
-                        backgroundColor: sortedData.map(val => val >= 75 ? 'rgba(25, 135, 84, 0.7)' : (val >= 50 ? 'rgba(255, 193, 7, 0.7)' : 'rgba(220, 53, 69, 0.7)')),
-                        borderColor: sortedData.map(val => val >= 75 ? '#198754' : (val >= 50 ? '#ffc107' : '#dc3545')),
-                        borderWidth: 1, borderRadius: 4
-                    }]
+                    datasets: [
+                        {
+                            label: '% Positif', 
+                            data: sortedData,
+                            backgroundColor: sortedData.map(val => val >= 75 ? 'rgba(25, 135, 84, 0.7)' : (val >= 50 ? 'rgba(255, 193, 7, 0.7)' : 'rgba(220, 53, 69, 0.7)')),
+                            borderColor: sortedData.map(val => val >= 75 ? '#198754' : (val >= 50 ? '#ffc107' : '#dc3545')),
+                            borderWidth: 1, 
+                            borderRadius: 4,
+                            order: 2 // Bar ada di belakang
+                        },
+                        // INOVASI: GARIS TARGET 75% NASIONAL
+                        {
+                            type: 'line',
+                            label: 'Target Minimal (75%)',
+                            data: Array(sortedData.length).fill(75),
+                            borderColor: '#3c8dbc',
+                            borderWidth: 2,
+                            borderDash: [5, 5], // Garis putus-putus
+                            pointRadius: 0,
+                            order: 1 // Garis ada di depan bar
+                        }
+                    ]
                 },
                 options: {
-                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    indexAxis: 'y', 
+                    responsive: true, 
+                    maintainAspectRatio: false,
                     scales: { x: { min: 0, max: 100 } },
-                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.parsed.x + '%' } } }
+                    plugins: { 
+                        legend: { display: true, position: 'bottom' }, 
+                        tooltip: { callbacks: { label: ctx => ctx.raw + '%' } } 
+                    }
                 }
             }));
         }

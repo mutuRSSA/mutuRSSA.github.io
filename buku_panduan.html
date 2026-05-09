@@ -17,18 +17,46 @@
         .chapter-title { font-weight: 700; color: #6f42c1; margin-top: 40px; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px dashed #dee2e6; }
         .sub-chapter { font-weight: 600; color: #3c8dbc; margin-top: 25px; margin-bottom: 10px; font-size: 1.1rem; }
         
-        .guide-text { color: #495057; line-height: 1.7; font-size: 0.95rem; }
-        .guide-text ul { margin-bottom: 20px; }
+        .guide-text { color: #495057; line-height: 1.7; font-size: 0.95rem; text-align: justify; }
+        .guide-text ul, .guide-text ol { margin-bottom: 20px; }
         .guide-text li { margin-bottom: 8px; }
         
         .highlight-box { background-color: #f8f9fa; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; border-radius: 4px; }
+        .step-box { background-color: #e9ecef; border-left: 4px solid #6c757d; padding: 15px; margin-bottom: 15px; border-radius: 0 4px 4px 0; }
         
         /* Sticky Sidebar Menu */
         .toc-sidebar { position: sticky; top: 100px; }
         .list-group-item.active { background-color: #6f42c1; border-color: #6f42c1; font-weight: bold; }
         
         /* Label Tipe Kolom */
-        .badge-type { width: 100px; display: inline-block; text-align: center; margin-right: 10px; }
+        .badge-type { width: 110px; display: inline-block; text-align: center; margin-right: 10px; font-family: monospace; font-size: 0.75rem; }
+        .code-inline { background: #f1f1f1; padding: 2px 5px; border-radius: 4px; font-family: monospace; color: #d63384; font-weight: bold;}
+
+        /* ================= CSS KHUSUS CETAK BUKU SAKU (A5) ================= */
+        @media print {
+            body { background-color: #fff !important; padding-top: 0 !important; color: #000; font-size: 10pt; line-height: 1.4;}
+            #navbar-container, #sidebar-container, .d-print-none, .toc-sidebar { display: none !important; }
+            .col-lg-3 { display: none !important; }
+            .col-lg-9 { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; }
+            .guide-container { border: none !important; box-shadow: none !important; padding: 0 !important; margin: 0 !important;}
+            .container-fluid { padding: 0 !important; margin: 0 !important; }
+            
+            /* Setting Kertas A5 untuk Buku Saku */
+            @page { size: A5 portrait; margin: 1.5cm; }
+            
+            /* Trik agar Judul Bab selalu mulai di halaman baru */
+            .chapter-section { page-break-before: always; }
+            .chapter-section:first-of-type { page-break-before: avoid; }
+            
+            .step-box, .highlight-box { border-left-color: #000 !important; background-color: #fcfcfc !important; page-break-inside: avoid; }
+            h2, h3, h4, h5 { page-break-after: avoid; }
+            img { max-width: 100% !important; height: auto !important; }
+            
+            /* Kop Buku Saku */
+            .cover-buku { text-align: center; padding-top: 30%; page-break-after: always; height: 100vh;}
+            .cover-buku h1 { font-size: 24pt; font-weight: bold; margin-bottom: 10px; color: #000;}
+            .cover-buku h2 { font-size: 16pt; color: #333; margin-bottom: 30px;}
+        }
     </style>
 </head>
 <body data-bs-spy="scroll" data-bs-target="#list-example" data-bs-smooth-scroll="true" tabindex="0">
@@ -37,169 +65,221 @@
     <div id="sidebar-container"></div>
 
     <div class="container-fluid px-4" style="max-width: 1300px;">
+        
+        <div class="d-none d-print-block cover-buku">
+            <i class="fas fa-book-medical fa-5x mb-4" style="color: #555;"></i>
+            <h1>BUKU SAKU PANDUAN</h1>
+            <h2>SISTEM INFORMASI MUTU & KESELAMATAN PASIEN (SIM-PMKP)</h2>
+            <br><br><br>
+            <p><strong>RSUD SARAS ADYATMA</strong></p>
+            <p>Komite Peningkatan Mutu dan Keselamatan Pasien</p>
+            <p>Edisi Mutakhir Tahun <script>document.write(new Date().getFullYear())</script></p>
+        </div>
+
         <div class="row">
-            
             <div class="col-lg-3 d-none d-lg-block">
-                <div class="toc-sidebar card border-0 shadow-sm rounded-4 p-3">
+                <div class="toc-sidebar card border-0 shadow-sm rounded-4 p-3 d-print-none">
                     <h6 class="fw-bold mb-3 text-secondary text-uppercase"><i class="fas fa-book-open me-2"></i> Daftar Isi</h6>
                     <div id="list-example" class="list-group list-group-flush">
-                        <a class="list-group-item list-group-item-action py-2 rounded" href="#bab1">1. Modul Peningkatan Mutu</a>
-                        <a class="list-group-item list-group-item-action py-2 rounded" href="#bab2">2. Modul Keselamatan Pasien</a>
-                        <a class="list-group-item list-group-item-action py-2 rounded" href="#bab3">3. Modul Survei Budaya</a>
-                        <a class="list-group-item list-group-item-action py-2 rounded" href="#bab4">4. Modul Manajemen Risiko</a>
-                        <a class="list-group-item list-group-item-action py-2 rounded text-danger fw-bold" href="#bab5">5. Panduan Administrator</a>
+                        <a class="list-group-item list-group-item-action py-2 rounded" href="#bab1">1. Pengantar & Login</a>
+                        <a class="list-group-item list-group-item-action py-2 rounded" href="#bab2">2. Peningkatan Mutu (Unit)</a>
+                        <a class="list-group-item list-group-item-action py-2 rounded" href="#bab3">3. Laporan Insiden (IKP & KPC)</a>
+                        <a class="list-group-item list-group-item-action py-2 rounded" href="#bab4">4. Investigasi & RCA</a>
+                        <a class="list-group-item list-group-item-action py-2 rounded" href="#bab5">5. Manajemen Risiko (Unit)</a>
+                        <a class="list-group-item list-group-item-action py-2 rounded" href="#bab6">6. Pemantauan CAPA & PDSA</a>
+                        <a class="list-group-item list-group-item-action py-2 rounded" href="#bab7">7. Survei Budaya</a>
+                        <a class="list-group-item list-group-item-action py-2 rounded text-danger fw-bold mt-2 border-top pt-3" href="#bab8">8. Panduan Administrator</a>
                     </div>
                 </div>
             </div>
 
             <div class="col-lg-9">
                 <div class="guide-container">
-                    <h2 class="guide-title text-center"><i class="fas fa-atlas text-primary me-2"></i>BUKU PANDUAN PENGGUNAAN<br><span class="fs-4 text-muted">Portal SIM-Mutu RSUD Saras Adyatma</span></h2>
                     
+                    <div class="d-flex justify-content-between align-items-center mb-4 d-print-none flex-wrap gap-2">
+                        <h2 class="guide-title mb-0 border-0 pb-0"><i class="fas fa-atlas text-primary me-2"></i>BUKU PANDUAN PENGGUNA</h2>
+                        <button class="btn btn-primary fw-bold shadow-sm" onclick="window.print()">
+                            <i class="fas fa-print me-2"></i> Cetak Buku Saku (A5)
+                        </button>
+                    </div>
+                    <p class="text-center mb-5 d-print-none text-muted">Dokumen resmi operasional Portal SIM-Mutu RSUD Saras Adyatma.</p>
+
                     <div class="guide-text">
-                        <p class="text-center mb-5">Dokumen ini merupakan panduan resmi penggunaan Sistem Informasi Mutu dan Keselamatan Pasien Terpadu. Silakan gunakan menu navigasi di sebelah kiri untuk melompat ke bab yang Anda butuhkan.</p>
-
-                        <h4 id="bab1" class="chapter-title"><i class="fas fa-chart-line me-2"></i> BAB 1: MODUL PENINGKATAN MUTU</h4>
-                        <p>Modul ini digunakan untuk melakukan pencatatan, pemantauan, dan evaluasi Indikator Mutu Nasional (INM) maupun Indikator Mutu Unit (IMU).</p>
-
-                        <div class="sub-chapter">A. Pengisian Data Observasi Harian/Bulanan</div>
-                        <ul>
-                            <li><strong>Akses Menu:</strong> Login menggunakan akun Unit -> Buka menu <strong>Peningkatan Mutu</strong> di bilah menu kiri -> Pilih formulir indikator yang ingin diisi.</li>
-                            <li><strong>Sistem Tab Bulan:</strong> Untuk indikator yang bersifat harian (memiliki kolom Tanggal), pastikan Anda mengklik <strong>Tab Bulan</strong> yang sesuai (misal: Maret) sebelum mulai mengentri data.</li>
-                            <li><strong>Cara Pengisian:</strong> Tabel input dirancang mirip dengan Microsoft Excel. Anda dapat mengetik langsung, mengubah ukuran kolom, atau melakukan <em>Copy-Paste</em> (Salin-Tempel) dari file Excel / arsip lama Anda.</li>
-                            <li><strong>Tombol Simpan:</strong> Terdapat dua mode penyimpanan:
-                                <ul>
-                                    <li><strong class="text-primary">Simpan Draft:</strong> Gunakan jika data belum lengkap atau masih butuh direvisi di hari berikutnya.</li>
-                                    <li><strong class="text-success">Simpan Permanen:</strong> Gunakan pada akhir bulan saat data sudah 100% final dan valid. <br><span class="text-danger"><i class="fas fa-exclamation-circle"></i> Perhatian:</span> Setelah tombol ini ditekan, baris data pada bulan tersebut akan dikunci permanen (berubah warna menjadi abu-abu) dan tidak dapat diubah lagi secara tidak sengaja.</li>
-                                </ul>
-                            </li>
-                        </ul>
-
-                        <div class="sub-chapter">B. Pengolahan & Laporan Capaian Mutu</div>
-                        <ul>
-                            <li><strong>Akses Dasbor:</strong> Buka menu <strong>Laporan Capaian Mutu</strong> di menu navigasi kiri bawah.</li>
-                            <li><strong>Filter Data:</strong> Tentukan Tahun, Jenis Laporan (Bulanan/Triwulan/Semester/Tahunan), dan Detail Periode. Klik tombol biru <strong>Tampilkan Data</strong>.</li>
-                            <li><strong>Pengisian Analisa (PDSA):</strong> 
-                                <br>Bagi indikator yang berstatus <strong class="text-danger">Tidak Tercapai</strong>, Kepala Unit diwajibkan memberikan Analisa. Klik tombol <strong class="text-warning">Mode Analisa</strong>, ketikkan Analisa dan Tindak Lanjut pada kotak yang muncul di bawah grafik. Ketikkan nama Kepala Unit pada bagian pengesahan, lalu klik <strong>Simpan Analisa</strong>.
-                            </li>
-                            <li><strong>Cetak Laporan:</strong> Anda dapat mencetak langsung halaman dasbor dengan mengklik <strong>Cetak Dokumen</strong>, atau mengekspornya ke format .doc melalui tombol <strong>Export Word</strong> untuk dibubuhi tanda tangan basah.</li>
-                        </ul>
-
-                        <h4 id="bab2" class="chapter-title"><i class="fas fa-user-shield me-2"></i> BAB 2: MODUL KESELAMATAN PASIEN</h4>
-                        <p>Modul ini dirancang khusus untuk pelaporan dan investigasi Insiden Keselamatan Pasien (IKP) dan Kondisi Potensial Cedera (KPC).</p>
-
-                        <div class="sub-chapter">A. Pelaporan IKP & KPC</div>
-                        <ul>
-                            <li>Pilih menu <strong>Formulir IKP</strong> atau <strong>Formulir KPC</strong>.</li>
-                            <li>Isi kronologi kejadian, data pasien (untuk IKP), dan tindakan pertama yang dilakukan sedetail mungkin.</li>
-                            <li>Khusus laporan IKP, sistem akan secara otomatis menghitung matriks <em>Grading Risiko</em> (Biru, Hijau, Kuning, atau Merah/Sentinel) berdasarkan matriks Dampak dan Probabilitas yang Anda pilih.</li>
-                        </ul>
-
-                        <div class="sub-chapter">B. Investigasi Sederhana & Analisis Akar Masalah (RCA)</div>
-                        <p><em>Catatan: Fitur ini hanya dapat diakses oleh Tim Keselamatan Pasien / Komite Mutu.</em></p>
-                        <ul>
-                            <li>Buka <strong>Panel Komite Mutu</strong> di menu kiri, lalu pilih <strong>Daftar IKP</strong> atau <strong>Daftar KPC</strong>.</li>
-                            <li>Pilih insiden yang masuk, lalu klik <strong>Analisis RCA</strong> (untuk IKP) atau <strong>Investigasi</strong> (untuk KPC).</li>
-                            <li><strong>Fitur Cerdas 5-Why:</strong> Pada formulir RCA, Anda dapat menggunakan alat bantu <strong>Gunakan Metode 5-Why</strong>. Sistem akan menuntun Anda untuk bertanya "Mengapa?" secara berulang hingga menemukan akar masalah terdalam, lalu menyalin hasilnya ke dalam laporan.</li>
-                            <li>Setelah melengkapi formulir dengan tindakan mitigasi dan rekomendasi, klik <strong>Simpan Hasil RCA</strong>. Halaman ini juga dilengkapi tombol untuk mencetak laporan resmi.</li>
-                        </ul>
-
-                        <h4 id="bab3" class="chapter-title"><i class="fas fa-clipboard-list me-2"></i> BAB 3: MODUL SURVEI BUDAYA KESELAMATAN</h4>
-                        <p>Modul ini digunakan untuk mengukur iklim keselamatan pasien dari sudut pandang staf rumah sakit secara berkala (tahunan).</p>
-
-                        <div class="sub-chapter">A. Pengisian Kuesioner (Untuk Seluruh Staf)</div>
-                        <ul>
-                            <li>Akses menu <strong>Kuesioner Budaya</strong>. Formulir ini bersifat <strong>Anonim</strong> (identitas spesifik staf tidak akan terekam).</li>
-                            <li>Isi Unit Kerja dan Profesi saat ini.</li>
-                            <li>Jawab seluruh pernyataan dengan memilih opsi pada skala yang disediakan (Sangat Tidak Setuju hingga Sangat Setuju).</li>
-                            <li>Pastikan Anda mengklik <strong>Kirim Jawaban Survei</strong> di paling bawah.</li>
-                        </ul>
-
-                        <div class="sub-chapter">B. Pemantauan Analitik Budaya</div>
-                        <ul>
-                            <li>Buka <strong>Panel Komite Mutu</strong> -> <strong>Analitik Budaya</strong>.</li>
-                            <li>Sistem akan secara otomatis menyaring ribuan data kuesioner dan menghitung nilai <em>Positive Response Rate</em> (PRR).</li>
-                            <li>Melalui dasbor ini, Komite Mutu dapat mengidentifikasi area dimensi budaya mana yang sudah kuat dan dimensi mana yang masih memerlukan intervensi pembinaan.</li>
-                        </ul>
-
-                        <h4 id="bab4" class="chapter-title"><i class="fas fa-exclamation-triangle me-2"></i> BAB 4: MODUL MANAJEMEN RISIKO</h4>
-                        <p>Modul ini digunakan untuk memetakan dan mengendalikan risiko di setiap unit kerja dalam kerangka <em>Enterprise Risk Management</em>.</p>
-
-                        <div class="sub-chapter">A. Identifikasi Risiko Unit (Risk Register)</div>
-                        <ul>
-                            <li>Akses menu <strong>Risk Register Unit</strong>.</li>
-                            <li>Klik tombol merah <strong>Tambah Risiko</strong>. Masukkan kejadian risiko yang berpotensi terjadi di lingkungan kerja Anda beserta penyebabnya.</li>
-                            <li>Sistem akan mengalkulasi skor secara otomatis dengan rumus: <strong>(Dampak x Frekuensi) x Kontrol = Skor Akhir</strong>.</li>
-                            <li>Klik <strong>Simpan ke Tabel</strong> (data akan tersimpan sebagai Draft lokal).</li>
-                            <li>Untuk mengirimkan draf risiko tersebut agar terbaca oleh jajaran Direksi, pastikan Anda menekan tombol hijau <strong>Simpan & Kirim ke Server</strong>.</li>
-                        </ul>
-
-                        <div class="sub-chapter">B. Profil Risiko Rumah Sakit (Tingkat Korporat)</div>
-                        <ul>
-                            <li>Buka <strong>Panel Komite Mutu</strong> -> <strong>Profil Risiko RS</strong>.</li>
-                            <li>Halaman ini difungsikan khusus bagi Komite Mutu untuk menarik risiko-risiko dengan <em>grading</em> tertinggi (Ekstrem & Tinggi) dari seluruh unit untuk dikelola di tingkat korporat rumah sakit.</li>
-                            <li>Pada dasbor ini, Admin dapat menentukan status tindak lanjut secara <em>real-time</em> (Belum Ditangani, On Proses, Selesai).</li>
-                        </ul>
-
-                        <h4 id="bab5" class="chapter-title text-danger"><i class="fas fa-user-cog me-2"></i> BAB 5: PANDUAN ADMINISTRATOR (KHUSUS KOMITE MUTU)</h4>
-                        <p>Bab ini menjelaskan tata cara pengelolaan infrastruktur sistem di balik layar (Google Sheets), mulai dari pembuatan formulir baru, manajemen hak akses unit, hingga pemeliharaan *database*.</p>
-
-                        <div class="sub-chapter">1. Pengaturan Hak Akses Menu (Sheet: Setup_Unit)</div>
-                        <p>File Master *Database* berfungsi mengatur siapa saja yang bisa masuk ke sistem dan formulir apa saja yang muncul di menu navigasi mereka.</p>
-                        <ul>
-                            <li>Buka Spreadsheet <strong>DATABASE_MUTU_MASTER</strong>, lalu masuk ke tab sheet <code>Setup_Unit</code>.</li>
-                            <li>Isi <strong>Nama Unit</strong> (harus sama persis dengan yang mereka gunakan saat login/memasukkan token).</li>
-                            <li>Masukkan <strong>ID Spreadsheet</strong> milik unit tersebut (salin *ID* yang ada di URL file spreadsheet milik unit).</li>
-                            <li>Pada kolom Daftar Formulir, ketikkan <strong>ID_Form</strong> apa saja yang wajib mereka kerjakan. Pisahkan dengan tanda koma (Contoh: <code>Waktu_Tunggu_IGD, Kepatuhan_Tangan</code>).</li>
-                        </ul>
-
-                        <div class="sub-chapter">2. Membuat Kolom Formulir Dinamis (Sheet: Setup_Formulir)</div>
-                        <p>Anda dapat menciptakan formulir indikator mutu secara instan dari spreadsheet tanpa memerlukan bantuan *programmer*.</p>
-                        <ul>
-                            <li>Masuk ke tab sheet <code>Setup_Formulir</code>.</li>
-                            <li><strong>ID_Form:</strong> Isi dengan ID/Nama unik indikator (Gunakan garis bawah sebagai pengganti spasi, contoh: <code>Operasi_Sesar</code>).</li>
-                            <li><strong>Judul Kolom:</strong> Teks yang akan tampil di atas tabel (Contoh: "Nama Pasien", "Numerator").</li>
-                            <li><strong>Tipe Kolom (Wajib diisi menggunakan salah satu dari 10 kode berikut):</strong>
-                                <ul class="mt-2 list-unstyled ms-3">
-                                    <li><span class="badge bg-secondary badge-type">text</span> Input teks tulisan bebas.</li>
-                                    <li><span class="badge bg-secondary badge-type">numeric</span> Input khusus angka matematik.</li>
-                                    <li><span class="badge bg-secondary badge-type">dropdown</span> Pilihan menu jatuh (Wajib mengisi opsi pada kolom 'Source', dipisah koma).</li>
-                                    <li><span class="badge bg-secondary badge-type">date</span> Input kalender (Otomatis menyesuaikan ke format DD/MM/YYYY).</li>
-                                    <li><span class="badge bg-secondary badge-type">time</span> Input jam presisi (Format HH:mm:ss).</li>
-                                    <li><span class="badge bg-secondary badge-type">checkbox</span> Kotak centang (Otomatis menjadi 'Ya' / 'Tidak').</li>
-                                    <li><span class="badge bg-secondary badge-type">durasi_hm</span> Input durasi Jam & Menit (Validasi HH:mm).</li>
-                                    <li><span class="badge bg-secondary badge-type">durasi_hms</span> Input durasi Jam, Menit, Detik (Validasi HH:mm:ss).</li>
-                                    <li><span class="badge bg-secondary badge-type">durasi_ms</span> Input durasi Menit & Detik (Validasi mm:ss).</li>
-                                    <li><span class="badge bg-danger badge-type">readonly</span> Kolom abu-abu yang dikunci (<strong>WAJIB</strong> digunakan untuk kolom yang berisi rumus/formula kalkulasi).</li>
-                                </ul>
-                            </li>
-                            <li><strong>Width:</strong> Lebar kolom dalam piksel (misal: 100). Kosongkan jika ingin ukuran otomatis menyesuaikan layar.</li>
-                            <li><strong>Formula:</strong> Lihat panduan meracik rumus di poin ke-3 di bawah ini.</li>
-                            <li><strong>Hak Akses:</strong> Kosongkan agar semua unit bisa menggunakan kolom tersebut, atau pilih nama unit mana saja yang secara spesifik bisa mengakses (Contoh: <code>Unit Gawat Darurat, Unit Rawat Inap</code>).</li>
-                            <li><strong>Arah Target:</strong> Diisi dengan kata <code>Positif</code> (makin tinggi makin baik) atau <code>Negatif</code> (makin rendah makin baik, misal: Kejadian Jatuh).</li>
-                        </ul>
-
-                        <div class="sub-chapter">3. Panduan Menulis Rumus/Formula Dinamis</div>
-                        <p>Aplikasi ini akan memproses baris tanpa batas. Oleh karena itu, kita tidak bisa menggunakan rumus mati seperti <code>=A2+B2</code>. Gunakan <strong>Indeks Kolom Dalam Kurung Siku</strong> (Perhitungan dimulai dari kolom angka 0).</p>
-                        <div class="highlight-box shadow-sm border-0">
-                            <strong>Kamus Indeks Kolom:</strong><br>
-                            Kolom A = <code>[0]</code> | Kolom B = <code>[1]</code> | Kolom C = <code>[2]</code> | Kolom D = <code>[3]</code> | dst.
+                        
+                        <div id="bab1" class="chapter-section">
+                            <h4 class="chapter-title"><i class="fas fa-sign-in-alt me-2 text-info"></i> BAB 1: PENGANTAR & AKSES LOGIN</h4>
+                            <p>Portal PMKP adalah sistem informasi terintegrasi RSUD Saras Adyatma untuk mengelola indikator mutu, pelaporan insiden, dan profil risiko. Sistem ini menerapkan filter hak akses secara cerdas dan otomatis berdasarkan akun unit Anda.</p>
+                            
+                            <div class="step-box">
+                                <h6 class="fw-bold"><i class="fas fa-key me-1 text-primary"></i> Prosedur Login:</h6>
+                                <ol class="mb-0">
+                                    <li>Buka browser (Google Chrome/Safari) dari PC atau Handphone Anda.</li>
+                                    <li>Akses alamat URL Portal Mutu RSUD Saras Adyatma.</li>
+                                    <li>Masukkan <strong>Username</strong> dan <strong>Password</strong> unit Anda secara tepat.</li>
+                                    <li>Klik tombol <strong>Login Sistem</strong>.</li>
+                                    <li><strong>Sistem Otomatis:</strong> Anda tidak perlu memilih peran Anda. Sidebar (menu navigasi kiri) akan langsung terbuka dan menyesuaikan dengan wewenang Anda (misal: Unit Rawat Inap hanya akan melihat formulir milik Rawat Inap).</li>
+                                </ol>
+                            </div>
                         </div>
-                        <ul>
-                            <li><strong>JANGAN</strong> menambahkan tanda sama dengan (=) di awal rumus pada Spreadsheet Setup. Ketik langsung logikanya.</li>
-                            <li><strong>Contoh 1 (Menghitung Persentase N/D):</strong> Jika Numerator ada di Kolom D <code>[3]</code> dan Denominator di Kolom E <code>[4]</code>.<br>Penulisan rumusnya: <code>IF([4]=0, 0, [3]/[4]*100)</code></li>
-                            <li><strong>Contoh 2 (Menghitung Durasi / Selisih):</strong> Jam Dilayani <code>[3]</code> dikurangi Jam Datang <code>[2]</code>.<br>Penulisan rumusnya: <code>[3]-[2]</code></li>
-                            <li><strong>Contoh 3 (Skoring Logika IF):</strong> Jika Kolom C <code>[2]</code> berisi "Ya", maka skor 1, jika tidak 0.<br>Penulisan rumusnya: <code>IF([2]="Ya", 1, 0)</code></li>
-                        </ul>
 
-                        <div class="sub-chapter">4. Prosedur Keamanan: Backup & Reset Akhir Tahun</div>
-                        <p>Fitur krusial ini dirancang untuk membersihkan seluruh beban <em>database</em> agar sistem kembali ringan dan siap menyambut lembaran baru di tahun berikutnya (Misal: 31 Desember).</p>
-                        <ul>
-                            <li>Akses menu <strong>Laporan Capaian Mutu</strong>, setel filter Unit ke <strong>SELURUH RUMAH SAKIT</strong>.</li>
-                            <li>Tombol hitam rahasia <strong>Backup Arsip & Reset</strong> akan muncul di kanan atas halaman.</li>
-                            <li>Saat tombol diklik, Anda akan diwajibkan mengetik kata <strong>SETUJU</strong> sebagai konfirmasi keamanan.</li>
-                            <li><strong>Yang Terjadi di Balik Layar:</strong> Sistem akan secara mandiri membuat folder baru di Google Drive, memfotokopi seluruh data mentah dari unit-unit ke folder tersebut sebagai arsip abadi, lalu <strong>MENGHAPUS</strong> data mentah di <em>Spreadsheet</em> masing-masing unit (menyisakan <em>header</em>-nya saja). Jangan khawatir, nilai akhir (skor persentase tahun tersebut) akan diabadikan di dalam tab <code>DB_HISTORIS</code> pada file Master.</li>
-                        </ul>
+                        <div id="bab2" class="chapter-section">
+                            <h4 class="chapter-title"><i class="fas fa-chart-line me-2 text-info"></i> BAB 2: MODUL PENINGKATAN MUTU (UNIT)</h4>
+                            <p>Modul ini digunakan oleh Kepala Unit atau PIC Mutu ruangan untuk melaporkan capaian indikator mutu (INM dan IMU). Jika capaian tidak memenuhi standar, unit diwajibkan menyusun PDSA.</p>
+                            
+                            <div class="sub-chapter">A. Pengisian Data Observasi Harian/Bulanan</div>
+                            <ol>
+                                <li>Buka menu <strong>Peningkatan Mutu</strong> di sidebar kiri. Pilih form indikator mutu yang sesuai dengan unit Anda.</li>
+                                <li><strong>Sistem Tab Bulan:</strong> Pastikan Anda mengklik <strong>Tab Bulan</strong> yang sedang berjalan sebelum mulai mengentri data.</li>
+                                <li>Tabel input dirancang mirip dengan Microsoft Excel. Anda dapat mengetik langsung, atau melakukan <em>Copy-Paste</em> dari file Excel Anda.</li>
+                                <li>Sistem akan mengkalkulasi capaian secara otomatis.</li>
+                                <li>Terdapat dua mode penyimpanan:
+                                    <ul class="mt-2">
+                                        <li><strong class="text-primary">Simpan Draft:</strong> Gunakan jika data belum lengkap atau masih butuh direvisi esok hari.</li>
+                                        <li><strong class="text-success">Simpan Permanen:</strong> Gunakan di akhir bulan saat data sudah 100% final. <span class="text-danger fw-bold"><i class="fas fa-exclamation-circle"></i> Perhatian:</span> Setelah ditekan, baris data tersebut akan dikunci mati (abu-abu) dan tidak dapat diubah lagi.</li>
+                                    </ul>
+                                </li>
+                            </ol>
+                            <div class="alert alert-warning" style="font-size: 0.85rem;">
+                                <strong>Tips:</strong> Cek definisi operasional indikator Anda melalui menu <strong>Kamus Indikator Mutu</strong>.
+                            </div>
+
+                            <div class="sub-chapter">B. Laporan Capaian & Pengisian Analisa (PDSA)</div>
+                            <ol>
+                                <li>Buka menu <strong>Laporan Capaian Mutu</strong>. Tentukan filter periode laporan, lalu klik <strong>Tampilkan Data</strong>.</li>
+                                <li>Bagi indikator yang capaiannya <strong class="text-danger">Merah (Tidak Tercapai)</strong>, Kepala Unit diwajibkan memberikan Analisa.</li>
+                                <li>Klik tombol <strong class="text-warning text-dark">Mode Analisa</strong>. Ketikkan Analisa Akar Masalah (Plan) dan Tindak Lanjut pada kotak yang muncul di bawah grafik.</li>
+                                <li>Klik <strong>Simpan Analisa</strong>. Laporan ini siap diekspor ke Word untuk ditandatangani.</li>
+                            </ol>
+                        </div>
+
+                        <div id="bab3" class="chapter-section">
+                            <h4 class="chapter-title"><i class="fas fa-file-medical-alt me-2 text-info"></i> BAB 3: LAPORAN INSIDEN (IKP & KPC)</h4>
+                            <p>Rumah sakit menjunjung tinggi Budaya Tidak Menyalahkan (<em>No Blame Culture</em>). Setiap staf diwajibkan melapor secara jujur maksimal 2x24 Jam apabila terjadi insiden.</p>
+                            
+                            <div class="highlight-box border-danger">
+                                <h6 class="fw-bold text-danger"><i class="fas fa-exclamation-triangle me-1"></i> Perbedaan IKP dan KPC:</h6>
+                                <ul class="mb-0">
+                                    <li><strong>IKP (Insiden Keselamatan Pasien):</strong> Insiden yang <u>sudah terjadi</u> dan mengenai/hampir mengenai pasien (KTC, KNC, KTD, Sentinel). Lapor via menu <strong>Formulir IKP</strong>.</li>
+                                    <li><strong>KPC (Kondisi Potensial Cedera):</strong> Bahaya fasilitas/lingkungan yang <u>belum terjadi</u> tetapi berisiko mencederai jika dibiarkan (Atap bocor, kabel terbuka). Lapor via menu <strong>Formulir KPC</strong>.</li>
+                                </ul>
+                            </div>
+                            
+                            <p class="fw-bold mt-3">Alur Pelaporan IKP:</p>
+                            <ul>
+                                <li>Buka <strong>Formulir IKP</strong>. Isi inisial pasien dan rincian kronologis (Jangan gunakan nama lengkap pasien/petugas).</li>
+                                <li>Tentukan Grading Dampak dan Probabilitas. Sistem akan menghitung skor <strong>Biru, Hijau, Kuning, atau Merah</strong>.</li>
+                                <li>Begitu disimpan, notifikasi darurat akan terkirim ke Tim Keselamatan Pasien secara <em>real-time</em>.</li>
+                            </ul>
+                        </div>
+
+                        <div id="bab4" class="chapter-section">
+                            <h4 class="chapter-title"><i class="fas fa-search me-2 text-info"></i> BAB 4: INVESTIGASI & RCA (KOMITE MUTU)</h4>
+                            <p>Insiden IKP yang masuk akan dipantau melalui <strong>Daftar IKP</strong>. Sistem dilengkapi <em>Smart Routing</em> untuk membedakan jalur investigasi berdasarkan tingkat bahayanya.</p>
+                            
+                            <div class="step-box border-primary">
+                                <h6 class="fw-bold"><i class="fas fa-laptop-medical me-1 text-primary"></i> Smart Routing Daftar IKP:</h6>
+                                <ul>
+                                    <li>Jika Grading <strong>Biru/Hijau (Low/Moderate)</strong>: Sistem memunculkan tombol hijau (Investigasi Sederhana). Harus selesai max 7 hari.</li>
+                                    <li>Jika Grading <strong>Kuning/Merah (High/Extreme)</strong>: Sistem memunculkan tombol merah (RCA Komprehensif). Harus selesai max 45 hari.</li>
+                                </ul>
+                                <p class="mb-0 text-danger fw-bold"><i class="fas fa-clock me-1"></i> Countdown Timer Aktif!</p>
+                                <p class="mb-0" style="font-size: 0.85rem;">Tabel akan menghitung mundur sisa hari penyelesaian. Jika <em>Overdue</em> (lewat tenggat waktu), lencana akan berkedip merah terang.</p>
+                            </div>
+                            <p><strong>Fitur Bantuan 5-Why:</strong> Di dalam formulir RCA, Anda dapat mengklik tombol "Gunakan Metode 5-Why". Sistem akan menuntun Anda mencari akar masalah secara interaktif dan otomatis menyalinnya ke dalam laporan.</p>
+                        </div>
+
+                        <div id="bab5" class="chapter-section">
+                            <h4 class="chapter-title"><i class="fas fa-satellite-dish me-2 text-info"></i> BAB 5: MANAJEMEN RISIKO</h4>
+                            <p>Tindakan proaktif mengidentifikasi dan mengendalikan risiko sebelum menjadi insiden (<em>Enterprise Risk Management</em>).</p>
+                            
+                            <div class="sub-chapter">A. Risk Register Unit (Untuk Ruangan)</div>
+                            <ol>
+                                <li>Pilih menu <strong>Risk Register Unit</strong>. Klik tombol merah <strong>Tambah Risiko</strong>.</li>
+                                <li>Masukkan risiko dan penyebabnya. Nilai Dampak (D) dan Frekuensi (F) untuk mendapat <strong>Skor Inheren</strong>.</li>
+                                <li>Isi pengamanan yang sudah ada saat ini, lalu nilai tingkat Kontrol (K) untuk mendapat <strong>Skor Residual Akhir</strong>.</li>
+                                <li>Klik <strong>Simpan ke Tabel</strong>.</li>
+                                <li><strong class="text-danger">Sangat Penting:</strong> Anda wajib mengklik tombol hijau <strong><i class="fas fa-save"></i> Simpan & Kirim ke Server</strong> di halaman utama agar tabel *draft* Anda terkirim ke Direksi.</li>
+                            </ol>
+
+                            <div class="sub-chapter">B. Dasbor & Profil Risiko RS (Untuk Komite Mutu)</div>
+                            <p>Komite Mutu memantau seluruh risiko melalui <strong>Supervisi Risiko RS</strong>. Dasbor ini dilengkapi matriks <strong>Heatmap 5x5 Interaktif</strong>. Komite dapat mencentang kotak di tabel untuk mengangkat risiko mematikan milik unit menjadi <strong>Profil Risiko RS (Risiko Korporat)</strong> untuk dikawal perbaikannya tingkat Direksi.</p>
+                        </div>
+
+                        <div id="bab6" class="chapter-section">
+                            <h4 class="chapter-title"><i class="fas fa-bullseye me-2 text-info"></i> BAB 6: PEMANTAUAN CAPA & PDSA</h4>
+                            <p>Sistem ini memusatkan seluruh rencana perbaikan di rumah sakit agar tidak ada yang terabaikan.</p>
+                            <ul>
+                                <li><strong>Papan Kerja PDSA:</strong> Memantau komitmen perbaikan indikator mutu ruangan yang tidak capai target (Alur Plan, Do, Study, Act).</li>
+                                <li><strong>Papan Pemantauan CAPA:</strong> Dasbor sakti milik Komite Mutu. Sistem secara otomatis menyedot dan merangkum seluruh janji perbaikan dari hasil RCA IKP, KPC, maupun mitigasi Profil Risiko RS.</li>
+                            </ul>
+                            <div class="alert alert-secondary" style="font-size: 0.85rem;">
+                                <strong>Auto-Reminder:</strong> Di Papan CAPA, jika "Tenggat Waktu" yang dijanjikan unit telah terlewati, statusnya akan otomatis menjadi <span class="badge bg-danger blink-me">Overdue</span>.
+                            </div>
+                        </div>
+
+                        <div id="bab7" class="chapter-section">
+                            <h4 class="chapter-title"><i class="fas fa-clipboard-list me-2 text-info"></i> BAB 7: SURVEI BUDAYA KESELAMATAN</h4>
+                            
+                            <div class="sub-chapter">A. Pengisian Kuesioner AHRQ (Untuk Staf)</div>
+                            <p>Diisi rutin secara <u>Anonim</u> via menu <strong>Kuesioner Budaya</strong>. Sistem dibekali <strong>Validasi Cerdas</strong>: Jika staf melewatkan 1 pertanyaan, layar akan otomatis tergulung (*auto-scroll*) ke pertanyaan tersebut dan menyorotinya dengan warna merah.</p>
+
+                            <div class="sub-chapter">B. Analitik Budaya (Untuk Komite Mutu)</div>
+                            <p>Komite cukup membuka menu <strong>Analitik Budaya</strong>. Sistem secara <em>real-time</em> menghitung persentase <em>Positive Response Rate</em>, menyusun Grafik Radar Budaya, dan menyajikan Bar Chart peringkat 12 Dimensi lengkap dengan <strong>Garis Target Nasional 75%</strong>.</p>
+                        </div>
+
+                        <div id="bab8" class="chapter-section">
+                            <h4 class="chapter-title text-danger"><i class="fas fa-user-cog me-2"></i> BAB 8: PANDUAN ADMINISTRATOR (KOMITE MUTU)</h4>
+                            <p>Bab ini menjelaskan cara mengonfigurasi Database Google Sheets di balik layar.</p>
+
+                            <div class="sub-chapter">1. Pengaturan Hak Akses (Sheet: Setup_Unit)</div>
+                            <p>Buka tab <code>Setup_Unit</code>. Isi <strong>Nama Unit</strong> dan <strong>ID Spreadsheet</strong> unit tersebut. Pada kolom Daftar Formulir, ketikkan <code>ID_Form</code> apa saja yang wajib mereka isi, pisahkan dengan koma (Contoh: <code>IGD_Triase, IGD_Kematian</code>).</p>
+
+                            <div class="sub-chapter">2. Membuat Formulir Dinamis (Sheet: Setup_Formulir)</div>
+                            <p>Anda dapat menciptakan formulir indikator baru tanpa bantuan *programmer*. Isi <strong>ID_Form</strong>, <strong>Judul Kolom</strong>, dan gunakan salah satu dari Tipe Kolom berikut:</p>
+                            
+                            <div class="table-responsive mb-3">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="table-light text-center"><tr><th>Kode Tipe Kolom</th><th>Penjelasan & Fungsi Input di Web</th></tr></thead>
+                                    <tbody>
+                                        <tr><td><span class="badge bg-secondary badge-type">text</span></td><td>Input teks tulisan bebas / Keterangan.</td></tr>
+                                        <tr><td><span class="badge bg-secondary badge-type">numeric</span></td><td>Khusus angka untuk perhitungan matematik.</td></tr>
+                                        <tr><td><span class="badge bg-secondary badge-type">dropdown</span></td><td>Menu pilihan (Isi opsi di kolom 'Source', dipisah koma).</td></tr>
+                                        <tr><td><span class="badge bg-secondary badge-type">date</span></td><td>Input kalender (Format DD/MM/YYYY).</td></tr>
+                                        <tr><td><span class="badge bg-secondary badge-type">time</span></td><td>Input jam presisi (Format HH:mm:ss).</td></tr>
+                                        <tr><td><span class="badge bg-secondary badge-type">checkbox</span></td><td>Kotak centang (Otomatis menjadi 'Ya'/'Tidak' di Excel).</td></tr>
+                                        <tr><td><span class="badge bg-info badge-type">durasi_hm</span></td><td>Durasi Jam & Menit (Contoh: 01:30).</td></tr>
+                                        <tr><td><span class="badge bg-info badge-type">durasi_hms</span></td><td>Durasi Jam, Menit, Detik (Contoh: 01:30:15).</td></tr>
+                                        <tr><td><span class="badge bg-info badge-type">durasi_ms</span></td><td>Durasi Menit & Detik (Contoh: 45:10).</td></tr>
+                                        <tr><td><span class="badge bg-danger badge-type">readonly</span></td><td>Kolom abu-abu terkunci. <strong>WAJIB</strong> untuk kolom kalkulasi Rumus.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div class="sub-chapter">3. Aturan Emas Menulis Formula (Rumus)</div>
+                            <p>Karena sistem akan memproses sel tanpa batas ke bawah, hindari rumus mati seperti <code>=A2+B2</code>. Gunakan metode <strong>Indeks Kolom Dalam Kurung Siku</strong>. Kolom dihitung mulai dari angka 0 (Kolom A = <code class="code-inline">[0]</code>, B = <code class="code-inline">[1]</code>, dst).</p>
+                            
+                            <div class="highlight-box border-danger">
+                                <strong class="text-danger">ATURAN UTAMA:</strong> JANGAN mengetikkan awalan sama dengan <code>=</code> pada Spreadsheet Setup. Ketik langsung logikanya.
+                            </div>
+
+                            <ul>
+                                <li><strong>Contoh 1: Rumus Persentase (Num/Denum)</strong><br>
+                                    Jika Numerator di Kolom D <code class="code-inline">[3]</code> dan Denominator di Kolom E <code class="code-inline">[4]</code>. Untuk mencegah error dibagi nol:<br>
+                                    Rumus: <code class="code-inline">IF([4]=0, 0, ([3]/[4])*100)</code>
+                                </li>
+                                <li><strong>Contoh 2: Selisih / Durasi Waktu (IGD/Farmasi)</strong><br>
+                                    Untuk mencari lama pelayanan (Jam Dilayani di Kolom G <code class="code-inline">[6]</code> dikurangi Jam Datang di Kolom F <code class="code-inline">[5]</code>):<br>
+                                    Rumus: <code class="code-inline">([6]-[5])*1440</code> (Dikali 1440 untuk mengubah format desimal jam excel menjadi menit bulat).
+                                </li>
+                                <li><strong>Contoh 3: Skoring Logika Kepatuhan (Checklist)</strong><br>
+                                    Jika perawat mencentang "Ya" di Kolom C <code class="code-inline">[2]</code>, beri nilai 1, jika tidak 0.<br>
+                                    Rumus: <code class="code-inline">IF([2]="Ya", 1, 0)</code>
+                                </li>
+                            </ul>
+
+                            <div class="sub-chapter">4. Prosedur Keamanan: Backup & Reset Akhir Tahun</div>
+                            <p>Gunakan fitur ini pada tanggal 31 Desember. Masuk ke Dasbor Laporan Capaian Mutu (Filter: SELURUH RUMAH SAKIT). Klik tombol rahasia <strong>Backup Arsip & Reset</strong>. Sistem akan membuat salinan seluruh data mentah RS ke Google Drive, mengosongkan sheet unit untuk tahun yang baru, dan mengabadikan nilai akhir (Capaian Desember) ke dalam tab <code>DB_HISTORIS</code>.</p>
+                        </div>
 
                     </div>
                 </div>

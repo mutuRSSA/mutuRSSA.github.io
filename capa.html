@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pemantauan CAPA - Komite Mutu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 8px; border-top: 4px solid #fd7e14; }
+        .bg-custom-dark { background-color: #3c8dbc; } 
+        .table-responsive { overflow-x: auto; white-space: normal; }
+        table.dataTable thead th { background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; font-size: 0.85rem; text-align: center; text-transform: uppercase;}
+        table.dataTable tbody td { font-size: 0.85rem; vertical-align: middle; }
+        .badge-sumber { width: 60px; display: inline-block; text-align: center; }
+        .blink-me { animation: blinker 1.5s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0.4; } }
+    </style>
+</head>
+<body>
+
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+            <div>
+                <h4 class="mb-1 fw-bold text-dark"><i class="fas fa-bullseye text-warning me-2"></i> Pemantauan CAPA</h4>
+                <p class="text-muted mb-0">Corrective and Preventive Action dari Laporan IKP & KPC.</p>
+            </div>
+            <button class="btn btn-outline-secondary fw-bold shadow-sm" onclick="location.reload()"><i class="fas fa-sync-alt me-2"></i> Refresh Data</button>
+        </div>
+
+        <div id="loadingMessage" class="alert alert-info text-center fw-bold shadow-sm">
+            <i class="fas fa-spinner fa-spin me-2"></i> Mengumpulkan janji perbaikan dari seluruh unit...
+        </div>
+
+        <div class="row g-3 mb-4" id="scorecardPanel" style="display: none;">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-3 bg-white h-100 border-start border-4 border-primary">
+                    <div class="card-body">
+                        <h6 class="text-muted fw-bold mb-1" style="font-size: 0.8rem;">TOTAL CAPA TERDAFTAR</h6>
+                        <h3 class="fw-bold mb-0 text-dark" id="valTotal">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-3 bg-white h-100 border-start border-4 border-warning">
+                    <div class="card-body">
+                        <h6 class="text-muted fw-bold mb-1" style="font-size: 0.8rem;">CAPA ON-TRACK / PROSES</h6>
+                        <h3 class="fw-bold mb-0 text-warning" id="valProses">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm rounded-3 bg-white h-100 border-start border-4 border-danger">
+                    <div class="card-body">
+                        <h6 class="text-muted fw-bold mb-1" style="font-size: 0.8rem;">CAPA OVERDUE (JATUH TEMPO)</h6>
+                        <h3 class="fw-bold mb-0 text-danger blink-me" id="valOverdue">0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-3 card-custom" id="tablePanel" style="display: none;">
+            <div class="table-responsive mt-2">
+                <table id="capaTable" class="table table-bordered table-hover" style="width:100%;">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">Sumber</th>
+                            <th style="width: 15%;">Lokasi / Unit</th>
+                            <th style="width: 25%;">Rincian Insiden/Kondisi</th>
+                            <th style="width: 30%;">Tindakan Perbaikan (CAPA)</th>
+                            <th style="width: 10%;">PIC</th>
+                            <th style="width: 15%;">Status / Tenggat</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // MENGAMBIL DATA DARI DUA API SEKALIGUS
+           // MENGAMBIL DATA DARI TIGA API SEKALIGUS
+        Promise.all([
+            fetch(API_CONFIG.IKP).then(res => res.json()),
+            fetch(API_CONFIG.KPC).then(res => res.json()),
+            fetch(API_CONFIG.RISK).then(res => res.json()) // <--- TAMBAHKAN INI
+        ])
+        .then(([resIKP, resKPC, resRISK]) => { // <--- TANGKAP resRISK
+                $('#loadingMessage').hide();
+                $('#scorecardPanel, #tablePanel').fadeIn();
+
+                let capaList = [];
+                let countProses = 0;
+                let countOverdue = 0;
+
+                // 1. EKSTRAK DATA IKP
+                if (resIKP.status === 'success') {
+                    resIKP.data.forEach(row => {
+                        let tindakan = row['Tindakan Akan Dilakukan'] || row['Rekomendasi'];
+                        if (tindakan && tindakan.trim() !== '') {
+                            let grading = row['Grading Risiko'] || 'Low';
+                            let tglInsiden = row['Tgl & Waktu insiden'] ? new Date(row['Tgl & Waktu insiden']) : new Date(row['Timestamp']);
+                            
+                            // Aturan Waktu: Merah/Kuning max 45 hari, Biru/Hijau max 7 Hari
+                            let batasHari = (grading === 'High' || grading === 'Extreme') ? 45 : 7;
+                            let deadline = new Date(tglInsiden.getTime() + (batasHari * 24 * 60 * 60 * 1000));
+                            
+                            capaList.push({
+                                source: 'IKP',
+                                bg: 'bg-danger',
+                                unit: row['Tempat Insiden'] || row['Unit Terkait'] || '-',
+                                insiden: row['Insiden'] || '-',
+                                tindakan: tindakan,
+                                pic: row['Dilakukan Oleh'] || 'Kepala Unit',
+                                deadline: deadline,
+                                isResolved: false // IKP belum punya fitur "Resolved" di form saat ini
+                            });
+                        }
+                    });
+                }
+
+                // 2. EKSTRAK DATA KPC
+                if (resKPC.status === 'success') {
+                    resKPC.data.forEach(row => {
+                        let tindakan = row['Tindakan Akan Dilakukan'] || row['Tindakan yang Dilakukan'];
+                        if (tindakan && tindakan.trim() !== '') {
+                            let deadline = row['Tgl Tindakan'] ? new Date(row['Tgl Tindakan']) : null;
+                            let statusKPC = row['Status KPC'] || 'Open';
+                            let isRes = statusKPC.toLowerCase().includes('resolved');
+
+                            capaList.push({
+                                source: 'KPC',
+                                bg: 'bg-warning text-dark',
+                                unit: row['Lokasi / Unit'] || '-',
+                                insiden: row['Deskripsi KPC'] || '-',
+                                tindakan: tindakan,
+                                pic: row['PJ Tindakan'] || row['Nama Pelapor'] || '-',
+                                deadline: deadline,
+                                isResolved: isRes
+                            });
+                        }
+                    });
+                }
+
+                // 3. EKSTRAK DATA PROFIL RISIKO RS
+            if (resRISK && resRISK.status === 'success') {
+                // Karena Audit Trail, kita ambil data pemantauan yang terbaru saja per ID
+                let profilUnik = {};
+                (resRISK.data_profil || []).forEach(row => {
+                    if (row['ID Risiko']) profilUnik[row['ID Risiko']] = row;
+                });
+
+                Object.values(profilUnik).forEach(row => {
+                    let tindakan = row['Rencana Penanganan'];
+                    if (tindakan && tindakan.trim() !== '') {
+                        let deadline = row['Periode Program'] ? new Date(row['Periode Program']) : null;
+                        let status = row['Status Penanganan'] || 'Belum Ditangani';
+                        let isRes = status === 'Selesai Ditangani' || status === 'Dibatalkan';
+
+                        capaList.push({
+                            source: 'RISIKO RS',
+                            bg: 'bg-primary text-white',
+                            unit: row['Unit Pemilik'] || '-',
+                            insiden: 'Mitigasi: ' + (row['Risiko'] || '-'),
+                            tindakan: tindakan,
+                            pic: row['PIC Penanganan'] || '-',
+                            deadline: deadline,
+                            isResolved: isRes
+                        });
+                    }
+                });
+            }
+
+                // 4. RENDER KE TABEL
+                let html = '';
+                const today = new Date();
+
+                capaList.forEach(item => {
+                    let statusHtml = '';
+                    
+                    if (item.isResolved) {
+                        statusHtml = '<span class="badge bg-success w-100 py-2"><i class="fas fa-check-circle"></i> Selesai</span>';
+                    } else if (item.deadline) {
+                        let sisaHari = Math.ceil((item.deadline - today) / (1000 * 60 * 60 * 24));
+                        if (sisaHari < 0) {
+                            statusHtml = `<span class="badge bg-danger w-100 py-2 blink-me"><i class="fas fa-exclamation-triangle"></i> Overdue ${Math.abs(sisaHari)} Hari</span>`;
+                            countOverdue++;
+                        } else {
+                            statusHtml = `<span class="badge bg-info text-dark w-100 py-2"><i class="fas fa-clock"></i> Sisa ${sisaHari} Hari</span>`;
+                            countProses++;
+                        }
+                    } else {
+                        statusHtml = '<span class="badge bg-secondary w-100 py-2">Tenggat Tidak Diatur</span>';
+                        countProses++;
+                    }
+
+                    html += `
+                        <tr>
+                            <td class="text-center"><span class="badge ${item.bg} badge-sumber">${item.source}</span></td>
+                            <td class="fw-bold text-secondary">${item.unit}</td>
+                            <td>${item.insiden}</td>
+                            <td style="text-align: justify;">${item.tindakan.replace(/\n/g, '<br>')}</td>
+                            <td class="text-center fw-bold">${item.pic}</td>
+                            <td class="align-middle">${statusHtml}</td>
+                        </tr>
+                    `;
+                });
+
+                $('#tableBody').html(html);
+                $('#valTotal').text(capaList.length);
+                $('#valProses').text(countProses);
+                $('#valOverdue').text(countOverdue);
+
+                $('#capaTable').DataTable({
+                    "language": { "search": "Cari CAPA:" },
+                    "ordering": true,
+                    "pageLength": 10,
+                    "order": [[5, 'asc']] // Mengurutkan berdasarkan status/tenggat
+                });
+
+            })
+            .catch(err => {
+                $('#loadingMessage').removeClass('alert-info').addClass('alert-danger').html(`<i class="fas fa-wifi me-2"></i> Gagal terhubung ke server: ${err}`);
+            });
+        });
+    </script>
+</body>
+</html>
