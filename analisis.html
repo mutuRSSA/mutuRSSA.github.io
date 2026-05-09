@@ -6,7 +6,6 @@
     <title>Analisis Insiden - Komite Mutu</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Tambahkan SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; font-size: 0.9rem;}
@@ -15,6 +14,21 @@
         .form-label { font-weight: 600; color: #333; margin-top: 10px; margin-bottom: 5px; }
         .sub-label { font-weight: 600; color: #555; font-size: 0.85rem; margin-top: 8px;}
         textarea { resize: vertical; }
+
+        /* ================= CSS KHUSUS CETAK PDF ================= */
+        @media print {
+            body { background-color: #fff !important; padding-top: 0 !important; font-size: 11px !important;}
+            #navbar-container, #sidebar-container, .d-print-none, .btn { display: none !important; }
+            .card-custom { border: none !important; box-shadow: none !important; padding: 0 !important; }
+            .form-control, .form-select { border: none !important; background: transparent !important; resize: none; overflow: hidden; -webkit-appearance: none; appearance: none; padding: 0;}
+            .border { border: none !important; }
+            .shadow-sm { box-shadow: none !important; }
+            @page { margin: 1cm; }
+            
+            /* Tampilkan elemen yang dicentang saja saat print */
+            input[type="checkbox"]:not(:checked) + label { display: none !important; }
+            input[type="checkbox"]:not(:checked) { display: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -23,13 +37,23 @@
 
     <div class="container-fluid px-4">
         
-        <div class="alert alert-info py-2 mb-3 shadow-sm border-0 d-flex justify-content-between align-items-center">
+        <div class="d-none d-print-block text-center mb-4 pb-2 border-bottom border-dark border-3">
+            <h3 class="fw-bold mb-1">LAPORAN ROOT CAUSE ANALYSIS (RCA)</h3>
+            <h4 class="text-uppercase mb-1">RUMAH SAKIT UMUM DAERAH SARAS ADYATMA</h4>
+        </div>
+
+        <div class="alert alert-info py-2 mb-3 shadow-sm border-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span><strong>Insiden:</strong> <span id="lblInsiden">-</span> | <strong>Tanggal:</strong> <span id="lblTanggal">-</span></span>
-            <span class="badge bg-primary">Investigasi & Analisa</span>
+            <div>
+                <button class="btn btn-outline-primary btn-sm fw-bold bg-white d-print-none me-2" onclick="window.print()">
+                    <i class="fas fa-print me-1"></i> Cetak Laporan
+                </button>
+                <span class="badge bg-primary d-print-none">Investigasi & Analisa</span>
+            </div>
         </div>
 
         <div class="bg-white p-4 card-custom">
-            <h5 class="mb-4 text-secondary border-bottom pb-2 text-uppercase">HASIL INVESTIGASI DAN ANALISA</h5>
+            <h5 class="mb-4 text-secondary border-bottom pb-2 text-uppercase d-print-none">HASIL INVESTIGASI DAN ANALISA</h5>
             
             <form id="formAnalisis">
                 <div class="row">
@@ -42,11 +66,11 @@
                         </select>
                         
                         <div id="subTipeContainer" class="mt-2 p-3 bg-white border rounded shadow-sm" style="display:none; border-left: 4px solid #0d6efd !important;">
-                            </div>
+                        </div>
 
                         <input type="hidden" name="tipe_insiden" id="hidden_tipe_insiden">
 
-                        <label class="form-label text-danger"><i class="fas fa-user-injured me-1"></i> 2. TIPE HARM (DAMPAK INSIDEN)</label>
+                        <label class="form-label text-danger mt-3"><i class="fas fa-user-injured me-1"></i> 2. TIPE HARM (DAMPAK INSIDEN)</label>
                         <div class="p-3 bg-white border rounded shadow-sm mb-3" style="border-left: 4px solid #dc3545 !important;">
                             
                             <label class="sub-label text-dark mt-0">A. Akibat (Cedera / Diagnosis)</label>
@@ -70,9 +94,14 @@
                         <div class="ps-3">
                             <label class="sub-label">A. Penyebab Langsung (Proximate / Immediate Cause)</label>
                             <textarea class="form-control form-control-sm" name="penyebab_langsung" rows="3"></textarea>
-                            <label class="sub-label">B. Akar Masalah (Root Cause)</label>
-                            <textarea class="form-control form-control-sm" name="akar_masalah" rows="3"></textarea>
-                            <label class="sub-label text-danger mt-3"><i class="fas fa-search-plus me-1"></i> Root Cause (Pilih Kategori Utama)</label>
+                            
+                            <label class="sub-label mt-2">B. Akar Masalah (Root Cause)</label>
+                            <textarea class="form-control form-control-sm" name="akar_masalah" id="textarea_akar_masalah" rows="4" placeholder="Gunakan metode 5-Why untuk menemukan akar masalah yang sebenarnya..."></textarea>
+                            <button type="button" class="btn btn-sm btn-outline-danger mt-2 fw-bold d-print-none" data-bs-toggle="modal" data-bs-target="#modal5Why">
+                                <i class="fas fa-question-circle me-1"></i> Gunakan Metode 5-Why
+                            </button>
+
+                            <label class="sub-label text-danger mt-4"><i class="fas fa-search-plus me-1"></i> Kategori Root Cause (Pilih Kategori Utama)</label>
                             <select class="form-select form-select-sm border-danger text-danger fw-bold" id="ui_rc_utama">
                                 <option value="">-- Pilih Faktor Utama --</option>
                             </select>
@@ -87,7 +116,7 @@
                             <input type="hidden" name="root_cause_select" id="hidden_root_cause">
                         </div>
 
-                        <label class="form-label mt-3 text-info"><i class="fas fa-user-md me-1"></i> 5. Orang yang terlibat (Penyebab Langsung)</label>
+                        <label class="form-label mt-4 text-info"><i class="fas fa-user-md me-1"></i> 5. Orang yang terlibat (Penyebab Langsung)</label>
                         <select class="form-select form-select-sm border-info fw-bold" id="ui_ot_utama">
                             <option value="">-- Pilih Kategori Orang Terlibat --</option>
                         </select>
@@ -100,23 +129,23 @@
                         
                         <input type="hidden" name="orang_terlibat" id="hidden_orang_terlibat">
 
-                        <label class="form-label">6. Proses / fase pelayanan saat terjadi insiden</label>
+                        <label class="form-label mt-3">6. Proses / fase pelayanan saat terjadi insiden</label>
                         <select class="form-select form-select-sm" name="proses_pelayanan"><option value=""></option><option value="Pelayanan dalam Gedung RS">Pelayanan dalam gedung RS</option><option value="Pelayanan di Luar Gedung RS">Pelayanan di Luar gedung RS</option></select>
 
                         <label class="form-label mt-3 text-success"><i class="fas fa-project-diagram me-1"></i> 7. Faktor Kontributor (Bisa pilih lebih dari satu)</label>
                         
-                        <div class="border border-success rounded p-3 bg-white shadow-sm" style="max-height: 250px; overflow-y: auto;" id="tree_faktor_kontributor">
-                            </div>
+                        <div class="border border-success rounded p-3 bg-white shadow-sm d-print-none" style="max-height: 250px; overflow-y: auto;" id="tree_faktor_kontributor">
+                        </div>
                         
-                        <textarea class="form-control form-control-sm mt-2 bg-light text-secondary" id="ui_faktor_preview" rows="2" readonly placeholder="Rangkuman pilihan akan muncul di sini..."></textarea>
+                        <textarea class="form-control form-control-sm mt-2 bg-light text-secondary" id="ui_faktor_preview" rows="4" readonly placeholder="Rangkuman pilihan akan muncul di sini..."></textarea>
                         
                         <input type="hidden" name="faktor_kontributor" id="hidden_faktor_kontributor">
 
-                       <label class="form-label mt-3 text-warning text-darken"><i class="fas fa-shield-alt me-1"></i> 8. Faktor Mitigasi (Bisa pilih lebih dari satu)</label>
+                        <label class="form-label mt-3 text-warning text-darken"><i class="fas fa-shield-alt me-1"></i> 8. Faktor Mitigasi (Bisa pilih lebih dari satu)</label>
                         <div class="ps-3 border-start border-3 border-warning ms-1 mb-3">
                             
                             <label class="sub-label text-dark mt-0">a. Untuk Pasien</label>
-                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm d-print-none" style="font-size: 0.85rem;">
                                 <div class="form-check"><input class="form-check-input chk-mitigasi-pasien" type="checkbox" value="Langsung ditangani / direspon" id="mp1"><label class="form-check-label" for="mp1">Langsung ditangani / direspon</label></div>
                                 <div class="form-check"><input class="form-check-input chk-mitigasi-pasien" type="checkbox" value="Dilakukan Penatalaksanaan / Tindakan / Prosedur" id="mp2"><label class="form-check-label" for="mp2">Dilakukan Penatalaksanaan / Tindakan / Prosedur</label></div>
                                 <div class="form-check"><input class="form-check-input chk-mitigasi-pasien" type="checkbox" value="Pasien Dirujuk" id="mp3"><label class="form-check-label" for="mp3">Pasien Dirujuk</label></div>
@@ -124,34 +153,37 @@
                                 <div class="form-check"><input class="form-check-input chk-mitigasi-pasien" type="checkbox" value="Menyatakan empati" id="mp5"><label class="form-check-label" for="mp5">Menyatakan empati</label></div>
                             </div>
                             <input type="hidden" name="mitigasi_pasien" id="hidden_mitigasi_pasien">
+                            <div class="d-none d-print-block" id="print_mitigasi_pasien"></div>
 
                             <label class="sub-label text-dark">b. Untuk Fasyankes</label>
-                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm d-print-none" style="font-size: 0.85rem;">
                                 <div class="form-check"><input class="form-check-input chk-mitigasi-fasyankes" type="checkbox" value="Kepatuhan terhadap SOP" id="mf1"><label class="form-check-label" for="mf1">Kepatuhan terhadap SOP</label></div>
                                 <div class="form-check"><input class="form-check-input chk-mitigasi-fasyankes" type="checkbox" value="Ketersediaan, kecukupan dan siap pakai sarana prasarana, alat kesehatan / alat pendukung Manajemen (ATK)" id="mf2"><label class="form-check-label" for="mf2">Ketersediaan, kecukupan dan siap pakai sarana prasarana, ATK</label></div>
                                 <div class="form-check"><input class="form-check-input chk-mitigasi-fasyankes" type="checkbox" value="Perbaikan dokumen" id="mf3"><label class="form-check-label" for="mf3">Perbaikan dokumen</label></div>
                             </div>
                             <input type="hidden" name="mitigasi_fasyankes" id="hidden_mitigasi_fasyankes">
+                            <div class="d-none d-print-block" id="print_mitigasi_fasyankes"></div>
 
                             <label class="sub-label text-dark">c. Untuk Faktor penyebab terkait</label>
-                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm d-print-none" style="font-size: 0.85rem;">
                                 <div class="form-check"><input class="form-check-input chk-mitigasi-faktor" type="checkbox" value="Faktor Keamanan / Lingkungan Fisik" id="mfa1"><label class="form-check-label" for="mfa1">Faktor Keamanan / Lingkungan Fisik</label></div>
                                 <div class="form-check"><input class="form-check-input chk-mitigasi-faktor" type="checkbox" value="Faktor pengendalian infeksi" id="mfa2"><label class="form-check-label" for="mfa2">Faktor pengendalian infeksi</label></div>
                                 <div class="form-check"><input class="form-check-input chk-mitigasi-faktor" type="checkbox" value="Faktor pemberian terapi" id="mfa3"><label class="form-check-label" for="mfa3">Faktor pemberian terapi</label></div>
                                 <div class="form-check"><input class="form-check-input chk-mitigasi-faktor" type="checkbox" value="Faktor alat Kesehatan" id="mfa4"><label class="form-check-label" for="mfa4">Faktor alat Kesehatan</label></div>
                             </div>
                             <input type="hidden" name="mitigasi_faktor" id="hidden_mitigasi_faktor">
+                            <div class="d-none d-print-block" id="print_mitigasi_faktor"></div>
 
                         </div>
                     </div>
 
                     <div class="col-md-6 ps-md-4">
                         
-                        <label class="form-label">9. Cara mendeteksi insiden</label>
+                        <label class="form-label mt-md-0 mt-3">9. Cara mendeteksi insiden</label>
                         <select class="form-select form-select-sm" name="cara_mendeteksi"><option value=""></option><option value="Berasal dari laporan insiden">Berasal dari Laporan insiden</option><option value="Mengetahui perubahan kondisi pasien">Mengetahui dari perubahan kondisi pasien</option><option value="Dengan mesin/ sistem/ perubahan lingkungan/ alam">Dengan mesin/ sistem/ perubahan lingkungan/ alam</option><option value="Saat penghitungan/ audit/ review">Saat penghitungan/ audit/ review</option><option value="Saat penilaian resiko secara proaktif">Saat penilaian resiko secara proaktif</option></select>
 
                         <label class="form-label mt-3 text-danger"><i class="fas fa-hospital-symbol me-1"></i> 10. Dampak pada Fasyankes (Bisa pilih > 1)</label>
-                        <div class="p-3 bg-white border rounded shadow-sm mb-3" style="font-size: 0.85rem; border-left: 4px solid #dc3545 !important;">
+                        <div class="p-3 bg-white border rounded shadow-sm mb-3 d-print-none" style="font-size: 0.85rem; border-left: 4px solid #dc3545 !important;">
                             
                             <div class="form-check mb-1"><input class="form-check-input chk-dampak" type="checkbox" value="1. Kerusakkan fasyankes (property damages)" id="df1"><label class="form-check-label fw-bold text-dark" for="df1">1. Kerusakkan fasyankes (property damages)</label></div>
                             
@@ -172,18 +204,19 @@
                             
                         </div>
                         <input type="hidden" name="dampak_fasyankes" id="hidden_dampak_fasyankes">
+                        <div class="d-none d-print-block" id="print_dampak_fasyankes"></div>
 
-                        <label class="form-label">11. Rekomendasi</label>
+                        <label class="form-label mt-3">11. Rekomendasi</label>
                         <textarea class="form-control form-control-sm" name="rekomendasi" rows="3"></textarea>
 
-                        <label class="form-label">12. Tindakan yang akan dilakukan</label>
+                        <label class="form-label mt-3">12. Tindakan yang akan dilakukan</label>
                         <textarea class="form-control form-control-sm" name="tindakan_dilakukan" rows="3"></textarea>
 
                         <label class="form-label mt-3 text-primary"><i class="fas fa-tools me-1"></i> 13. Tindakan perbaikan (Bisa pilih > 1)</label>
                         <div class="ps-3 border-start border-3 border-primary ms-1 mb-3">
                             
                             <label class="sub-label text-dark mt-0">a. Kepada Pasien</label>
-                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm d-print-none" style="font-size: 0.85rem;">
                                 <div class="form-check"><input class="form-check-input chk-perbaikan-pasien" type="checkbox" value="Penata laksanaan penyakit" id="pb_p1"><label class="form-check-label" for="pb_p1">Penata laksanaan penyakit</label></div>
                                 <div class="form-check"><input class="form-check-input chk-perbaikan-pasien" type="checkbox" value="Penata laksanaan cedera" id="pb_p2"><label class="form-check-label" for="pb_p2">Penata laksanaan cedera</label></div>
                                 <div class="form-check"><input class="form-check-input chk-perbaikan-pasien" type="checkbox" value="Penata laksanaan disabilitas" id="pb_p3"><label class="form-check-label" for="pb_p3">Penata laksanaan disabilitas</label></div>
@@ -191,9 +224,10 @@
                                 <div class="form-check"><input class="form-check-input chk-perbaikan-pasien" type="checkbox" value="Pernyataan empati" id="pb_p5"><label class="form-check-label" for="pb_p5">Pernyataan empati</label></div>
                             </div>
                             <input type="hidden" name="perbaikan_pasien" id="hidden_perbaikan_pasien">
+                            <div class="d-none d-print-block" id="print_perbaikan_pasien"></div>
 
                             <label class="sub-label text-dark">b. Kepada Fasyankes</label>
-                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm d-print-none" style="font-size: 0.85rem;">
                                 <div class="form-check"><input class="form-check-input chk-perbaikan-fasy" type="checkbox" value="Pengelolaan Media / Hubungan Masyarakat" id="pb_f1"><label class="form-check-label" for="pb_f1">Pengelolaan Media / Hubungan Masyarakat</label></div>
                                 <div class="form-check"><input class="form-check-input chk-perbaikan-fasy" type="checkbox" value="Penatalaksanaan Keluhan / complain" id="pb_f2"><label class="form-check-label" for="pb_f2">Penatalaksanaan Keluhan / complain</label></div>
                                 <div class="form-check"><input class="form-check-input chk-perbaikan-fasy" type="checkbox" value="Penatalaksanaan Klaim / Manajemen Risiko" id="pb_f3"><label class="form-check-label" for="pb_f3">Penatalaksanaan Klaim / Manajemen Risiko</label></div>
@@ -204,6 +238,7 @@
                                 <div class="form-check"><input class="form-check-input chk-perbaikan-fasy" type="checkbox" value="Edukasi dan Pelatihan petugas" id="pb_f8"><label class="form-check-label" for="pb_f8">Edukasi dan Pelatihan petugas</label></div>
                             </div>
                             <input type="hidden" name="perbaikan_fasyankes" id="hidden_perbaikan_fasyankes">
+                            <div class="d-none d-print-block" id="print_perbaikan_fasyankes"></div>
 
                         </div>
 
@@ -211,7 +246,7 @@
                         <div class="ps-3 border-start border-3 border-success ms-1 mb-3">
                             
                             <label class="sub-label text-dark mt-0">a. Kepada Pasien</label>
-                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm d-print-none" style="font-size: 0.85rem;">
                                 <div class="form-check"><input class="form-check-input chk-risiko-pasien" type="checkbox" value="Pemberian pelayanan optimal" id="rk_p1"><label class="form-check-label" for="rk_p1">Pemberian pelayanan optimal</label></div>
                                 <div class="form-check"><input class="form-check-input chk-risiko-pasien" type="checkbox" value="Pemberian edukasi / pelatihan" id="rk_p2"><label class="form-check-label" for="rk_p2">Pemberian edukasi / pelatihan</label></div>
                                 <div class="form-check"><input class="form-check-input chk-risiko-pasien" type="checkbox" value="Membuat SOP untuk mendukung pasien" id="rk_p3"><label class="form-check-label" for="rk_p3">Membuat SOP untuk mendukung pasien</label></div>
@@ -219,9 +254,10 @@
                                 <div class="form-check"><input class="form-check-input chk-risiko-pasien" type="checkbox" value="Menyediakan sarana prasarana dalam penyediaan obat di farmasi" id="rk_p5"><label class="form-check-label" for="rk_p5">Menyediakan sarana prasarana penyediaan obat di farmasi</label></div>
                             </div>
                             <input type="hidden" name="risiko_pasien" id="hidden_risiko_pasien">
+                            <div class="d-none d-print-block" id="print_risiko_pasien"></div>
 
                             <label class="sub-label text-dark">b. Kepada Petugas</label>
-                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm d-print-none" style="font-size: 0.85rem;">
                                 <div class="form-check"><input class="form-check-input chk-risiko-petugas" type="checkbox" value="Orientasi" id="rk_pt1"><label class="form-check-label" for="rk_pt1">Orientasi</label></div>
                                 <div class="form-check"><input class="form-check-input chk-risiko-petugas" type="checkbox" value="Pelatihan" id="rk_pt2"><label class="form-check-label" for="rk_pt2">Pelatihan</label></div>
                                 <div class="form-check"><input class="form-check-input chk-risiko-petugas" type="checkbox" value="Supervisi" id="rk_pt3"><label class="form-check-label" for="rk_pt3">Supervisi</label></div>
@@ -230,9 +266,10 @@
                                 <div class="form-check"><input class="form-check-input chk-risiko-petugas" type="checkbox" value="Jumlah petugas yang berkualitas memadai" id="rk_pt6"><label class="form-check-label" for="rk_pt6">Jumlah petugas yang berkualitas memadai</label></div>
                             </div>
                             <input type="hidden" name="risiko_petugas" id="hidden_risiko_petugas">
+                            <div class="d-none d-print-block" id="print_risiko_petugas"></div>
 
                             <label class="sub-label text-dark">c. Untuk Fasyankes / Lingkungan</label>
-                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm d-print-none" style="font-size: 0.85rem;">
                                 <div class="form-check"><input class="form-check-input chk-risiko-ling" type="checkbox" value="Menyesuaikan lingkungan fisik dengan kebutuhan fasyankes" id="rk_f1"><label class="form-check-label" for="rk_f1">Menyesuaikan lingkungan fisik dengan kebutuhan fasyankes</label></div>
                                 <div class="form-check"><input class="form-check-input chk-risiko-ling" type="checkbox" value="Pengaturan akses ke pelayanan" id="rk_f2"><label class="form-check-label" for="rk_f2">Pengaturan akses ke pelayanan</label></div>
                                 <div class="form-check"><input class="form-check-input chk-risiko-ling" type="checkbox" value="Melakukan RCA (root cause analysis)" id="rk_f3"><label class="form-check-label" for="rk_f3">Melakukan RCA (root cause analysis)</label></div>
@@ -243,36 +280,92 @@
                                 <div class="form-check"><input class="form-check-input chk-risiko-ling" type="checkbox" value="Meningkatkan budaya keselamatan" id="rk_f8"><label class="form-check-label" for="rk_f8">Meningkatkan budaya keselamatan</label></div>
                             </div>
                             <input type="hidden" name="risiko_lingkungan" id="hidden_risiko_lingkungan">
+                            <div class="d-none d-print-block" id="print_risiko_lingkungan"></div>
 
                             <label class="sub-label text-dark">d. Faktor yang mempengaruhi</label>
-                            <div class="mb-2 bg-white p-2 border rounded shadow-sm" style="font-size: 0.85rem;">
+                            <div class="mb-2 bg-white p-2 border rounded shadow-sm d-print-none" style="font-size: 0.85rem;">
                                 <div class="form-check"><input class="form-check-input chk-risiko-faktor" type="checkbox" value="Ketersediaan sarana prasarana" id="rk_fl1"><label class="form-check-label" for="rk_fl1">Ketersediaan sarana prasarana</label></div>
                                 <div class="form-check"><input class="form-check-input chk-risiko-faktor" type="checkbox" value="Pemantauan" id="rk_fl2"><label class="form-check-label" for="rk_fl2">Pemantauan</label></div>
                             </div>
                             <input type="hidden" name="risiko_faktor" id="hidden_risiko_faktor">
+                            <div class="d-none d-print-block" id="print_risiko_faktor"></div>
 
                         </div>
 
-                        <label class="form-label">15. Pembelajaran</label>
+                        <label class="form-label mt-3">15. Pembelajaran</label>
                         <textarea class="form-control form-control-sm" name="pembelajaran" rows="3"></textarea>
 
-                        <label class="form-label">16. Safety Alert</label>
+                        <label class="form-label mt-3">16. Safety Alert</label>
                         <textarea class="form-control form-control-sm" name="safety_alert" rows="3"></textarea>
 
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-end mt-4 p-3 bg-light border-top rounded">
-                    <button type="submit" class="btn btn-primary fw-bold px-4 shadow-sm" id="btnSimpanAnalisis"><i class="fas fa-save me-2"></i>SIMPAN</button>
+                <div class="d-flex justify-content-end mt-4 p-3 bg-light border-top rounded d-print-none">
+                    <button type="submit" class="btn btn-primary fw-bold px-4 shadow-sm" id="btnSimpanAnalisis"><i class="fas fa-save me-2"></i>SIMPAN HASIL RCA</button>
                 </div>
             </form>
         </div>
+        
+        <div class="mt-5 pt-4 d-none d-print-block" style="page-break-inside: avoid;">
+            <div class="row">
+                <div class="col-8"></div>
+                <div class="col-4 text-center">
+                    <p class="mb-5">Ketua Tim RCA</p>
+                    <br><br><br>
+                    <p class="mb-0">( ......................................... )</p>
+                </div>
+            </div>
+        </div>
+        
     </div>
 
-    <!-- Script Pusat Konfigurasi & Autentikasi -->
+    <div class="modal fade" id="modal5Why" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-question-circle me-2"></i> Metode 5-Why</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-light">
+                    <p class="text-muted" style="font-size: 0.85rem;">Tuliskan masalah utama, lalu tanyakan "Mengapa?" secara berulang hingga menemukan akar penyebab terdalam.</p>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold text-danger mb-1">Masalah Utama:</label>
+                        <input type="text" class="form-control" id="why_masalah" placeholder="Contoh: Pasien jatuh di kamar mandi...">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold mb-1">1. Mengapa hal itu terjadi?</label>
+                        <input type="text" class="form-control" id="why_1" placeholder="Karena...">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold mb-1">2. Mengapa [Jawaban 1] terjadi?</label>
+                        <input type="text" class="form-control" id="why_2" placeholder="Karena...">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold mb-1">3. Mengapa [Jawaban 2] terjadi?</label>
+                        <input type="text" class="form-control" id="why_3" placeholder="Karena...">
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label fw-bold mb-1">4. Mengapa [Jawaban 3] terjadi?</label>
+                        <input type="text" class="form-control" id="why_4" placeholder="Karena...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold mb-1">5. Mengapa [Jawaban 4] terjadi? (Root Cause)</label>
+                        <input type="text" class="form-control" id="why_5" placeholder="Akar masalahnya adalah...">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-danger fw-bold" onclick="terapkan5Why()"><i class="fas fa-check me-2"></i> Terapkan ke Form</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
@@ -569,25 +662,32 @@
                 else { document.getElementById('ui_faktor_preview').value = savedFaktor; document.getElementById('hidden_faktor_kontributor').value = savedFaktor; }
             }
 
-            // Fungsi Pembacaan Multi-Checkbox Bawah
-            const isiSemuaCheckboxKustom = (dbValue, selectorClass) => {
+            // Fungsi Pembacaan Multi-Checkbox Bawah & Cetak PDF
+            const isiSemuaCheckboxKustom = (dbValue, selectorClass, printTargetId) => {
                 if (!dbValue) return;
                 let arrValue = dbValue.split(', ').map(s => s.trim());
+                let ulPrint = "<ul class='mb-0 ps-3'>";
                 document.querySelectorAll(selectorClass).forEach(cb => {
-                    if (arrValue.includes(cb.value)) cb.checked = true;
+                    if (arrValue.includes(cb.value)) {
+                        cb.checked = true;
+                        ulPrint += `<li>${cb.value}</li>`;
+                    }
                 });
+                ulPrint += "</ul>";
+                let printEl = document.getElementById(printTargetId);
+                if (printEl) printEl.innerHTML = ulPrint;
             };
             
-            isiSemuaCheckboxKustom(data['Mitigasi Pasien'], '.chk-mitigasi-pasien');
-            isiSemuaCheckboxKustom(data['Mitigasi Fasyankes'], '.chk-mitigasi-fasyankes');
-            isiSemuaCheckboxKustom(data['Mitigasi Faktor Terkait'], '.chk-mitigasi-faktor');
-            isiSemuaCheckboxKustom(data['Dampak Fasyankes'], '.chk-dampak');
-            isiSemuaCheckboxKustom(data['Perbaikan Kepada Pasien'], '.chk-perbaikan-pasien'); 
-            isiSemuaCheckboxKustom(data['Perbaikan Kepada Fasyankes'], '.chk-perbaikan-fasy');
-            isiSemuaCheckboxKustom(data['Risiko Kepada Pasien'], '.chk-risiko-pasien'); 
-            isiSemuaCheckboxKustom(data['Risiko Kepada Petugas'], '.chk-risiko-petugas'); 
-            isiSemuaCheckboxKustom(data['Risiko Untuk Lingkungan'], '.chk-risiko-ling'); 
-            isiSemuaCheckboxKustom(data['Risiko Faktor Mempengaruhi'], '.chk-risiko-faktor');
+            isiSemuaCheckboxKustom(data['Mitigasi Pasien'], '.chk-mitigasi-pasien', 'print_mitigasi_pasien');
+            isiSemuaCheckboxKustom(data['Mitigasi Fasyankes'], '.chk-mitigasi-fasyankes', 'print_mitigasi_fasyankes');
+            isiSemuaCheckboxKustom(data['Mitigasi Faktor Terkait'], '.chk-mitigasi-faktor', 'print_mitigasi_faktor');
+            isiSemuaCheckboxKustom(data['Dampak Fasyankes'], '.chk-dampak', 'print_dampak_fasyankes');
+            isiSemuaCheckboxKustom(data['Perbaikan Kepada Pasien'], '.chk-perbaikan-pasien', 'print_perbaikan_pasien'); 
+            isiSemuaCheckboxKustom(data['Perbaikan Kepada Fasyankes'], '.chk-perbaikan-fasy', 'print_perbaikan_fasyankes');
+            isiSemuaCheckboxKustom(data['Risiko Kepada Pasien'], '.chk-risiko-pasien', 'print_risiko_pasien'); 
+            isiSemuaCheckboxKustom(data['Risiko Kepada Petugas'], '.chk-risiko-petugas', 'print_risiko_petugas'); 
+            isiSemuaCheckboxKustom(data['Risiko Untuk Lingkungan'], '.chk-risiko-ling', 'print_risiko_lingkungan'); 
+            isiSemuaCheckboxKustom(data['Risiko Faktor Mempengaruhi'], '.chk-risiko-faktor', 'print_risiko_faktor');
 
             const fieldMapping = {
                 'masalah_cmp': 'Masalah CMP', 'masalah_sdp': 'Masalah SDP', 'penyebab_langsung': 'Penyebab Langsung', 'akar_masalah': 'Akar Masalah',
@@ -687,7 +787,7 @@
                     if (result.status === "success") {
                         Swal.fire({
                             title: 'Berhasil!',
-                            text: 'Data Hasil Investigasi dan Analisa berhasil disimpan.',
+                            text: 'Data Hasil Investigasi RCA berhasil disimpan.',
                             icon: 'success',
                             timer: 1500,
                             showConfirmButton: false
@@ -700,11 +800,36 @@
                 })
                 .catch(err => Swal.fire('Kesalahan Jaringan', 'Gagal terhubung ke server. Pastikan koneksi internet Anda stabil.', 'error'))
                 .finally(() => { 
-                    submitBtn.innerHTML = "<i class='fas fa-save me-2'></i>SIMPAN"; 
+                    submitBtn.innerHTML = "<i class='fas fa-save me-2'></i>SIMPAN HASIL RCA"; 
                     submitBtn.disabled = false; 
                 });
             });
         });
+
+        // FUNGSI METODE 5 WHY
+        window.terapkan5Why = function() {
+            let m = document.getElementById('why_masalah').value.trim();
+            let w1 = document.getElementById('why_1').value.trim();
+            let w2 = document.getElementById('why_2').value.trim();
+            let w3 = document.getElementById('why_3').value.trim();
+            let w4 = document.getElementById('why_4').value.trim();
+            let w5 = document.getElementById('why_5').value.trim();
+
+            if (!m || !w1 || !w2) {
+                Swal.fire('Info', 'Mohon lengkapi minimal Masalah Utama, Why 1, dan Why 2.', 'info');
+                return;
+            }
+
+            let hasil = `MASALAH UTAMA: ${m}\n1. Why? ${w1}\n2. Why? ${w2}`;
+            if (w3) hasil += `\n3. Why? ${w3}`;
+            if (w4) hasil += `\n4. Why? ${w4}`;
+            if (w5) hasil += `\n5. Why? (Root Cause): ${w5}`;
+
+            document.getElementById('textarea_akar_masalah').value = hasil;
+            
+            // Tutup Modal
+            bootstrap.Modal.getInstance(document.getElementById('modal5Why')).hide();
+        };
     </script>
 </body>
 </html>

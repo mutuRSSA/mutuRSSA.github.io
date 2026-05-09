@@ -51,7 +51,7 @@
         border-color: #dee2e6 !important; 
         text-align: center; 
         vertical-align: middle !important; 
-        padding: 6px 4px !important;       
+        padding: 6px 4px !important;      
         font-size: 11.5px !important;      
         line-height: 1.15 !important;      
         white-space: normal !important; 
@@ -82,6 +82,10 @@
         overflow: hidden !important; 
         width: 100%;
     }
+
+    /* GAYA TABEL PROFIL SMART CONTEXT */
+    .table-profil th { background-color: #f8f9fa; width: 35%; font-weight: 600; color: #495057;}
+    .table-profil td { color: #212529; white-space: pre-wrap; }
     </style>
 </head>
 <body>
@@ -95,7 +99,14 @@
             <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4 flex-wrap gap-2">
                 <div>
                     <h4 class="mb-1 text-dark fw-bold" id="judulForm"><i class="fas fa-edit text-info me-2"></i> Input Data Observasi Mutu</h4>
-                    <p class="text-muted mb-0 fw-bold text-uppercase" id="subJudulForm">Memuat formulir...</p>
+                    
+                    <div class="d-flex align-items-center mt-1">
+                        <p class="text-muted mb-0 fw-bold text-uppercase" id="subJudulForm">Memuat formulir...</p>
+                        <button class="btn btn-sm btn-outline-secondary rounded-pill ms-3 shadow-sm d-none" id="btnSmartContext" onclick="bukaSmartContext()">
+                            <i class="fas fa-book-medical text-primary me-1"></i> Baca Kamus Indikator
+                        </button>
+                    </div>
+
                 </div>
                 <div class="text-md-end">
                     <span class="badge bg-secondary fs-6 mb-2 d-block" id="badgeUnit"><i class="fas fa-hospital me-1"></i> Unit...</span>
@@ -181,13 +192,26 @@
         </div>
     </div>
     
+    <div class="modal fade" id="modalSmartContext" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-book-medical me-2"></i> Referensi Kamus Indikator</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 bg-white" id="modalSmartContextBody">
+                    <div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i><p class="mt-2 text-muted">Mencari referensi...</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        // MENGGUNAKAN VARIABEL GLOBAL DARI config.js
         const scriptURL = API_CONFIG.MUTU;
         
         let hot = null; 
@@ -214,9 +238,18 @@
             return letter;
         };
 
+        // VARIABEL GLOBAL UNTUK SMART CONTEXT
+        let judulIndikatorAktif = "";
+
         document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('badgeUnit').innerHTML = `<i class="fas fa-hospital me-1"></i> ${userUnit}`;
-            document.getElementById('subJudulForm').innerText = `FORMULIR: ${activeFormType.replace(/_/g, ' ')}`;
+            
+            // Format judul form (Contoh: "Kepatuhan_Identifikasi" menjadi "Kepatuhan Identifikasi")
+            judulIndikatorAktif = activeFormType.replace(/_/g, ' ');
+            document.getElementById('subJudulForm').innerText = `FORMULIR: ${judulIndikatorAktif}`;
+
+            // Tampilkan tombol Kamus jika scriptURL tersedia
+            document.getElementById('btnSmartContext').classList.remove('d-none');
 
             fetch(`${scriptURL}?unit=${encodeURIComponent(userUnit)}&formType=${encodeURIComponent(activeFormType)}`)
                 .then(res => res.json())
@@ -478,6 +511,108 @@
                     }
                 });
         });
+
+        // =====================================================================
+        // FUNGSI SMART CONTEXT (PANGGIL KAMUS PROFIL INDIKATOR)
+        // =====================================================================
+        window.bukaSmartContext = function() {
+            let modalEl = document.getElementById('modalSmartContext');
+            let modalInstance = new bootstrap.Modal(modalEl);
+            modalInstance.show();
+
+            const modalBody = document.getElementById('modalSmartContextBody');
+
+            // Gunakan ID_Form (activeFormType) sebagai Kunci Cache
+            const cacheKey = "KAMUS_" + activeFormType;
+            const cachedData = localStorage.getItem(cacheKey);
+
+            if (cachedData) {
+                let data = JSON.parse(cachedData);
+                document.getElementById('subJudulForm').innerText = `FORMULIR: ${(data['Judul Indikator'] || judulIndikatorAktif).toUpperCase()}`;
+                renderKamusKeModal(data, modalBody);
+            } else {
+                fetch(`${scriptURL}?action=get_profil_indikator`)
+                .then(res => res.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        
+                        // KUNCI PERBAIKAN: Cari berdasarkan ID_Form (Kolom A di Setup_Indikator)
+                        let indikatorDitemukan = result.data.find(row => {
+                            return (row['ID_Form'] || "").trim() === activeFormType;
+                        });
+
+                        if (indikatorDitemukan) {
+                            // Simpan ke memori browser
+                            localStorage.setItem(cacheKey, JSON.stringify(indikatorDitemukan));
+                            
+                            // Rapikan Judul Form di layar belakang
+                            let judulAsli = indikatorDitemukan['Judul Indikator'] || judulIndikatorAktif;
+                            document.getElementById('subJudulForm').innerText = `FORMULIR: ${judulAsli.toUpperCase()}`;
+                            
+                            renderKamusKeModal(indikatorDitemukan, modalBody);
+                        } else {
+                            modalBody.innerHTML = `<div class="alert alert-warning text-center"><i class="fas fa-exclamation-triangle mb-2 fa-2x"></i><br>Profil untuk form <b>${activeFormType}</b> belum ditambahkan di Database Kamus.</div>`;
+                        }
+                    } else {
+                        modalBody.innerHTML = `<div class="alert alert-danger text-center">Gagal menghubungi server database kamus.</div>`;
+                    }
+                })
+                .catch(err => {
+                    modalBody.innerHTML = `<div class="alert alert-danger text-center">Koneksi internet bermasalah.</div>`;
+                });
+            }
+        };
+
+        function renderKamusKeModal(dataKamus, containerElement) {
+            let judul = dataKamus['Judul Indikator'] || judulIndikatorAktif;
+            let kategori = dataKamus['Kategori Indikator'] || dataKamus['Jenis Indikator'] || "-";
+
+            // DAFTAR LENGKAP FIELD SESUAI STANDAR AKREDITASI
+            const fields = [
+                { label: "Definisi Operasional", keys: ["Definisi Operasional"] },
+                { label: "Kriteria Inklusi", keys: ["Kriteria Inklusi"] },
+                { label: "Kriteria Eksklusi", keys: ["Kriteria Eksklusi"] },
+                { label: "Numerator (Pembilang)", keys: ["Numerator (Pembilang)", "Numerator"] },
+                { label: "Denominator (Penyebut)", keys: ["Denominator (Penyebut)", "Denominator"] },
+                { label: "Formula", keys: ["Formula"] },
+                { label: "Cara Penilaian", keys: ["Cara Penilaian"] },
+                { label: "Metode Pengumpulan Data", keys: ["Metode Pengumpulan Data"] },
+                { label: "Sumber Data", keys: ["Sumber Data"] },
+                { label: "Instrumen Pengambilan Data", keys: ["Instrumen Pengambilan Data"] },
+                { label: "Besar Sampel", keys: ["Besar Sampel"] },
+                { label: "Cara Pengambilan Sampel", keys: ["Cara Pengambilan Sampel"] },
+                { label: "Periode Pengumpulan Data", keys: ["Periode Pengumpulan Data"] },
+                { label: "Periode Pelaporan Data", keys: ["Periode Pelaporan Data"] },
+                { label: "Periode Analisis Data", keys: ["Periode Analisis Data"] },
+                { label: "Penyajian Data", keys: ["Penyajian Data"] },
+                { label: "Penanggung Jawab", keys: ["Penanggung Jawab"] }
+            ];
+
+            let tbodyHtml = `<tr><th style="width:35%; background:#f8f9fa;">Kategori Indikator</th><td style="font-weight:bold; color:#0dcaf0;">${kategori}</td></tr>`;
+            
+            fields.forEach(f => {
+                let val = "-";
+                // Mencocokkan kunci header dari database
+                for(let key of f.keys) {
+                    if (dataKamus[key]) {
+                        val = dataKamus[key];
+                        break;
+                    }
+                }
+                tbodyHtml += `<tr><th style="background:#f8f9fa;">${f.label}</th><td style="white-space: pre-wrap;">${val}</td></tr>`;
+            });
+
+            containerElement.innerHTML = `
+                <h5 class="fw-bold text-center mb-3 text-uppercase">${judul}</h5>
+                <p class="text-center text-muted mb-4" style="font-size:0.85rem;">Menampilkan ringkasan elemen pengukuran. Untuk info selengkapnya, kunjungi menu Buku Kamus Indikator.</p>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-profil mb-0">
+                        <tbody>${tbodyHtml}</tbody>
+                    </table>
+                </div>
+            `;
+        }
+
 
         // =====================================================================
         // FUNGSI FILTER BULAN KHUSUS FORMULIR HARIAN (HIDDEN ROWS)

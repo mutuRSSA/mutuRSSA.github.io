@@ -41,7 +41,7 @@ function loadNavigation() {
     // =========================================================================
     // 2. FRONTEND SECURITY GUARD
     // =========================================================================
-    const adminPages = ['daftar_insiden.html', 'analisis.html', 'daftar_kpc.html', 'analisis_kpc.html', 'rekapitulasi.html', 'dasbor_budaya.html', 'dasbor_risiko.html', 'profil_risiko_rs.html'];
+    const adminPages = ['dasbor_pdsa.html', 'daftar_insiden.html', 'analisis.html', 'daftar_kpc.html', 'analisis_kpc.html', 'rekapitulasi.html', 'dasbor_budaya.html', 'dasbor_risiko.html', 'profil_risiko_rs.html'];
     
     if (adminPages.includes(page) && role !== "Komite Mutu") {
         if (typeof Swal !== 'undefined') {
@@ -115,6 +115,7 @@ function loadNavigation() {
             </a>
             <div class="collapse" id="collapseAdmin">
                 <div class="list-group list-group-flush" style="background-color: #fff5f5;">
+                    <a href="dasbor_pdsa.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-dasbor-pdsa" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-tachometer-alt me-2"></i> Dashboard Supervisi PDSA</a>
                     <a href="daftar_insiden.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-daftar-ikp" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-table me-2"></i> Daftar IKP</a>
                     <a href="daftar_kpc.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-daftar-kpc" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-list-alt me-2"></i> Daftar KPC</a>
                     <a href="rekapitulasi.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-rekap" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-chart-pie me-2"></i> Rekapitulasi Insiden</a>
@@ -151,6 +152,7 @@ function loadNavigation() {
         <div class="offcanvas-body p-0 d-flex flex-column" style="background-color: #fff;">
             <div class="list-group list-group-flush mt-2 mb-auto">
                 <a href="index.html" class="list-group-item list-group-item-action py-3 sidebar-link" id="menu-home"><i class="fas fa-home me-3 text-secondary"></i> Beranda Utama</a>
+                <a href="buku_panduan.html" class="list-group-item list-group-item-action py-3 sidebar-link" id="menu-panduan"><i class="fas fa-book-open me-3 text-primary"></i> Panduan Penggunaan</a>
                 
                 ${menuMutu}
 
@@ -183,14 +185,14 @@ function loadNavigation() {
         
         // JIKA YANG LOGIN ADALAH KOMITE MUTU
         if (role === "Komite Mutu") {
-            // Komite Mutu HANYA melihat menu Laporan (tanpa form input)
-            let htmlSubMenu = `<a href="laporan_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-laporan-triwulan" style="font-size: 0.95rem;"><i class="fas fa-file-alt me-2 text-primary"></i> Laporan Capaian Mutu</a>`;
+            // Komite Mutu HANYA melihat menu Referensi, Laporan, dan PDSA (tanpa form input)
+            let htmlSubMenu = `
+                <a href="profil_indikator.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-kamus-indikator" style="font-size: 0.95rem; background: #e3f2fd;"><i class="fas fa-book-medical me-2 text-primary"></i> Kamus Indikator Mutu</a>
+                <a href="pdsa.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-pdsa" style="font-size: 0.95rem; background: #fff8e1;"><i class="fas fa-tasks me-2 text-warning"></i> Papan Kerja PDSA</a>
+                <a href="laporan_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-top mt-1" id="menu-laporan-triwulan" style="font-size: 0.95rem;"><i class="fas fa-file-alt me-2 text-primary"></i> Laporan Capaian Mutu</a>
+            `;
             const wadah = document.getElementById('wadahMenuDinamis');
             if(wadah) wadah.innerHTML = htmlSubMenu;
-            
-            if (page === 'laporan_mutu.html') {
-                document.getElementById('collapseMutu')?.classList.add('show');
-            }
         } 
         // JIKA YANG LOGIN ADALAH UNIT BIASA
         else {
@@ -216,15 +218,15 @@ function loadNavigation() {
                     </a>`;
                 });
 
-                // Tambahkan Menu Laporan di paling bawah
-                htmlSubMenu += `<a href="laporan_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-top mt-1" id="menu-laporan-triwulan" style="font-size: 0.95rem;"><i class="fas fa-file-alt me-2 text-primary"></i> Laporan Capaian Mutu</a>`;
+                // Tambahkan Menu Kamus, PDSA, dan Laporan di paling bawah
+                htmlSubMenu += `
+                    <a href="profil_indikator.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-top mt-1" id="menu-kamus-indikator" style="font-size: 0.95rem; background: #e3f2fd;"><i class="fas fa-book-medical me-2 text-primary"></i> Kamus Indikator Mutu</a>
+                    <a href="pdsa.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-pdsa" style="font-size: 0.95rem; background: #fff8e1;"><i class="fas fa-tasks me-2 text-warning"></i> Papan Kerja PDSA</a>
+                    <a href="laporan_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-laporan-triwulan" style="font-size: 0.95rem;"><i class="fas fa-file-alt me-2 text-primary"></i> Laporan Capaian Mutu</a>
+                `;
                 
                 const wadah = document.getElementById('wadahMenuDinamis');
                 if(wadah) wadah.innerHTML = htmlSubMenu;
-
-                if (page === 'input_mutu.html' || page === 'laporan_mutu.html') {
-                    document.getElementById('collapseMutu')?.classList.add('show');
-                }
             };
 
             const cacheMenu = localStorage.getItem("menuMutu");
@@ -250,10 +252,24 @@ function loadNavigation() {
     if (page === 'index.html' || page === '') { 
         document.getElementById('menu-home')?.classList.add('active'); 
     } 
+    else if (page === 'buku_panduan.html') {
+        document.getElementById('menu-panduan')?.classList.add('active');
+    }
+    else if (page === 'profil_indikator.html') {
+        document.getElementById('menu-kamus-indikator')?.classList.add('active');
+        document.getElementById('collapseMutu')?.classList.add('show');
+    }
+    else if (page === 'pdsa.html') {
+        document.getElementById('menu-pdsa')?.classList.add('active');
+        document.getElementById('collapseMutu')?.classList.add('show');
+    }
     else if (page === 'laporan_mutu.html') { 
         document.getElementById('menu-laporan-triwulan')?.classList.add('active'); 
         document.getElementById('collapseMutu')?.classList.add('show');
-    } 
+    }
+    else if (page === 'input_mutu.html') {
+        document.getElementById('collapseMutu')?.classList.add('show');
+    }
     else if (page === 'risk_register.html') { 
         document.getElementById('menu-risk-register')?.classList.add('active'); 
         document.getElementById('collapseRisiko')?.classList.add('show'); 
@@ -269,6 +285,11 @@ function loadNavigation() {
     else if (page === 'survey_budaya.html') { 
         document.getElementById('menu-survey-budaya')?.classList.add('active'); 
         document.getElementById('collapseKeselamatan')?.classList.add('show'); 
+    }
+    // PENAMBAHAN UNTUK DASBOR PDSA
+    else if (page === 'dasbor_pdsa.html') {
+        document.getElementById('menu-dasbor-pdsa')?.classList.add('active');
+        document.getElementById('collapseAdmin')?.classList.add('show');
     }
 }
 

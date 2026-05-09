@@ -6,7 +6,6 @@
     <title>Laporan Capaian Mutu - Komite Mutu</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Tambahkan SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
@@ -84,7 +83,6 @@
         </div>
     </div>
 
-    <!-- Script Pusat Konfigurasi & Autentikasi -->
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
@@ -93,24 +91,44 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        // MENGGUNAKAN VARIABEL GLOBAL DARI config.js
         const scriptURL = API_CONFIG.MUTU;
         
         let rawData = [];
         let rawDataAnalisa = []; 
         let chartInstances = [];
         let activePeriodeTitle = "";
+        let mappingArahGlobal = {}; // Wadah untuk menyimpan arah target dari Backend
 
         // Mengambil profil sesi pengguna dari penyimpanan browser
         let sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
         let userUnit = sessionMutu.unit || "";
         let userRole = sessionMutu.role || "";
 
-       const kamusWaktu = {
+        const kamusWaktu = {
             'bulanan': { '1': ['Januari'], '2': ['Februari'], '3': ['Maret'], '4': ['April'], '5': ['Mei'], '6': ['Juni'], '7': ['Juli'], '8': ['Agustus'], '9': ['September'], '10': ['Oktober'], '11': ['November'], '12': ['Desember'] },
             'triwulan': { '1': ['Januari', 'Februari', 'Maret'], '2': ['April', 'Mei', 'Juni'], '3': ['Juli', 'Agustus', 'September'], '4': ['Oktober', 'November', 'Desember'] },
             'semester': { '1': ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni'], '2': ['Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] },
             'tahunan': { '1': ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] }
+        };
+
+        // =========================================================================
+        // FUNGSI PENDETEKSI TERCAPAI / GAGAL BERDASARKAN ARAH TARGET DARI BACKEND
+        // =========================================================================
+        window.cekTercapai = function(judul, capaian, target) {
+            let c = parseFloat(capaian);
+            let t = parseFloat(target);
+            
+            // Bersihkan judul dari emoji khusus jika ada
+            let judulMurni = judul.replace(" 🔍", "").trim();
+            
+            // Ambil setting dari mapping (default ke Positif jika tidak ditemukan)
+            let arah = mappingArahGlobal[judulMurni] || "Positif";
+
+            if (arah.toLowerCase() === "negatif") {
+                return c <= t; // Makin rendah makin baik
+            } else {
+                return c >= t; // Makin tinggi makin baik
+            }
         };
 
         document.addEventListener("DOMContentLoaded", function () {
@@ -140,7 +158,10 @@
 
             fetch(scriptURL).then(res => res.json()).then(result => {
                 if (result.status === 'success') {
-                    rawData = result.data; rawDataAnalisa = result.dataAnalisa || [];
+                    rawData = result.data; 
+                    rawDataAnalisa = result.dataAnalisa || []; 
+                    mappingArahGlobal = result.mappingArah || {}; // Simpan data arah dari backend
+
                     document.getElementById('loadingMessage').style.display = 'none';
                     document.getElementById('chartCard').style.display = 'block';
                     
@@ -207,10 +228,9 @@
             dashboardContent.innerHTML = '';
 
             // ==============================================================
-            // PERBAIKAN LOGIKA FILTER (Memisahkan periodData & filteredData)
+            // LOGIKA FILTER
             // ==============================================================
             
-            // 1. periodData: Ambil SEMUA data di periode waktu yang dipilih (tanpa filter unit)
             let periodData = rawData.filter(row => {
                 let matchTahun = ((row['Tahun'] || "").toString().trim() === selectedTahun);
                 let bulanNormalized = (row['Bulan'] || "").toString().trim().replace(/^\w/, c => c.toUpperCase());
@@ -218,11 +238,9 @@
                 return matchTahun && matchBulan;
             });
 
-            // 2. filteredData: Data spesifik yang akan tampil di Tabel Utama & Grafik (Filter Unit aktif)
             let filteredData = periodData.filter(row => {
                 let matchUnit = (selectedUnit === "RS_ALL") ? true : (row['Unit'] === selectedUnit);
 
-                // LOGIKA CERDAS: Jika mode RS_ALL, sembunyikan indikator level unit (IMP-Unit) di tabel utama
                 if (selectedUnit === "RS_ALL") {
                     let jenis = (row['Jenis Indikator'] || "").toUpperCase();
                     if (jenis.includes("UNIT")) return false; 
@@ -257,12 +275,10 @@
 
                 let isKepuasan = judul.toLowerCase().includes('kepuasan');
 
-                // --- PELEBURAN TOTAL HAIs & SSI ---
                 let judulUpper = judul.toUpperCase();
                 let isHAI = judulUpper.includes('CAUTI') || judulUpper.includes('VAP') || judulUpper.includes('CLABSI') || judulUpper.includes('PHLEBITIS') || judulUpper.includes('FLEBITIS');
                 let isSSI = judulUpper.includes('SSI ');
 
-                // Jika bukan Komite PPI yang melihat dashboard-nya sendiri, jadikan tombol gabungan
                 if (selectedUnit !== "Komite PPI") {
                     if (isHAI) judul = "Total Insidensi HAIs 🔍";
                     if (isSSI) judul = "Total Insidensi SSI 🔍";
@@ -312,9 +328,9 @@
                 
             if (!isAnalyzed) fullHtml += "<button id='btnToggleAnalisa' class='btn btn-warning fw-bold text-dark px-3 me-2' onclick='toggleAnalisaMode()'><i class='fas fa-edit me-1'></i> Mode Analisa</button>";
             fullHtml += "<button class='btn btn-danger fw-bold px-3' onclick='window.print()'><i class='fas fa-print me-1'></i> Cetak Dokumen</button>" +
-                "<button class='btn btn-primary fw-bold px-3 ms-2' onclick='exportKeWord()'><i class='fas fa-file-word me-1'></i> Export Word</button></div></div>";
+                "<button class='btn btn-primary fw-bold px-3 ms-2' onclick='exportKeWord()'><i class='fas fa-file-word me-1'></i> Export Word</button>";
                 
-            fullHtml += "<button id='btnBackupTahunan' class='btn btn-dark fw-bold px-3 ms-2 d-none' onclick='jalankanBackupAkhirTahun()'><i class='fas fa-database me-1'></i> Backup Arsip & Reset</button>";
+            fullHtml += "<button id='btnBackupTahunan' class='btn btn-dark fw-bold px-3 ms-2 d-none' onclick='jalankanBackupAkhirTahun()'><i class='fas fa-database me-1'></i> Backup Arsip & Reset</button></div></div>";
 
             let chartConfigs = []; let chartIdCounter = 0;
             
@@ -340,7 +356,10 @@
                     
                     if (valid > 0) {
                         avgC = avgC / valid; 
-                        if (avgC >= t) stats.hit++; else stats.miss++;
+                        
+                        // MENGGUNAKAN LOGIKA CEK TERCAPAI
+                        if (cekTercapai(judul, avgC, t)) stats.hit++; 
+                        else stats.miss++;
                         
                         if (isINM) {
                             stats.sumInmCpa += avgC;
@@ -427,7 +446,9 @@
                         let den = item.bulans[b].den;
 
                         if (t === null) return "<td>-</td><td>-</td>";
-                        let cl = c >= t ? 'status-tercapai' : 'status-gagal';
+                        
+                        // MENGGUNAKAN LOGIKA CEK TERCAPAI
+                        let cl = cekTercapai(judul, c, t) ? 'status-tercapai' : 'status-gagal';
 
                         let infoNumDen = "";
                         let isKepuasan = judul.toLowerCase().includes('kepuasan');
@@ -476,7 +497,6 @@
             // TABEL KHUSUS HAIs & SSI (VERSI MODAL POP-UP)
             // =================================================================
             
-            // FUNGSI PENCARI DATA (Mencari dari periodData, bukan filteredData)
             function getSumNumDen(keywordsIndikator, keywordUnit) {
                 let num = 0; let den = 0; let found = false;
                 let keys = Array.isArray(keywordsIndikator) ? keywordsIndikator : [keywordsIndikator];
