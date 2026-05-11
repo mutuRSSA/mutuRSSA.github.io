@@ -6,7 +6,6 @@
     <title>Risk Register Unit</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Tambahkan SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
@@ -181,7 +180,11 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Tingkat Kontrol (1-4)</label>
                             <select class="form-select border-primary" id="inputKontrol" onchange="hitungSkorLive()" required>
-                                <option value="">Pilih...</option><option value="1">1 - Sulit</option><option value="2">2 - Agak Sulit</option><option value="3">3 - Agak Mudah</option><option value="4">4 - Mudah</option>
+                                <option value="">Pilih...</option>
+                                <option value="1">1 - Mudah</option>
+                                <option value="2">2 - Agak Mudah</option>
+                                <option value="3">3 - Agak Sulit</option>
+                                <option value="4">4 - Sulit</option>
                             </select>
                         </div>
                         <div class="alert alert-info text-center mt-3">
@@ -200,7 +203,6 @@
         </div>
     </div>
 
-    <!-- Script Pusat Konfigurasi & Autentikasi -->
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
@@ -239,30 +241,24 @@
             tarikDataServer();
         });
 
-        // FUNGSI UNTUK MENGISI DROPDOWN TAHUN SECARA OTOMATIS
         function populateTahunDropdown() {
             const dropdownTahun = document.getElementById('pilihTahun');
             let currentYear = new Date().getFullYear();
             
-            // Kumpulkan tahun-tahun unik yang ada di data lokal
             let uniqueYears = [...new Set(daftarRisikoLokal.map(r => r.tahun))].filter(Boolean).sort().reverse();
             
-            // Pastikan tahun saat ini selalu ada di pilihan
             if (!uniqueYears.includes(currentYear)) {
                 uniqueYears.unshift(currentYear);
             }
 
-            // Bersihkan dropdown dan isi dengan daftar tahun
             dropdownTahun.innerHTML = '<option value="SEMUA">-- SEMUA TAHUN --</option>';
             uniqueYears.forEach(y => {
                 dropdownTahun.add(new Option(y, y));
             });
             
-            // Set default pilihan ke tahun saat ini
             dropdownTahun.value = currentYear.toString();
         }
 
-        // FUNGSI CETAK PDF
         window.siapkanCetak = function() {
             const dropdownUnit = document.getElementById('pilihUnit');
             const dropdownTahun = document.getElementById('pilihTahun');
@@ -276,7 +272,6 @@
             window.print();
         };
 
-        // FUNGSI CETAK WORD (DOC)
         window.exportKeWord = function() {
             if (daftarRisikoLokal.length === 0 || document.getElementById('tabelRisikoBody').innerHTML.includes('Tidak ada riwayat risiko')) { 
                 Swal.fire('Info', 'Tidak ada data untuk diekspor.', 'info'); 
@@ -290,10 +285,8 @@
             let tahunCetak = dropdownTahun.value === "SEMUA" ? "Semua_Tahun" : dropdownTahun.value;
             let displayTahun = dropdownTahun.value === "SEMUA" ? "Semua Tahun" : dropdownTahun.value;
 
-            // 1. Clone tabel
             const content = document.getElementById('exportContentWrapper').cloneNode(true);
 
-            // 2. Tampilkan Kop Surat
             const kopSurat = content.querySelector('.d-none');
             if (kopSurat) {
                 kopSurat.classList.remove('d-none', 'd-print-block');
@@ -301,13 +294,11 @@
                 content.querySelector('#printYearTitle').innerText = displayTahun;
             }
 
-            // 3. Bersihkan kolom Aksi
             const colAksiHeader = content.querySelector('.col-aksi');
             if (colAksiHeader) colAksiHeader.remove();
             const colAksiCells = content.querySelectorAll('td.d-print-none');
             colAksiCells.forEach(cell => cell.remove());
 
-            // 4. Warnai background sesuai severity
             const allCells = content.querySelectorAll('td, th');
             allCells.forEach(cell => {
                 if(cell.classList.contains('bg-ekstrem')) { cell.style.backgroundColor = '#dc3545'; cell.style.color = '#fff'; }
@@ -316,7 +307,6 @@
                 else if(cell.classList.contains('bg-rendah')) { cell.style.backgroundColor = '#198754'; cell.style.color = '#fff'; }
             });
 
-            // 5. Build XML Document
             const h1 = "<ht" + "ml xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><he" + "ad><meta charset='utf-8'><st" + "yle>";
             const cssWord = `
                 @page { size: 29.7cm 21cm; margin: 2cm; mso-page-orientation: landscape; }
@@ -332,7 +322,6 @@
             const h3 = "</st" + "yle></he" + "ad><bo" + "dy>";
             const f1 = "</bo" + "dy></ht" + "ml>";
                 
-            // 6. Download
             const blob = new Blob(['\ufeff', h1 + cssWord + h3 + content.innerHTML + f1], { type: 'application/msword' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob); 
@@ -361,13 +350,12 @@
                     });
 
                     daftarRisikoLokal = Object.values(unikData).map(row => {
-                        // Mencari tahu Tahun dari data, jika tidak ada di kolom 'Tahun', ekstrak dari ID (RSK-Timestamp)
                         let thn = row['Tahun'];
                         if (!thn && row['ID Risiko'] && row['ID Risiko'].includes('-')) {
                             let ts = parseInt(row['ID Risiko'].split('-')[1]);
                             if (!isNaN(ts)) thn = new Date(ts).getFullYear();
                         }
-                        if (!thn) thn = new Date().getFullYear(); // Fallback
+                        if (!thn) thn = new Date().getFullYear(); 
 
                         return {
                             id: row['ID Risiko'],
@@ -394,7 +382,7 @@
                     else daftarRisikoLokal.push(draft);
                 });
 
-                populateTahunDropdown(); // Isi dropdown filter tahun
+                populateTahunDropdown(); 
                 renderTabelRisiko();
             })
             .catch(err => {
@@ -446,7 +434,7 @@
             
             let dataBaru = {
                 id: idEdit ? idEdit : 'RSK-' + Date.now(),
-                tahun: new Date().getFullYear(), // Simpan tahun pembuatan
+                tahun: new Date().getFullYear(),
                 unit: userRole === "Komite Mutu" ? dropdownUnit.value : userUnit, 
                 risiko: document.getElementById('inputRisiko').value,
                 penyebab: document.getElementById('inputPenyebab').value,
@@ -461,7 +449,6 @@
             };
 
             if (idEdit) {
-                // Update preserve original year if editing
                 let index = daftarRisikoLokal.findIndex(r => r.id === idEdit);
                 if(index >= 0) dataBaru.tahun = daftarRisikoLokal[index].tahun; 
                 daftarRisikoLokal[index] = dataBaru;
@@ -471,7 +458,6 @@
 
             bootstrap.Modal.getInstance(document.getElementById('modalRisiko')).hide();
             
-            // Refresh tahun dropdown incase new year was added
             populateTahunDropdown(); 
             renderTabelRisiko();
 
@@ -497,12 +483,10 @@
             const dropdownUnit = document.getElementById('pilihUnit');
             const dropdownTahun = document.getElementById('pilihTahun');
             
-            // Filter Unit (Khusus Komite Mutu)
             if (userRole === "Komite Mutu" && dropdownUnit && dropdownUnit.value !== "") {
                 dataTampil = dataTampil.filter(r => r.unit === dropdownUnit.value);
             }
             
-            // Filter Tahun (Aktif untuk semua user)
             if (dropdownTahun && dropdownTahun.value !== "SEMUA") {
                 dataTampil = dataTampil.filter(r => r.tahun.toString() === dropdownTahun.value);
             }
@@ -596,7 +580,6 @@
 
             let unitTerkirim = userRole === "Komite Mutu" ? "Pembaruan Admin" : userUnit;
 
-            // Kita sertakan data 'tahun' di payload agar bisa ditangkap Apps Script
             const payload = {
                 action: "save_risk",
                 unit: unitTerkirim,
