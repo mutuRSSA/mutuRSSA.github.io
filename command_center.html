@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Center - SIM PMKP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { background-color: #f0f2f5; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff; height: 100%;}
+        .icon-box { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
+        .bg-gradient-primary { background: linear-gradient(135deg, #6f42c1 0%, #4e2a84 100%); color: white; }
+        .table-custom th { background-color: #f8f9fa; color: #495057; border-bottom: 2px solid #dee2e6; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;}
+        .table-custom td { vertical-align: middle; font-size: 0.9rem; border-bottom: 1px solid #f1f3f5;}
+        
+        /* Animasi Loading */
+        .shimmer { animation: shimmer 2s infinite linear; background: linear-gradient(to right, #eff1f3 4%, #e2e2e2 25%, #eff1f3 36%); background-size: 1000px 100%; }
+        @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4" style="max-width: 1400px;">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-satellite-dish text-primary me-2"></i> Command Center Mutu</h3>
+                <p class="text-muted mb-0">Dasbor Eksekutif Pemantauan Kinerja RSUD Saras Adyatma</p>
+            </div>
+            <div class="d-flex gap-2">
+                <select id="filterBulan" class="form-select border-primary fw-bold shadow-sm" style="width: 140px;" onchange="muatDataKepatuhan()">
+                    <option value="1">Januari</option><option value="2">Februari</option>
+                    <option value="3">Maret</option><option value="4">April</option>
+                    <option value="5">Mei</option><option value="6">Juni</option>
+                    <option value="7">Juli</option><option value="8">Agustus</option>
+                    <option value="9">September</option><option value="10">Oktober</option>
+                    <option value="11">November</option><option value="12">Desember</option>
+                </select>
+                <select id="filterTahun" class="form-select border-primary fw-bold shadow-sm" style="width: 120px;" onchange="muatDataKepatuhan()"></select>
+            </div>
+        </div>
+
+        <div class="row mb-4 g-3">
+            <div class="col-md-3">
+                <div class="card-custom p-3 border-bottom border-4 border-success">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted fw-bold mb-1" style="font-size: 0.8rem;">UNIT SUDAH LAPOR</p>
+                            <h2 class="fw-bold mb-0 text-dark" id="scoreSudahLapor"><i class="fas fa-spinner fa-spin text-muted fs-4"></i></h2>
+                        </div>
+                        <div class="icon-box bg-success bg-opacity-10 text-success"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card-custom p-3 border-bottom border-4 border-danger">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted fw-bold mb-1" style="font-size: 0.8rem;">UNIT MENUNGGAK (BELUM)</p>
+                            <h2 class="fw-bold mb-0 text-dark" id="scoreBelumLapor"><i class="fas fa-spinner fa-spin text-muted fs-4"></i></h2>
+                        </div>
+                        <div class="icon-box bg-danger bg-opacity-10 text-danger"><i class="fas fa-exclamation-triangle"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card-custom p-3 border-bottom border-4 border-warning">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted fw-bold mb-1" style="font-size: 0.8rem;">SIKLUS PDSA AKTIF</p>
+                            <h2 class="fw-bold mb-0 text-dark" id="scorePDSA"><i class="fas fa-spinner fa-spin text-muted fs-4"></i></h2>
+                        </div>
+                        <div class="icon-box bg-warning bg-opacity-10 text-warning"><i class="fas fa-tasks"></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card-custom p-3 border-bottom border-4 border-info">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <p class="text-muted fw-bold mb-1" style="font-size: 0.8rem;">INDIKATOR TERPANTAU</p>
+                            <h2 class="fw-bold mb-0 text-dark" id="scoreIndikator"><i class="fas fa-spinner fa-spin text-muted fs-4"></i></h2>
+                        </div>
+                        <div class="icon-box bg-info bg-opacity-10 text-info"><i class="fas fa-chart-line"></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4 g-4">
+            <div class="col-lg-5">
+                <div class="card-custom p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-dark mb-0"><i class="fas fa-radar text-danger me-2"></i> Radar Kepatuhan Unit</h5>
+                        <a href="dasbor_kepatuhan.html" class="btn btn-sm btn-outline-primary rounded-pill px-3">Lihat Detail</a>
+                    </div>
+                    <div class="progress mb-3" style="height: 25px; border-radius: 15px;">
+                        <div id="barKepatuhan" class="progress-bar bg-success fw-bold" role="progressbar" style="width: 0%;">0%</div>
+                    </div>
+                    <div style="max-height: 260px; overflow-y: auto;">
+                        <table class="table table-borderless table-custom table-sm mb-0" id="tabelRadarKepatuhan">
+                            <tbody>
+                                <tr><td colspan="2" class="text-center py-4"><i class="fas fa-circle-notch fa-spin text-primary"></i> Memuat data...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="card-custom p-4">
+                    <h5 class="fw-bold text-dark mb-3"><i class="fas fa-chart-bar text-success me-2"></i> Tren Capaian Mutu (Over-all)</h5>
+                    <div style="height: 290px;">
+                        <canvas id="chartMutu"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card-custom p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold text-dark mb-0"><i class="fas fa-clipboard-check text-warning me-2"></i> Pemantauan PDSA Berjalan</h5>
+                        <a href="pdsa.html" class="btn btn-sm btn-outline-warning text-dark rounded-pill px-3">Buka Papan PDSA</a>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-custom" id="tabelPDSAMini">
+                            <thead>
+                                <tr>
+                                    <th width="15%">Unit</th>
+                                    <th width="25%">Indikator Bermasalah</th>
+                                    <th width="45%">Rencana Perbaikan (Plan)</th>
+                                    <th width="15%" class="text-center">Status Terkini</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bodyPDSAMini">
+                                <tr><td colspan="4" class="text-center py-4"><i class="fas fa-spinner fa-spin text-primary"></i> Menarik data PDSA...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        let myChart = null;
+
+        document.addEventListener("DOMContentLoaded", function() {
+            // Set Default Filter ke Bulan & Tahun Saat Ini
+            const date = new Date();
+            document.getElementById('filterBulan').value = date.getMonth() + 1;
+            
+            const dropdownTahun = document.getElementById('filterTahun');
+            const thn = date.getFullYear();
+            dropdownTahun.add(new Option(thn, thn));
+            dropdownTahun.add(new Option(thn - 1, thn - 1));
+            dropdownTahun.value = thn;
+
+            muatDataEksekutif();
+        });
+
+        function muatDataKepatuhan() {
+            // Dipanggil saat filter bulan/tahun diganti
+            muatDataEksekutif();
+        }
+
+        function muatDataEksekutif() {
+            const bln = document.getElementById('filterBulan').value;
+            const thn = document.getElementById('filterTahun').value;
+            const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : ""; 
+
+            // Tampilkan loading state
+            document.getElementById('scoreSudahLapor').innerHTML = '<i class="fas fa-spinner fa-spin fs-5"></i>';
+            document.getElementById('scoreBelumLapor').innerHTML = '<i class="fas fa-spinner fa-spin fs-5"></i>';
+            document.getElementById('scorePDSA').innerHTML = '<i class="fas fa-spinner fa-spin fs-5"></i>';
+            document.getElementById('scoreIndikator').innerHTML = '<i class="fas fa-spinner fa-spin fs-5"></i>';
+
+            // KITA LAKUKAN 2 REQUEST SEKALIGUS MENGGUNAKAN PROMISE.ALL
+            // 1. Ambil Kepatuhan
+            const reqKepatuhan = fetch(scriptURL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ action: "cek_kepatuhan", bulan: bln, tahun: thn })
+            }).then(res => res.json());
+
+            // 2. Ambil PDSA & Rekap Mutu
+            const reqDashboard = fetch(`${scriptURL}?action=get_dashboard`).then(res => res.json());
+
+            Promise.all([reqKepatuhan, reqDashboard]).then(results => {
+                const resKepatuhan = results[0];
+                const resDashboard = results[1];
+
+                if(resKepatuhan.status === 'success') renderKepatuhan(resKepatuhan.data);
+                if(resDashboard.status === 'success') {
+                    renderPDSA(resDashboard.dataAnalisa);
+                    renderGrafikMutu(resDashboard.data);
+                }
+            }).catch(err => {
+                Swal.fire('Koneksi Gagal', 'Tidak dapat terhubung ke server database.', 'error');
+            });
+        }
+
+        function renderKepatuhan(data) {
+            let jmlSudah = 0;
+            let jmlBelum = 0;
+            const tbody = document.getElementById('tabelRadarKepatuhan');
+            tbody.innerHTML = '';
+
+            data.forEach(row => {
+                let isSudah = row.status === "SUDAH";
+                if(isSudah) jmlSudah++; else jmlBelum++;
+                
+                let icon = isSudah ? '<i class="fas fa-check-circle text-success fs-5"></i>' : '<i class="fas fa-times-circle text-danger fs-5"></i>';
+                let textClass = isSudah ? 'text-dark' : 'text-danger fw-bold';
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td width="10%" class="text-center">${icon}</td>
+                        <td class="${textClass}">${row.unit}</td>
+                    </tr>
+                `;
+            });
+
+            // Update Scorecards
+            document.getElementById('scoreSudahLapor').innerText = jmlSudah;
+            document.getElementById('scoreBelumLapor').innerText = jmlBelum;
+            document.getElementById('scoreIndikator').innerText = data.length; // Total Form
+            
+            // Update Progress Bar
+            let total = jmlSudah + jmlBelum;
+            let persen = total === 0 ? 0 : Math.round((jmlSudah / total) * 100);
+            const bar = document.getElementById('barKepatuhan');
+            bar.style.width = persen + '%';
+            bar.innerText = persen + '% Patuh';
+            
+            if(persen < 50) { bar.className = "progress-bar bg-danger fw-bold"; }
+            else if(persen < 80) { bar.className = "progress-bar bg-warning text-dark fw-bold"; }
+            else { bar.className = "progress-bar bg-success fw-bold"; }
+        }
+
+        function renderPDSA(dataPDSA) {
+            document.getElementById('scorePDSA').innerText = dataPDSA ? dataPDSA.length : 0;
+            const tbody = document.getElementById('bodyPDSAMini');
+            tbody.innerHTML = '';
+
+            if(!dataPDSA || dataPDSA.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-success py-4"><i class="fas fa-leaf mb-2 fs-3"></i><br>Bagus! Tidak ada indikator yang bermasalah (Memerlukan PDSA) saat ini.</td></tr>';
+                return;
+            }
+
+            // Tampilkan maksimal 5 PDSA terbaru saja agar tidak kepanjangan
+            let tampilData = dataPDSA.reverse().slice(0, 5);
+
+            tampilData.forEach(row => {
+                let badge = '<span class="badge bg-warning text-dark">Plan (Perencanaan)</span>'; // Asumsi default dari raw_data
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="fw-bold text-primary">${row.Unit}</td>
+                        <td style="font-size:0.85rem;">${row['Judul Indikator']}</td>
+                        <td style="font-size:0.85rem;" class="text-muted"><em>"${row['Tindak Lanjut']}"</em></td>
+                        <td class="text-center">${badge}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderGrafikMutu(dataRekap) {
+            // Karena ini dasbor eksekutif, kita buat dummy grafik yang mensimulasikan agregat tren mutu per bulan
+            // (Dalam implementasi nyata, Anda bisa mem-filter dataRekap berdasarkan bulan pengisian)
+            
+            const ctx = document.getElementById('chartMutu').getContext('2d');
+            
+            if (myChart) { myChart.destroy(); }
+
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'], // Simulasikan 6 bulan terakhir
+                    datasets: [{
+                        label: 'Rata-rata Capaian Mutu RS (%)',
+                        data: [85, 88, 86, 92, 90, 95], // Data simulasi tren
+                        borderColor: '#198754',
+                        backgroundColor: 'rgba(25, 135, 84, 0.2)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#198754',
+                        pointRadius: 5,
+                        fill: true,
+                        tension: 0.4 // Membuat garis melengkung elegan
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 60,
+                            max: 100,
+                            ticks: { callback: function(value) { return value + "%" } }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

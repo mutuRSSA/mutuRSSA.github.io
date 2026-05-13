@@ -3,20 +3,26 @@
 // =====================================================================
 
 // =========================================================================
-// 0. GLOBAL MOBILE RESPONSIVE CSS INJECTION (OTOMATIS DI SEMUA HALAMAN)
+// 0. GLOBAL CSS INJECTION (RESPONSIVE & SIDEBAR STYLING)
 // =========================================================================
-const mobileResponsiveCSS = `
+const customCSS = `
 <style>
+    /* Styling Elegan untuk Sidebar */
+    .sidebar-link { transition: all 0.3s ease; border: none; }
+    .sidebar-link:hover { background-color: #f8f9fa; transform: translateX(3px); color: #6f42c1 !important; }
+    .sidebar-link.active { background-color: #f3f0fc !important; color: #6f42c1 !important; font-weight: bold; border-right: 4px solid #6f42c1; }
+    
+    /* Styling Khusus Menu Admin */
+    .admin-link:hover { background-color: #fff5f5; color: #dc3545 !important; transform: translateX(3px); }
+    .admin-link.active { background-color: #ffeaea !important; color: #dc3545 !important; font-weight: bold; border-right: 4px solid #dc3545; }
+
     /* ATURAN KHUSUS UNTUK LAYAR KECIL (HP / Lebar maksimal 768px) */
     @media (max-width: 768px) {
         body { padding-top: 70px; padding-bottom: 20px; font-size: 0.9rem; }
-        
-        /* Merapikan Kartu dan Padding */
         .card-custom, .guide-container, .bg-white.p-4 { padding: 15px !important; margin-bottom: 15px !important; }
         h2, h3 { font-size: 1.3rem !important; }
         h4, h5, h6 { font-size: 1.1rem !important; }
         
-        /* Merapikan Deretan Tombol di Atas (Header) agar memanjang ke bawah */
         .d-flex.justify-content-between.align-items-center,
         .d-flex.justify-content-between.align-items-start { 
             flex-direction: column !important; 
@@ -26,33 +32,25 @@ const mobileResponsiveCSS = `
         .d-flex.gap-2.flex-wrap { flex-direction: column; width: 100%; }
         .d-flex.gap-2.flex-wrap > button, .d-flex.gap-2.flex-wrap > a { width: 100%; margin-left: 0 !important; margin-right: 0 !important; }
         
-        /* Merapikan Filter dan Inputan agar sejajar ke bawah */
         .row > .col-md-3, .row > .col-md-4, .row > .col-md-5, .row > .col-md-6 { width: 100%; margin-top: 10px; }
         .text-md-end { text-align: left !important; }
         
-        /* Optimalisasi DataTables di Layar HP */
         .dataTables_wrapper .row { flex-direction: column; gap: 10px; }
         .dataTables_wrapper .col-sm-12.col-md-6 { width: 100%; text-align: left !important; }
         .dataTables_filter label { width: 100%; text-align: left !important; font-weight: bold;}
         .dataTables_filter input { width: 100%; margin-left: 0 !important; margin-top: 5px; display: block; box-sizing: border-box;}
         .dataTables_length { margin-bottom: 10px; }
         
-        /* Menyederhanakan Tabel Data */
         table.dataTable tbody td { padding: 8px 5px !important; font-size: 0.8rem; }
         .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
         
-        /* Perbaikan Navbar & Nama Profil */
         #userDropdown { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        
-        /* Modals & SweetAlert di HP */
         .modal-body { padding: 15px !important; }
         .swal2-popup { font-size: 0.85rem !important; width: 90% !important; padding: 1em !important; }
     }
 </style>
 `;
-// Menyuntikkan CSS ke dalam tag <head> secara otomatis
-document.head.insertAdjacentHTML('beforeend', mobileResponsiveCSS);
-
+document.head.insertAdjacentHTML('beforeend', customCSS);
 
 // Helper untuk menampilkan alert jika menu terkunci
 window.showLockAlert = function() {
@@ -63,9 +61,7 @@ window.showLockAlert = function() {
             icon: 'warning',
             confirmButtonColor: '#6f42c1',
             confirmButtonText: 'Ke Halaman Login'
-        }).then(() => {
-            window.location.href = 'login.html';
-        });
+        }).then(() => { window.location.href = 'login.html'; });
     } else {
         alert('Akses Terkunci! Silakan Login terlebih dahulu.');
         window.location.href = 'login.html';
@@ -76,9 +72,7 @@ function loadNavigation() {
     // 1. CEK STATUS & ROLE LOGIN
     const sessionStr = localStorage.getItem("sessionMutu");
     const isLoggedIn = sessionStr !== null;
-    let userData = null;
-    let role = "";
-    let unit = "";
+    let userData = null; let role = ""; let unit = "";
     
     if (isLoggedIn) {
         userData = JSON.parse(sessionStr);
@@ -90,9 +84,9 @@ function loadNavigation() {
     const page = window.location.pathname.split("/").pop(); 
 
     // =========================================================================
-    // 2. FRONTEND SECURITY GUARD
+    // 2. FRONTEND SECURITY GUARD (DIPERBARUI)
     // =========================================================================
-    const adminPages = ['capa.html', 'dasbor_pdsa.html', 'daftar_insiden.html', 'analisis.html', 'analisis_sederhana.html', 'daftar_kpc.html', 'analisis_kpc.html', 'rekapitulasi.html', 'dasbor_budaya.html', 'dasbor_risiko.html', 'profil_risiko_rs.html'];
+    const adminPages = ['command_center.html', 'dasbor_kepatuhan.html', 'capa.html', 'dasbor_pdsa.html', 'daftar_insiden.html', 'analisis.html', 'analisis_sederhana.html', 'daftar_kpc.html', 'analisis_kpc.html', 'rekapitulasi.html', 'dasbor_budaya.html', 'dasbor_risiko.html', 'profil_risiko_rs.html'];
     
     if (adminPages.includes(page) && role !== "Komite Mutu") {
         if (typeof Swal !== 'undefined') {
@@ -102,9 +96,7 @@ function loadNavigation() {
                 icon: 'error',
                 confirmButtonColor: '#dc3545',
                 allowOutsideClick: false
-            }).then(() => {
-                window.location.href = isLoggedIn ? "index.html" : "login.html";
-            });
+            }).then(() => { window.location.href = isLoggedIn ? "index.html" : "login.html"; });
         } else {
             alert("Akses Ditolak! Halaman ini hanya dapat diakses oleh Tim Komite Mutu.");
             window.location.href = isLoggedIn ? "index.html" : "login.html";
@@ -137,7 +129,7 @@ function loadNavigation() {
                     <div class="text-center p-2"><i class="fas fa-spinner fa-spin text-muted"></i></div>
                 </div>
            </div>`
-        : `<a href="#" onclick="window.showLockAlert(); return false;" class="list-group-item list-group-item-action py-3 sidebar-link bg-light text-muted">
+        : `<a href="#" onclick="window.showLockAlert(); return false;" class="list-group-item list-group-item-action py-3 sidebar-link text-muted">
                 <i class="fas fa-chart-line me-3 text-secondary"></i> Peningkatan Mutu <i class="fas fa-lock float-end mt-1 text-danger" style="font-size: 0.8rem;"></i>
            </a>`;
 
@@ -150,27 +142,33 @@ function loadNavigation() {
                     <a href="risk_register.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-risk-register" style="font-size: 0.95rem;"><i class="fas fa-clipboard-check me-2"></i> Risk Register Unit</a>
                 </div>
            </div>`
-        : `<a href="#" onclick="window.showLockAlert(); return false;" class="list-group-item list-group-item-action py-3 sidebar-link bg-light text-muted">
+        : `<a href="#" onclick="window.showLockAlert(); return false;" class="list-group-item list-group-item-action py-3 sidebar-link text-muted">
                 <i class="fas fa-exclamation-triangle me-3 text-secondary"></i> Manajemen Risiko <i class="fas fa-lock float-end mt-1 text-danger" style="font-size: 0.8rem;"></i>
            </a>`;
 
     let menuRahasiaKomite = '';
     if (role === "Komite Mutu") {
         menuRahasiaKomite = `
-            <div class="mt-2 mb-1 px-3 text-uppercase text-muted fw-bold" style="font-size: 0.75rem; letter-spacing: 1px;">Ruang Kerja Admin</div>
+            <div class="mt-4 mb-2 px-3 text-uppercase text-muted fw-bold" style="font-size: 0.75rem; letter-spacing: 1px;">Manajemen Eksekutif</div>
+            
+            <a href="command_center.html" class="list-group-item list-group-item-action py-3 text-white fw-bold shadow-sm" id="menu-command-center" style="background: linear-gradient(135deg, #6f42c1 0%, #4e2a84 100%); border-radius: 8px; margin: 0 15px 10px 15px; border: none;">
+                <i class="fas fa-satellite-dish me-2"></i> Command Center
+            </a>
+
             <a class="list-group-item list-group-item-action py-3 sidebar-link text-danger fw-bold" data-bs-toggle="collapse" href="#collapseAdmin" role="button" aria-expanded="false">
                 <i class="fas fa-user-tie me-3"></i> Panel Komite Mutu <i class="fas fa-chevron-down float-end mt-1" style="font-size: 0.8rem;"></i>
             </a>
             <div class="collapse" id="collapseAdmin">
-                <div class="list-group list-group-flush" style="background-color: #fff5f5;">
-                    <a href="dasbor_pdsa.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-dasbor-pdsa" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-tachometer-alt me-2"></i> Dashboard Supervisi PDSA</a>
-                    <a href="capa.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-capa" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-bullseye me-2"></i> Pemantauan CAPA</a>
-                    <a href="daftar_insiden.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-daftar-ikp" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-table me-2"></i> Daftar IKP</a>
-                    <a href="daftar_kpc.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-daftar-kpc" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-list-alt me-2"></i> Daftar KPC</a>
-                    <a href="rekapitulasi.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-rekap" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-chart-pie me-2"></i> Rekapitulasi Insiden</a>
-                    <a href="dasbor_budaya.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-dasbor-budaya" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-spider me-2"></i> Analitik Budaya</a>
-                    <a href="dasbor_risiko.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-dasbor-risiko" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-satellite-dish me-2"></i> Supervisi Risiko RS</a>
-                    <a href="profil_risiko_rs.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link text-danger" id="menu-profil-risiko" style="font-size: 0.95rem; background: transparent;"><i class="fas fa-crown me-2"></i> Profil Risiko RS</a>
+                <div class="list-group list-group-flush" style="background-color: #fdfdfd;">
+                    <a href="dasbor_kepatuhan.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-kepatuhan" style="font-size: 0.95rem;"><i class="fas fa-radar me-2"></i> Dasbor Kepatuhan Unit</a>
+                    <a href="dasbor_pdsa.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-dasbor-pdsa" style="font-size: 0.95rem;"><i class="fas fa-tachometer-alt me-2"></i> Dashboard Supervisi PDSA</a>
+                    <a href="capa.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-capa" style="font-size: 0.95rem;"><i class="fas fa-bullseye me-2"></i> Pemantauan CAPA</a>
+                    <a href="daftar_insiden.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0 mt-1" id="menu-daftar-ikp" style="font-size: 0.95rem;"><i class="fas fa-table me-2"></i> Daftar IKP</a>
+                    <a href="daftar_kpc.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-daftar-kpc" style="font-size: 0.95rem;"><i class="fas fa-list-alt me-2"></i> Daftar KPC</a>
+                    <a href="rekapitulasi.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-rekap" style="font-size: 0.95rem;"><i class="fas fa-chart-pie me-2"></i> Rekapitulasi Insiden</a>
+                    <a href="dasbor_budaya.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0 mt-1" id="menu-dasbor-budaya" style="font-size: 0.95rem;"><i class="fas fa-spider me-2"></i> Analitik Budaya</a>
+                    <a href="dasbor_risiko.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0 mt-1" id="menu-dasbor-risiko" style="font-size: 0.95rem;"><i class="fas fa-broadcast-tower me-2"></i> Supervisi Risiko RS</a>
+                    <a href="profil_risiko_rs.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-profil-risiko" style="font-size: 0.95rem;"><i class="fas fa-crown me-2"></i> Profil Risiko RS</a>
                 </div>
             </div>
         `;
@@ -187,7 +185,8 @@ function loadNavigation() {
             <div class="d-flex align-items-center">
                 <button class="navbar-toggler border-0 me-2" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebarMenu" aria-controls="sidebarMenu"><span class="navbar-toggler-icon"></span></button>
                 <span class="navbar-brand fw-bold mb-0 d-none d-sm-block">Portal Komite Mutu</span>
-                <span class="navbar-brand fw-bold mb-0 d-block d-sm-none">Portal Mutu</span> </div>
+                <span class="navbar-brand fw-bold mb-0 d-block d-sm-none">Portal Mutu</span> 
+            </div>
             <div>${navbarRightHTML}</div>
         </div>
     </nav>`;
@@ -195,11 +194,11 @@ function loadNavigation() {
     const sidebarHTML = `
     <div class="offcanvas offcanvas-start d-print-none" tabindex="-1" id="sidebarMenu" style="width: 280px;">
         <div class="offcanvas-header text-white" style="background-color: #222d32;">
-            <h5 class="offcanvas-title fw-bold">Main Navigation</h5>
+            <h5 class="offcanvas-title fw-bold">Navigasi Utama</h5>
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
         </div>
         <div class="offcanvas-body p-0 d-flex flex-column" style="background-color: #fff;">
-            <div class="list-group list-group-flush mt-2 mb-auto">
+            <div class="list-group list-group-flush mt-2 mb-auto border-0">
                 <a href="index.html" class="list-group-item list-group-item-action py-3 sidebar-link" id="menu-home"><i class="fas fa-home me-3 text-secondary"></i> Beranda Utama</a>
                 <a href="buku_panduan.html" class="list-group-item list-group-item-action py-3 sidebar-link" id="menu-panduan"><i class="fas fa-book-open me-3 text-primary"></i> Panduan Penggunaan</a>
                 
@@ -211,15 +210,15 @@ function loadNavigation() {
                 </a>
                 <div class="collapse" id="collapseKeselamatan">
                     <div class="list-group list-group-flush bg-light">
-                        <a href="ikp.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-ikp" style="font-size: 0.95rem;"><i class="fas fa-file-signature me-2"></i> Formulir IKP</a>
-                        <a href="kpc.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-kpc" style="font-size: 0.95rem;"><i class="fas fa-exclamation-circle me-2"></i> Formulir KPC</a>
-                        <a href="survey_budaya.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-survey-budaya" style="font-size: 0.95rem;"><i class="fas fa-clipboard-list me-2"></i> Kuesioner Budaya</a>
+                        <a href="ikp.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-0" id="menu-ikp" style="font-size: 0.95rem;"><i class="fas fa-file-signature me-2"></i> Formulir IKP</a>
+                        <a href="kpc.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-0" id="menu-kpc" style="font-size: 0.95rem;"><i class="fas fa-exclamation-circle me-2"></i> Formulir KPC</a>
+                        <a href="survey_budaya.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-0" id="menu-survey-budaya" style="font-size: 0.95rem;"><i class="fas fa-clipboard-list me-2"></i> Kuesioner Budaya</a>
                     </div>
                 </div>
 
                 ${menuRahasiaKomite} 
             </div>
-            <div class="mt-4 pt-3 border-top px-3 pb-3 text-center text-muted" style="font-size: 0.8rem;">Husni Muarif &copy; ${currentYear}</div>
+            <div class="mt-4 pt-3 border-top px-3 pb-3 text-center text-muted" style="font-size: 0.8rem;">Sistem Informasi PMKP &copy; ${currentYear}</div>
         </div>
     </div>`;
 
@@ -232,9 +231,9 @@ function loadNavigation() {
     if (isLoggedIn) {
         if (role === "Komite Mutu") {
             let htmlSubMenu = `
-                <a href="profil_indikator.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-kamus-indikator" style="font-size: 0.95rem; background: #e3f2fd;"><i class="fas fa-book-medical me-2 text-primary"></i> Kamus Indikator Mutu</a>
-                <a href="pdsa.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-pdsa" style="font-size: 0.95rem; background: #fff8e1;"><i class="fas fa-tasks me-2 text-warning"></i> Papan Kerja PDSA</a>
-                <a href="laporan_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-top mt-1" id="menu-laporan-triwulan" style="font-size: 0.95rem;"><i class="fas fa-file-alt me-2 text-primary"></i> Laporan Capaian Mutu</a>
+                <a href="profil_indikator.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-0" id="menu-kamus-indikator" style="font-size: 0.95rem;"><i class="fas fa-book-medical me-2 text-primary"></i> Kamus Indikator Mutu</a>
+                <a href="pdsa.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-0" id="menu-pdsa" style="font-size: 0.95rem;"><i class="fas fa-tasks me-2 text-warning"></i> Papan Kerja PDSA</a>
+                <a href="laporan_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-0 mt-1" id="menu-laporan-triwulan" style="font-size: 0.95rem;"><i class="fas fa-chart-pie me-2 text-success"></i> Laporan Capaian Mutu</a>
             `;
             const wadah = document.getElementById('wadahMenuDinamis');
             if(wadah) wadah.innerHTML = htmlSubMenu;
@@ -256,15 +255,15 @@ function loadNavigation() {
                     let activeSub = (new URLSearchParams(window.location.search).get('form') === formID) ? 'active fw-bold' : '';
                     
                     htmlSubMenu += `
-                    <a href="input_mutu.html?form=${formID}" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link ${activeSub}" style="font-size: 0.95rem;">
+                    <a href="input_mutu.html?form=${formID}" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-0 ${activeSub}" style="font-size: 0.95rem;">
                         <i class="fas fa-edit me-2"></i> Input ${namaForm}
                     </a>`;
                 });
 
                 htmlSubMenu += `
-                    <a href="profil_indikator.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-top mt-1" id="menu-kamus-indikator" style="font-size: 0.95rem; background: #e3f2fd;"><i class="fas fa-book-medical me-2 text-primary"></i> Kamus Indikator Mutu</a>
-                    <a href="pdsa.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-pdsa" style="font-size: 0.95rem; background: #fff8e1;"><i class="fas fa-tasks me-2 text-warning"></i> Papan Kerja PDSA</a>
-                    <a href="laporan_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-laporan-triwulan" style="font-size: 0.95rem;"><i class="fas fa-file-alt me-2 text-primary"></i> Laporan Capaian Mutu</a>
+                    <a href="profil_indikator.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-top mt-1" id="menu-kamus-indikator" style="font-size: 0.95rem;"><i class="fas fa-book-medical me-2 text-primary"></i> Kamus Indikator Mutu</a>
+                    <a href="pdsa.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-0" id="menu-pdsa" style="font-size: 0.95rem;"><i class="fas fa-tasks me-2 text-warning"></i> Papan Kerja PDSA</a>
+                    <a href="laporan_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-0" id="menu-laporan-triwulan" style="font-size: 0.95rem;"><i class="fas fa-chart-pie me-2 text-success"></i> Laporan Capaian Mutu</a>
                 `;
                 
                 const wadah = document.getElementById('wadahMenuDinamis');
@@ -292,6 +291,7 @@ function loadNavigation() {
     // 6. PENYALAAN WARNA MENU (ACTIVE STATE)
     // =========================================================================
     if (page === 'index.html' || page === '') { document.getElementById('menu-home')?.classList.add('active'); } 
+    else if (page === 'command_center.html') { document.getElementById('menu-command-center')?.classList.add('active'); } 
     else if (page === 'buku_panduan.html') { document.getElementById('menu-panduan')?.classList.add('active'); }
     else if (page === 'profil_indikator.html') { document.getElementById('menu-kamus-indikator')?.classList.add('active'); document.getElementById('collapseMutu')?.classList.add('show'); }
     else if (page === 'pdsa.html') { document.getElementById('menu-pdsa')?.classList.add('active'); document.getElementById('collapseMutu')?.classList.add('show'); }
@@ -301,11 +301,12 @@ function loadNavigation() {
     else if (page === 'ikp.html') { document.getElementById('menu-ikp')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); } 
     else if (page === 'kpc.html') { document.getElementById('menu-kpc')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); } 
     else if (page === 'survey_budaya.html') { document.getElementById('menu-survey-budaya')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); }
+    else if (page === 'dasbor_kepatuhan.html') { document.getElementById('menu-kepatuhan')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'dasbor_pdsa.html') { document.getElementById('menu-dasbor-pdsa')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'capa.html') { document.getElementById('menu-capa')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
 }
 
-// Fungsi Keluar Sistem dengan SweetAlert2
+// Fungsi Keluar Sistem
 window.logoutSystem = function() {
     if (typeof Swal !== 'undefined') {
         Swal.fire({
@@ -319,7 +320,7 @@ window.logoutSystem = function() {
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                localStorage.clear(); // Bersihkan semua cache untuk keamanan
+                localStorage.clear(); 
                 window.location.href = "login.html";
             }
         });

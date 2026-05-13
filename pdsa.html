@@ -141,6 +141,26 @@
                     document.getElementById('loadingMessage').style.display = 'none';
                     if (result.status === 'success') {
                         rawPdsaData = result.data;
+                        
+                        // ========================================================
+                        // LOGIKA PENGURUTAN KARTU PDSA BERDASARKAN SIKLUS
+                        // ========================================================
+                        rawPdsaData.sort((a, b) => {
+                            let getBobot = (status) => {
+                                let s = (status || '').toLowerCase();
+                                if (s.includes('plan')) return 1;
+                                if (s.includes('do')) return 2;
+                                if (s.includes('study')) return 3;
+                                return 4; // act atau selesai
+                            };
+                            
+                            let bobotA = getBobot(a['Status']);
+                            let bobotB = getBobot(b['Status']);
+                            
+                            return bobotA - bobotB; 
+                        });
+                        // ========================================================
+
                         renderKartuPdsa();
                     } else {
                         Swal.fire('Gagal!', "Tidak dapat memuat data PDSA.", 'error');
@@ -168,7 +188,6 @@
             }
 
             rawPdsaData.forEach((row, index) => {
-                // FALLBACK CERDAS: Membaca variasi penulisan header dari Excel
                 let id = row['ID_PDSA'] || row['ID PDSA'] || '-';
                 let indikator = row['Indikator'] || row['Judul Indikator'] || '-';
                 let status = row['Status'] || 'Plan';
@@ -201,42 +220,18 @@
 
         window.bukaModalEdit = function(index) {
             let row = rawPdsaData[index];
-            
-            // FALLBACK CERDAS (Agar tidak muncul tulisan undefined)
             activePdsaId = row['ID_PDSA'] || row['ID PDSA'];
 
             document.getElementById('detailIdPdsa').innerText = activePdsaId;
             document.getElementById('detailIndikator').innerText = row['Indikator'] || row['Judul Indikator'] || '-';
             document.getElementById('detailPeriode').innerText = row['Periode'] || row['Triwulan'] || '-';
             document.getElementById('detailPic').innerText = row['Kepala_Unit'] || row['Kepala Unit'] || '-';
-            
             document.getElementById('detailAnalisa').innerText = row['Analisa_Akar_Masalah'] || row['Analisa Akar Masalah'] || row['Analisa'] || '-';
             document.getElementById('detailTl').innerText = row['Tindak_Lanjut_Plan'] || row['Tindak Lanjut Plan'] || row['Tindak Lanjut'] || '-';
 
             document.getElementById('inputDo').value = row['Do_Pelaksanaan'] || row['Do Pelaksanaan'] || row['Do'] || "";
             document.getElementById('inputStudy').value = row['Study_Evaluasi'] || row['Study Evaluasi'] || row['Study'] || "";
             document.getElementById('inputAct').value = row['Act_Keputusan'] || row['Act Keputusan'] || row['Act'] || "";
-            
-            let currentStatus = (row['Status'] || "Plan").replace("Selesai", "Act"); 
-            document.getElementById('inputStatus').value = (row['Status'] === 'Selesai') ? 'Selesai' : currentStatus;
-
-            new bootstrap.Modal(document.getElementById('modalPDSA')).show();
-        };
-
-        window.bukaModalEdit = function(index) {
-            let row = rawPdsaData[index];
-            activePdsaId = row['ID_PDSA'];
-
-            document.getElementById('detailIdPdsa').innerText = activePdsaId;
-            document.getElementById('detailIndikator').innerText = row['Indikator'];
-            document.getElementById('detailPeriode').innerText = row['Periode'];
-            document.getElementById('detailPic').innerText = row['Kepala_Unit'];
-            document.getElementById('detailAnalisa').innerText = row['Analisa_Akar_Masalah'];
-            document.getElementById('detailTl').innerText = row['Tindak_Lanjut_Plan'];
-
-            document.getElementById('inputDo').value = row['Do_Pelaksanaan'] || "";
-            document.getElementById('inputStudy').value = row['Study_Evaluasi'] || "";
-            document.getElementById('inputAct').value = row['Act_Keputusan'] || "";
             
             let currentStatus = (row['Status'] || "Plan").replace("Selesai", "Act"); 
             document.getElementById('inputStatus').value = (row['Status'] === 'Selesai') ? 'Selesai' : currentStatus;
@@ -284,10 +279,9 @@
         };
 
         window.exportPdsaKeWord = function() {
-            // Ambil data dari elemen UI Modal
             const idPdsa = document.getElementById('detailIdPdsa').innerText;
             const indikator = document.getElementById('detailIndikator').innerText;
-            const unit = userUnit; // Dari variabel global session
+            const unit = userUnit; 
             const periode = document.getElementById('detailPeriode').innerText;
             const pic = document.getElementById('detailPic').innerText;
             
@@ -298,7 +292,6 @@
             const actVal = document.getElementById('inputAct').value || "- belum diisi -";
             const statusVal = document.getElementById('inputStatus').value;
 
-            // Susun template HTML untuk Word
             const h1 = "<ht" + "ml xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><he" + "ad><meta charset='utf-8'><st" + "yle>";
             const h2 = `
                 body { font-family: 'Arial', sans-serif; line-height: 1.5; }
@@ -360,7 +353,6 @@
 
             const f1 = "</bo" + "dy></ht" + "ml>";
             
-            // Proses Download
             const blob = new Blob(['\ufeff', h1 + h2 + h3 + htmlContent + f1], { type: 'application/msword' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
