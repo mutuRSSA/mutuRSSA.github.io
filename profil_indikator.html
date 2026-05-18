@@ -14,6 +14,7 @@
         .table-profil th { background-color: #f8f9fa; width: 30%; font-weight: 600; color: #495057;}
         .table-profil td { color: #212529; white-space: pre-wrap; }
         .box-dimensi { background: #fff; border: 1px solid #ced4da; padding: 10px; border-radius: 6px; }
+        .form-check-label { cursor: help; } 
     </style>
 </head>
 <body>
@@ -80,24 +81,61 @@
                                     <option value="Negatif">Negatif (Semakin Rendah Semakin Baik)</option>
                                 </select>
                             </div>
+
+                            <div class="col-md-12">
+                                <label class="fw-bold mb-1 text-dark">Judul Indikator / Sub-Indikator Mutu <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control fw-bold border-dark text-dark" id="inp_Judul_Indikator" placeholder="Contoh: Kepatuhan Identifikasi Pasien atau Insidensi Phlebitis ICU" required>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="fw-bold mb-1 text-dark">Satuan <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control fw-bold" id="inp_Satuan" placeholder="Contoh: % , Per mil, Menit, atau Orang" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold mb-1 text-dark">Target Sasaran <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control fw-bold" id="inp_Target" placeholder="Contoh: 85 , 100, atau 0" required>
+                            </div>
+
                             <div class="col-md-12">
                                 <label class="fw-bold mb-1">Dasar Pemikiran</label>
                                 <textarea class="form-control" id="inp_Dasar_Pemikiran" rows="2"></textarea>
                             </div>
                             
-                            <div class="col-md-6">
-                                <label class="fw-bold mb-1 text-primary"><i class="fas fa-tasks me-1"></i> Dimensi Mutu (Bisa Pilih > 1)</label>
-                                <div class="box-dimensi d-flex flex-wrap gap-3">
-                                    <div class="form-check"><input class="form-check-input chk-dimensi" type="checkbox" value="Aman" id="d_aman"><label class="form-check-label" for="d_aman">Aman</label></div>
-                                    <div class="form-check"><input class="form-check-input chk-dimensi" type="checkbox" value="Efektif" id="d_efektif"><label class="form-check-label" for="d_efektif">Efektif</label></div>
-                                    <div class="form-check"><input class="form-check-input chk-dimensi" type="checkbox" value="Efisien" id="d_efisien"><label class="form-check-label" for="d_efisien">Efisien</label></div>
-                                    <div class="form-check"><input class="form-check-input chk-dimensi" type="checkbox" value="Tepat Waktu" id="d_waktu"><label class="form-check-label" for="d_waktu">Tepat Waktu</label></div>
-                                    <div class="form-check"><input class="form-check-input chk-dimensi" type="checkbox" value="Adil" id="d_adil"><label class="form-check-label" for="d_adil">Adil</label></div>
-                                    <div class="form-check"><input class="form-check-input chk-dimensi" type="checkbox" value="Fokus Pasien" id="d_pasien"><label class="form-check-label" for="d_pasien">Fokus Pasien</label></div>
+                            <div class="col-md-12">
+                                <label class="fw-bold mb-1 text-primary"><i class="fas fa-tasks me-1"></i> Dimensi Mutu (Bisa Pilih > 1) <small class="text-muted fw-normal ms-2">Arahkan kursor ke pilihan untuk melihat deskripsi</small></label>
+                                <div class="box-dimensi d-flex flex-wrap gap-4">
+                                    <div class="form-check" title="Layanan yang diberikan tidak menimbulkan risiko atau cedera (keselamatan pasien).">
+                                        <input class="form-check-input chk-dimensi" type="checkbox" value="Aman" id="d_aman">
+                                        <label class="form-check-label fw-semibold" for="d_aman">Aman</label>
+                                    </div>
+                                    <div class="form-check" title="Layanan yang menghargai dan merespons kebutuhan, nilai, serta preferensi masing-masing individu.">
+                                        <input class="form-check-input chk-dimensi" type="checkbox" value="Berorientasi pada Pasien" id="d_pasien">
+                                        <label class="form-check-label fw-semibold" for="d_pasien">Berorientasi pada Pasien</label>
+                                    </div>
+                                    <div class="form-check" title="Layanan yang diberikan berbasis bukti medis (evidence-based) dan memberikan hasil klinis yang diharapkan.">
+                                        <input class="form-check-input chk-dimensi" type="checkbox" value="Efektif" id="d_efektif">
+                                        <label class="form-check-label fw-semibold" for="d_efektif">Efektif</label>
+                                    </div>
+                                    <div class="form-check" title="Pelayanan dilakukan secara optimal tanpa pemborosan biaya, waktu, dan sumber daya.">
+                                        <input class="form-check-input chk-dimensi" type="checkbox" value="Efisien" id="d_efisien">
+                                        <label class="form-check-label fw-semibold" for="d_efisien">Efisien</label>
+                                    </div>
+                                    <div class="form-check" title="Pelayanan diberikan merata kepada semua orang tanpa diskriminasi terkait gender, ras, status, maupun kondisi geografis.">
+                                        <input class="form-check-input chk-dimensi" type="checkbox" value="Adil" id="d_adil">
+                                        <label class="form-check-label fw-semibold" for="d_adil">Adil</label>
+                                    </div>
+                                    <div class="form-check" title="Pelayanan diberikan dalam rentang waktu yang tidak merugikan atau membahayakan kondisi pasien.">
+                                        <input class="form-check-input chk-dimensi" type="checkbox" value="Tepat Waktu" id="d_waktu">
+                                        <label class="form-check-label fw-semibold" for="d_waktu">Tepat Waktu</label>
+                                    </div>
+                                    <div class="form-check" title="Layanan yang berkesinambungan dan terhubung dengan baik di setiap tahapan perawatan pasien.">
+                                        <input class="form-check-input chk-dimensi" type="checkbox" value="Terintegrasi" id="d_integrasi">
+                                        <label class="form-check-label fw-semibold" for="d_integrasi">Terintegrasi</label>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <label class="fw-bold mb-1">Jenis Indikator <span class="text-danger">*</span></label>
                                 <select class="form-select fw-bold text-dark" id="inp_Jenis_Indikator">
                                     <option value="input">input</option>
@@ -138,7 +176,7 @@
                             
                             <div class="col-md-12">
                                 <label class="fw-bold mb-1">Cara Penilaian</label>
-                                <textarea class="form-control" id="inp_Cara_Penilaian" rows="3" placeholder="Deskripsi tata cara penilaian atau penilaian indikator..."></textarea>
+                                <textarea class="form-control" id="inp_Cara_Penilaian" rows="3" placeholder="Deskripsi tata cara penilaian..."></textarea>
                             </div>
                             
                             <div class="col-md-6"><label class="fw-bold mb-1">Metode Pengumpulan Data</label><input type="text" class="form-control" id="inp_Metode_Pengumpulan_Data"></div>
@@ -198,7 +236,7 @@
         const role = sessionMutu.role || "";
         
         let rawKamusData = [];
-        let currentEditingJudul = ""; 
+        let currentEditingJudul = ""; // JANGKAR PEMANDU RENAME DI GOOGLE SHEETS
 
         document.addEventListener("DOMContentLoaded", function () {
             if (role === "Komite Mutu") {
@@ -223,7 +261,6 @@
                                 selectEl.innerHTML += `<option value="${safeId}">${safeId}</option>`;
                             }
                         }
-                        
                         renderAccordion(rawKamusData);
                     } else {
                         Swal.fire('Gagal!', "Tidak dapat memuat kamus.", 'error');
@@ -253,6 +290,8 @@
                 const fields = [
                     { label: "ID Form / Kode", key: "ID_Form" },
                     { label: "Kategori Indikator", key: "Kategori Indikator" },
+                    { label: "Satuan", key: "Satuan" },
+                    { label: "Target Sasaran", key: "Target" },
                     { label: "Arah Target", key: "Arah Target" },
                     { label: "Dasar Pemikiran", key: "Dasar Pemikiran" },
                     { label: "Dimensi Mutu", key: "Dimensi Mutu" },
@@ -332,7 +371,10 @@
                 
                 selectId.value = valId;
                 selectId.disabled = true; 
-                currentEditingJudul = data['Judul Indikator'] || "";
+                
+                // Ambil dan pasang Judul Indikator asli ke Input Box
+                document.getElementById('inp_Judul_Indikator').value = data['Judul Indikator'] || "";
+                currentEditingJudul = data['Judul Indikator'] || ""; // Kunci nama lama untuk tracker backend
 
                 let dimensiStr = data['Dimensi Mutu'] || "";
                 if(dimensiStr !== "-") {
@@ -351,6 +393,8 @@
                 
                 mapField('inp_Kategori_Indikator', 'Kategori Indikator');
                 mapField('inp_Arah_Target', 'Arah Target');
+                mapField('inp_Satuan', 'Satuan'); 
+                mapField('inp_Target', 'Target'); 
                 mapField('inp_Dasar_Pemikiran', 'Dasar Pemikiran');
                 mapField('inp_Jenis_Indikator', 'Jenis Indikator');
                 mapField('inp_Tujuan', 'Tujuan');
@@ -390,6 +434,9 @@
             
             if(!idForm) { Swal.fire('Peringatan', 'Silakan tentukan pilihan ID Form!', 'warning'); return; }
 
+            let judulIndikatorBaru = document.getElementById('inp_Judul_Indikator').value.trim();
+            if(!judulIndikatorBaru) { Swal.fire('Peringatan', 'Judul Indikator tidak boleh kosong!', 'warning'); return; }
+
             let checkedDimensi = [];
             document.querySelectorAll('.chk-dimensi:checked').forEach(chk => {
                 checkedDimensi.push(chk.value);
@@ -402,9 +449,11 @@
 
             const payloadData = {
                 "ID_Form": idForm,
-                "Judul Indikator": currentEditingJudul, 
+                "Judul Indikator": judulIndikatorBaru, // Mengirimkan teks judul baru/editan ke database
                 "Kategori Indikator": document.getElementById('inp_Kategori_Indikator').value,
                 "Arah Target": document.getElementById('inp_Arah_Target').value,
+                "Satuan": document.getElementById('inp_Satuan').value, 
+                "Target": document.getElementById('inp_Target').value, 
                 "Dasar Pemikiran": document.getElementById('inp_Dasar_Pemikiran').value,
                 "Dimensi Mutu": dimensiMutuStr,
                 "Tujuan": document.getElementById('inp_Tujuan').value,
@@ -429,7 +478,8 @@
             fetch(scriptURL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ action: 'save_profil_indikator', role: role, data: payloadData })
+                // MENYERTAKAN TRACKER JUDUL LAMA AGAR BACKEND TIDAK MEMBUAT DUPLIKAT BARIS BARU
+                body: JSON.stringify({ action: 'save_profil_indikator', role: role, old_judul_indikator: currentEditingJudul, data: payloadData })
             })
             .then(res => res.json())
             .then(res => {
