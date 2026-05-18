@@ -3,127 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kamus Profil Indikator Mutu</title>
+    <title>Kamus Indikator Mutu</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        .card-custom { box-shadow: 0 4px 6px rgba(0,0,0,.05); border-radius: 8px; border-top: 4px solid #6f42c1; }
-        
-        .indicator-card { transition: 0.2s; border: 1px solid #dee2e6; cursor: pointer; }
-        .indicator-card:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,0.1); border-color: #6f42c1; }
-        
-        .badge-inm { background-color: #dc3545; color: white; }
-        .badge-imp-rs { background-color: #0dcaf0; color: white; }
-        .badge-imp-unit { background-color: #198754; color: white; }
-
-        /* TABEL PROFIL AKREDITASI */
-        .table-profil th { background-color: #f8f9fa; width: 30%; font-weight: 600; color: #495057; border-color: #dee2e6;}
-        .table-profil td { border-color: #dee2e6; color: #212529; white-space: pre-wrap; }
-
-        /* ================= CSS KHUSUS CETAK PDF ================= */
-        @media print {
-            body { background-color: #fff !important; padding-top: 0 !important; font-size: 11pt !important; }
-            #navbar-container, #sidebar-container, .d-print-none, .btn { display: none !important; }
-            .card-custom { border: none !important; box-shadow: none !important; padding: 0 !important; }
-            
-            .print-page { page-break-after: always; margin-bottom: 20px; }
-            .print-page:last-child { page-break-after: auto; }
-            
-            table { border-collapse: collapse !important; width: 100% !important; margin-bottom: 20px;}
-            table th, table td { border: 1px solid #000 !important; padding: 6px !important; text-align: left; vertical-align: top;}
-            table th { background-color: #e9ecef !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-weight: bold;}
-            
-            .kop-surat { text-align: center; border-bottom: 3px solid #000; margin-bottom: 20px; padding-bottom: 10px; }
-            .kop-surat h3 { margin: 0; font-weight: bold; font-size: 16pt; }
-            .kop-surat h4 { margin: 5px 0 0 0; font-weight: bold; font-size: 14pt; }
-        }
+        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border-top: 4px solid #0dcaf0; background: #fff;}
+        .accordion-button:not(.collapsed) { background-color: #e0f7fa; color: #0c63e4; font-weight: bold; }
+        .table-profil th { background-color: #f8f9fa; width: 30%; font-weight: 600; color: #495057;}
+        .table-profil td { color: #212529; white-space: pre-wrap; }
     </style>
 </head>
 <body>
-
     <div id="navbar-container"></div>
     <div id="sidebar-container"></div>
 
-    <div class="container-fluid px-4" style="max-width: 1200px;">
-        <div class="bg-white p-4 mb-4 card-custom d-print-none">
-            
-            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3 border-bottom pb-3">
+    <div class="container-fluid px-4" style="max-width: 1100px;">
+        <div class="bg-white p-4 mb-4 card-custom">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4 flex-wrap gap-3">
                 <div>
                     <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-book-medical text-primary me-2"></i> Kamus Profil Indikator Mutu</h4>
-                    <p class="text-muted mb-0">Dokumen referensi definisi operasional dan metodologi pengukuran indikator.</p>
+                    <p class="text-muted mb-0">Referensi lengkap definisi operasional, formula, dan standar pengukuran mutu rumah sakit.</p>
                 </div>
-                <div>
-                    <button class="btn btn-danger fw-bold shadow-sm" onclick="cetakSemuaProfil()"><i class="fas fa-print me-2"></i> Cetak Semua Profil (Buku Kamus)</button>
-                </div>
-            </div>
-
-            <div class="row g-3 bg-light p-3 rounded border align-items-center mb-4">
-                <div class="col-md-4">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white text-secondary border-end-0"><i class="fas fa-search"></i></span>
-                        <input type="text" class="form-control border-start-0 ps-0" id="searchInput" placeholder="Cari judul indikator atau kata kunci..." onkeyup="filterData()">
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <select class="form-select fw-bold text-secondary" id="kategoriFilter" onchange="filterData()">
-                        <option value="ALL">Semua Kategori Indikator</option>
-                        <option value="INM">Indikator Mutu Nasional (INM)</option>
-                        <option value="IMP-RS">Indikator Prioritas RS (IMP-RS)</option>
-                        <option value="IMP-Unit">Indikator Prioritas Unit (IMP-Unit)</option>
-                    </select>
-                </div>
-                <div class="col-md-5 text-md-end">
-                    <span class="badge bg-secondary fs-6" id="totalCounter">Memuat data...</span>
+                <div id="adminControls" class="d-none">
+                    <button class="btn btn-primary fw-bold shadow-sm" onclick="bukaModalForm(null)">
+                        <i class="fas fa-plus me-1"></i> Tambah Profil Baru
+                    </button>
                 </div>
             </div>
 
-            <div id="loadingMessage" class="alert alert-info text-center fw-bold shadow-sm"><i class="fas fa-spinner fa-spin me-2"></i> Menarik database kamus mutu dari server...</div>
+            <div class="mb-4">
+                <div class="input-group shadow-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0" id="searchInput" placeholder="Cari nama indikator atau kata kunci definisi..." onkeyup="filterKamus()">
+                </div>
+            </div>
+
+            <div id="loadingMessage" class="alert alert-info text-center fw-bold shadow-sm"><i class="fas fa-spinner fa-spin me-2"></i> Mengambil data kamus indikator...</div>
             
-            <div class="row g-3" id="indicatorList">
-                </div>
+            <div class="accordion shadow-sm" id="accordionKamus"></div>
             
-            <div id="noDataMessage" class="alert alert-warning text-center mt-3 fw-bold shadow-sm" style="display: none;">
-                <i class="fas fa-search me-2"></i> Indikator tidak ditemukan. Coba kata kunci lain.
+            <div id="noDataMessage" class="alert alert-warning text-center mt-3 fw-bold" style="display: none;">
+                <i class="fas fa-exclamation-circle me-2"></i> Belum ada profil indikator yang ditambahkan ke kamus.
             </div>
-
         </div>
-
-        <div id="printAllContainer" class="d-none d-print-block"></div>
     </div>
 
-    <div class="modal fade" id="modalProfil" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal fade" id="modalFormProfil" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
-                <div class="modal-header bg-dark text-white d-print-none">
-                    <h5 class="modal-title fw-bold"><i class="fas fa-file-alt me-2"></i> Detail Profil Indikator</h5>
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title fw-bold" id="modalTitle"><i class="fas fa-edit me-2"></i> Form Kamus Indikator</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4 bg-white" id="modalPrintArea">
-                    
-                    <div class="d-flex justify-content-between align-items-center mb-3 d-print-none border-bottom pb-2">
-                        <span class="badge fs-6" id="detailKategoriBadge">Kategori</span>
-                        <div>
-                            <button class="btn btn-sm btn-outline-danger fw-bold" onclick="cetakProfilIndividu()"><i class="fas fa-file-pdf me-1"></i> Cetak / PDF</button>
-                            <button class="btn btn-sm btn-outline-primary fw-bold ms-2" onclick="exportWordIndividu()"><i class="fas fa-file-word me-1"></i> Export Word</button>
+                <div class="modal-body bg-light">
+                    <form id="formProfil">
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                <label class="fw-bold mb-1">ID Form / Kode Kriteria <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control fw-bold text-primary" id="inp_Kolom_Kriteria" placeholder="Contoh: Kepatuhan_Identifikasi" required>
+                                <small class="text-muted">Harus sama dengan Kode Form Builder (Gunakan Underscore).</small>
+                            </div>
+                            <div class="col-md-7">
+                                <label class="fw-bold mb-1">Arah Target Pencapaian <span class="text-danger">*</span></label>
+                                <select class="form-select fw-bold text-dark" id="inp_Arah_Target">
+                                    <option value="Positif">Positif (Semakin Tinggi Semakin Baik / Kelayakan)</option>
+                                    <option value="Negatif">Negatif (Semakin Rendah Semakin Baik / Tingkat Insiden)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="fw-bold mb-1">Dasar Pemikiran</label>
+                                <textarea class="form-control" id="inp_Dasar_Pemikiran" rows="2" placeholder="Latar belakang pemetaan indikator..."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold mb-1">Dimensi Mutu</label>
+                                <input type="text" class="form-control" id="inp_Dimensi_Mutu" placeholder="Contoh: Efisiensi, Efektivitas, Keselamatan, Fokus Pasien">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold mb-1">Jenis Indikator</label>
+                                <input type="text" class="form-control" id="inp_Jenis_Indikator" placeholder="Contoh: INM / IMP-RS / IMP-Unit">
+                            </div>
+                            <div class="col-md-12">
+                                <label class="fw-bold mb-1">Tujuan</label>
+                                <textarea class="form-control" id="inp_Tujuan" rows="2" placeholder="Target capaian objektif..."></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="fw-bold mb-1">Definisi Operasional</label>
+                                <textarea class="form-control" id="inp_Definisi_Operasional" rows="3" placeholder="Penjelasan detail istilah teknis..."></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold mb-1 text-success">Kriteria Inklusi</label>
+                                <textarea class="form-control" id="inp_Kriteria_Inklusi" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold mb-1 text-danger">Kriteria Eksklusi</label>
+                                <textarea class="form-control" id="inp_Kriteria_Eksklusi" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold mb-1 text-primary">Numerator (Pembilang)</label>
+                                <textarea class="form-control" id="inp_Numerator" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold mb-1 text-primary">Denominator (Penyebut)</label>
+                                <textarea class="form-control" id="inp_Denominator" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="fw-bold mb-1">Formula Perhitungan</label>
+                                <input type="text" class="form-control fw-bold" id="inp_Formula" placeholder="(Numerator / Denominator) x 100%">
+                            </div>
+                            
+                            <div class="col-md-6"><label class="fw-bold mb-1">Cara Penilaian</label><input type="text" class="form-control" id="inp_Cara_Penilaian"></div>
+                            <div class="col-md-6"><label class="fw-bold mb-1">Metode Pengumpulan Data</label><input type="text" class="form-control" id="inp_Metode_Pengumpulan_Data"></div>
+                            <div class="col-md-6"><label class="fw-bold mb-1">Sumber Data</label><input type="text" class="form-control" id="inp_Sumber_Data"></div>
+                            <div class="col-md-6"><label class="fw-bold mb-1">Instrumen Pengambilan Data</label><input type="text" class="form-control" id="inp_Instrumen_Pengambilan_Data"></div>
+                            <div class="col-md-6"><label class="fw-bold mb-1">Besar Sampel</label><input type="text" class="form-control" id="inp_Besar_Sampel"></div>
+                            <div class="col-md-6"><label class="fw-bold mb-1">Cara Pengambilan Sampel</label><input type="text" class="form-control" id="inp_Cara_Pengambilan_Sampel"></div>
+                            <div class="col-md-4"><label class="fw-bold mb-1">Periode Pengumpulan Data</label><input type="text" class="form-control" id="inp_Periode_Pengumpulan_Data"></div>
+                            <div class="col-md-4"><label class="fw-bold mb-1">Periode Pelaporan Data</label><input type="text" class="form-control" id="inp_Periode_Pelaporan_Data"></div>
+                            <div class="col-md-4"><label class="fw-bold mb-1">Periode Analisis Data</label><input type="text" class="form-control" id="inp_Periode_Analisis_Data"></div>
+                            <div class="col-md-6"><label class="fw-bold mb-1">Penyajian Data</label><input type="text" class="form-control" id="inp_Penyajian_Data"></div>
+                            <div class="col-md-6"><label class="fw-bold mb-1">Penanggung Jawab</label><input type="text" class="form-control" id="inp_Penanggung_Jawab"></div>
                         </div>
-                    </div>
-
-                    <div class="kop-surat d-none d-print-block">
-                        <h3>PROFIL INDIKATOR MUTU</h3>
-                        <h4>RSUD SARAS ADYATMA</h4>
-                    </div>
-
-                    <h5 class="fw-bold text-center mb-4 text-uppercase" id="detailJudul">Judul Indikator</h5>
-                    
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-profil" id="detailTable">
-                            <tbody>
-                                </tbody>
-                        </table>
-                    </div>
-
+                    </form>
+                </div>
+                <div class="modal-footer bg-white border-top">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn btn-primary fw-bold" id="btnSimpan" onclick="simpanProfil()">
+                        <i class="fas fa-save me-1"></i> Simpan ke Database
+                    </button>
                 </div>
             </div>
         </div>
@@ -135,274 +143,228 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const scriptURL = API_CONFIG.MUTU; 
-        let rawDataProfil = [];
+        const scriptURL = API_CONFIG.MUTU;
+        const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        const role = sessionMutu.role || "";
+        let rawKamusData = [];
 
         document.addEventListener("DOMContentLoaded", function () {
+            if (role === "Komite Mutu") {
+                document.getElementById('adminControls').classList.remove('d-none');
+            }
+            muatDataKamus();
+        });
+
+        function muatDataKamus() {
             fetch(`${scriptURL}?action=get_profil_indikator`)
                 .then(res => res.json())
                 .then(result => {
                     document.getElementById('loadingMessage').style.display = 'none';
                     if (result.status === 'success') {
-                        rawDataProfil = result.data;
-                        filterData(); 
+                        rawKamusData = result.data;
+                        renderAccordion(rawKamusData);
                     } else {
-                        Swal.fire('Gagal!', result.message, 'error');
+                        Swal.fire('Gagal!', "Tidak dapat memuat kamus indikator.", 'error');
                     }
-                })
-                .catch(err => {
+                }).catch(err => {
                     document.getElementById('loadingMessage').innerHTML = '<i class="fas fa-wifi text-danger me-2"></i> Gagal terhubung ke server.';
                 });
-        });
-
-        // FUNGSI RENDER BADGE WARNA BERDASARKAN "KATEGORI INDIKATOR"
-        function getBadgeClass(kategori) {
-            let cat = (kategori || "").toUpperCase();
-            if (cat.includes("INM") || cat.includes("NASIONAL")) return "badge-inm";
-            if (cat.includes("IMP-RS") || cat.includes("RUMAH SAKIT")) return "badge-imp-rs";
-            if (cat.includes("IMP-UNIT") || cat.includes("PRIORITAS UNIT")) return "badge-imp-unit";
-            return "bg-secondary";
         }
 
-        // FUNGSI FILTER & RENDER KARTU
-        window.filterData = function() {
-            const searchKw = document.getElementById('searchInput').value.toLowerCase();
-            const filterCat = document.getElementById('kategoriFilter').value;
-            
-            let filteredData = rawDataProfil.filter(row => {
-                let judul = (row['Judul Indikator'] || "").toLowerCase();
-                let kategori = (row['Kategori Indikator'] || "").toUpperCase(); // Sudah dikoreksi ke Kategori Indikator
-                
-                let matchSearch = judul.includes(searchKw);
-                let matchCat = true;
-                
-                if (filterCat !== "ALL") {
-                    if (filterCat === "INM" && !kategori.includes("INM") && !kategori.includes("NASIONAL")) matchCat = false;
-                    if (filterCat === "IMP-RS" && !kategori.includes("IMP-RS")) matchCat = false;
-                    if (filterCat === "IMP-Unit" && !kategori.includes("IMP-UNIT")) matchCat = false;
-                }
-                
-                return matchSearch && matchCat;
-            });
+        function renderAccordion(data) {
+            const container = document.getElementById('accordionKamus');
+            container.innerHTML = '';
 
-            document.getElementById('totalCounter').innerText = `Total: ${filteredData.length} Indikator`;
-            
-            const listContainer = document.getElementById('indicatorList');
-            listContainer.innerHTML = "";
-
-            if (filteredData.length === 0) {
+            if (data.length === 0) {
                 document.getElementById('noDataMessage').style.display = 'block';
-            } else {
-                document.getElementById('noDataMessage').style.display = 'none';
-                
-                filteredData.forEach((row, index) => {
-                    let judul = row['Judul Indikator'] || "Tanpa Judul";
-                    let kategori = row['Kategori Indikator'] || "Umum";
-                    let tujuan = row['Tujuan'] || "Lihat detail untuk informasi operasional lebih lanjut.";
-                    let badgeCls = getBadgeClass(kategori);
-
-                    let originalIndex = rawDataProfil.indexOf(row);
-
-                    let cardHtml = `
-                    <div class="col-md-6 col-lg-4">
-                        <div class="card h-100 indicator-card bg-white rounded-3" onclick="bukaProfilLengkap(${originalIndex})">
-                            <div class="card-body d-flex flex-column">
-                                <div class="mb-2"><span class="badge ${badgeCls} px-2 py-1">${kategori}</span></div>
-                                <h6 class="card-title fw-bold text-dark lh-base">${judul}</h6>
-                                <p class="card-text text-muted flex-grow-1 mt-2" style="font-size: 0.8rem; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">
-                                    ${tujuan}
-                                </p>
-                                <div class="mt-3 border-top pt-2 text-end">
-                                    <span class="text-primary fw-bold" style="font-size: 0.8rem;">Lihat Profil <i class="fas fa-arrow-right ms-1"></i></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
-                    listContainer.innerHTML += cardHtml;
-                });
-            }
-        };
-
-        // FUNGSI MEMBUKA MODAL SATUAN
-        window.bukaProfilLengkap = function(index) {
-            let row = rawDataProfil[index];
-            if(!row) return;
-
-            let judul = row['Judul Indikator'] || "Tanpa Judul";
-            let kategori = row['Kategori Indikator'] || "Umum";
-            let badgeCls = getBadgeClass(kategori);
-
-            document.getElementById('detailKategoriBadge').className = `badge ${badgeCls} fs-6`;
-            document.getElementById('detailKategoriBadge').innerText = kategori;
-            document.getElementById('detailJudul').innerText = judul;
-
-            // List Field Disesuaikan dengan Header di Spreadsheet yang sudah dikoreksi
-            const fields = [
-                "Dasar Pemikiran", "Dimensi Mutu", "Tujuan", "Definisi Operasional", "Jenis Indikator", 
-                "Satuan", "Numerator", "Denominator", "Target", 
-                "Kriteria Inklusi", "Kriteria Eksklusi", "Formula", "Cara Penilaian", "Metode Pengumpulan Data", 
-                "Sumber Data", "Instrumen Pengambilan Data", "Besar Sampel", "Cara Pengambilan Sampel", 
-                "Periode Pengumpulan Data", "Periode Pelaporan Data", "Periode Analisis Data", "Penyajian Data", "Penanggung Jawab"
-            ];
-
-            let tbodyHtml = "";
-            fields.forEach(field => {
-                let val = row[field] ? row[field] : "-";
-                // Merapikan penamaan field yang mungkin ditulis singkat di Excel
-                let labelTampil = field;
-                if(field === "Satuan") labelTampil = "Satuan Pengukuran";
-                if(field === "Target") labelTampil = "Target Pencapaian";
-                if(field === "Numerator") labelTampil = "Numerator (Pembilang)";
-                if(field === "Denominator") labelTampil = "Denominator (Penyebut)";
-
-                tbodyHtml += `<tr><th>${labelTampil}</th><td>${val}</td></tr>`;
-            });
-
-            document.getElementById('detailTable').querySelector('tbody').innerHTML = tbodyHtml;
-            new bootstrap.Modal(document.getElementById('modalProfil')).show();
-        };
-
-        // FUNGSI CETAK PDF INDIVIDU DARI MODAL (Bisa multi-halaman)
-        window.cetakProfilIndividu = function() {
-            const judul = document.getElementById('detailJudul').innerText;
-            const kategori = document.getElementById('detailKategoriBadge').innerText;
-            const tbodyHtml = document.getElementById('detailTable').querySelector('tbody').innerHTML;
-
-            let printContainer = document.getElementById('printAllContainer');
-            
-            // Susun ulang HTML agar masuk ke format kertas A4 standar kita
-            let allHtml = `
-            <div class="print-page">
-                <div class="kop-surat">
-                    <h3>PROFIL INDIKATOR MUTU</h3>
-                    <h4>RSUD SARAS ADYATMA</h4>
-                </div>
-                <h5 class="fw-bold text-center mb-4 text-uppercase">${judul}</h5>
-                <table>
-                    <tbody>
-                        <tr><th>Kategori Indikator</th><td style="font-weight:bold;">${kategori}</td></tr>
-                        ${tbodyHtml}
-                    </tbody>
-                </table>
-            </div>`;
-
-            printContainer.innerHTML = allHtml;
-            
-            // Tutup pop-up modal agar tidak menimpa dan memotong layar print
-            let modalEl = document.getElementById('modalProfil');
-            let modalInstance = bootstrap.Modal.getInstance(modalEl);
-            if (modalInstance) { modalInstance.hide(); }
-
-            // Panggil perintah print dengan jeda waktu sedikit agar render HTML selesai
-            setTimeout(() => {
-                window.print();
-                printContainer.innerHTML = ""; // Bersihkan kembali kertas virtualnya
-            }, 500);
-        };
-
-        // FUNGSI EXPORT WORD SATUAN DARI MODAL (SUDAH DIPERBAIKI BUG HTML PARSERNYA)
-        window.exportWordIndividu = function() {
-            const judul = document.getElementById('detailJudul').innerText;
-            const tableHtml = document.getElementById('detailTable').outerHTML;
-            
-            const h1 = "<ht" + "ml xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><he" + "ad><meta charset='utf-8'><st" + "yle>";
-            const h2 = "body { font-family: 'Arial', sans-serif; } table { border-collapse: collapse; width: 100%; margin-top: 20px; } th, td { border: 1px solid #000; padding: 6px; font-size: 10pt; vertical-align: top;} th { background-color: #f2f2f2; width: 30%; font-weight: bold;} h3, h4, h5 { text-align: center; margin: 5px 0;}";
-            const h3 = "</st" + "yle></he" + "ad><bo" + "dy>";
-            
-            const kopSurat = "<h3>PROFIL INDIKATOR MUTU</h3><h4>RSUD SARAS ADYATMA</h4><br><h5 style='text-transform:uppercase;'>" + judul + "</h5><br>";
-            
-            const f1 = "</bo" + "dy></ht" + "ml>";
-                
-            const blob = new Blob(['\ufeff', h1 + h2 + h3 + kopSurat + tableHtml + f1], { type: 'application/msword' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob); 
-            link.download = "Profil_Mutu_" + judul.substring(0,30).replace(/[^a-z0-9]/gi, '_') + ".doc";
-            link.click();
-        };
-
-        // FUNGSI CETAK BUNDEL SEMUA PROFIL (Mass Print)
-        window.cetakSemuaProfil = function() {
-            const searchKw = document.getElementById('searchInput').value.toLowerCase();
-            const filterCat = document.getElementById('kategoriFilter').value;
-            
-            let dataDicetak = rawDataProfil.filter(row => {
-                let judul = (row['Judul Indikator'] || "").toLowerCase();
-                let kategori = (row['Kategori Indikator'] || "").toUpperCase();
-                let matchSearch = judul.includes(searchKw);
-                let matchCat = true;
-                if (filterCat !== "ALL") {
-                    if (filterCat === "INM" && !kategori.includes("INM") && !kategori.includes("NASIONAL")) matchCat = false;
-                    if (filterCat === "IMP-RS" && !kategori.includes("IMP-RS")) matchCat = false;
-                    if (filterCat === "IMP-Unit" && !kategori.includes("IMP-UNIT")) matchCat = false;
-                }
-                return matchSearch && matchCat;
-            });
-
-            if (dataDicetak.length === 0) {
-                Swal.fire('Info', 'Tidak ada data untuk dicetak berdasarkan filter saat ini.', 'info');
                 return;
             }
 
-            Swal.fire({
-                title: 'Siapkan Bundel Cetak?',
-                text: `Sistem akan merangkum ${dataDicetak.length} profil indikator menjadi satu dokumen panjang. Lanjutkan?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Siapkan Dokumen'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    let printContainer = document.getElementById('printAllContainer');
-                    let allHtml = "";
+            data.forEach((row, index) => {
+                let idForm = row['Kolom_Kriteria'] || row['ID_Form'] || row['ID Form'] || `Unknown_${index}`;
+                let judul = idForm.replace(/_/g, ' '); 
+                let jenis = row['Jenis Indikator'] || row['Kategori Indikator'] || "-";
 
-                    const fields = [
-                        "Dasar Pemikiran", "Dimensi Mutu", "Tujuan", "Definisi Operasional", "Jenis Indikator", 
-                        "Satuan", "Numerator", "Denominator", "Target", 
-                        "Kriteria Inklusi", "Kriteria Eksklusi", "Formula", "Cara Penilaian", "Metode Pengumpulan Data", 
-                        "Sumber Data", "Instrumen Pengambilan Data", "Besar Sampel", "Cara Pengambilan Sampel", 
-                        "Periode Pengumpulan Data", "Periode Pelaporan Data", "Periode Analisis Data", "Penyajian Data", "Penanggung Jawab"
-                    ];
+                let btnEdit = (role === "Komite Mutu") 
+                    ? `<button class="btn btn-sm btn-outline-primary ms-3" onclick="bukaModalForm(${index}); event.stopPropagation();"><i class="fas fa-edit"></i> Edit</button>` 
+                    : ``;
 
-                    dataDicetak.forEach((row, i) => {
-                        let judul = row['Judul Indikator'] || "Tanpa Judul";
-                        let kategori = row['Kategori Indikator'] || "Umum";
+                // Urutan pemetaan field visual akordion
+                const fields = [
+                    { label: "Arah Target", key: "Arah Target" },
+                    { label: "Dasar Pemikiran", key: "Dasar Pemikiran" },
+                    { label: "Dimensi Mutu", key: "Dimensi Mutu" },
+                    { label: "Tujuan", key: "Tujuan" },
+                    { label: "Definisi Operasional", key: "Definisi Operasional" },
+                    { label: "Jenis Indikator", key: "Jenis Indikator" },
+                    { label: "Numerator (Pembilang)", key: "Numerator" },
+                    { label: "Denominator (Penyebut)", key: "Denominator" },
+                    { label: "Kriteria Inklusi", key: "Kriteria Inklusi" },
+                    { label: "Kriteria Eksklusi", key: "Kriteria Eksklusi" },
+                    { label: "Formula Perhitungan", key: "Formula" },
+                    { label: "Cara Penilaian", key: "Cara Penilaian" },
+                    { label: "Metode Pengumpulan Data", key: "Metode Pengumpulan Data" },
+                    { label: "Sumber Data", key: "Sumber Data" },
+                    { label: "Instrumen Pengambilan Data", key: "Instrumen Pengambilan Data" },
+                    { label: "Besar Sampel", key: "Besar Sampel" },
+                    { label: "Cara Pengambilan Sampel", key: "Cara Pengambilan Sampel" },
+                    { label: "Periode Pengumpulan Data", key: "Periode Pengumpulan Data" },
+                    { label: "Periode Pelaporan Data", key: "Periode Pelaporan Data" },
+                    { label: "Periode Analisis Data", key: "Periode Analisis Data" },
+                    { label: "Penyajian Data", key: "Penyajian Data" },
+                    { label: "Penanggung Jawab", key: "Penanggung Jawab" }
+                ];
 
-                        let tbodyHtml = `<tr><th>Kategori Indikator</th><td style="font-weight:bold;">${kategori}</td></tr>`;
-                        fields.forEach(field => {
-                            let val = row[field] ? row[field] : "-";
-                            let labelTampil = field;
-                            if(field === "Satuan") labelTampil = "Satuan Pengukuran";
-                            if(field === "Target") labelTampil = "Target Pencapaian";
-                            if(field === "Numerator") labelTampil = "Numerator (Pembilang)";
-                            if(field === "Denominator") labelTampil = "Denominator (Penyebut)";
-
-                            tbodyHtml += `<tr><th>${labelTampil}</th><td>${val}</td></tr>`;
-                        });
-
-                        allHtml += `
-                        <div class="print-page">
-                            <div class="kop-surat">
-                                <h3>PROFIL INDIKATOR MUTU</h3>
-                                <h4>RSUD SARAS ADYATMA</h4>
-                            </div>
-                            <h5 class="fw-bold text-center mb-4 text-uppercase">${judul}</h5>
-                            <table>
-                                <tbody>${tbodyHtml}</tbody>
-                            </table>
-                        </div>`;
-                    });
-
-                    printContainer.innerHTML = allHtml;
+                let tbodyHtml = '';
+                
+                fields.forEach(f => {
+                    let val = row[f.key] || row[f.key.replace(" Perhitungan", "")] || row[f.key.replace(" (Pembilang)", "")] || row[f.key.replace(" (Penyebut)", "")] || "-";
                     
-                    let modalEl = document.getElementById('modalProfil');
-                    let modalInstance = bootstrap.Modal.getInstance(modalEl);
-                    if (modalInstance) { modalInstance.hide(); }
+                    if (f.key === "Arah Target") {
+                        let badgeColor = val === "Negatif" ? "bg-danger" : "bg-success";
+                        let descText = val === "Negatif" ? "Semakin Rendah Semakin Baik" : "Semakin Tinggi Semakin Baik";
+                        val = `<span class="badge ${badgeColor}">${val}</span> <small class="text-muted">(${descText})</small>`;
+                    }
 
-                    setTimeout(() => {
-                        window.print();
-                        printContainer.innerHTML = ""; 
-                    }, 500);
-                }
+                    tbodyHtml += `<tr><th style="background:#f8f9fa;">${f.label}</th><td>${val}</td></tr>`;
+                });
+
+                let html = `
+                <div class="accordion-item mb-2 border rounded overflow-hidden kamus-item">
+                    <h2 class="accordion-header" id="heading${index}">
+                        <button class="accordion-button collapsed d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">
+                            <span><b>${judul.toUpperCase()}</b> <span class="badge bg-secondary ms-2">${jenis}</span></span>
+                            ${btnEdit}
+                        </button>
+                    </h2>
+                    <div id="collapse${index}" class="accordion-collapse collapse" data-bs-parent="#accordionKamus">
+                        <div class="accordion-body bg-light p-3">
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-profil mb-0 bg-white">
+                                    <tbody>${tbodyHtml}</tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+                
+                container.innerHTML += html;
             });
+        }
+
+        function filterKamus() {
+            let input = document.getElementById('searchInput').value.toLowerCase();
+            let items = document.querySelectorAll('.kamus-item');
+            items.forEach(item => {
+                let text = item.innerText.toLowerCase();
+                item.style.display = text.includes(input) ? '' : 'none';
+            });
+        }
+
+        window.bukaModalForm = function(index) {
+            document.getElementById('formProfil').reset();
+            
+            if (index !== null) {
+                let data = rawKamusData[index];
+                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit me-2"></i> Edit Profil Indikator';
+                
+                // PERBAIKAN: Menggunakan ID inp_Kolom_Kriteria
+                document.getElementById('inp_Kolom_Kriteria').value = data['Kolom_Kriteria'] || data['ID_Form'] || data['ID Form'] || "";
+                document.getElementById('inp_Kolom_Kriteria').readOnly = true; 
+                
+                const mapField = (id, key) => { 
+                    if(document.getElementById(id)) {
+                        document.getElementById(id).value = data[key] || data[key+" (Pembilang)"] || data[key+" (Penyebut)"] || ""; 
+                    }
+                };
+                
+                mapField('inp_Arah_Target', 'Arah Target');
+                mapField('inp_Dasar_Pemikiran', 'Dasar Pemikiran');
+                mapField('inp_Dimensi_Mutu', 'Dimensi Mutu');
+                mapField('inp_Tujuan', 'Tujuan');
+                mapField('inp_Definisi_Operasional', 'Definisi Operasional');
+                mapField('inp_Jenis_Indikator', 'Jenis Indikator');
+                mapField('inp_Numerator', 'Numerator');
+                mapField('inp_Denominator', 'Denominator');
+                mapField('inp_Formula', 'Formula');
+                mapField('inp_Cara_Penilaian', 'Cara Penilaian');
+                mapField('inp_Metode_Pengumpulan_Data', 'Metode Pengumpulan Data');
+                mapField('inp_Sumber_Data', 'Sumber Data');
+                mapField('inp_Instrumen_Pengambilan_Data', 'Instrumen Pengambilan Data');
+                mapField('inp_Besar_Sampel', 'Besar Sampel');
+                mapField('inp_Cara_Pengambilan_Sampel', 'Cara Pengambilan Sampel');
+                mapField('inp_Periode_Pengumpulan_Data', 'Periode Pengumpulan Data');
+                mapField('inp_Periode_Pelaporan_Data', 'Periode Pelaporan Data');
+                mapField('inp_Periode_Analisis_Data', 'Periode Analisis Data');
+                mapField('inp_Penyajian_Data', 'Penyajian Data');
+                mapField('inp_Penanggung_Jawab', 'Penanggung Jawab');
+            } else {
+                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus me-2"></i> Tambah Profil Baru';
+                
+                // PERBAIKAN: Menggunakan ID inp_Kolom_Kriteria
+                document.getElementById('inp_Kolom_Kriteria').readOnly = false;
+                document.getElementById('inp_Arah_Target').value = "Positif"; 
+            }
+
+            new bootstrap.Modal(document.getElementById('modalFormProfil')).show();
+        };
+
+        window.simpanProfil = function() {
+            // PERBAIKAN: Menggunakan ID inp_Kolom_Kriteria
+            let idForm = document.getElementById('inp_Kolom_Kriteria').value.trim();
+            if(!idForm) { Swal.fire('Peringatan', 'Kode Kriteria (ID Form) tidak boleh kosong!', 'warning'); return; }
+
+            let btn = document.getElementById('btnSimpan');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
+            btn.disabled = true;
+
+            const payloadData = {
+                "Kolom_Kriteria": idForm,
+                "Arah Target": document.getElementById('inp_Arah_Target').value,
+                "Dasar Pemikiran": document.getElementById('inp_Dasar_Pemikiran').value,
+                "Dimensi Mutu": document.getElementById('inp_Dimensi_Mutu').value,
+                "Tujuan": document.getElementById('inp_Tujuan').value,
+                "Definisi Operasional": document.getElementById('inp_Definisi_Operasional').value,
+                "Jenis Indikator": document.getElementById('inp_Jenis_Indikator').value,
+                "Numerator": document.getElementById('inp_Numerator').value,
+                "Denominator": document.getElementById('inp_Denominator').value,
+                "Formula": document.getElementById('inp_Formula').value,
+                "Cara Penilaian": document.getElementById('inp_Cara_Penilaian').value,
+                "Metode Pengumpulan Data": document.getElementById('inp_Metode_Pengumpulan_Data').value,
+                "Sumber Data": document.getElementById('inp_Sumber_Data').value,
+                "Instrumen Pengambilan Data": document.getElementById('inp_Instrumen_Pengambilan_Data').value,
+                "Besar Sampel": document.getElementById('inp_Besar_Sampel').value,
+                "Cara Pengambilan Sampel": document.getElementById('inp_Cara_Pengambilan_Sampel').value,
+                "Periode Pengumpulan Data": document.getElementById('inp_Periode_Pengumpulan_Data').value,
+                "Periode Pelaporan Data": document.getElementById('inp_Periode_Pelaporan_Data').value,
+                "Periode Analisis Data": document.getElementById('inp_Periode_Analisis_Data').value,
+                "Penyajian Data": document.getElementById('inp_Penyajian_Data').value,
+                "Penanggung Jawab": document.getElementById('inp_Penanggung_Jawab').value
+            };
+
+            fetch(scriptURL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify({ action: 'save_profil_indikator', role: role, data: payloadData })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.status === 'success') {
+                    Swal.fire({ title: 'Berhasil!', text: 'Profil indikator tersimpan.', icon: 'success', timer: 1500, showConfirmButton: false })
+                    .then(() => {
+                        localStorage.removeItem("KAMUS_" + idForm);
+                        location.reload();
+                    });
+                } else {
+                    Swal.fire('Gagal!', res.message, 'error');
+                    resetBtn();
+                }
+            }).catch(err => {
+                Swal.fire('Error', 'Gagal menyambung ke server.', 'error');
+                resetBtn();
+            });
+
+            function resetBtn() { btn.innerHTML = '<i class="fas fa-save me-1"></i> Simpan ke Database'; btn.disabled = false; }
         };
     </script>
 </body>

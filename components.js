@@ -86,7 +86,8 @@ function loadNavigation() {
     // =========================================================================
     // 2. FRONTEND SECURITY GUARD (DIPERBARUI)
     // =========================================================================
-    const adminPages = ['command_center.html', 'dasbor_kepatuhan.html', 'capa.html', 'dasbor_pdsa.html', 'daftar_insiden.html', 'analisis.html', 'analisis_sederhana.html', 'daftar_kpc.html', 'analisis_kpc.html', 'rekapitulasi.html', 'dasbor_budaya.html', 'dasbor_risiko.html', 'profil_risiko_rs.html'];
+    // UPDATE: super_admin_panel.html dan form_builder.html ditambahkan ke guard
+    const adminPages = ['command_center.html', 'dasbor_kepatuhan.html', 'capa.html', 'dasbor_pdsa.html', 'daftar_insiden.html', 'analisis.html', 'analisis_sederhana.html', 'daftar_kpc.html', 'analisis_kpc.html', 'rekapitulasi.html', 'dasbor_budaya.html', 'dasbor_risiko.html', 'profil_risiko_rs.html', 'super_admin_panel.html', 'form_builder.html'];
     
     if (adminPages.includes(page) && role !== "Komite Mutu") {
         if (typeof Swal !== 'undefined') {
@@ -154,6 +155,16 @@ function loadNavigation() {
             <a href="command_center.html" class="list-group-item list-group-item-action py-3 text-white fw-bold shadow-sm" id="menu-command-center" style="background: linear-gradient(135deg, #6f42c1 0%, #4e2a84 100%); border-radius: 8px; margin: 0 15px 10px 15px; border: none;">
                 <i class="fas fa-satellite-dish me-2"></i> Command Center
             </a>
+
+            <a class="list-group-item list-group-item-action py-3 sidebar-link text-primary fw-bold" data-bs-toggle="collapse" href="#collapseSystem" role="button" aria-expanded="false">
+                <i class="fas fa-cogs me-3"></i> Setup Sistem <i class="fas fa-chevron-down float-end mt-1" style="font-size: 0.8rem;"></i>
+            </a>
+            <div class="collapse" id="collapseSystem">
+                <div class="list-group list-group-flush" style="background-color: #fdfdfd;">
+                    <a href="super_admin_panel.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0" id="menu-super-admin" style="font-size: 0.95rem;"><i class="fas fa-hospital me-2"></i> Pengaturan Unit</a>
+                    <a href="form_builder.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0 mt-1" id="menu-form-builder" style="font-size: 0.95rem;"><i class="fas fa-cubes me-2"></i> Form Builder</a>
+                </div>
+            </div>
 
             <a class="list-group-item list-group-item-action py-3 sidebar-link text-danger fw-bold" data-bs-toggle="collapse" href="#collapseAdmin" role="button" aria-expanded="false">
                 <i class="fas fa-user-tie me-3"></i> Panel Komite Mutu <i class="fas fa-chevron-down float-end mt-1" style="font-size: 0.8rem;"></i>
@@ -301,6 +312,11 @@ function loadNavigation() {
     else if (page === 'ikp.html') { document.getElementById('menu-ikp')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); } 
     else if (page === 'kpc.html') { document.getElementById('menu-kpc')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); } 
     else if (page === 'survey_budaya.html') { document.getElementById('menu-survey-budaya')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); }
+    
+    // UPDATE: Active State untuk menu baru
+    else if (page === 'super_admin_panel.html') { document.getElementById('menu-super-admin')?.classList.add('active'); document.getElementById('collapseSystem')?.classList.add('show'); }
+    else if (page === 'form_builder.html') { document.getElementById('menu-form-builder')?.classList.add('active'); document.getElementById('collapseSystem')?.classList.add('show'); }
+    
     else if (page === 'dasbor_kepatuhan.html') { document.getElementById('menu-kepatuhan')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'dasbor_pdsa.html') { document.getElementById('menu-dasbor-pdsa')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'capa.html') { document.getElementById('menu-capa')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }

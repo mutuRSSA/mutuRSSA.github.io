@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin Panel - SIM PMKP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { background-color: #f0f2f5; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff;}
+        .table-custom th { background-color: #2c3e50; color: white; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; border: none; }
+        .table-custom td { vertical-align: middle; font-size: 0.9rem; border-bottom: 1px solid #f1f3f5; }
+        .form-label { font-weight: bold; color: #495057; font-size: 0.9rem; }
+        .badge-form { background-color: #e9ecef; color: #495057; font-weight: 500; font-size: 0.75rem; border: 1px solid #dee2e6; }
+        
+        /* Checkbox Custom Styling */
+        .indicator-item { border-radius: 8px; transition: 0.2s; cursor: pointer; border: 1px solid #dee2e6; padding: 10px; height: 100%; background: #fff; }
+        .indicator-item:hover { border-color: #0dcaf0; background: #f0fbff; }
+        .indicator-item input:checked + label { color: #055160; font-weight: bold; }
+        .indicator-item.selected { border-color: #0dcaf0; background: #f0fbff; box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.2); }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4" style="max-width: 1400px;">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-tools text-primary me-2"></i> Pengaturan Ekosistem Mutu</h3>
+                <p class="text-muted mb-0">Kelola unit kerja, indikator wajib, dan otomatisasi database rumah sakit.</p>
+            </div>
+            <button class="btn btn-primary fw-bold shadow-sm px-4 rounded-pill" onclick="bukaModalUnit()">
+                <i class="fas fa-plus-circle me-2"></i> Onboarding Unit Baru
+            </button>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="bg-white p-4 card-custom">
+                    <h5 class="fw-bold mb-4"><i class="fas fa-hospital-alt text-secondary me-2"></i> Daftar Unit Terdaftar</h5>
+                    
+                    <div id="loadingTable" class="text-center py-5">
+                        <i class="fas fa-spinner fa-spin fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Sinkronisasi data unit...</p>
+                    </div>
+
+                    <div class="table-responsive d-none" id="tableContainer">
+                        <table class="table table-hover table-custom" id="tabelUnit">
+                            <thead>
+                                <tr>
+                                    <th width="5%">No</th>
+                                    <th width="15%">Nama Unit</th>
+                                    <th width="20%">Spreadsheet ID</th>
+                                    <th width="35%">Daftar Indikator Wajib</th>
+                                    <th width="15%">WhatsApp PIC</th>
+                                    <th width="10%" class="text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bodyUnit"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="modal fade" id="modalUnit" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white p-4">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-magic me-2 text-warning"></i> Onboarding Unit & Auto-Database</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-light p-4">
+                    <div class="alert alert-info border-0 shadow-sm mb-4">
+                        <i class="fas fa-info-circle me-2"></i> 
+                        <strong>Proses Otomatis:</strong> Sistem akan membuat file Google Sheets baru, mengatur tab indikator, dan mendaftarkan unit ke routing global dalam sekali klik.
+                    </div>
+
+                    <div class="row g-4">
+                        <div class="col-lg-4">
+                            <div class="bg-white p-4 rounded-3 shadow-sm h-100">
+                                <h6 class="fw-bold border-bottom pb-2 mb-3"><i class="fas fa-id-card me-2"></i> Profil Unit</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Nama Unit / Ruangan <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control form-control-lg border-primary" id="inp_nama_unit" placeholder="Misal: Bangsal Mawar">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Nomor WA PIC <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="inp_wa" placeholder="08xxxxxxxxxx">
+                                    <small class="text-muted">Digunakan untuk reminder otomatis.</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-8">
+                            <div class="bg-white p-4 rounded-3 shadow-sm h-100">
+                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                                    <h6 class="fw-bold mb-0"><i class="fas fa-tasks me-2"></i> Pilih Indikator Mutu Wajib</h6>
+                                    <small class="text-muted" id="countSelected">0 dipilih</small>
+                                </div>
+                                
+                                <div class="row g-2 overflow-auto" style="max-height: 400px;" id="wadahCheckboxIndikator">
+                                    </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white p-4 border-top">
+                    <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary fw-bold px-5 rounded-pill shadow" id="btnProses" onclick="prosesGenerateUnit()">
+                        <i class="fas fa-rocket me-2"></i> Jalankan Auto-Provisioning
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : ""; 
+        const session = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        let masterFormList = [];
+        let dataUnitGlobal = [];
+        
+        // Variabel untuk melacak status Edit
+        let isEditMode = false;
+        let originalUnitName = "";
+
+        document.addEventListener("DOMContentLoaded", function() {
+            muatDataAwal();
+        });
+
+        function muatDataAwal() {
+            fetch(`${scriptURL}?action=get_panel_setup`)
+                .then(res => res.json())
+                .then(res => {
+                    if(res.status === 'success') {
+                        masterFormList = res.listFormMaster;
+                        dataUnitGlobal = res.listUnit;
+                        renderTabelUnit(dataUnitGlobal);
+                        renderCheckboxes(masterFormList);
+                    }
+                });
+        }
+
+        function renderTabelUnit(data) {
+            const tbody = document.getElementById('bodyUnit');
+            tbody.innerHTML = '';
+            
+            data.forEach((item, index) => {
+                let badgeHTML = item.daftar_form.split(',').map(f => `<span class="badge badge-form me-1 mb-1">${f.trim().replace(/_/g, ' ')}</span>`).join('');
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="text-center fw-bold">${index + 1}</td>
+                        <td class="fw-bold text-primary">${item.unit}</td>
+                        <td><code>${item.id_sheet}</code></td>
+                        <td>${badgeHTML}</td>
+                        <td class="fw-bold text-success">${item.wa}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-primary shadow-sm" onclick="bukaModalEdit(${index})">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('loadingTable').classList.add('d-none');
+            document.getElementById('tableContainer').classList.remove('d-none');
+        }
+
+        function renderCheckboxes(list) {
+            const wadah = document.getElementById('wadahCheckboxIndikator');
+            wadah.innerHTML = '';
+            
+            list.forEach(form => {
+                wadah.innerHTML += `
+                    <div class="col-md-6">
+                        <div class="indicator-item d-flex align-items-center">
+                            <input class="form-check-input me-3" type="checkbox" value="${form}" id="check_${form}" onchange="updateCount()">
+                            <label class="form-check-label flex-grow-1" for="check_${form}" style="cursor:pointer;">
+                                ${form.replace(/_/g, ' ')}
+                            </label>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function updateCount() {
+            const count = document.querySelectorAll('#wadahCheckboxIndikator input:checked').length;
+            document.getElementById('countSelected').innerText = `${count} indikator dipilih`;
+            
+            document.querySelectorAll('#wadahCheckboxIndikator input').forEach(inp => {
+                if(inp.checked) inp.closest('.indicator-item').classList.add('selected');
+                else inp.closest('.indicator-item').classList.remove('selected');
+            });
+        }
+
+        function bukaModalUnit() {
+            isEditMode = false;
+            originalUnitName = "";
+            document.querySelector('.modal-title').innerHTML = '<i class="fas fa-magic me-2 text-warning"></i> Onboarding Unit & Auto-Database';
+            document.getElementById('btnProses').innerHTML = '<i class="fas fa-rocket me-2"></i> Jalankan Auto-Provisioning';
+            
+            document.getElementById('inp_nama_unit').value = '';
+            document.getElementById('inp_wa').value = '';
+            document.querySelectorAll('#wadahCheckboxIndikator input').forEach(i => i.checked = false);
+            updateCount();
+            
+            new bootstrap.Modal(document.getElementById('modalUnit')).show();
+        }
+
+        function bukaModalEdit(index) {
+            isEditMode = true;
+            let unitData = dataUnitGlobal[index];
+            originalUnitName = unitData.unit;
+
+            document.querySelector('.modal-title').innerHTML = '<i class="fas fa-edit me-2 text-primary"></i> Edit Konfigurasi Unit';
+            document.getElementById('btnProses').innerHTML = '<i class="fas fa-save me-2"></i> Simpan Perubahan';
+
+            document.getElementById('inp_nama_unit').value = unitData.unit;
+            document.getElementById('inp_wa').value = unitData.wa;
+            
+            // Centang indikator yang sudah ada
+            let formsMilikUnit = unitData.daftar_form.split(',').map(s => s.trim());
+            document.querySelectorAll('#wadahCheckboxIndikator input').forEach(i => {
+                i.checked = formsMilikUnit.includes(i.value);
+            });
+            
+            updateCount();
+            new bootstrap.Modal(document.getElementById('modalUnit')).show();
+        }
+
+        function prosesGenerateUnit() {
+            const nama = document.getElementById('inp_nama_unit').value.trim();
+            const wa = document.getElementById('inp_wa').value.trim();
+            const checked = Array.from(document.querySelectorAll('#wadahCheckboxIndikator input:checked')).map(i => i.value);
+
+            if(!nama || !wa || checked.length === 0) {
+                Swal.fire('Form Belum Lengkap', 'Mohon isi nama unit, nomor WA, dan pilih minimal 1 indikator.', 'warning');
+                return;
+            }
+
+            let pesanKonfirmasi = isEditMode 
+                ? `Apakah Anda yakin ingin memperbarui konfigurasi untuk '${originalUnitName}'? Jika ada penambahan indikator, tab baru akan dibuat secara otomatis.`
+                : `Sistem akan membuat database otomatis untuk unit '${nama}'. Lanjutkan?`;
+
+            Swal.fire({
+                title: 'Konfirmasi',
+                text: pesanKonfirmasi,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: isEditMode ? 'Ya, Simpan!' : 'Ya, Jalankan Robot!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    eksekusiBackend(nama, wa, checked.join(','));
+                }
+            });
+        }
+
+        function eksekusiBackend(nama, wa, daftarForm) {
+            const btn = document.getElementById('btnProses');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i> Memproses Data...`;
+
+            const payload = {
+                action: isEditMode ? "update_unit_setup" : "generate_unit_otomatis",
+                role: session.role,
+                original_nama: originalUnitName,
+                nama_unit: nama,
+                no_wa: wa,
+                daftar_form: daftarForm
+            };
+
+            fetch(scriptURL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    Swal.fire({
+                        title: 'Misi Berhasil!',
+                        text: res.message,
+                        icon: 'success',
+                        confirmButtonText: 'Mantap!'
+                    }).then(() => location.reload());
+                } else {
+                    Swal.fire('Gagal', res.message, 'error');
+                    resetBtn();
+                }
+            })
+            .catch(err => {
+                Swal.fire('Error Jaringan', 'Terjadi masalah koneksi ke server Google.', 'error');
+                resetBtn();
+            });
+
+            function resetBtn() {
+                btn.disabled = false;
+                btn.innerHTML = isEditMode ? `<i class="fas fa-save me-2"></i> Simpan Perubahan` : `<i class="fas fa-rocket me-2"></i> Jalankan Auto-Provisioning`;
+            }
+        }
+    </script>
+</body>
+</html>

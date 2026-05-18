@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Builder - SIM PMKP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { background-color: #f0f2f5; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff;}
+        .table-custom th { background-color: #2c3e50; color: white; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; border: none; }
+        .table-custom td { vertical-align: middle; font-size: 0.9rem; border-bottom: 1px solid #f1f3f5; }
+        
+        .kolom-row { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; transition: 0.2s; position: relative;}
+        .kolom-row:hover { background-color: #f0f4f8; border-color: #0dcaf0; }
+        .form-label-sm { font-size: 0.8rem; font-weight: bold; color: #6c757d; margin-bottom: 4px; }
+        .btn-delete-row { position: absolute; top: -10px; right: -10px; background: #dc3545; color: white; border-radius: 50%; width: 25px; height: 25px; border: none; font-size: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: 0.2s;}
+        .btn-delete-row:hover { transform: scale(1.1); background: #c82333; }
+        
+        /* Dropdown Custom untuk Hak Akses */
+        .dropdown-menu-akses { max-height: 250px; overflow-y: auto; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 10px;}
+        .badge-unit-select { cursor: pointer; transition: 0.2s; border: 1px solid #dee2e6; padding: 6px 12px; }
+        .badge-unit-select:hover { background-color: #e9ecef; border-color: #adb5bd; }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4" style="max-width: 1400px;">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-cubes text-info me-2"></i> Pembangun Formulir Digital</h3>
+                <p class="text-muted mb-0">Rancang struktur kolom, tipe data inputan, hak akses unit, dan formula perhitungan otomatis.</p>
+            </div>
+            <button class="btn btn-info text-white fw-bold shadow-sm px-4 rounded-pill" onclick="bukaModalFormBuilder(null)">
+                <i class="fas fa-plus-circle me-2"></i> Buat Formulir Baru
+            </button>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="bg-white p-4 card-custom">
+                    <h5 class="fw-bold mb-4"><i class="fas fa-list-alt text-secondary me-2"></i> Struktur Formulir Aktif</h5>
+                    
+                    <div id="loadingTable" class="text-center py-5">
+                        <i class="fas fa-spinner fa-spin fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Memuat skema arsitektur formulir...</p>
+                    </div>
+
+                    <div class="table-responsive d-none" id="tableContainer">
+                        <table class="table table-hover table-custom" id="tabelFormBuilder">
+                            <thead>
+                                <tr>
+                                    <th width="5%">No</th>
+                                    <th width="25%">ID / Kode Form</th>
+                                    <th width="55%">Susunan Kolom & Hak Akses</th>
+                                    <th width="15%" class="text-center">Aksi Manajemen</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bodyFormBuilder"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalFormBuilder" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white p-4">
+                    <h5 class="modal-title fw-bold" id="titleFormBuilder"><i class="fas fa-hammer me-2 text-info"></i> Arsitektur Kompilator Formulir</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-light p-4">
+                    
+                    <div class="bg-white p-4 rounded-3 shadow-sm mb-4">
+                        <h6 class="fw-bold border-bottom pb-2 mb-3"><i class="fas fa-sliders-h me-2"></i> Parameter Utama</h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">ID / Kode Form <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control fw-bold text-info fs-5" id="fb_id_form" oninput="this.value = this.value.replace(/\\s+/g, '_')" placeholder="Contoh: Waktu_Tunggu_Rawat_Jalan">
+                                <small class="text-muted" style="font-size:0.75rem;">Spasi akan otomatis diubah menjadi garis bawah.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-3 shadow-sm">
+                        <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                            <h6 class="fw-bold mb-0"><i class="fas fa-table me-2"></i> Pemetaan Kolom Handsontable</h6>
+                            <button class="btn btn-sm btn-outline-primary fw-bold rounded-pill shadow-sm" onclick="tambahBarisKolomBuilder(null)">
+                                <i class="fas fa-plus me-1"></i> Sisipkan Kolom Baru
+                            </button>
+                        </div>
+
+                        <div id="containerKolomRows" class="d-flex flex-column gap-3 mt-3">
+                            </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer bg-white p-4 border-top">
+                    <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-danger text-white fw-bold px-4 rounded-pill d-none" id="btnHapusForm" onclick="hapusSeluruhFormulir()">
+                        <i class="fas fa-trash-alt me-1"></i> Hapus Form
+                    </button>
+                    <button type="button" class="btn btn-info text-white fw-bold px-5 rounded-pill shadow" id="btnSimpanFB" onclick="prosesSimpanSchema()">
+                        <i class="fas fa-save me-2"></i> Terapkan Kompilasi Form
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : ""; 
+        const session = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        let globalFormSchema = [];
+        let dataUnitGlobal = []; // Menyimpan daftar unit untuk dropdown hak akses
+        let isEditMode = false;
+
+        document.addEventListener("DOMContentLoaded", function() {
+            muatDataAwal();
+        });
+
+        function muatDataAwal() {
+            // Mengambil skema form DAN daftar unit secara bersamaan
+            Promise.all([
+                fetch(`${scriptURL}?action=get_form_builder_data`).then(res => res.json()),
+                fetch(`${scriptURL}?action=get_panel_setup`).then(res => res.json())
+            ]).then(([resSchema, resSetup]) => {
+                if (resSetup.status === 'success') {
+                    dataUnitGlobal = resSetup.listUnit.map(u => u.unit);
+                }
+                if (resSchema.status === 'success') {
+                    globalFormSchema = resSchema.data;
+                    renderTabelFormBuilder(globalFormSchema);
+                }
+            }).catch(err => {
+                Swal.fire('Error', 'Gagal memuat arsitektur sistem.', 'error');
+            });
+        }
+
+        function renderTabelFormBuilder(data) {
+            const tbody = document.getElementById('bodyFormBuilder');
+            tbody.innerHTML = '';
+
+            data.forEach((item, index) => {
+                let kolomBadges = item.kolom.map(k => {
+                    let tipeColor = k.tipe === 'readonly' || k.formula ? 'bg-danger' : 'bg-info text-dark';
+                    let aksesInfo = k.akses === 'ALL' ? '' : `<i class="fas fa-lock ms-1 text-warning" title="Dibatasi: ${k.akses}"></i>`;
+                    return `<span class="badge bg-light text-dark border me-1 mb-1 font-monospace" style="font-size:12px;">
+                                ${k.judul} <small class="${tipeColor} px-1 rounded mx-1" style="font-size:10px;">${k.tipe}</small>${aksesInfo}
+                            </span>`;
+                }).join('');
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td class="text-center fw-bold">${index + 1}</td>
+                        <td class="fw-bold text-dark fs-6"><code>${item.id_form}</code><br><small class="text-muted fw-normal">${item.kolom.length} Kolom</small></td>
+                        <td><div class="d-flex flex-wrap">${kolomBadges}</div></td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-info fw-bold shadow-sm px-3" onclick="bukaModalFormBuilder(${index})">
+                                <i class="fas fa-sliders-h me-1"></i> Atur
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('loadingTable').classList.add('d-none');
+            document.getElementById('tableContainer').classList.remove('d-none');
+        }
+
+        function tambahBarisKolomBuilder(data = null) {
+            const container = document.getElementById('containerKolomRows');
+            const randId = 'row_' + Math.random().toString(36).substring(2, 9);
+
+            let judul = data ? data.judul : '';
+            let tipe = data ? data.tipe : 'text';
+            let opsi = data ? data.opsi : '';
+            let lebar = data ? data.lebar : '';
+            let formula = data ? data.formula : '';
+            let akses = data ? data.akses : 'ALL';
+
+            // Ditambahkan durasi_ms sesuai permintaan
+            let selectTypes = ['text', 'number', 'dropdown', 'checkbox', 'calendar', 'time', 'durasi_hm', 'durasi_hms', 'durasi_ms', 'readonly'];
+            let optionsHTML = selectTypes.map(t => `<option value="${t}" ${tipe === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('');
+
+            // Membangun daftar pilihan unit untuk dropdown hak akses
+            let unitBadgesHTML = dataUnitGlobal.map(u => 
+                `<span class="badge bg-light text-dark badge-unit-select m-1" onclick="tambahAksesUnit('${randId}', '${u}')">${u}</span>`
+            ).join('');
+
+            let html = `
+                <div class="p-3 kolom-row" id="${randId}">
+                    <button class="btn-delete-row" title="Hapus Kolom Ini" onclick="document.getElementById('${randId}').remove()"><i class="fas fa-times"></i></button>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label-sm">Nama/Judul Kolom</label>
+                            <input type="text" class="form-control form-control-sm fb-col-judul border-secondary" value="${judul}" placeholder="Contoh: Jumlah Sampel">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label-sm">Tipe Data</label>
+                            <select class="form-select form-select-sm fb-col-tipe border-secondary" onchange="toggleFieldDependencies('${randId}')">
+                                ${optionsHTML}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-5">
+                            <label class="form-label-sm text-primary"><i class="fas fa-shield-alt me-1"></i> Hak Akses Kolom</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control border-primary fb-col-akses fw-bold" value="${akses}" placeholder="ALL">
+                                <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"><i class="fas fa-list"></i></button>
+                                <div class="dropdown-menu dropdown-menu-end dropdown-menu-akses p-3" style="width: 300px;">
+                                    <h6 class="fw-bold mb-2 border-bottom pb-2">Atur Siapa yang Bisa Mengisi:</h6>
+                                    <button type="button" class="btn btn-sm btn-success w-100 fw-bold mb-3" onclick="setAksesALL('${randId}')">ALL (Semua Unit)</button>
+                                    <p class="text-muted mb-1" style="font-size:0.75rem;">Atau klik unit spesifik untuk menambahkannya:</p>
+                                    <div class="d-flex flex-wrap">${unitBadgesHTML}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-2">
+                            <label class="form-label-sm">Lebar (px)</label>
+                            <input type="number" class="form-control form-control-sm fb-col-lebar border-secondary" value="${lebar}" placeholder="Otomatis">
+                        </div>
+                    </div>
+
+                    <div class="row mt-2 g-2">
+                        <div class="col-md-12 fb-dep-opsi" style="display: ${tipe === 'dropdown' ? 'block' : 'none'};">
+                            <label class="form-label-sm text-info">Opsi Dropdown</label>
+                            <input type="text" class="form-control form-control-sm fb-col-opsi border-info" value="${opsi}" placeholder="Pisahkan dengan koma. Contoh: Ya, Tidak, N/A">
+                        </div>
+                        <div class="col-md-12 fb-dep-formula" style="display: ${tipe === 'readonly' ? 'block' : 'none'};">
+                            <label class="form-label-sm text-danger">Formula Math Excel (Otomatis)</label>
+                            <input type="text" class="form-control form-control-sm fb-col-formula border-danger" value="${formula}" placeholder="Contoh: [2]/[3]*100">
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', html);
+        }
+
+        // --- Fungsi Bantuan untuk Dropdown Hak Akses Kolom ---
+        window.setAksesALL = function(rowId) {
+            document.querySelector(`#${rowId} .fb-col-akses`).value = 'ALL';
+        };
+
+        window.tambahAksesUnit = function(rowId, unitName) {
+            let input = document.querySelector(`#${rowId} .fb-col-akses`);
+            let currentVal = input.value;
+            
+            // Jika saat ini ALL, hapus ALL dan ganti dengan unit yang diklik
+            let arrayAkses = currentVal === 'ALL' || currentVal === '' ? [] : currentVal.split(',').map(s => s.trim());
+            
+            if (!arrayAkses.includes(unitName)) {
+                arrayAkses.push(unitName);
+            }
+            
+            input.value = arrayAkses.join(', ');
+        };
+        // ------------------------------------------------------
+
+        function toggleFieldDependencies(rowId) {
+            const row = document.getElementById(rowId);
+            const tipe = row.querySelector('.fb-col-tipe').value;
+            
+            row.querySelector('.fb-dep-opsi').style.display = (tipe === 'dropdown') ? 'block' : 'none';
+            row.querySelector('.fb-dep-formula').style.display = (tipe === 'readonly') ? 'block' : 'none';
+        }
+
+        function bukaModalFormBuilder(index = null) {
+            document.getElementById('containerKolomRows').innerHTML = '';
+            const btnHapus = document.getElementById('btnHapusForm');
+
+            if (index !== null) {
+                isEditMode = true;
+                let schema = globalFormSchema[index];
+                
+                document.getElementById('titleFormBuilder').innerHTML = '<i class="fas fa-hammer me-2 text-warning"></i> Rekonfigurasi Cetakan Formulir';
+                document.getElementById('fb_id_form').value = schema.id_form;
+                document.getElementById('fb_id_form').readOnly = true;
+                btnHapus.classList.remove('d-none');
+
+                schema.kolom.forEach(k => tambahBarisKolomBuilder(k));
+            } else {
+                isEditMode = false;
+                document.getElementById('titleFormBuilder').innerHTML = '<i class="fas fa-magic me-2 text-info"></i> Rancang Bangun Formulir Baru';
+                document.getElementById('fb_id_form').value = '';
+                document.getElementById('fb_id_form').readOnly = false;
+                btnHapus.classList.add('d-none');
+
+                tambahBarisKolomBuilder({ judul: 'Tanggal', tipe: 'calendar', opsi: '', lebar: 130, formula: '', akses: 'ALL' });
+            }
+
+            new bootstrap.Modal(document.getElementById('modalFormBuilder')).show();
+        }
+
+        function prosesSimpanSchema() {
+            const idForm = document.getElementById('fb_id_form').value.trim();
+            const rows = document.querySelectorAll('#containerKolomRows .kolom-row');
+
+            if(!idForm || rows.length === 0) {
+                Swal.fire('Struktur Kosong', 'Mohon isi kode formulir dan susun minimal 1 kolom inputan.', 'warning');
+                return;
+            }
+
+            let columnsPayload = [];
+            let valid = true;
+
+            rows.forEach(row => {
+                let judul = row.querySelector('.fb-col-judul').value.trim();
+                let tipe = row.querySelector('.fb-col-tipe').value;
+                let opsi = row.querySelector('.fb-col-opsi').value.trim();
+                let formula = row.querySelector('.fb-col-formula').value.trim();
+                let lebar = row.querySelector('.fb-col-lebar').value.trim();
+                let akses = row.querySelector('.fb-col-akses').value.trim();
+
+                if (!judul) { valid = false; return; }
+
+                columnsPayload.push({
+                    judul: judul, tipe: tipe, opsi: opsi, formula: formula, lebar: lebar, akses: akses
+                });
+            });
+
+            if(!valid) { Swal.fire('Nama Kolom Kosong', 'Ada nama kolom yang belum diisi. Mohon lengkapi seluruh baris.', 'warning'); return; }
+
+            Swal.fire({
+                title: 'Terapkan Kompilasi?',
+                text: "Sistem akan memperbarui skema kolom master. Unit yang membuka form ini otomatis akan mengikuti susunan baru.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#0dcaf0',
+                confirmButtonText: 'Ya, Sinkronkan!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    eksekusiSimpanSchema(idForm, columnsPayload);
+                }
+            });
+        }
+
+        function eksekusiSimpanSchema(idForm, columns) {
+            const btn = document.getElementById('btnSimpanFB');
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i> Merakit Arsitektur...`;
+
+            const payload = {
+                action: "save_form_schema",
+                role: session.role,
+                id_form: idForm,
+                columns: columns
+            };
+
+            fetch(scriptURL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    Swal.fire({ title: 'Kompilasi Sukses!', text: res.message, icon: 'success', timer: 1500, showConfirmButton: false })
+                    .then(() => location.reload());
+                } else {
+                    Swal.fire('Gagal Kompilasi', res.message, 'error');
+                    resetBtn();
+                }
+            }).catch(err => {
+                Swal.fire('Error Server', 'Gagal menyambung ke server Google Apps Script.', 'error');
+                resetBtn();
+            });
+
+            function resetBtn() { btn.disabled = false; btn.innerHTML = `<i class="fas fa-save me-2"></i> Terapkan Kompilasi Form`; }
+        }
+
+        function hapusSeluruhFormulir() {
+            const idForm = document.getElementById('fb_id_form').value;
+            Swal.fire({
+                title: 'Hapus Formulir?',
+                text: `Menghapus skema '${idForm}' akan membuat form ini tidak lagi dapat diakses dari web oleh unit manapun. Hapus?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: 'Ya, Hapus Permanen'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(scriptURL, {
+                        method: "POST",
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify({ action: "delete_form_schema", role: session.role, id_form: idForm })
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if(res.status === 'success') {
+                            Swal.fire('Terhapus', res.message, 'success').then(() => location.reload());
+                        }
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>
