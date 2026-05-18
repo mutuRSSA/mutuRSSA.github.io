@@ -34,10 +34,11 @@
     .handsontableInput { color: #2c3e50 !important; background-color: #ffffff !important; font-size: 13px !important; box-shadow: 0 0 0 2px #0dcaf0 !important; padding: 4px !important; }
     
     .handsontable th, .handsontable th .colHeader { 
-        background-color: #f8f9fa !important; color: #495057 !important; font-weight: 600 !important; 
+        background-color: #f8f9fa !important; color: #2c3e50 !important; font-weight: bold !important; 
         border-color: #dee2e6 !important; text-align: center; vertical-align: middle !important; 
-        padding: 6px 4px !important; font-size: 11.5px !important; line-height: 1.15 !important;      
+        padding: 8px 30px 8px 8px !important; font-size: 12px !important; line-height: 1.4 !important;      
         white-space: normal !important; word-wrap: normal !important; overflow-wrap: normal !important; word-break: normal !important;
+        min-width: 150px !important;
     }
     
     .handsontable thead th { border-bottom: 2px solid #0dcaf0 !important; }
@@ -49,7 +50,7 @@
     .nav-tabs .nav-link { color: #6c757d; font-size: 0.9rem; border: none; margin-right: 5px; }
     .nav-tabs { border-bottom: 2px solid #dee2e6; }
 
-    #spreadsheet { height: calc(100vh - 350px) !important; min-height: 350px !important; overflow: hidden !important; width: 100%; }
+    #spreadsheet { height: calc(100vh - 350px) !important; min-height: 350px !important; overflow: hidden !important; width: 100%; border: 1px solid #dee2e6; border-radius: 8px;}
     .table-profil th { background-color: #f8f9fa; width: 35%; font-weight: 600; color: #495057;}
     .table-profil td { color: #212529; white-space: pre-wrap; }
     </style>
@@ -259,19 +260,33 @@
 
                         document.getElementById('spreadsheetContainer').style.display = 'block';
                         document.getElementById('btnScrollDown').style.display = 'inline-block'; 
-                        const container = document.getElementById('spreadsheet');
-                        let exactWidths = result.columns.map(c => c.width ? parseInt(c.width) : undefined);
+                        
+                        let exactWidths = result.columns.map(c => c.width ? parseInt(c.width) : 150);
 
+                        const container = document.getElementById('spreadsheet');
                         hot = new Handsontable(container, {
                             data: result.data,
                             colHeaders: result.columns.map(c => c.title),
                             columns: hotColumns,
                             colWidths: exactWidths,
-                            rowHeaders: true, width: '100%', height: '100%', stretchH: 'all',
+                            rowHeaders: true, 
+                            width: '100%', 
+                            height: '100%', 
+                            
+                            stretchH: 'none', 
+                            
                             renderAllRows: false, viewportRowRenderingOffset: 100, minSpareRows: 3,
                             contextMenu: true, formulas: { engine: HyperFormula }, licenseKey: 'non-commercial-and-evaluation', 
-                            filters: true, hiddenRows: true, dropdownMenu: ['filter_by_condition', 'filter_by_value', 'filter_action_bar'],
-                            columnSorting: true, autoColumnSize: true, manualColumnResize: true, wordWrap: true, 
+                            
+                            // MENGHIDUPKAN KEMBALI HIDDENROWS
+                            filters: false, 
+                            dropdownMenu: false, 
+                            columnSorting: false, 
+                            hiddenRows: true, // KUNCI PENTING UNTUK MEMPERBAIKI FILTER BULAN!
+                            
+                            autoColumnSize: false, 
+                            manualColumnResize: true, 
+                            wordWrap: true, 
 
                             afterPaste: function(data, coords) {
                                 const hotInstance = this;
@@ -387,6 +402,39 @@
                             }
                         });
 
+                        window.applyMonthFilter = function(monthNum) {
+                            if (!hot || !isDailyForm || dateColumnIndex === -1) return;
+                            activeMonthFilter = monthNum;
+                            document.querySelectorAll('.month-tab-btn').forEach(btn => btn.classList.remove('active'));
+                            document.getElementById('tabBulan_' + monthNum).classList.add('active');
+
+                            const rowCount = hot.countRows();
+                            const rowsToHide = [];
+                            for(let r = 0; r < rowCount; r++) {
+                                if(hot.isEmptyRow(r)) continue;
+                                let dateVal = hot.getDataAtCell(r, dateColumnIndex);
+                                if(dateVal) {
+                                    let parsedDate = moment(dateVal, ["YYYY-MM-DD", "DD/MM/YYYY", "DD-MM-YYYY", "YYYY/MM/DD", "D/M/YY", "D/M/YYYY", moment.ISO_8601], true);
+                                    if (!parsedDate.isValid()) parsedDate = moment(dateVal);
+                                    
+                                    if (parsedDate.isValid()) {
+                                        if ((parsedDate.month() + 1) !== monthNum) {
+                                            rowsToHide.push(r);
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            const plugin = hot.getPlugin('hiddenRows');
+                            if (plugin) {
+                                plugin.showRows(Array.from({length: rowCount}, (_, i) => i));
+                                if (rowsToHide.length > 0) {
+                                    plugin.hideRows(rowsToHide);
+                                }
+                                hot.render();
+                            }
+                        };
+
                         if (isDailyForm) applyMonthFilter(activeMonthFilter);
 
                     } else { 
@@ -469,52 +517,20 @@
             document.getElementById('monthFilterContainer').style.display = 'block';
         }
 
-        window.applyMonthFilter = function(monthNum) {
-            if (!hot || !isDailyForm || dateColumnIndex === -1) return;
-            activeMonthFilter = monthNum;
-            document.querySelectorAll('.month-tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById('tabBulan_' + monthNum).classList.add('active');
-
-            const rowCount = hot.countRows();
-            const rowsToHide = [];
-            for(let r = 0; r < rowCount; r++) {
-                if(hot.isEmptyRow(r)) continue;
-                let dateVal = hot.getDataAtCell(r, dateColumnIndex);
-                if(dateVal) {
-                    let parts = dateVal.split('/');
-                    if(parts.length === 3 && parseInt(parts[1]) !== monthNum) rowsToHide.push(r);
-                }
-            }
-            const plugin = hot.getPlugin('hiddenRows');
-            plugin.showRows(Array.from({length: rowCount}, (_, i) => i));
-            plugin.hideRows(rowsToHide);
-            hot.render();
-        };
-
-        // =====================================================================
-        // FUNGSI PENYIMPANAN DATA DENGAN 2 MODE (DRAFT & FINAL/PERMANEN)
-        // =====================================================================
         window.simpanDataMentah = function(isFinal) {
             if (!hot) return;
 
-            // ========================================================
-            // SATPAM VALIDASI: CEK HANYA KOLOM TANGGAL SEBELUM SIMPAN
-            // ========================================================
             let barisTidakLengkap = [];
             let rowCount = hot.countRows();
             let indexKolomStatus = hot.getSettings().columns.length - 1; 
             let pluginHidden = hot.getPlugin('hiddenRows');
 
             for (let i = 0; i < rowCount; i++) {
-                // 1. ABAIKAN BARIS BULAN LAIN (YANG DISEMBUNYIKAN)
-                if (pluginHidden && pluginHidden.isHidden(i)) {
-                    continue;
-                }
+                if (pluginHidden && pluginHidden.isHidden(i)) continue;
 
                 let rowData = hot.getDataAtRow(i);
                 let isRowEmpty = true;
                 
-                // 2. CEK APAKAH BARIS INI SEDANG DIISI PETUGAS
                 for (let j = 0; j < rowData.length; j++) {
                     let isReadOnly = hot.getSettings().columns[j].readOnly;
                     if (!isReadOnly && j !== indexKolomStatus && rowData[j] !== null && rowData[j] !== "") {
@@ -524,7 +540,6 @@
                 }
                 
                 if (!isRowEmpty) {
-                    // 3. JIKA BARIS DIISI, PASTIKAN HANYA KOLOM TANGGAL YANG WAJIB TERISI
                     if (dateColumnIndex !== -1) {
                         let nilaiTanggal = rowData[dateColumnIndex];
                         if (nilaiTanggal === null || nilaiTanggal === "" || nilaiTanggal === undefined) {
@@ -534,7 +549,6 @@
                 }
             }
 
-            // Jika ada baris yang tanggalnya kosong, blokir
             if (barisTidakLengkap.length > 0) {
                 Swal.fire({
                     title: 'Tanggal Belum Diisi!',
@@ -545,7 +559,6 @@
                 });
                 return; 
             }
-            // ========================================================
 
             if (isFinal) {
                 let bulanAktifText = isDailyForm ? document.getElementById('tabBulan_' + activeMonthFilter).innerText : "Tabel Ini";
@@ -590,8 +603,12 @@
                         if (isDailyForm && dateColumnIndex !== -1) {
                             let dateVal = row[dateColumnIndex];
                             if (dateVal) {
-                                let parts = dateVal.split('/');
-                                if (parts.length === 3 && parseInt(parts[1]) === activeMonthFilter) lockThisRow = true;
+                                let parsedDate = moment(dateVal, ["YYYY-MM-DD", "DD/MM/YYYY", "DD-MM-YYYY", "YYYY/MM/DD", "D/M/YY", "D/M/YYYY", moment.ISO_8601], true);
+                                if (!parsedDate.isValid()) parsedDate = moment(dateVal);
+                                
+                                if (parsedDate.isValid() && (parsedDate.month() + 1) === activeMonthFilter) {
+                                    lockThisRow = true;
+                                }
                             }
                         } else {
                             lockThisRow = true; 
