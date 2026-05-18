@@ -28,10 +28,15 @@
                     <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-book-medical text-primary me-2"></i> Kamus Profil Indikator Mutu</h4>
                     <p class="text-muted mb-0">Referensi lengkap definisi operasional, formula, dan standar pengukuran mutu rumah sakit.</p>
                 </div>
-                <div id="adminControls" class="d-none">
-                    <button class="btn btn-primary fw-bold shadow-sm" onclick="bukaModalForm(null)">
-                        <i class="fas fa-plus me-1"></i> Tambah Profil Baru
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary fw-bold shadow-sm" onclick="cetakProfil(null)">
+                        <i class="fas fa-print me-1"></i> Cetak Semua Kamus
                     </button>
+                    <div id="adminControls" class="d-none">
+                        <button class="btn btn-primary fw-bold shadow-sm" onclick="bukaModalForm(null)">
+                            <i class="fas fa-plus me-1"></i> Tambah Profil Baru
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -234,9 +239,10 @@
         const scriptURL = API_CONFIG.MUTU;
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
         const role = sessionMutu.role || "";
+        const userUnit = sessionMutu.unit || "GUEST";
         
         let rawKamusData = [];
-        let currentEditingJudul = ""; // JANGKAR PEMANDU RENAME DI GOOGLE SHEETS
+        let currentEditingJudul = ""; 
 
         document.addEventListener("DOMContentLoaded", function () {
             if (role === "Komite Mutu") {
@@ -246,13 +252,59 @@
         });
 
         function muatDataKamus() {
+            // FITUR FILTER UNIT: Periksa apakah user adalah Komite Mutu atau Unit biasa
+            if (role !== "Komite Mutu") {
+                // Fetch daftar formulir yang diizinkan untuk unit ini dari database
+                fetch(`${scriptURL}?action=get_menu&unit=${encodeURIComponent(userUnit)}`)
+                .then(res => res.json())
+                .then(resMenu => {
+                    let allowedForms = resMenu.menu || [];
+                    ambilDanFilterKamus(allowedForms);
+                })
+                .catch(err => {
+                    document.getElementById('loadingMessage').innerHTML = `<i class="fas fa-exclamation-triangle text-danger me-2"></i> Gagal memeriksa hak akses unit.`;
+                });
+            } else {
+                // Jika Komite Mutu, jangan berikan batasan filter (Bisa lihat semua)
+                ambilDanFilterKamus(null);
+            }
+        }
+
+        function ambilDanFilterKamus(allowedForms) {
             fetch(`${scriptURL}?action=get_profil_indikator`)
                 .then(res => res.json())
                 .then(result => {
                     document.getElementById('loadingMessage').style.display = 'none';
                     if (result.status === 'success') {
-                        rawKamusData = result.data;
                         
+                        let dataKamus = result.data;
+
+                        // 1. PENYARINGAN BERDASARKAN IZIN AKSES UNIT
+                        if (allowedForms !== null) {
+                            dataKamus = dataKamus.filter(row => {
+                                let idForm = row['ID_Form'] || row['ID Form'] || row['Kolom_Kriteria'] || "";
+                                return allowedForms.includes(idForm);
+                            });
+                        }
+
+                        // 2. PENGURUTAN (SORTING) PRIORITAS NASIONAL -> RS -> UNIT
+                        const bobotKategori = {
+                            "Indikator Mutu Nasional": 1,
+                            "IMP-RS": 2,
+                            "IMP-Unit": 3
+                        };
+
+                        dataKamus.sort((a, b) => {
+                            let katA = (a['Kategori Indikator'] || "Lainnya").trim();
+                            let katB = (b['Kategori Indikator'] || "Lainnya").trim();
+                            let skorA = bobotKategori[katA] || 99; // Jika kategori tidak dikenal, taruh paling bawah
+                            let skorB = bobotKategori[katB] || 99;
+                            return skorA - skorB;
+                        });
+
+                        rawKamusData = dataKamus;
+                        
+                        // Menyiapkan dropdown ID Form
                         const selectEl = document.getElementById('inp_ID_Form');
                         selectEl.innerHTML = '<option value="">-- Pilih ID Form dari Sistem --</option>';
                         if (result.mapping) {
@@ -261,10 +313,14 @@
                                 selectEl.innerHTML += `<option value="${safeId}">${safeId}</option>`;
                             }
                         }
+
                         renderAccordion(rawKamusData);
                     } else {
                         Swal.fire('Gagal!', "Tidak dapat memuat kamus.", 'error');
                     }
+                })
+                .catch(err => {
+                    document.getElementById('loadingMessage').innerHTML = '<i class="fas fa-wifi text-danger me-2"></i> Gagal menyambung ke database.';
                 });
         }
 
@@ -283,8 +339,10 @@
                 let kategori = row['Kategori Indikator'] || "-";
                 let jenis = row['Jenis Indikator'] || "-";
 
+                let btnCetakSatu = `<button class="btn btn-sm btn-outline-secondary ms-2" onclick="cetakProfil(${index}); event.stopPropagation();" title="Cetak Kamus Ini"><i class="fas fa-print"></i> Cetak DO</button>`;
+                
                 let btnEdit = (role === "Komite Mutu") 
-                    ? `<button class="btn btn-sm btn-outline-primary ms-3" onclick="bukaModalForm(${index}); event.stopPropagation();"><i class="fas fa-edit"></i> Edit DO</button>` 
+                    ? `<button class="btn btn-sm btn-outline-primary ms-2" onclick="bukaModalForm(${index}); event.stopPropagation();"><i class="fas fa-edit"></i> Edit DO</button>` 
                     : ``;
 
                 const fields = [
@@ -326,12 +384,20 @@
                     tbodyHtml += `<tr><th style="background:#f8f9fa;">${f.label}</th><td>${val}</td></tr>`;
                 });
 
+                // Memberi label warna berbeda berdasarkan kategori indikator
+                let colorBadge = "bg-secondary";
+                if(kategori.trim() === "Indikator Mutu Nasional") colorBadge = "bg-primary";
+                else if(kategori.trim() === "IMP-RS") colorBadge = "bg-success";
+
                 let html = `
                 <div class="accordion-item mb-2 border rounded overflow-hidden kamus-item">
                     <h2 class="accordion-header" id="heading${index}">
                         <button class="accordion-button collapsed d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">
-                            <span><i class="fas fa-file-medical text-info me-2"></i><b>${judulIndikator.toUpperCase()}</b> <span class="badge bg-secondary ms-2">${kategori}</span> <span class="badge bg-dark ms-1">${jenis}</span></span>
-                            ${btnEdit}
+                            <span><i class="fas fa-file-medical text-info me-2"></i><b>${judulIndikator.toUpperCase()}</b> <span class="badge ${colorBadge} ms-2">${kategori}</span> <span class="badge bg-dark ms-1">${jenis}</span></span>
+                            <div class="d-flex align-items-center">
+                                ${btnCetakSatu}
+                                ${btnEdit}
+                            </div>
                         </button>
                     </h2>
                     <div id="collapse${index}" class="accordion-collapse collapse" data-bs-parent="#accordionKamus">
@@ -357,6 +423,108 @@
             });
         }
 
+        window.cetakProfil = function(index) {
+            let dataToPrint = [];
+            
+            if (index !== null) {
+                dataToPrint.push(rawKamusData[index]);
+            } else {
+                dataToPrint = rawKamusData;
+            }
+
+            if (dataToPrint.length === 0) {
+                Swal.fire('Informasi', 'Tidak ada data kamus untuk dicetak.', 'info');
+                return;
+            }
+
+            let htmlArr = [];
+            htmlArr.push('<!DOCTYPE html>');
+            htmlArr.push('<html>');
+            htmlArr.push('<head>');
+            htmlArr.push('<title>Cetak Kamus Indikator</title>');
+            htmlArr.push('<style>');
+            htmlArr.push('body { font-family: Arial, sans-serif; font-size: 13px; color: #000; padding: 20px; }');
+            htmlArr.push('h2 { text-align: center; margin-bottom: 5px; font-size: 18px; text-transform: uppercase; }');
+            htmlArr.push('.kategori-subtitle { text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 25px; color: #555; }');
+            htmlArr.push('table { width: 100%; border-collapse: collapse; margin-bottom: 30px; page-break-inside: auto; }');
+            htmlArr.push('tr { page-break-inside: auto; page-break-after: auto; }');
+            htmlArr.push('th, td { border: 1px solid #000; padding: 8px 10px; vertical-align: top; }');
+            htmlArr.push('th { background-color: #f2f2f2; width: 30%; text-align: left; }');
+            htmlArr.push('td { white-space: pre-wrap; text-align: justify; text-justify: inter-word; }');
+            htmlArr.push('.page-break { page-break-after: always; }');
+            htmlArr.push('@media print { @page { margin: 1.5cm; } }');
+            htmlArr.push('</style>');
+            htmlArr.push('</head>');
+            htmlArr.push('<body>');
+
+            const printFields = [
+                { label: "Dasar Pemikiran", key: "Dasar Pemikiran" },
+                { label: "Dimensi Mutu", key: "Dimensi Mutu" },
+                { label: "Tujuan", key: "Tujuan" },
+                { label: "Definisi Operasional", key: "Definisi Operasional" },
+                { label: "Jenis Indikator", key: "Jenis Indikator" },
+                { label: "Satuan & Target", key: "Target_Gabung" },
+                { label: "Numerator (Pembilang)", key: "Numerator" },
+                { label: "Denominator (Penyebut)", key: "Denominator" },
+                { label: "Kriteria Inklusi", key: "Kriteria Inklusi" },
+                { label: "Kriteria Eksklusi", key: "Kriteria Eksklusi" },
+                { label: "Formula Perhitungan", key: "Formula" },
+                { label: "Cara Penilaian", key: "Cara Penilaian" },
+                { label: "Metode Pengumpulan Data", key: "Metode Pengumpulan Data" },
+                { label: "Sumber Data", key: "Sumber Data" },
+                { label: "Instrumen Pengambilan Data", key: "Instrumen Pengambilan Data" },
+                { label: "Besar Sampel", key: "Besar Sampel" },
+                { label: "Cara Pengambilan Sampel", key: "Cara Pengambilan Sampel" },
+                { label: "Periode Pengumpulan Data", key: "Periode Pengumpulan Data" },
+                { label: "Periode Pelaporan Data", key: "Periode Pelaporan Data" },
+                { label: "Periode Analisis Data", key: "Periode Analisis Data" },
+                { label: "Penyajian Data", key: "Penyajian Data" },
+                { label: "Penanggung Jawab", key: "Penanggung Jawab" }
+            ];
+
+            dataToPrint.forEach((row, i) => {
+                let judul = row['Judul Indikator'] || row['Kolom_Kriteria'] || "-";
+                let kategori = row['Kategori Indikator'] || "-";
+                
+                htmlArr.push('<h2>PROFIL INDIKATOR MUTU<br>' + judul + '</h2>');
+                htmlArr.push('<div class="kategori-subtitle">Kategori: ' + kategori + '</div>');
+                htmlArr.push('<table><tbody>');
+
+                printFields.forEach(f => {
+                    let val = "";
+                    if (f.key === "Target_Gabung") {
+                        let targetVal = row['Target'] || "-";
+                        let satuanVal = row['Satuan'] || "";
+                        let arahVal = row['Arah Target'] === "Negatif" ? "Semakin Rendah Semakin Baik" : "Semakin Tinggi Semakin Baik";
+                        val = targetVal + ' ' + satuanVal + '<br>(Arah: ' + arahVal + ')';
+                    } else {
+                        val = row[f.key] || "-";
+                    }
+                    htmlArr.push('<tr><th>' + f.label + '</th><td>' + val + '</td></tr>');
+                });
+
+                htmlArr.push('</tbody></table>');
+                if (i < dataToPrint.length - 1) {
+                    htmlArr.push('<div class="page-break"></div>');
+                }
+            });
+
+            htmlArr.push('<' + '/body>');
+            htmlArr.push('<' + '/html>');
+
+            let htmlCetak = htmlArr.join('');
+
+            let printWindow = window.open('', '_blank');
+            printWindow.document.open(); 
+            printWindow.document.write(htmlCetak);
+            printWindow.document.close();
+
+            setTimeout(function() {
+                printWindow.focus();
+                printWindow.print();
+            }, 500);
+        };
+
         window.bukaModalForm = function(index) {
             document.getElementById('formProfil').reset();
             document.querySelectorAll('.chk-dimensi').forEach(c => c.checked = false);
@@ -372,9 +540,8 @@
                 selectId.value = valId;
                 selectId.disabled = true; 
                 
-                // Ambil dan pasang Judul Indikator asli ke Input Box
                 document.getElementById('inp_Judul_Indikator').value = data['Judul Indikator'] || "";
-                currentEditingJudul = data['Judul Indikator'] || ""; // Kunci nama lama untuk tracker backend
+                currentEditingJudul = data['Judul Indikator'] || ""; 
 
                 let dimensiStr = data['Dimensi Mutu'] || "";
                 if(dimensiStr !== "-") {
@@ -449,7 +616,7 @@
 
             const payloadData = {
                 "ID_Form": idForm,
-                "Judul Indikator": judulIndikatorBaru, // Mengirimkan teks judul baru/editan ke database
+                "Judul Indikator": judulIndikatorBaru, 
                 "Kategori Indikator": document.getElementById('inp_Kategori_Indikator').value,
                 "Arah Target": document.getElementById('inp_Arah_Target').value,
                 "Satuan": document.getElementById('inp_Satuan').value, 
@@ -478,7 +645,6 @@
             fetch(scriptURL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
-                // MENYERTAKAN TRACKER JUDUL LAMA AGAR BACKEND TIDAK MEMBUAT DUPLIKAT BARIS BARU
                 body: JSON.stringify({ action: 'save_profil_indikator', role: role, old_judul_indikator: currentEditingJudul, data: payloadData })
             })
             .then(res => res.json())
