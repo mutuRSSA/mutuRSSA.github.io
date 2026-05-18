@@ -498,7 +498,7 @@
             if (!hot) return;
 
             // ========================================================
-            // SATPAM VALIDASI: CEK DATA KOSONG SEBELUM SIMPAN
+            // SATPAM VALIDASI: CEK HANYA KOLOM TANGGAL SEBELUM SIMPAN
             // ========================================================
             let barisTidakLengkap = [];
             let rowCount = hot.countRows();
@@ -514,8 +514,7 @@
                 let rowData = hot.getDataAtRow(i);
                 let isRowEmpty = true;
                 
-                // 2. CEK APAKAH BARIS INI KOSONG DARI INPUTAN PETUGAS
-                // (Abaikan kolom otomatis / ReadOnly agar baris cadangan tidak ikut terdeteksi)
+                // 2. CEK APAKAH BARIS INI SEDANG DIISI PETUGAS
                 for (let j = 0; j < rowData.length; j++) {
                     let isReadOnly = hot.getSettings().columns[j].readOnly;
                     if (!isReadOnly && j !== indexKolomStatus && rowData[j] !== null && rowData[j] !== "") {
@@ -525,26 +524,21 @@
                 }
                 
                 if (!isRowEmpty) {
-                    // 3. JIKA ADA ISINYA, PASTIKAN SEMUA KOLOM WAJIB TERISI
-                    for (let j = 0; j < rowData.length; j++) {
-                        let isReadOnly = hot.getSettings().columns[j].readOnly;
-                        
-                        if (j !== indexKolomStatus && !isReadOnly) {
-                            if (rowData[j] === null || rowData[j] === "" || rowData[j] === undefined) {
-                                if (!barisTidakLengkap.includes(i + 1)) {
-                                    barisTidakLengkap.push(i + 1);
-                                }
-                            }
+                    // 3. JIKA BARIS DIISI, PASTIKAN HANYA KOLOM TANGGAL YANG WAJIB TERISI
+                    if (dateColumnIndex !== -1) {
+                        let nilaiTanggal = rowData[dateColumnIndex];
+                        if (nilaiTanggal === null || nilaiTanggal === "" || nilaiTanggal === undefined) {
+                            barisTidakLengkap.push(i + 1);
                         }
                     }
                 }
             }
 
-            // Jika ada baris yang tercatat tidak lengkap, blokir
+            // Jika ada baris yang tanggalnya kosong, blokir
             if (barisTidakLengkap.length > 0) {
                 Swal.fire({
-                    title: 'Data Belum Lengkap!',
-                    html: `Mohon isi semua kolom kosong pada Baris ke-<b>${barisTidakLengkap.join(', ')}</b> terlebih dahulu.<br><br><small class="text-muted">(Kolom berlatar abu-abu akan terisi otomatis, abaikan saja)</small>`,
+                    title: 'Tanggal Belum Diisi!',
+                    html: `Ada data yang diinput tapi <b>Kolom Tanggal</b>-nya masih kosong pada Baris ke-<b>${barisTidakLengkap.join(', ')}</b>.<br><br>Mohon lengkapi tanggalnya terlebih dahulu.`,
                     icon: 'warning',
                     confirmButtonColor: '#0dcaf0',
                     confirmButtonText: '<i class="fas fa-edit me-1"></i> Baik, Saya Lengkapi'
