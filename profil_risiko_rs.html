@@ -6,7 +6,6 @@
     <title>Profil Risiko Rumah Sakit</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Tambahkan SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
@@ -129,7 +128,7 @@
                             <th style="min-width: 160px;">Realisasi</th>
                             <th style="min-width: 160px;">Rencana Lanjutan</th>
                             <th style="min-width: 160px;">Hasil Pemantauan</th>
-                            <th style="min-width: 140px;">Status</th>
+                            <th style="min-width: 160px;">Status & Aksi Khusus</th>
                         </tr>
                     </thead>
                     <tbody id="tabelProfilBody">
@@ -140,7 +139,6 @@
         </div>
     </div>
 
-    <!-- Script Pusat Konfigurasi & Autentikasi -->
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
@@ -233,7 +231,7 @@
             if (skor >= 15) return 'bg-ekstrem';  
             if (skor >= 10) return 'bg-tinggi';   
             if (skor >= 4) return 'bg-sedang';
-            return 'bg-rendah';                   
+            return 'bg-rendah';                  
         }
 
         window.kalkulasiSkorAkhir = function(id, skorDxF) {
@@ -244,10 +242,20 @@
             elemenSkorAkhir.innerText = akhir;
             
             elemenSkorAkhir.className = "text-center fw-bold fs-6 " + penentuWarnaSkor(akhir);
+            
+            // MODIFIKASI: Deteksi real-time untuk memunculkan atau menghilangkan tombol FMEA
+            let tombolFmea = document.getElementById(`btn_fmea_${id}`);
+            if (tombolFmea) {
+                if (akhir >= 15) {
+                    tombolFmea.classList.remove('d-none');
+                } else {
+                    tombolFmea.classList.add('d-none');
+                }
+            }
         }
 
         function updateWarnaStatus(selectElement) {
-            selectElement.className = "form-select input-profil status-select"; 
+            selectElement.className = "form-select input-profil status-select mb-2"; 
             let val = selectElement.value;
             if(val === "Belum Ditangani") selectElement.classList.add("status-belum");
             else if(val === "On Proses") selectElement.classList.add("status-proses");
@@ -334,6 +342,7 @@
                 let id = item.id;
                 let f = item.base['Frekuensi (F)'] || '-';
                 let d = item.base['Dampak (D)'] || '-';
+                let risikoTeks = item.base['Risiko Teridentifikasi'] || '-';
                 let dampakTimbul = item.base['Dampak Timbul'] || '-'; 
                 
                 let skorDxF = parseInt(item.base['Skor Risiko (DxF)'] || 0);
@@ -350,11 +359,23 @@
                 let opsiKategori = kategoriOptions.map(opt => `<option value="${opt}" ${prevKat === opt ? 'selected' : ''}>${opt}</option>`).join('');
                 let opsiKontrol = [1,2,3,4].map(num => `<option value="${num}" ${parseInt(prevKontrol) === num ? 'selected' : ''}>${num}</option>`).join('');
 
+                // MODIFIKASI: Tombol Eskalasi FMEA muncul khusus untuk yang Skor Akhir (Residual) nya Merah (>= 15)
+                let tombolFmeaHtml = '';
+                let dNoneClass = skorAkhirAwal >= 15 ? '' : 'd-none';
+                
+                tombolFmeaHtml = `
+                    <a href="fmea_builder.html?eskalasi_id=${id}&deskripsi_risiko=${encodeURIComponent(risikoTeks)}" 
+                       class="btn btn-sm btn-danger w-100 fw-bold shadow-sm d-print-none mt-1 ${dNoneClass}" 
+                       id="btn_fmea_${id}" title="Risiko Ekstrem: Buat Proyek Analisis FMEA">
+                        <i class="fas fa-project-diagram me-1"></i> Tim FMEA
+                    </a>
+                `;
+
                 tbody.innerHTML += `
                     <tr>
                         <td class="text-center fw-bold">${index + 1}</td>
                         <td><select class="form-select input-profil fw-bold text-primary" id="kat_${id}">${opsiKategori}</select></td>
-                        <td class="fw-bold text-dark">${item.base['Risiko Teridentifikasi'] || '-'}</td>
+                        <td class="fw-bold text-dark">${risikoTeks}</td>
                         <td><small class="text-muted">${dampakTimbul}</small></td>
                         <td class="text-center">${f}</td>
                         <td class="text-center">${d}</td>
@@ -371,12 +392,13 @@
                         <td><textarea class="input-profil" id="lanjutan_${id}" rows="3">${item.pantauan['Rencana Pencegahan Lanjutan'] || ''}</textarea></td>
                         <td><textarea class="input-profil" id="hasil_${id}" rows="3">${item.pantauan['Hasil Pemantauan'] || ''}</textarea></td>
                         <td>
-                            <select class="form-select input-profil status-select" id="status_${id}" onchange="updateWarnaStatus(this)">
+                            <select class="form-select input-profil status-select mb-2" id="status_${id}" onchange="updateWarnaStatus(this)">
                                 <option value="Belum Ditangani" ${prevStatus === 'Belum Ditangani' ? 'selected' : ''}>Belum Ditangani</option>
                                 <option value="On Proses" ${prevStatus === 'On Proses' ? 'selected' : ''}>On Proses</option>
                                 <option value="Selesai Ditangani" ${prevStatus === 'Selesai Ditangani' ? 'selected' : ''}>Selesai Ditangani</option>
                                 <option value="Dibatalkan" ${prevStatus === 'Dibatalkan' ? 'selected' : ''}>Dibatalkan</option>
                             </select>
+                            ${tombolFmeaHtml}
                         </td>
                     </tr>
                 `;

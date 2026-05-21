@@ -333,15 +333,32 @@
                                 </li>
                             </ul>
 
-                            <div class="sub-chapter">4. Manajemen Kamus Indikator Mutu</div>
+                            <div class="sub-chapter">4. SOP Perubahan Formulir & Integritas Data (Sangat Penting)</div>
+                            <div class="alert alert-danger" style="font-size: 0.9rem;">
+                                <strong><i class="fas fa-exclamation-triangle"></i> ATURAN EMAS DATABASE:</strong> DILARANG KERAS menghapus atau menyisipkan kolom baru di tengah-tengah form yang <em>sudah pernah diisi data observasi</em> oleh unit di bulan-bulan sebelumnya. Hal ini akan menyebabkan pergeseran data historis di Google Sheets dan merusak laporan tahunan.
+                            </div>
+                            <p><strong>Bagaimana jika ada aturan Kementerian yang mengharuskan form diubah di pertengahan tahun?</strong></p>
+                            <ul>
+                                <li>Jangan mengedit/membongkar Form Builder yang lama.</li>
+                                <li>Buat Formulir Baru dengan akhiran V2 (Contoh: <code>Kepatuhan_Visite_V2</code>). Rancang kolom sesuai aturan terbaru.</li>
+                                <li>Masuk ke Pengaturan Unit, cabut centang form lama, dan berikan centang penugasan pada form V2 yang baru. Data lama tetap aman sebagai arsip.</li>
+                            </ul>
+                            <p><strong>Apa yang boleh diedit pada Form yang sedang berjalan?</strong></p>
+                            <ul>
+                                <li>Anda bebas <strong>Mengganti Nama/Judul Kolom</strong> (Misal: dari "Nama" menjadi "Nama Pasien"), karena sistem mengenali indeks kolomnya, bukan namanya.</li>
+                                <li>Anda bebas mengubah Hak Akses Unit.</li>
+                                <li><strong>Dilarang:</strong> Mengubah <em>Tipe Data</em> (Misal dari Text menjadi Date) pada kolom yang sudah pernah terisi data, karena dapat merusak format bacaan *spreadsheet*.</li>
+                            </ul>
+
+                            <div class="sub-chapter">5. Manajemen Kamus Indikator Mutu</div>
                             <p>Setiap ID Form yang selesai dirakit di Form Builder wajib dibuatkan lembar panduannya melalui menu <strong>Kamus Indikator Mutu -> Tambah Profil Baru</strong>.</p>
                             <ul>
                                 <li>Isi parameter esensial (Satuan, Target) dan centang <strong>Dimensi Mutu WHO</strong> (Aman, Efektif, dll).</li>
-                                <li>Gunakan fitur <strong>Cetak DO</strong> di baris indikator untuk mencetak dokumen resmi, atau <strong>Cetak Semua Kamus</strong> untuk membuat *bundling* dokumen akreditasi.</li>
-                                <li>Anda bebas merevisi <em>Judul Indikator</em> di mode Edit karena sistem memiliki <em>Tracker Cerdas</em> yang mencegah data ganda.</li>
+                                <li>Gunakan fitur <strong>Cetak DO</strong> di baris indikator untuk mencetak dokumen resmi, atau <strong>Cetak Semua Kamus</strong> untuk membuat <em>bundling</em> dokumen akreditasi.</li>
+                                <li>Anda bebas merevisi <em>Judul Indikator</em> di mode Edit karena sistem memiliki <em>Tracker Cerdas</em> yang mencegah duplikasi data saat judul diubah.</li>
                             </ul>
 
-                            <div class="sub-chapter">5. Prosedur Pemeliharaan Tahunan (Backup Arsip & Reset)</div>
+                            <div class="sub-chapter">6. Prosedur Pemeliharaan Tahunan (Backup Arsip & Reset)</div>
                             <p><strong>Wajib dijalankan rutin setiap tanggal 31 Desember pukul 23.59 WIB.</strong></p>
                             <p>Masuk ke Dasbor Laporan Capaian Mutu -> Filter "SELURUH RUMAH SAKIT" -> Klik <strong>Backup Arsip & Reset</strong>. Sistem akan menduplikasi file master ke Google Drive, mengosongkan tabel inputan harian di semua unit untuk 1 Januari besok, dan memahat nilai kumulatif akhir (Desember) ke dalam tab <code>DB_HISTORIS</code> secara permanen.</p>
                         </div>
