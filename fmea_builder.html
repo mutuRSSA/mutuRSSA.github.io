@@ -23,7 +23,13 @@
         color: white; border-radius: 8px; padding: 20px; margin-bottom: 25px;
     }
 
-    .handsontable { font-family: 'Segoe UI', Tahoma, sans-serif !important; font-size: 13px !important; color: #495057 !important;}
+    /* PERBAIKAN CSS TULISAN TABEL AGAR TERLIHAT JELAS */
+    .handsontable { font-family: 'Segoe UI', Tahoma, sans-serif !important; font-size: 13px !important; color: #2c3e50 !important; background-color: #ffffff !important;}
+    .handsontable .wtHolder, .handsontable .wtHider, .ht_master { background-color: #ffffff !important; }
+    
+    /* Mengatur warna font saat kotak sedang diketik */
+    .handsontableInput { color: #2c3e50 !important; background-color: #ffffff !important; font-size: 13px !important; box-shadow: 0 0 0 2px #6f42c1 !important; padding: 4px !important; }
+
     .handsontable th, .handsontable th .colHeader { 
         background-color: #f8f9fa !important; color: #2c3e50 !important; font-weight: bold !important; 
         border-color: #dee2e6 !important; text-align: center; vertical-align: middle !important; 
@@ -31,9 +37,11 @@
         white-space: normal !important;
     }
     .handsontable thead th { border-bottom: 2px solid #6f42c1 !important; }
-    .handsontable td { border-color: #e9ecef !important; vertical-align: middle !important; padding: 6px 10px !important; }
+    .handsontable td { border-color: #e9ecef !important; vertical-align: middle !important; padding: 6px 10px !important; white-space: normal !important; word-wrap: break-word !important;}
     
-    #spreadsheet { height: calc(100vh - 420px) !important; min-height: 350px !important; width: 100%; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden;}
+    .handsontable .wtBorder.current, .handsontable .wtBorder.area { background-color: #6f42c1 !important; }
+    
+    #spreadsheet { height: calc(100vh - 420px) !important; min-height: 350px !important; width: 100%; border: 1px solid #dee2e6; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -49,7 +57,7 @@
                     <p class="mb-0 text-white-50" style="font-size:0.9rem;">Redesain alur pelayanan berisiko tinggi sebelum terjadi insiden.</p>
                 </div>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-outline-light fw-bold" onclick="eksporFMEAPdf()"><i class="fas fa-file-pdf me-2"></i> Ekspor PDF Resmi</button>
+                    <button class="btn btn-outline-light fw-bold" onclick="eksporFMEAPdf()"><i class="fas fa-file-pdf me-2"></i> Ekspor PDF Sementara</button>
                     <button class="btn btn-info text-white fw-bold shadow-sm" onclick="simpanProyekFMEA()"><i class="fas fa-save me-2"></i> Simpan Proyek FMEA</button>
                 </div>
             </div>
@@ -57,15 +65,15 @@
             <div class="row g-3 mb-4 p-3 bg-light rounded border">
                 <div class="col-md-5">
                     <label class="form-label fw-bold text-secondary">Nama Proses Klinis / Operasional Berisiko Tinggi</label>
-                    <input type="text" class="form-control fw-bold border-secondary" id="fmea_nama_proses" placeholder="Contoh: Alur Pelayanan Darah atau High Alert Drugs ICU">
+                    <input type="text" class="form-control fw-bold border-secondary text-dark" id="fmea_nama_proses" placeholder="Contoh: Alur Pelayanan Darah atau High Alert Drugs">
                 </div>
                 <div class="col-md-4">
                     <label class="form-label fw-bold text-secondary">Ketua Tim / Penanggung Jawab Proyek</label>
-                    <input type="text" class="form-control border-secondary" id="fmea_ketua_tim" placeholder="Nama Dokter / Ka. Instalasi">
+                    <input type="text" class="form-control border-secondary text-dark" id="fmea_ketua_tim" placeholder="Nama Dokter / Ka. Instalasi">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label fw-bold text-secondary">Sumber Eskalasi Bahaya</label>
-                    <input type="text" class="form-control bg-white" id="fmea_sumber_risiko" readonly value="Input Proyek Manual">
+                    <input type="text" class="form-control bg-white fw-bold text-primary" id="fmea_sumber_risiko" readonly value="Input Proyek Manual">
                 </div>
             </div>
 
@@ -80,7 +88,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const scriptURL = API_CONFIG.RISK;
+        const scriptURL = API_CONFIG.RISK; // Menggunakan API Manajemen Risiko
         let hot = null;
         
         // Menangkap parameter URL jika dioper dari menu Profil Risiko
@@ -108,7 +116,6 @@
         };
 
         function inisialisasiTabelFMEA() {
-            // Struktur Rangka Kolom FMEA Standar Akreditasi Rumah Sakit
             const headers = [
                 "Sub-Proses / Langkah", 
                 "Mode Kegagalan Potensial", 
@@ -124,26 +131,23 @@
                 "Target Tanggal"
             ];
 
-            // Setup Konfigurasi Jenis Input Tiap Kolom
             const columnsConfig = [
-                { type: 'text', width: 160 }, // Sub-Proses
-                { type: 'text', width: 180 }, // Mode Kegagalan
-                { type: 'text', width: 180 }, // Akibat
-                { type: 'dropdown', source: [1,2,3,4,5,6,7,8,9,10], width: 70, className: 'htCenter' }, // Severity
-                { type: 'text', width: 180 }, // Penyebab
-                { type: 'dropdown', source: [1,2,3,4,5,6,7,8,9,10], width: 70, className: 'htCenter' }, // Occurrence
-                { type: 'text', width: 160 }, // Kontrol
-                { type: 'dropdown', source: [1,2,3,4,5,6,7,8,9,10], width: 70, className: 'htCenter' }, // Detection
-                { type: 'text', readOnly: true, width: 90, className: 'htCenter' }, // RPN (ReadOnly)
-                { type: 'text', width: 220 }, // Rencana Tindakan
-                { type: 'text', width: 130 }, // PIC
-                { type: 'date', dateFormat: 'DD/MM/YYYY', correctFormat: true, width: 110, className: 'htCenter' } // Target
+                { type: 'text', width: 160 }, 
+                { type: 'text', width: 180 }, 
+                { type: 'text', width: 180 }, 
+                { type: 'dropdown', source: [1,2,3,4,5,6,7,8,9,10], width: 70, className: 'htCenter' }, 
+                { type: 'text', width: 180 }, 
+                { type: 'dropdown', source: [1,2,3,4,5,6,7,8,9,10], width: 70, className: 'htCenter' }, 
+                { type: 'text', width: 160 }, 
+                { type: 'dropdown', source: [1,2,3,4,5,6,7,8,9,10], width: 70, className: 'htCenter' }, 
+                { type: 'text', readOnly: true, width: 90, className: 'htCenter' }, 
+                { type: 'text', width: 220 }, 
+                { type: 'text', width: 130 }, 
+                { type: 'date', dateFormat: 'DD/MM/YYYY', correctFormat: true, width: 110, className: 'htCenter' } 
             ];
 
-            // Generate template draf kosong (15 baris awal)
             let drafData = Array.from({ length: 15 }, () => Array(12).fill(""));
 
-            // Suntikkan rumus perkalian otomatis ke kolom RPN (Indeks 8)
             drafData.forEach((row, rIdx) => {
                 let letterS = colToLetter(3) + (rIdx + 1);
                 let letterO = colToLetter(5) + (rIdx + 1);
@@ -165,7 +169,6 @@
                 manualColumnResize: true,
                 wordWrap: true,
 
-                // Injeksi rumus otomatis jika pengguna menyisipkan baris baru di tengah diskusi
                 afterCreateRow: function(index, amount) {
                     let updates = [];
                     for (let i = 0; i < amount; i++) {
@@ -178,7 +181,7 @@
                     if(updates.length > 0) setTimeout(() => { this.setDataAtCell(updates, 'autoFMEAMath'); }, 100);
                 },
 
-                // Mewarnai baris merah transparan secara real-time jika skor RPN mencapai batas kritis (>= 80)
+                // PERBAIKAN WARNA FONT DI RENDERER
                 cells: function(row, col) {
                     let cellProperties = {};
                     cellProperties.renderer = function(instance, td, r, c, prop, value, cellProps) {
@@ -186,8 +189,12 @@
                         
                         let rpnValue = instance.getDataAtCell(r, 8);
                         
+                        // Set warna dasar tulisan agar tidak hilang
+                        td.style.color = '#2c3e50'; 
+
                         if (cellProps.readOnly) {
                             td.style.backgroundColor = '#f1f3f5';
+                            td.style.color = '#6f42c1'; // RPN diberi warna ungu gelap
                             td.style.fontWeight = 'bold';
                         } else {
                             td.style.backgroundColor = '#ffffff';
@@ -200,6 +207,7 @@
                                 td.style.color = '#ffffff';
                             } else {
                                 td.style.backgroundColor = '#fff5f5';
+                                td.style.color = '#842029'; // Warna teks merah gelap
                             }
                         }
                     };
@@ -208,45 +216,52 @@
             });
         }
 
+        // FUNGSI SIMPAN ASLI YANG TERKONEKSI KE SERVER (GOOGLE APPS SCRIPT)
         function simpanProyekFMEA() {
             let namaProses = document.getElementById('fmea_nama_proses').value.trim();
             if (!namaProses) { Swal.fire('Gagal', 'Nama Proses Klinis wajib diisi sebagai identitas proyek!', 'warning'); return; }
 
-            // Logika integrasi kirim payload ke GAS (Google Apps Script)
             Swal.fire({
                 title: 'Simpan Proyek FMEA?',
-                text: 'Data rangka FMEA ini akan disimpan ke database master komite mutu.',
+                text: 'Data rangka FMEA ini akan disimpan permanen ke database master komite mutu.',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#6f42c1',
-                confirmButtonText: 'Ya, Simpan'
+                confirmButtonText: 'Ya, Simpan',
+                cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    Swal.fire('Berhasil', 'Proyek Analisis FMEA berhasil disimpan.', 'success');
+                    Swal.fire({ title: 'Menyimpan ke Server...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+                    
+                    const payload = {
+                        action: 'save_fmea_project',
+                        nama_proses: namaProses,
+                        ketua_tim: document.getElementById('fmea_ketua_tim').value.trim(),
+                        sumber_risiko: document.getElementById('fmea_sumber_risiko').value.trim(),
+                        tabel_data: hot.getData()
+                    };
+
+                    fetch(scriptURL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(payload)
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.status === 'success') {
+                            Swal.fire('Tersimpan!', res.message, 'success').then(() => {
+                                window.location.href = "daftar_fmea.html"; // Lempar ke halaman arsip setelah sukses
+                            });
+                        } else {
+                            Swal.fire('Gagal', res.message, 'error');
+                        }
+                    }).catch(err => Swal.fire('Error', 'Gagal menghubungi server database.', 'error'));
                 }
             });
         }
 
         function eksporFMEAPdf() {
-            let namaProses = document.getElementById('fmea_nama_proses').value.trim();
-            if (!namaProses) { Swal.fire('Peringatan', 'Silakan isi nama proses terlebih dahulu sebelum ekspor!', 'warning'); return; }
-
-            Swal.fire({
-                title: 'Merakit PDF Resmi...',
-                html: 'Sistem sedang menghubungi server untuk menyalin template dokumen resmi dan menyuntikkan data tabel FMEA Anda.',
-                allowOutsideClick: false,
-                didOpen: () => { Swal.showLoading(); }
-            });
-
-            // Simulasi pemicu kompilator Server-side Docs Engine
-            setTimeout(() => {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'PDF Siap!',
-                    text: 'Dokumen FMEA Berkop Resmi berhasil dibuat.',
-                    confirmButtonText: 'Unduh PDF'
-                });
-            }, 2000);
+            Swal.fire('Fitur Ditunda', 'Sesuai instruksi, fitur Cetak PDF Resmi akan dikembangkan nanti.', 'info');
         }
     </script>
 </body>
