@@ -86,8 +86,8 @@ function loadNavigation() {
     // =========================================================================
     // 2. FRONTEND SECURITY GUARD (DIPERBARUI)
     // =========================================================================
-    // UPDATE: super_admin_panel.html dan form_builder.html ditambahkan ke guard
-    const adminPages = ['command_center.html', 'dasbor_kepatuhan.html', 'capa.html', 'dasbor_pdsa.html', 'daftar_insiden.html', 'analisis.html', 'analisis_sederhana.html', 'daftar_kpc.html', 'analisis_kpc.html', 'rekapitulasi.html', 'dasbor_budaya.html', 'dasbor_risiko.html', 'profil_risiko_rs.html', 'super_admin_panel.html', 'form_builder.html'];
+    // MODIFIKASI: Menambahkan daftar_fmea.html dan fmea_builder.html ke dalam penjagaan
+    const adminPages = ['command_center.html', 'dasbor_kepatuhan.html', 'capa.html', 'dasbor_pdsa.html', 'daftar_insiden.html', 'analisis.html', 'analisis_sederhana.html', 'daftar_kpc.html', 'analisis_kpc.html', 'rekapitulasi.html', 'dasbor_budaya.html', 'dasbor_risiko.html', 'profil_risiko_rs.html', 'super_admin_panel.html', 'form_builder.html', 'daftar_fmea.html', 'fmea_builder.html'];
     
     if (adminPages.includes(page) && role !== "Komite Mutu") {
         if (typeof Swal !== 'undefined') {
@@ -149,6 +149,7 @@ function loadNavigation() {
 
     let menuRahasiaKomite = '';
     if (role === "Komite Mutu") {
+        // MODIFIKASI: Menambahkan "Arsip Proyek FMEA" ke dalam Panel Komite Mutu
         menuRahasiaKomite = `
             <div class="mt-4 mb-2 px-3 text-uppercase text-muted fw-bold" style="font-size: 0.75rem; letter-spacing: 1px;">Manajemen Eksekutif</div>
             
@@ -178,8 +179,10 @@ function loadNavigation() {
                     <a href="daftar_kpc.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-daftar-kpc" style="font-size: 0.95rem;"><i class="fas fa-list-alt me-2"></i> Daftar KPC</a>
                     <a href="rekapitulasi.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-rekap" style="font-size: 0.95rem;"><i class="fas fa-chart-pie me-2"></i> Rekapitulasi Insiden</a>
                     <a href="dasbor_budaya.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0 mt-1" id="menu-dasbor-budaya" style="font-size: 0.95rem;"><i class="fas fa-spider me-2"></i> Analitik Budaya</a>
+                    
                     <a href="dasbor_risiko.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0 mt-1" id="menu-dasbor-risiko" style="font-size: 0.95rem;"><i class="fas fa-broadcast-tower me-2"></i> Supervisi Risiko RS</a>
                     <a href="profil_risiko_rs.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-profil-risiko" style="font-size: 0.95rem;"><i class="fas fa-crown me-2"></i> Profil Risiko RS</a>
+                    <a href="daftar_fmea.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-daftar-fmea" style="font-size: 0.95rem;"><i class="fas fa-project-diagram me-2"></i> Arsip Proyek FMEA</a>
                 </div>
             </div>
         `;
@@ -313,13 +316,28 @@ function loadNavigation() {
     else if (page === 'kpc.html') { document.getElementById('menu-kpc')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); } 
     else if (page === 'survey_budaya.html') { document.getElementById('menu-survey-budaya')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); }
     
-    // UPDATE: Active State untuk menu baru
+    // Active State untuk menu Setup
     else if (page === 'super_admin_panel.html') { document.getElementById('menu-super-admin')?.classList.add('active'); document.getElementById('collapseSystem')?.classList.add('show'); }
     else if (page === 'form_builder.html') { document.getElementById('menu-form-builder')?.classList.add('active'); document.getElementById('collapseSystem')?.classList.add('show'); }
     
+    // Active State untuk menu Komite
     else if (page === 'dasbor_kepatuhan.html') { document.getElementById('menu-kepatuhan')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'dasbor_pdsa.html') { document.getElementById('menu-dasbor-pdsa')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'capa.html') { document.getElementById('menu-capa')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
+    else if (page === 'daftar_insiden.html') { document.getElementById('menu-daftar-ikp')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
+    else if (page === 'daftar_kpc.html') { document.getElementById('menu-daftar-kpc')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
+    else if (page === 'rekapitulasi.html') { document.getElementById('menu-rekap')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
+    else if (page === 'dasbor_budaya.html') { document.getElementById('menu-dasbor-budaya')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
+    else if (page === 'dasbor_risiko.html') { document.getElementById('menu-dasbor-risiko')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
+    else if (page === 'profil_risiko_rs.html') { document.getElementById('menu-profil-risiko')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
+    
+    // MODIFIKASI: Active State untuk menu FMEA
+    else if (page === 'daftar_fmea.html' || page === 'fmea_builder.html') { 
+        let menuElem = document.getElementById('menu-daftar-fmea');
+        if (menuElem) menuElem.classList.add('active'); 
+        let collapseElem = document.getElementById('collapseAdmin');
+        if (collapseElem) collapseElem.classList.add('show'); 
+    }
 }
 
 // Fungsi Keluar Sistem

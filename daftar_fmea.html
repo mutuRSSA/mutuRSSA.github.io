@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Proyek FMEA - SIM PMKP</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+    body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.04); border-radius: 12px; border-top: 4px solid #6f42c1; background: #fff;}
+    
+    .project-card {
+        border: 1px solid #e2e8f0; border-radius: 8px; transition: 0.2s; background: #fff; margin-bottom: 15px;
+    }
+    .project-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,.08); border-color: #6f42c1; }
+    
+    .badge-fmea { padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.75rem; }
+    .badge-active { background-color: #e3f2fd; color: #0d6efd; }
+    .badge-closed { background-color: #d1e7dd; color: #0f5132; }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container px-4" style="max-width: 1100px;">
+        <div class="bg-white p-4 card-custom">
+            
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4 flex-wrap gap-2">
+                <div>
+                    <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-folder-open text-primary me-2"></i> Perpustakaan Arsip FMEA</h4>
+                    <p class="text-muted mb-0">Daftar proyek redesain proses pelayanan klinis korporat.</p>
+                </div>
+                <a href="fmea_builder.html" class="btn btn-purple text-white fw-bold shadow-sm" style="background-color: #6f42c1;">
+                    <i class="fas fa-plus me-1"></i> Proyek Baru Manual
+                </a>
+            </div>
+
+            <div class="row g-2 mb-4 p-3 bg-light rounded border">
+                <div class="col-md-8">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
+                        <input type="text" id="pencarianFmea" class="form-control border-start-0" placeholder="Cari nama proses klinis atau ketua tim..." onkeyup="saringProyekFMEA()">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select id="filterStatus" class="form-select fw-bold text-secondary" onchange="saringProyekFMEA()">
+                        <option value="SEMUA">-- Semua Status Proyek --</option>
+                        <option value="Aktif">Proyek Aktif (Berjalan)</option>
+                        <option value="Selesai">Proyek Selesai (Final)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="loadingMessage" class="alert alert-info text-center fw-bold shadow-sm">
+                <i class="fas fa-spinner fa-spin me-2"></i> Menarik arsip dari database master...
+            </div>
+
+            <div id="fmeaListContainer" class="row"></div>
+
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const scriptURL = API_CONFIG.RISK; // Menembak file script database manajemen risiko
+        let semuaProyekFMEA = [];
+
+        document.addEventListener("DOMContentLoaded", function () {
+            fetch(scriptURL)
+                .then(res => res.json())
+                .then(result => {
+                    document.getElementById('loadingMessage').style.display = 'none';
+                    if (result.status === 'success') {
+                        semuaProyekFMEA = result.data_fmea || [];
+                        tampilkanKartuProyek(semuaProyekFMEA);
+                    } else {
+                        document.getElementById('loadingMessage').innerHTML = `<i class="fas fa-lock me-2"></i> Gagal memuat arsip.`;
+                    }
+                })
+                .catch(err => {
+                    document.getElementById('loadingMessage').className = "alert alert-danger text-center fw-bold";
+                    document.getElementById('loadingMessage').innerHTML = `<i class="fas fa-wifi me-2"></i> Koneksi bermasalah.`;
+                });
+        });
+
+        function tampilkanKartuProyek(dataArray) {
+            const wadah = document.getElementById('fmeaListContainer');
+            wadah.innerHTML = '';
+
+            if (dataArray.length === 0) {
+                wadah.innerHTML = `<div class="text-center py-5 text-muted"><i class="fas fa-box-open fa-3x mb-3"></i><br>Belum ada rekaman proyek FMEA yang tersimpan.</div>`;
+                return;
+            }
+
+            dataArray.forEach(p => {
+                let statusProyek = p["Status"] || "Aktif";
+                let badgeClass = statusProyek === "Aktif" ? "badge-active" : "badge-closed";
+                
+                wadah.innerHTML += `
+                    <div class="col-12 item-proyek-fmea" data-proses="${p["Nama Proses"].toLowerCase()}" data-ketua="${p["Ketua Tim"].toLowerCase()}" data-status="${statusProyek}">
+                        <div class="project-card p-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                            <div>
+                                <div class="d-flex align-items-center gap-2 mb-2">
+                                    <span class="badge bg-secondary font-monospace" style="font-size:0.75rem;">${p["ID Proyek"]}</span>
+                                    <span class="badge-fmea ${badgeClass}">${statusProyek.toUpperCase()}</span>
+                                </div>
+                                <h5 class="fw-bold text-dark mb-1">${p["Nama Proses"]}</h5>
+                                <small class="text-muted d-block mb-1"><i class="fas fa-user-tie me-1"></i> Ketua Tim: <b>${p["Ketua Tim"] || "-"}</b></small>
+                                <small class="text-muted" style="font-size:0.8rem;"><i class="fas fa-calendar-alt me-1"></i> Tanggal Inisiasi: ${p["Tanggal Dibuat"] || "-"}</small>
+                            </div>
+                            <div class="text-end">
+                                <small class="text-purple d-block mb-2 fw-bold text-uppercase" style="font-size:0.75rem; color:#6f42c1;"><i class="fas fa-link me-1"></i> ${p["Sumber Risiko"] || "Manual"}</small>
+                                <a href="fmea_builder.html?proyek_id=${p["ID Proyek"]}" class="btn btn-sm btn-outline-primary fw-bold">
+                                    <i class="fas fa-eye me-1"></i> Buka Detail Rangka
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function saringProyekFMEA() {
+            let teksCari = document.getElementById('pencarianFmea').value.toLowerCase().trim();
+            let statusPilihan = document.getElementById('filterStatus').value;
+            let kartuKartu = document.querySelectorAll('.item-proyek-fmea');
+
+            kartuKartu.forEach(kartu => {
+                let namaProses = kartu.getAttribute('data-proses');
+                let namaKetua = kartu.getAttribute('data-ketua');
+                let statusProyek = kartu.getAttribute('data-status');
+
+                let cocokTeks = namaProses.includes(teksCari) || namaKetua.includes(teksCari);
+                let cocokStatus = (statusPilihan === 'SEMUA') || (statusProyek === statusPilihan);
+
+                if (cocokTeks && cocokStatus) {
+                    kartu.style.display = 'block';
+                } else {
+                    kartu.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+</html>

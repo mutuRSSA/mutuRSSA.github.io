@@ -15,9 +15,11 @@
         .table-responsive { overflow-x: auto; white-space: normal; }
         table.dataTable thead th { background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; font-size: 0.85rem; text-align: center; text-transform: uppercase;}
         table.dataTable tbody td { font-size: 0.85rem; vertical-align: middle; }
-        .badge-sumber { width: 60px; display: inline-block; text-align: center; }
+        .badge-sumber { width: 75px; display: inline-block; text-align: center; font-weight: bold;}
         .blink-me { animation: blinker 1.5s linear infinite; }
         @keyframes blinker { 50% { opacity: 0.4; } }
+        /* Warna khusus untuk FMEA */
+        .bg-fmea { background-color: #6f42c1; color: white; }
     </style>
 </head>
 <body>
@@ -26,16 +28,16 @@
     <div id="sidebar-container"></div>
 
     <div class="container-fluid px-4">
-        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3 flex-wrap gap-2">
             <div>
-                <h4 class="mb-1 fw-bold text-dark"><i class="fas fa-bullseye text-warning me-2"></i> Pemantauan CAPA</h4>
-                <p class="text-muted mb-0">Corrective and Preventive Action dari Laporan IKP & KPC.</p>
+                <h4 class="mb-1 fw-bold text-dark"><i class="fas fa-bullseye text-warning me-2"></i> Pemantauan CAPA & Redesain</h4>
+                <p class="text-muted mb-0">Pemantauan lintas komite untuk IKP, KPC, Profil Risiko, dan Proyek FMEA.</p>
             </div>
             <button class="btn btn-outline-secondary fw-bold shadow-sm" onclick="location.reload()"><i class="fas fa-sync-alt me-2"></i> Refresh Data</button>
         </div>
 
         <div id="loadingMessage" class="alert alert-info text-center fw-bold shadow-sm">
-            <i class="fas fa-spinner fa-spin me-2"></i> Mengumpulkan janji perbaikan dari seluruh unit...
+            <i class="fas fa-spinner fa-spin me-2"></i> Mengumpulkan janji perbaikan dari 4 sumber database...
         </div>
 
         <div class="row g-3 mb-4" id="scorecardPanel" style="display: none;">
@@ -71,10 +73,10 @@
                     <thead>
                         <tr>
                             <th style="width: 5%;">Sumber</th>
-                            <th style="width: 15%;">Lokasi / Unit</th>
-                            <th style="width: 25%;">Rincian Insiden/Kondisi</th>
+                            <th style="width: 15%;">Lokasi / Proyek</th>
+                            <th style="width: 25%;">Rincian Insiden / Kegagalan</th>
                             <th style="width: 30%;">Tindakan Perbaikan (CAPA)</th>
-                            <th style="width: 10%;">PIC</th>
+                            <th style="width: 10%;">PIC Pelaksana</th>
                             <th style="width: 15%;">Status / Tenggat</th>
                         </tr>
                     </thead>
@@ -94,14 +96,13 @@
 
     <script>
         $(document).ready(function() {
-            // MENGAMBIL DATA DARI DUA API SEKALIGUS
-           // MENGAMBIL DATA DARI TIGA API SEKALIGUS
-        Promise.all([
-            fetch(API_CONFIG.IKP).then(res => res.json()),
-            fetch(API_CONFIG.KPC).then(res => res.json()),
-            fetch(API_CONFIG.RISK).then(res => res.json()) // <--- TAMBAHKAN INI
-        ])
-        .then(([resIKP, resKPC, resRISK]) => { // <--- TANGKAP resRISK
+            // MENGAMBIL DATA DARI TIGA API SEKALIGUS (PROFIL_RS KINI MENGANDUNG DATA RISIKO & FMEA)
+            Promise.all([
+                fetch(API_CONFIG.IKP).then(res => res.json()),
+                fetch(API_CONFIG.KPC).then(res => res.json()),
+                fetch(API_CONFIG.RISK).then(res => res.json()) 
+            ])
+            .then(([resIKP, resKPC, resRISK]) => { 
                 $('#loadingMessage').hide();
                 $('#scorecardPanel, #tablePanel').fadeIn();
 
@@ -111,13 +112,12 @@
 
                 // 1. EKSTRAK DATA IKP
                 if (resIKP.status === 'success') {
-                    resIKP.data.forEach(row => {
+                    (resIKP.data || []).forEach(row => {
                         let tindakan = row['Tindakan Akan Dilakukan'] || row['Rekomendasi'];
                         if (tindakan && tindakan.trim() !== '') {
                             let grading = row['Grading Risiko'] || 'Low';
                             let tglInsiden = row['Tgl & Waktu insiden'] ? new Date(row['Tgl & Waktu insiden']) : new Date(row['Timestamp']);
                             
-                            // Aturan Waktu: Merah/Kuning max 45 hari, Biru/Hijau max 7 Hari
                             let batasHari = (grading === 'High' || grading === 'Extreme') ? 45 : 7;
                             let deadline = new Date(tglInsiden.getTime() + (batasHari * 24 * 60 * 60 * 1000));
                             
@@ -129,7 +129,7 @@
                                 tindakan: tindakan,
                                 pic: row['Dilakukan Oleh'] || 'Kepala Unit',
                                 deadline: deadline,
-                                isResolved: false // IKP belum punya fitur "Resolved" di form saat ini
+                                isResolved: false 
                             });
                         }
                     });
@@ -137,7 +137,7 @@
 
                 // 2. EKSTRAK DATA KPC
                 if (resKPC.status === 'success') {
-                    resKPC.data.forEach(row => {
+                    (resKPC.data || []).forEach(row => {
                         let tindakan = row['Tindakan Akan Dilakukan'] || row['Tindakan yang Dilakukan'];
                         if (tindakan && tindakan.trim() !== '') {
                             let deadline = row['Tgl Tindakan'] ? new Date(row['Tgl Tindakan']) : null;
@@ -159,35 +159,69 @@
                 }
 
                 // 3. EKSTRAK DATA PROFIL RISIKO RS
-            if (resRISK && resRISK.status === 'success') {
-                // Karena Audit Trail, kita ambil data pemantauan yang terbaru saja per ID
-                let profilUnik = {};
-                (resRISK.data_profil || []).forEach(row => {
-                    if (row['ID Risiko']) profilUnik[row['ID Risiko']] = row;
-                });
+                if (resRISK && resRISK.status === 'success') {
+                    let profilUnik = {};
+                    (resRISK.data_profil || []).forEach(row => {
+                        if (row['ID Risiko']) profilUnik[row['ID Risiko']] = row;
+                    });
 
-                Object.values(profilUnik).forEach(row => {
-                    let tindakan = row['Rencana Penanganan'];
-                    if (tindakan && tindakan.trim() !== '') {
-                        let deadline = row['Periode Program'] ? new Date(row['Periode Program']) : null;
-                        let status = row['Status Penanganan'] || 'Belum Ditangani';
-                        let isRes = status === 'Selesai Ditangani' || status === 'Dibatalkan';
+                    Object.values(profilUnik).forEach(row => {
+                        let tindakan = row['Rencana Penanganan'];
+                        if (tindakan && tindakan.trim() !== '') {
+                            let deadline = row['Periode Program'] ? new Date(row['Periode Program']) : null;
+                            let status = row['Status Penanganan'] || 'Belum Ditangani';
+                            let isRes = status === 'Selesai Ditangani' || status === 'Dibatalkan';
 
-                        capaList.push({
-                            source: 'RISIKO RS',
-                            bg: 'bg-primary text-white',
-                            unit: row['Unit Pemilik'] || '-',
-                            insiden: 'Mitigasi: ' + (row['Risiko'] || '-'),
-                            tindakan: tindakan,
-                            pic: row['PIC Penanganan'] || '-',
-                            deadline: deadline,
-                            isResolved: isRes
-                        });
-                    }
-                });
-            }
+                            capaList.push({
+                                source: 'RISIKO',
+                                bg: 'bg-primary text-white',
+                                unit: row['Unit Pemilik'] || '-',
+                                insiden: 'Mitigasi: ' + (row['Risiko'] || '-'),
+                                tindakan: tindakan,
+                                pic: row['PIC Penanganan'] || '-',
+                                deadline: deadline,
+                                isResolved: isRes
+                            });
+                        }
+                    });
 
-                // 4. RENDER KE TABEL
+                    // 4. INTEGRASI BARU: EKSTRAK DATA RENCANA TINDAKAN FMEA
+                    let masterFmeaMap = {};
+                    (resRISK.data_fmea || []).forEach(p => {
+                        if(p['ID Proyek']) masterFmeaMap[p['ID Proyek']] = p['Nama Proses'];
+                    });
+
+                    (resRISK.data_fmea_detail || []).forEach(row => {
+                        let tindakan = row['Rencana Tindakan'];
+                        if (tindakan && tindakan.trim() !== '') {
+                            // Mencari nama proyek induknya
+                            let idProyek = row['ID Proyek'];
+                            let namaProyek = masterFmeaMap[idProyek] || idProyek;
+                            
+                            // Mendapatkan deadline
+                            let strDate = row['Target Tanggal'];
+                            let deadline = null;
+                            if (strDate) {
+                                // Convert format DD/MM/YYYY dari Handsontable ke Date Object JS
+                                let parts = strDate.toString().split('/');
+                                if (parts.length === 3) deadline = new Date(parts[2], parts[1] - 1, parts[0]);
+                            }
+
+                            capaList.push({
+                                source: 'FMEA',
+                                bg: 'bg-fmea',
+                                unit: `<small class="text-muted d-block">PROYEK:</small><b>${namaProyek}</b>`,
+                                insiden: `<small class="text-muted d-block">LANGKAH: ${row['Langkah Proses']}</small>Kegagalan: ${row['Mode Kegagalan']}`,
+                                tindakan: tindakan,
+                                pic: row['PIC'] || '-',
+                                deadline: deadline,
+                                isResolved: false // Saat ini belum ada sistem checklist FMEA, biarkan false untuk dikawal
+                            });
+                        }
+                    });
+                }
+
+                // RENDER KE TABEL
                 let html = '';
                 const today = new Date();
 
@@ -213,7 +247,7 @@
                     html += `
                         <tr>
                             <td class="text-center"><span class="badge ${item.bg} badge-sumber">${item.source}</span></td>
-                            <td class="fw-bold text-secondary">${item.unit}</td>
+                            <td class="text-secondary" style="font-size:0.8rem;">${item.unit}</td>
                             <td>${item.insiden}</td>
                             <td style="text-align: justify;">${item.tindakan.replace(/\n/g, '<br>')}</td>
                             <td class="text-center fw-bold">${item.pic}</td>
@@ -231,12 +265,12 @@
                     "language": { "search": "Cari CAPA:" },
                     "ordering": true,
                     "pageLength": 10,
-                    "order": [[5, 'asc']] // Mengurutkan berdasarkan status/tenggat
+                    "order": [[5, 'asc']] // Mengurutkan berdasarkan status/tenggat (Mendesak di atas)
                 });
 
             })
             .catch(err => {
-                $('#loadingMessage').removeClass('alert-info').addClass('alert-danger').html(`<i class="fas fa-wifi me-2"></i> Gagal terhubung ke server: ${err}`);
+                $('#loadingMessage').removeClass('alert-info').addClass('alert-danger').html(`<i class="fas fa-wifi me-2"></i> Gagal terhubung ke server database pemantauan.`);
             });
         });
     </script>
