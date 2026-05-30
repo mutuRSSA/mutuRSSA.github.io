@@ -252,9 +252,7 @@
         });
 
         function muatDataKamus() {
-            // FITUR FILTER UNIT: Periksa apakah user adalah Komite Mutu atau Unit biasa
             if (role !== "Komite Mutu") {
-                // Fetch daftar formulir yang diizinkan untuk unit ini dari database
                 fetch(`${scriptURL}?action=get_menu&unit=${encodeURIComponent(userUnit)}`)
                 .then(res => res.json())
                 .then(resMenu => {
@@ -265,7 +263,6 @@
                     document.getElementById('loadingMessage').innerHTML = `<i class="fas fa-exclamation-triangle text-danger me-2"></i> Gagal memeriksa hak akses unit.`;
                 });
             } else {
-                // Jika Komite Mutu, jangan berikan batasan filter (Bisa lihat semua)
                 ambilDanFilterKamus(null);
             }
         }
@@ -279,7 +276,6 @@
                         
                         let dataKamus = result.data;
 
-                        // 1. PENYARINGAN BERDASARKAN IZIN AKSES UNIT
                         if (allowedForms !== null) {
                             dataKamus = dataKamus.filter(row => {
                                 let idForm = row['ID_Form'] || row['ID Form'] || row['Kolom_Kriteria'] || "";
@@ -287,7 +283,6 @@
                             });
                         }
 
-                        // 2. PENGURUTAN (SORTING) PRIORITAS NASIONAL -> RS -> UNIT
                         const bobotKategori = {
                             "Indikator Mutu Nasional": 1,
                             "IMP-RS": 2,
@@ -297,14 +292,13 @@
                         dataKamus.sort((a, b) => {
                             let katA = (a['Kategori Indikator'] || "Lainnya").trim();
                             let katB = (b['Kategori Indikator'] || "Lainnya").trim();
-                            let skorA = bobotKategori[katA] || 99; // Jika kategori tidak dikenal, taruh paling bawah
+                            let skorA = bobotKategori[katA] || 99; 
                             let skorB = bobotKategori[katB] || 99;
                             return skorA - skorB;
                         });
 
                         rawKamusData = dataKamus;
                         
-                        // Menyiapkan dropdown ID Form
                         const selectEl = document.getElementById('inp_ID_Form');
                         selectEl.innerHTML = '<option value="">-- Pilih ID Form dari Sistem --</option>';
                         if (result.mapping) {
@@ -384,7 +378,6 @@
                     tbodyHtml += `<tr><th style="background:#f8f9fa;">${f.label}</th><td>${val}</td></tr>`;
                 });
 
-                // Memberi label warna berbeda berdasarkan kategori indikator
                 let colorBadge = "bg-secondary";
                 if(kategori.trim() === "Indikator Mutu Nasional") colorBadge = "bg-primary";
                 else if(kategori.trim() === "IMP-RS") colorBadge = "bg-success";
@@ -568,6 +561,9 @@
                 mapField('inp_Definisi_Operasional', 'Definisi Operasional');
                 mapField('inp_Numerator', 'Numerator');
                 mapField('inp_Denominator', 'Denominator');
+                // PENAMBAHAN MAPPING YANG HILANG DI SINI
+                mapField('inp_Kriteria_Inklusi', 'Kriteria Inklusi');
+                mapField('inp_Kriteria_Eksklusi', 'Kriteria Eksklusi');
                 mapField('inp_Formula', 'Formula');
                 mapField('inp_Cara_Penilaian', 'Cara Penilaian');
                 mapField('inp_Metode_Pengumpulan_Data', 'Metode Pengumpulan Data');
@@ -628,6 +624,9 @@
                 "Jenis Indikator": document.getElementById('inp_Jenis_Indikator').value,
                 "Numerator": document.getElementById('inp_Numerator').value,
                 "Denominator": document.getElementById('inp_Denominator').value,
+                // PENAMBAHAN PAYLOAD YANG HILANG DI SINI
+                "Kriteria Inklusi": document.getElementById('inp_Kriteria_Inklusi').value,
+                "Kriteria Eksklusi": document.getElementById('inp_Kriteria_Eksklusi').value,
                 "Formula": document.getElementById('inp_Formula').value,
                 "Cara Penilaian": document.getElementById('inp_Cara_Penilaian').value,
                 "Metode Pengumpulan Data": document.getElementById('inp_Metode_Pengumpulan_Data').value,
