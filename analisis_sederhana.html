@@ -18,7 +18,7 @@
             body { background-color: #fff !important; padding-top: 0 !important; font-size: 12px !important;}
             #navbar-container, #sidebar-container, .d-print-none, .btn { display: none !important; }
             .card-custom { border: none !important; box-shadow: none !important; padding: 0 !important; }
-            .form-control { border: none !important; background: transparent !important; resize: none; overflow: hidden; -webkit-appearance: none; appearance: none; padding: 0;}
+            .form-control, .form-select { border: none !important; background: transparent !important; resize: none; overflow: hidden; -webkit-appearance: none; appearance: none; padding: 0;}
             .border { border: none !important; }
             .shadow-sm { box-shadow: none !important; }
             @page { margin: 1cm; }
@@ -55,9 +55,18 @@
             <p class="text-center text-muted mb-4 d-print-none" style="font-size: 0.85rem;">Digunakan khusus untuk insiden dengan Grading Risiko Rendah (Biru) atau Sedang (Hijau).</p>
             
             <form id="formInvestigasiSederhana">
+                
+                <!-- PERBAIKAN: Input Tipe Insiden Berubah Menjadi Dropdown Dinamis -->
                 <div class="mb-3">
                     <label class="form-label text-primary"><i class="fas fa-sitemap me-1"></i> Tipe Insiden (Kategori Utama) :</label>
-                    <input type="text" class="form-control" name="tipe_insiden" placeholder="Contoh: Proses/Prosedur Klinis, Medikasi, dll...">
+                    <select class="form-select border-primary fw-bold text-primary" id="ui_tipe_insiden">
+                        <option value="">-- Pilih Kategori Utama --</option>
+                    </select>
+                    
+                    <div id="subTipeContainer" class="mt-2 p-3 bg-white border rounded shadow-sm" style="display:none; border-left: 4px solid #0d6efd !important;">
+                    </div>
+
+                    <input type="hidden" name="tipe_insiden" id="hidden_tipe_insiden">
                 </div>
 
                 <div class="mb-3">
@@ -75,9 +84,16 @@
                     <textarea class="form-control" name="rekomendasi" rows="3" placeholder="Apa yang disarankan untuk mencegah insiden ini terulang kembali?" required></textarea>
                 </div>
 
-                <div class="mb-4">
-                    <label class="form-label text-success"><i class="fas fa-tools me-1"></i> Tindakan Yang Akan Dilakukan :</label>
-                    <textarea class="form-control" name="tindakan_dilakukan" rows="3" placeholder="Langkah konkrit yang akan diambil oleh unit beserta nama Penanggung Jawab dan tenggat waktu..." required></textarea>
+                <div class="row mb-4">
+                    <div class="col-md-7">
+                        <label class="form-label text-success"><i class="fas fa-tools me-1"></i> Tindakan Yang Akan Dilakukan :</label>
+                        <textarea class="form-control" name="tindakan_dilakukan" rows="2" placeholder="Langkah konkrit yang akan diambil oleh unit..." required></textarea>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label text-success"><i class="fas fa-user-check me-1"></i> Penanggung Jawab (PIC) :</label>
+                        <!-- Menggunakan "pj_tindakan" yang sudah diperbaiki -->
+                        <input type="text" class="form-control" name="pj_tindakan" placeholder="Nama / Jabatan Pelaksana" required>
+                    </div>
                 </div>
 
                 <input type="hidden" name="proses_pelayanan" value="Selesai Investigasi Sederhana">
@@ -107,10 +123,8 @@
     
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            // Kita pakai API IKP karena data ini masuknya ke file IKP
             const scriptURL = API_CONFIG.IKP;
             
-            // Ambil data yang dilempar dari halaman daftar_insiden.html
             const dataStr = localStorage.getItem('analisisDataIKP');
             if (!dataStr) { 
                 window.location.href = 'daftar_insiden.html'; 
@@ -120,7 +134,6 @@
             const data = JSON.parse(dataStr);
             const targetId = data.Timestamp;
 
-            // Isi informasi Header
             document.getElementById('infoInsiden').innerText = data['Insiden'] || '-';
             document.getElementById('infoTanggal').innerText = data['Tgl & Waktu insiden'] ? new Date(data['Tgl & Waktu insiden']).toLocaleString('id-ID') : '-';
             
@@ -130,32 +143,113 @@
             if(gradingVal === 'Moderate') gradingHtml = '<span class="badge bg-success">Moderate (Hijau)</span>';
             document.getElementById('infoGrading').innerHTML = gradingHtml;
 
-            // Auto-fill form jika sudah pernah diisi sebagian sebelumnya
+            // =========================================================
+            // KAMUS TAKSONOMI INSIDEN (SAMA SEPERTI RCA)
+            // =========================================================
+            const taksonomiInsiden = {
+                "1. ADMINISTRASI KLINIK": { "a. Proses": ["Serah terima", "Perjanjian", "Daftar tunggu / Antrian", "Rujukan / Konsultasi", "Admisi", "Keluar/Pulang dari Ranap/RS", "Pindah Perawatan (Transfer of care)", "Identifikasi Pasien", "Consent", "Pembagian tugas", "Respons terhadap kegawatdaruratan"], "b. Masalah": ["Tidak performed ketika dibutuhkan/indikasi", "Tidak lengkap / Inadekuat", "Tidak tersedia", "Salah pasien", "Salah proses / pelayanan"] },
+                "2. PROSES / PROSEDUR KLINIS": { "a. Proses": ["Skrining / Pencegahan / Medical check up", "Diagnosis / Assessment", "Prosedur / Pengobatan / Intervensi", "General care / Management", "Test / Investigasi", "Spesimen / Hasil", "Belum dipulangkan (Detention/Restraint)"], "b. Masalah": ["Tidak performance ketika dibutuhkan/ indikasi", "Tidak lengkap / Inadekuat", "Tidak tersedia", "Salah pasien", "Salah proses / pengobatan / prosedur", "Salah bagian tubuh / sisi"] },
+                "3. DOKUMENTASI": { "a. Dokumen Terkait": ["Order / Permintaan", "Chart / Rekam medik / Assessment/ Konsultasi", "Check list", "Form / sertifikat", "Instruksi / Informasi / Kebijakan / SPO /Guideline", "Label / Stiker / Identifikasi Bands / Kartu", "Surat / E-mail / Rekaman Komunikasi", "Laporan / Hasil / Images"], "b. Masalah": ["Dokumen hilang / tidak tersedia", "Terlambat mengakses dokumen", "Salah dokumen / Salah orang", "Tidak jelas / Membingungkan /Illegible"] },
+                "4. INFEKSI NOSOKOMIAL (HAI)": { "a. Tipe organisme": ["Bakteri", "Virus", "Jamur", "Parasit", "Protozoa", "Rickettsia", "Prion (Partikel protein yang infeksius)", "Organisme tidak teridentifikasi"], "b. Tipe / Bagian infeksi": ["Bloodstream", "Bagian yang dioperasi", "Abses", "Pneumonia", "Kanul IV", "Protesis infeksi", "Drain/ tube urin", "Jaringan lunak"] },
+                "5. MEDIKASI/ CAIRAN INFUS": { "a. Medikasi/Cairan terkait": ["Daftar Medikasi", "Daftar Cairan infus"], "b. Proses penggunaan": ["Peresepan", "Persiapan / Dispensing", "Pemaketan", "Pengantaran", "Pemberian", "Supply / pesan", "Penyimpanan", "Monitoring"], "c. Masalah": ["Salah pasien", "Salah obat", "Salah dosis / kekuatan / frekuensi", "Salah formulasi / presentasi", "Salah rute pemberian", "Salah jumlah / kuantitas", "Salah Dispensing Label / Instruksi", "Kontraindikasi", "Salah penyimpanan", "Ommited medicine or dose", "Obat kadaluarsa", "Adverse drug"] },
+                "6. TRANSFUSI DARAH / PRODUK DARAH": { "a. Produk terkait": ["Produk selular", "Faktor pembekuan (clothing)", "Albumin / Plasma protein", "Imunoglobulin"], "b. Proses Transfusi": ["Tes pre transfusi", "Peresepan", "Persiapan / Dispensing", "Pengantaran", "Pemberian", "Penyimpanan", "Monitoring", "Presentasi / Pemaketan", "Suply / Pesan"], "c. Masalah": ["Salah pasien", "Salah Darah / Produk darah", "Salah dosis / Frekuensi", "Salah jumlah", "Salah label dispensing / Instruksi", "Kontraindikasi", "Salah penyimpanan", "Obat atau Dosis yang diabaikan", "Darah kadaluarsa", "Efek samping (Adverse effect)"] },
+                "7. NUTRISI": { "a. Nutrisi terkait": ["Nutrisi umum", "Nutrisi khusus"], "b. Proses nutrisi": ["Peresepan / Permintaan", "Pesiapan / Manufaktur / memasak", "Supply / order", "Penyajian", "Dispensing / Alokasi", "Pengantaran", "Pemberian", "Penyimpanan"], "c. Masalah": ["Salah pasien", "Salah diet", "Salah jumlah", "Salah Frekuensi", "Salah konsistensi"] },
+                "8. OKSIGEN / GAS": { "a. Oksigen / Gas terkait": ["Daftar oksigen /gas terkait"], "b. Proses penggunaan": ["Label silinder / warna kode / Index pin", "Peresepan", "Pemberian", "Pengantaran", "Suply / order"], "c. Masalah": ["Salah pasien", "Salah gas", "Salah rate / flow/ konsentrasi", "Salah mode pengantaran", "Kontraindikasi", "Salah penyimpanan", "Gagal pemberian", "Kontaminasi"] },
+                "9. ALAT MEDIS / ALAT KESEHATAN": { "a. Tipe Alat / Equipment": ["Daftar Alat medis / Alat kesehatan / Equipment property"], "b. Masalah": ["Presentasi / Pemaketan tidak baik", "Ketidaktersediaan", "Inapropiate for task", "Tidak bersih / Tidak steril", "Kegagalan / Malfungsi"] },
+                "10. PASIEN": { "a. Perilaku pasien": ["Tidak kooperatif", "Tidak pantas / Sikap bermusuhan / Kasar", "Berisiko/ Sembrono / Berbahaya", "Masalah dengan penggunaan substansi / Abuse", "Menggangu (Harrassment)", "Diskriminasitif / Berprasangka", "Berkeliaran, Melarikan diri.", "Sengaja mencederai diri, Bunuh diri."], "b. Agresi / Assault": ["Agresi verbal", "Kekerasan fisik", "Ancaman nyawa"] },
+                "11. JATUH": { "a. Tipe Jatuh": ["Tersandung", "Slip", "Kolaps", "Hilang keseimbangan"], "b. Keterlibatan saat jatuh": ["Velbed", "Tempat tidur", "Kursi", "Strecher", "Toilet", "Peralatan terapi", "Tangga", "Dibawa/dibantu oleh orang lain"] },
+                "12. KECELAKAAN": { "a. Benturan tumpul": ["Kontak dengan benda/binatang", "Kontak dengan orang", "Hancur, remuk"], "b. Serangan tajam/ tusukan": ["Cakaran", "Sayatan", "Tusukan", "Gigitan", "Sengatan"], "c. Kejadian mekanik lain": ["Benturan akibat ledakan bom", "Kontak dengan mesin"], "d. Mekanisme Panas": ["Panas yg berlebihan, dingin yg berlebihan"], "e. Ancaman pernafasan": ["Ancaman mekanik pernafasan, tenggelam atau hampir tenggelam, pembatasan oksigen - kekurangan tempat"], "g. Paparan bahan kimia": ["Keracunan bahan kimia atau substansi lain", "Bahan kimia korosif"], "h. Mekanisme spesifik lain": ["Paparan listrik/radiasi", "Paparan suara/ getaran"] },
+                "13. INFRASTRUKTUR / BANGUNAN": { "a. Keterlibatan Struktur": ["Daftar struktur", "Daftar Bangunan", "Daftar Furniture"], "b. Masalah": ["Inadekuat", "Damaged/Faulty/Worn"] },
+                "14. RESOURCE / MANAJEMEN ORGANISASI": { "a. Beban kerja manajemen": ["Ketersediaan/ keadekuatan tempat tidur/ pelayanan", "Sumber Daya Manusia", "Ketersediaan/ keadekuatan staf", "Organisasi/ Tim"], "b. Protocols/ SOP Guideline": ["Tidak Ada SOP", "SOP Inadekuat/Tidak Jelas", "SOP Tidak Dipatuhi"], "c. Ketersediaan / Adequacy": ["Inadekuat", "Tidak Tersedia"] },
+                "15. LABORATORIUM / PATOLOGI": { "a. Proses Lab": ["Pengambilan/ Pick up", "Transport", "Sorting", "Data entry", "Prosesing", "Verifikasi / Validasi Hasil"] }
+            };
+
+            const selectUtama = document.getElementById('ui_tipe_insiden');
+            const containerSub = document.getElementById('subTipeContainer');
+            
+            // Masukkan kategori utama ke dropdown
+            for (let kategori in taksonomiInsiden) { selectUtama.add(new Option(kategori, kategori)); }
+            
+            // Logika kemunculan Sub Kategori
+            selectUtama.addEventListener('change', function() {
+                const pilihan = this.value; 
+                containerSub.innerHTML = '';
+                if (pilihan && taksonomiInsiden[pilihan]) {
+                    containerSub.style.display = 'block';
+                    for (let subKategori in taksonomiInsiden[pilihan]) {
+                        let htmlSub = `<label class="form-label text-dark mt-2 mb-1" style="font-size: 0.9rem;">${subKategori}</label>
+                                       <select class="form-select ui-subtipe" data-label="${subKategori}"><option value="">-- Pilih Spesifikasi --</option>`;
+                        taksonomiInsiden[pilihan][subKategori].forEach(item => { htmlSub += `<option value="${item}">${item}</option>`; });
+                        htmlSub += `</select>`; 
+                        containerSub.innerHTML += htmlSub;
+                    }
+                } else { containerSub.style.display = 'none'; }
+            });
+
+            // =========================================================
+            // MENGISI DATA LAMA KE DALAM FORM (AUTO-FILL)
+            // =========================================================
+            
+            // Auto-Fill Khusus Dropdown Insiden
+            if (data['Tipe & Sub Tipe Insiden']) {
+                let savedString = data['Tipe & Sub Tipe Insiden']; 
+                let parts = savedString.split(' | '); 
+                let mainCat = parts[0];
+                
+                if (taksonomiInsiden[mainCat]) {
+                    selectUtama.value = mainCat; 
+                    selectUtama.dispatchEvent(new Event('change')); // Memicu sub-kategori keluar
+                    setTimeout(() => {
+                        parts.slice(1).forEach(part => {
+                            let splitPart = part.split(': ');
+                            if(splitPart.length === 2) {
+                                let targetSelect = document.querySelector(`.ui-subtipe[data-label="${splitPart[0]}"]`);
+                                if(targetSelect) targetSelect.value = splitPart[1];
+                            }
+                        });
+                    }, 100); 
+                } else { 
+                    // Jika data lama diketik manual (tidak ada di kamus), simpan di hidden saja
+                    document.getElementById('hidden_tipe_insiden').value = savedString; 
+                }
+            }
+
+            // Auto-Fill Kolom Lainnya
             const fill = (name, dbHeader) => { 
                 const el = document.querySelector(`[name="${name}"]`); 
                 if(el && data[dbHeader]) el.value = data[dbHeader]; 
             };
             
-            fill('tipe_insiden', 'Tipe & Sub Tipe Insiden');
             fill('penyebab_langsung', 'Penyebab Langsung'); 
             fill('akar_masalah', 'Akar Masalah');
             fill('rekomendasi', 'Rekomendasi'); 
             fill('tindakan_dilakukan', 'Tindakan Akan Dilakukan');
+            fill('pj_tindakan', 'PJ Tindakan'); // Load Data PIC
 
+            // =========================================================
+            // PROSES SIMPAN / SUBMIT
+            // =========================================================
             const form = document.getElementById("formInvestigasiSederhana");
             const submitBtn = document.getElementById("btnSimpan");
 
             form.addEventListener("submit", function (e) {
                 e.preventDefault();
+                
+                // Menggabungkan hasil dropdown ke dalam satu string
+                let combinedType = selectUtama.value;
+                if (combinedType) {
+                    document.querySelectorAll('.ui-subtipe').forEach(sel => { 
+                        if (sel.value) combinedType += ` | ${sel.dataset.label}: ${sel.value}`; 
+                    });
+                }
+                document.getElementById('hidden_tipe_insiden').value = combinedType;
+
                 submitBtn.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i>Menyimpan..."; 
                 submitBtn.disabled = true;
 
-                // Ambil data dari form UI
                 const formData = new FormData(form);
                 const inputData = Object.fromEntries(formData.entries());
 
-                // Payload ini akan dikirim ke doPost API_CONFIG.IKP
-                // Dia hanya menimpa field-field di atas, sisa data IKP awal tetap aman
                 const payload = { 
                     action: 'update', 
                     id: targetId, 

@@ -7,7 +7,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-    <!-- Tambahkan SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
@@ -18,34 +17,28 @@
         .sidebar-link { color: #333; font-weight: 500; transition: 0.2s; }
         .sidebar-link:hover { background-color: #e9ecef; }
         
-        /* Kustomisasi Tabel agar mirip gambar */
         .table-responsive { overflow-x: auto; white-space: normal; }
         table.dataTable thead th { background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; font-size: 0.9rem; text-align: center; vertical-align: middle;}
         table.dataTable tbody td { font-size: 0.85rem; vertical-align: top; }
-        .kronologis-text { min-width: 300px; text-align: justify; } /* Kolom kronologis diperlebar */
+        .kronologis-text { min-width: 300px; text-align: justify; } 
         .btn-aksi { font-size: 0.75rem; font-weight: bold; color: #198754; background: none; border: none; padding: 0;}
        
-        /* --- GAYA KHUSUS UNTUK CETAK PDF --- */
         @media print {
-            body * { visibility: hidden; } /* Sembunyikan semua elemen website */
-            #printArea, #printArea * { visibility: visible; } /* Tampilkan hanya area cetak */
+            body * { visibility: hidden; } 
+            #printArea, #printArea * { visibility: visible; } 
             #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; font-family: Arial, sans-serif; }
             
-            /* Kustomisasi Tabel Cetak */
             .print-table { width: 100%; border-collapse: collapse; font-size: 11px; }
             .print-table th, .print-table td { border: 1px solid #000; padding: 8px; vertical-align: top; }
             .print-table th { background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; text-align: left; text-transform: uppercase; font-size: 12px;}
             .print-label { width: 35%; font-weight: bold; }
             .print-value { width: 65%; }
             
-            /* Bulatan Grading */
             .print-grading-circle { display: inline-block; width: 25px; height: 25px; border-radius: 50%; vertical-align: middle; margin-left: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact;}
             
-            /* Hilangkan URL/Tanggal bawaan browser saat print jika memungkinkan */
             @page { margin: 1cm; }
         }
     </style>
-    
 </head>
 <body>
 
@@ -79,22 +72,19 @@
                         </tr>
                     </thead>
                     <tbody id="tableBody">
-                        </tbody>
+                    </tbody>
                 </table>
             </div>
         </div>
     </div>
 
-    <!-- Script Pusat Konfigurasi & Autentikasi -->
     <script src="config.js"></script>
-    
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
     <script>
-        // Deklarasi array global
         window.insidenData = [];
 
         $(document).ready(function() {
@@ -118,7 +108,6 @@
                             let tglInsiden = tglInsidenRaw ? new Date(tglInsidenRaw).toLocaleString('id-ID') : '-';
                             let tglPelayanan = row['Tanggal pelayanan'] ? new Date(row['Tanggal pelayanan']).toLocaleDateString('id-ID') : '-';
 
-                            // 1. TENTUKAN WARNA GRADING
                             let gradingVal = row['Grading Risiko'] || '-';
                             let gradingBadge = gradingVal;
                             if (gradingVal === 'Low') gradingBadge = '<span class="badge bg-primary w-100 py-2">Low</span>';
@@ -126,7 +115,6 @@
                             else if (gradingVal === 'High') gradingBadge = '<span class="badge bg-warning text-dark w-100 py-2">High</span>';
                             else if (gradingVal === 'Extreme') gradingBadge = '<span class="badge bg-danger w-100 py-2">Extreme</span>';
 
-                            // 2. FITUR BARU: COUNTDOWN TIMER (SISA WAKTU KIRIM)
                             let sisaWaktuHtml = '<span class="badge bg-secondary">N/A</span>';
                             let sudahDianalisis = row['Tipe & Sub Tipe Insiden'] && row['Tipe & Sub Tipe Insiden'].toString().trim() !== '';
 
@@ -135,9 +123,7 @@
                                     sisaWaktuHtml = '<span class="badge bg-success"><i class="fas fa-check"></i> Selesai</span>';
                                 } else {
                                     let tglKejadian = new Date(tglInsidenRaw);
-                                    // Aturan: Biru/Hijau max 7 hari, Kuning/Merah max 45 hari
                                     let batasHari = (gradingVal === 'High' || gradingVal === 'Extreme') ? 45 : 7;
-                                    
                                     let batasTgl = new Date(tglKejadian.getTime() + (batasHari * 24 * 60 * 60 * 1000));
                                     let sisaHari = Math.ceil((batasTgl - new Date()) / (1000 * 60 * 60 * 24));
                                     
@@ -151,7 +137,6 @@
                                 }
                             }
 
-                            // 3. FITUR BARU: SMART ROUTING TOMBOL ANALISIS
                             let tombolAksi = '';
                             if (sudahDianalisis) {
                                 tombolAksi = `
@@ -160,7 +145,6 @@
                                     <span class="btn-aksi text-success w-100 d-inline-block text-center mt-1" style="font-size: 0.75rem;"><i class="fas fa-check-circle me-1"></i> Analisa Selesai</span>
                                 `;
                             } else {
-                                // Tentukan arah link dan warna tombol berdasarkan grading
                                 let fungsiAnalisis = (gradingVal === 'High' || gradingVal === 'Extreme') ? `analisisData(${index})` : `analisisSederhana(${index})`;
                                 let ikonAnalisis = (gradingVal === 'High' || gradingVal === 'Extreme') ? 'fa-search-plus' : 'fa-search';
                                 let titleAnalisis = (gradingVal === 'High' || gradingVal === 'Extreme') ? 'Lakukan RCA Komprehensif' : 'Lakukan Investigasi Sederhana';
@@ -169,9 +153,7 @@
                                 tombolAksi = `
                                     <button onclick="showDetail(${index})" class="btn btn-primary btn-sm text-white mb-1" title="Lihat Detail"><i class="fas fa-eye"></i></button>
                                     <button onclick="printData(${index})" class="btn btn-info btn-sm text-white mb-1" title="Cetak PDF"><i class="fas fa-print"></i></button>
-                                    
                                     <button onclick="${fungsiAnalisis}" class="btn ${btnWarna} btn-sm text-white mb-1" title="${titleAnalisis}"><i class="fas ${ikonAnalisis}"></i></button>
-                                    
                                     <button onclick="editData(${index})" class="btn btn-warning btn-sm text-white mb-1" title="Edit Data Insiden"><i class="fas fa-edit"></i></button>
                                     <button onclick="deleteData(${index})" class="btn btn-secondary btn-sm text-white mb-1" title="Hapus"><i class="fas fa-trash"></i></button><br>
                                     <span class="btn-aksi text-muted w-100 d-inline-block text-center mt-1" style="font-size: 0.75rem;"><i class="fas fa-paper-plane me-1"></i>Laporan Terkirim</span>
@@ -201,7 +183,7 @@
                             "ordering": true, "order": [[0, 'asc']], 
                             "columnDefs": [
                                 { "targets": [1, 2], "orderable": false },
-                                { "targets": [3], "visible": false } // Menyembunyikan kolom sorting cadangan
+                                { "targets": [3], "visible": false } 
                             ]
                         });
                     }
@@ -212,7 +194,6 @@
                 $('#loadingMessage').removeClass('alert-info').addClass('alert-danger').html(`<i class="fas fa-wifi me-2"></i> Terjadi kesalahan jaringan: ${err}`);
             });
             
-            // FUNGSI HAPUS, EDIT, TAMPIL DETAIL, CETAK, TETAP SAMA SEPERTI SEBELUMNYA
             window.deleteData = function(index) {
                 Swal.fire({
                     title: 'Yakin ingin menghapus?',
@@ -237,20 +218,25 @@
 
             window.editData = function(index) {
                 localStorage.setItem('editDataIKP', JSON.stringify(window.insidenData[index]));
-                window.location.href = 'ikp.html'; // Mengarahkan kembali ke form ikp
+                window.location.href = 'ikp.html'; 
             };
 
             window.showDetail = function(index) {
-                // (KODE SAMA SEPERTI MILIK ANDA SEBELUMNYA)
                 const data = window.insidenData[index];
                 let umurTeks = `${data['Umur (Tahun)'] || 0} Tahun ${data['Umur (Bulan)'] || 0} Bulan ${data['Umur (Hari)'] || 0} Hari`;
                 let tglPelayanan = data['Tanggal pelayanan'] ? new Date(data['Tanggal pelayanan']).toLocaleString('id-ID') : '-';
                 let tglInsiden = data['Tgl & Waktu insiden'] ? new Date(data['Tgl & Waktu insiden']).toLocaleString('id-ID') : '-';
                 let gradingHtml = data['Grading Risiko'] || '-';
+                
                 if(gradingHtml === 'Low') gradingHtml = '<span class="badge bg-primary">Low</span>';
                 if(gradingHtml === 'Moderate') gradingHtml = '<span class="badge bg-success">Moderate</span>';
                 if(gradingHtml === 'High') gradingHtml = '<span class="badge bg-warning text-dark">High</span>';
                 if(gradingHtml === 'Extreme') gradingHtml = '<span class="badge bg-danger">Extreme</span>';
+
+                // ==========================================
+                // PEMBARUAN: BISA BACA PJ TINDAKAN / DILAKUKAN OLEH
+                // ==========================================
+                let picVal = data['PJ Tindakan'] || data['Dilakukan Oleh'] || '-';
 
                 const tbody = document.getElementById('detailTableBody');
                 tbody.innerHTML = `
@@ -270,21 +256,19 @@
                     <tr><th class="bg-light">14. Menyangkut Pasien</th><td>${data['Menyangkut Pasien'] || '-'}</td></tr>
                     <tr><th class="bg-light">15. Tempat Insiden</th><td>${data['Tempat Insiden'] || '-'}</td></tr>
                     <tr><th class="bg-light">16. Unit Terkait</th><td>${data['Unit Terkait'] || '-'}</td></tr>
-                    <tr><th class="bg-light">17. Tindak Lanjut</th><td style="text-align: justify;">${data['Tindak Lanjut'] || '-'}</td></tr>
-                    <tr><th class="bg-light">18. Dilakukan Oleh</th><td>${data['Dilakukan Oleh'] || '-'}</td></tr>
+                    <tr><th class="bg-light">17. Tindak Lanjut Awal</th><td style="text-align: justify;">${data['Tindak Lanjut'] || '-'}</td></tr>
+                    <tr><th class="bg-light">18. Penanggung Jawab (PIC)</th><td>${picVal}</td></tr>
                     <tr><th class="bg-light">19. Pernah Terjadi?</th><td>${data['Pernah terjadi?'] || '-'}</td></tr>
                     <tr><th class="bg-light">20. Tindakan Pencegahan</th><td style="text-align: justify;">${data['Tindakan Pencegahan'] ? data['Tindakan Pencegahan'] : '<i class="text-muted">Tidak ada tindakan / Tidak relevan</i>'}</td></tr>
                 `;
                 new bootstrap.Modal(document.getElementById('modalDetail')).show();
             };
 
-            // FUNGSI RCA KOMPREHENSIF (Untuk Insiden Kuning/Merah)
             window.analisisData = function(index) {
                 localStorage.setItem('analisisDataIKP', JSON.stringify(window.insidenData[index]));
                 window.location.href = 'analisis.html'; 
             };
 
-            // FUNGSI BARU: INVESTIGASI SEDERHANA (Untuk Insiden Biru/Hijau)
             window.analisisSederhana = function(index) {
                 localStorage.setItem('analisisDataIKP', JSON.stringify(window.insidenData[index]));
                 window.location.href = 'analisis_sederhana.html'; 
@@ -293,24 +277,22 @@
             window.printData = function(index) {
                 const data = window.insidenData[index];
                 
-                // Format Data Dasar
                 let umurTeks = `${data['Umur (Tahun)'] || 0} Tahun ${data['Umur (Bulan)'] || 0} Bulan ${data['Umur (Hari)'] || 0} Hari`;
                 let tglInsiden = data['Tgl & Waktu insiden'] ? new Date(data['Tgl & Waktu insiden']).toLocaleString('id-ID') : '-';
                 let tglPelayanan = data['Tanggal pelayanan'] ? new Date(data['Tanggal pelayanan']).toLocaleDateString('id-ID') : '-';
                 
-                // Tentukan Warna Grading & Tipe Template
                 let gradingVal = data['Grading Risiko'] || '';
                 let circleColor = 'transparent';
-                let isRCA = false; // Flag untuk menentukan jenis template cetak
+                let isRCA = false; 
 
                 if (gradingVal === 'Low') { circleColor = '#0d6efd'; }
                 else if (gradingVal === 'Moderate') { circleColor = '#198754'; }
                 else if (gradingVal === 'High') { circleColor = '#ffc107'; isRCA = true; }
                 else if (gradingVal === 'Extreme') { circleColor = '#dc3545'; isRCA = true; }
 
-                // ========================================================
-                // BAGIAN 1: INFORMASI PASIEN & INSIDEN (SAMA UNTUK SEMUA)
-                // ========================================================
+                // PEMBARUAN BACA PIC FALLBACK
+                let picVal = data['PJ Tindakan'] || data['Dilakukan Oleh'] || '-';
+
                 let printHtml = `
                     <h3 style="text-align: center; margin-bottom: 20px;">LAPORAN INSIDEN KESELAMATAN PASIEN (IKP)</h3>
                     <table class="print-table">
@@ -333,7 +315,7 @@
                         <tr><td class="print-label">10. Tempat Insiden</td><td class="print-value">${data['Tempat Insiden'] || '-'}</td></tr>
                         <tr><td class="print-label">11. Unit / Departemen Terkait</td><td class="print-value">${data['Unit Terkait'] || '-'}</td></tr>
                         <tr><td class="print-label">12. Tindakan Lanjut...</td><td class="print-value" style="text-align: justify;">${data['Tindak Lanjut'] || '-'}</td></tr>
-                        <tr><td class="print-label">13. Tindak Dilakukan Oleh</td><td class="print-value">${data['Dilakukan Oleh'] || '-'}</td></tr>
+                        <tr><td class="print-label">13. Penanggung Jawab (PIC)</td><td class="print-value">${picVal}</td></tr>
                         <tr><td class="print-label">14. Apakah kejadian insiden sama pernah terjadi?</td><td class="print-value">${data['Pernah terjadi?'] || '-'}</td></tr>
                         <tr><td class="print-label">15. Tindakan Pencegahan</td><td class="print-value" style="text-align: justify;">${data['Tindakan Pencegahan'] || '-'}</td></tr>
                         
@@ -345,11 +327,7 @@
                         </tr>
                 `;
 
-                // ========================================================
-                // BAGIAN 2: BLOK INVESTIGASI (DINAMIS SESUAI GRADING)
-                // ========================================================
                 if (isRCA) {
-                    // CETAK FORMAT RCA KOMPREHENSIF (Kuning / Merah)
                     printHtml += `
                         <tr><th colspan="2">HASIL ROOT CAUSE ANALYSIS (RCA) :</th></tr>
                         <tr><td class="print-label">1. Tipe Insiden Dan Sub Tipe Insiden</td><td class="print-value">${data['Tipe & Sub Tipe Insiden'] || '-'}</td></tr>
@@ -404,7 +382,6 @@
                     </table>
                     `;
                 } else {
-                    // CETAK FORMAT INVESTIGASI SEDERHANA (Biru / Hijau)
                     printHtml += `
                         <tr><th colspan="2">HASIL INVESTIGASI SEDERHANA :</th></tr>
                         <tr><td class="print-label">1. Tipe Insiden</td><td class="print-value">${data['Tipe & Sub Tipe Insiden'] || '-'}</td></tr>
@@ -416,9 +393,6 @@
                     `;
                 }
 
-                // ========================================================
-                // BAGIAN 3: PENGESAHAN DAN PROSES CETAK
-                // ========================================================
                 printHtml += `
                     <div style="margin-top: 50px; width: 100%; text-align: right;">
                         <p style="margin-bottom: 70px;">Kepala Unit / Ketua Tim Investigasi</p>
@@ -449,7 +423,7 @@
                 <div class="modal-body">
                     <table class="table table-sm table-bordered">
                         <tbody id="detailTableBody">
-                            </tbody>
+                        </tbody>
                     </table>
                 </div>
                 <div class="modal-footer bg-light">

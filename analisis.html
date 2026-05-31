@@ -15,7 +15,6 @@
         .sub-label { font-weight: 600; color: #555; font-size: 0.85rem; margin-top: 8px;}
         textarea { resize: vertical; }
 
-        /* ================= CSS KHUSUS CETAK PDF ================= */
         @media print {
             body { background-color: #fff !important; padding-top: 0 !important; font-size: 11px !important;}
             #navbar-container, #sidebar-container, .d-print-none, .btn { display: none !important; }
@@ -24,8 +23,6 @@
             .border { border: none !important; }
             .shadow-sm { box-shadow: none !important; }
             @page { margin: 1cm; }
-            
-            /* Tampilkan elemen yang dicentang saja saat print */
             input[type="checkbox"]:not(:checked) + label { display: none !important; }
             input[type="checkbox"]:not(:checked) { display: none !important; }
         }
@@ -60,25 +57,18 @@
                     <div class="col-md-6 pe-md-4">
                         
                         <label class="form-label text-primary"><i class="fas fa-sitemap me-1"></i> 1. TIPE INSIDEN DAN SUB TIPE INSIDEN</label>
-                        
                         <select class="form-select form-select-sm border-primary fw-bold text-primary" id="ui_tipe_insiden">
                             <option value="">-- Pilih Kategori Utama --</option>
                         </select>
-                        
-                        <div id="subTipeContainer" class="mt-2 p-3 bg-white border rounded shadow-sm" style="display:none; border-left: 4px solid #0d6efd !important;">
-                        </div>
-
+                        <div id="subTipeContainer" class="mt-2 p-3 bg-white border rounded shadow-sm" style="display:none; border-left: 4px solid #0d6efd !important;"></div>
                         <input type="hidden" name="tipe_insiden" id="hidden_tipe_insiden">
 
                         <label class="form-label text-danger mt-3"><i class="fas fa-user-injured me-1"></i> 2. TIPE HARM (DAMPAK INSIDEN)</label>
                         <div class="p-3 bg-white border rounded shadow-sm mb-3" style="border-left: 4px solid #dc3545 !important;">
-                            
                             <label class="sub-label text-dark mt-0">A. Akibat (Cedera / Diagnosis)</label>
                             <input type="text" class="form-control form-control-sm mb-2" id="ui_akibat_harm" placeholder="Contoh: Fraktur tulang paha kanan...">
-                            
                             <label class="sub-label text-dark">B. Kausa (Penyebab dari cedera/diagnosis tersebut)</label>
                             <textarea class="form-control form-control-sm" id="ui_kausa_harm" rows="2" placeholder="Contoh: Jatuh terpeleset di lantai kamar mandi pasien..."></textarea>
-                            
                         </div>
                         <input type="hidden" name="tipe_harm" id="hidden_tipe_harm">
 
@@ -94,56 +84,34 @@
                         <div class="ps-3">
                             <label class="sub-label">A. Penyebab Langsung (Proximate / Immediate Cause)</label>
                             <textarea class="form-control form-control-sm" name="penyebab_langsung" rows="3"></textarea>
-                            
                             <label class="sub-label mt-2">B. Akar Masalah (Root Cause)</label>
                             <textarea class="form-control form-control-sm" name="akar_masalah" id="textarea_akar_masalah" rows="4" placeholder="Gunakan metode 5-Why untuk menemukan akar masalah yang sebenarnya..."></textarea>
-                            <button type="button" class="btn btn-sm btn-outline-danger mt-2 fw-bold d-print-none" data-bs-toggle="modal" data-bs-target="#modal5Why">
-                                <i class="fas fa-question-circle me-1"></i> Gunakan Metode 5-Why
-                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-danger mt-2 fw-bold d-print-none" data-bs-toggle="modal" data-bs-target="#modal5Why"><i class="fas fa-question-circle me-1"></i> Gunakan Metode 5-Why</button>
 
                             <label class="sub-label text-danger mt-4"><i class="fas fa-search-plus me-1"></i> Kategori Root Cause (Pilih Kategori Utama)</label>
-                            <select class="form-select form-select-sm border-danger text-danger fw-bold" id="ui_rc_utama">
-                                <option value="">-- Pilih Faktor Utama --</option>
-                            </select>
-                            
+                            <select class="form-select form-select-sm border-danger text-danger fw-bold" id="ui_rc_utama"><option value="">-- Pilih Faktor Utama --</option></select>
                             <div id="rcSubContainer" class="mt-2" style="display:none;">
                                 <label class="sub-label text-dark">Rincian Root Cause</label>
-                                <select class="form-select form-select-sm bg-light" id="ui_rc_sub">
-                                    <option value="">-- Pilih Rincian --</option>
-                                </select>
+                                <select class="form-select form-select-sm bg-light" id="ui_rc_sub"><option value="">-- Pilih Rincian --</option></select>
                             </div>
-                            
                             <input type="hidden" name="root_cause_select" id="hidden_root_cause">
                         </div>
 
                         <label class="form-label mt-4 text-info"><i class="fas fa-user-md me-1"></i> 5. Orang yang terlibat (Penyebab Langsung)</label>
-                        <select class="form-select form-select-sm border-info fw-bold" id="ui_ot_utama">
-                            <option value="">-- Pilih Kategori Orang Terlibat --</option>
-                        </select>
-                        
-                        <div id="otSubContainer" class="mt-2" style="display:none;">
-                            <select class="form-select form-select-sm bg-light" id="ui_ot_sub">
-                                <option value="">-- Pilih Profesi/Rincian --</option>
-                            </select>
-                        </div>
-                        
+                        <select class="form-select form-select-sm border-info fw-bold" id="ui_ot_utama"><option value="">-- Pilih Kategori Orang Terlibat --</option></select>
+                        <div id="otSubContainer" class="mt-2" style="display:none;"><select class="form-select form-select-sm bg-light" id="ui_ot_sub"><option value="">-- Pilih Profesi/Rincian --</option></select></div>
                         <input type="hidden" name="orang_terlibat" id="hidden_orang_terlibat">
 
                         <label class="form-label mt-3">6. Proses / fase pelayanan saat terjadi insiden</label>
                         <select class="form-select form-select-sm" name="proses_pelayanan"><option value=""></option><option value="Pelayanan dalam Gedung RS">Pelayanan dalam gedung RS</option><option value="Pelayanan di Luar Gedung RS">Pelayanan di Luar gedung RS</option></select>
 
                         <label class="form-label mt-3 text-success"><i class="fas fa-project-diagram me-1"></i> 7. Faktor Kontributor (Bisa pilih lebih dari satu)</label>
-                        
-                        <div class="border border-success rounded p-3 bg-white shadow-sm d-print-none" style="max-height: 250px; overflow-y: auto;" id="tree_faktor_kontributor">
-                        </div>
-                        
+                        <div class="border border-success rounded p-3 bg-white shadow-sm d-print-none" style="max-height: 250px; overflow-y: auto;" id="tree_faktor_kontributor"></div>
                         <textarea class="form-control form-control-sm mt-2 bg-light text-secondary" id="ui_faktor_preview" rows="4" readonly placeholder="Rangkuman pilihan akan muncul di sini..."></textarea>
-                        
                         <input type="hidden" name="faktor_kontributor" id="hidden_faktor_kontributor">
 
                         <label class="form-label mt-3 text-warning text-darken"><i class="fas fa-shield-alt me-1"></i> 8. Faktor Mitigasi (Bisa pilih lebih dari satu)</label>
                         <div class="ps-3 border-start border-3 border-warning ms-1 mb-3">
-                            
                             <label class="sub-label text-dark mt-0">a. Untuk Pasien</label>
                             <div class="mb-2 bg-white p-2 border rounded shadow-sm d-print-none" style="font-size: 0.85rem;">
                                 <div class="form-check"><input class="form-check-input chk-mitigasi-pasien" type="checkbox" value="Langsung ditangani / direspon" id="mp1"><label class="form-check-label" for="mp1">Langsung ditangani / direspon</label></div>
@@ -173,7 +141,6 @@
                             </div>
                             <input type="hidden" name="mitigasi_faktor" id="hidden_mitigasi_faktor">
                             <div class="d-none d-print-block" id="print_mitigasi_faktor"></div>
-
                         </div>
                     </div>
 
@@ -184,9 +151,7 @@
 
                         <label class="form-label mt-3 text-danger"><i class="fas fa-hospital-symbol me-1"></i> 10. Dampak pada Fasyankes (Bisa pilih > 1)</label>
                         <div class="p-3 bg-white border rounded shadow-sm mb-3 d-print-none" style="font-size: 0.85rem; border-left: 4px solid #dc3545 !important;">
-                            
                             <div class="form-check mb-1"><input class="form-check-input chk-dampak" type="checkbox" value="1. Kerusakkan fasyankes (property damages)" id="df1"><label class="form-check-label fw-bold text-dark" for="df1">1. Kerusakkan fasyankes (property damages)</label></div>
-                            
                             <div class="fw-bold text-dark mt-2 mb-1">2. Peningkatan alokasi sumber daya yang dibutuhkan:</div>
                             <div class="ms-3 border-start border-2 border-danger ps-2 mb-2">
                                 <div class="form-check"><input class="form-check-input chk-dampak" type="checkbox" value="2a. Peningkatan LOS" id="df2a"><label class="form-check-label" for="df2a">a. Peningkatan LOS</label></div>
@@ -196,12 +161,10 @@
                                 <div class="form-check"><input class="form-check-input chk-dampak" type="checkbox" value="2e. Penambahan petugas" id="df2e"><label class="form-check-label" for="df2e">e. Penambahan petugas</label></div>
                                 <div class="form-check"><input class="form-check-input chk-dampak" type="checkbox" value="2f. Penambahan peralatan" id="df2f"><label class="form-check-label" for="df2f">f. Penambahan peralatan</label></div>
                             </div>
-
                             <div class="form-check mb-1"><input class="form-check-input chk-dampak" type="checkbox" value="3. Publikasi media" id="df3"><label class="form-check-label fw-bold text-dark" for="df3">3. Publikasi media</label></div>
                             <div class="form-check mb-1"><input class="form-check-input chk-dampak" type="checkbox" value="4. Keluhan" id="df4"><label class="form-check-label fw-bold text-dark" for="df4">4. Keluhan</label></div>
                             <div class="form-check mb-1"><input class="form-check-input chk-dampak" type="checkbox" value="5. Reputasi fasyankes menjadi jelek" id="df5"><label class="form-check-label fw-bold text-dark" for="df5">5. Reputasi fasyankes menjadi jelek</label></div>
                             <div class="form-check mb-1"><input class="form-check-input chk-dampak" type="checkbox" value="6. Konsekuensi hukum" id="df6"><label class="form-check-label fw-bold text-dark" for="df6">6. Konsekuensi hukum</label></div>
-                            
                         </div>
                         <input type="hidden" name="dampak_fasyankes" id="hidden_dampak_fasyankes">
                         <div class="d-none d-print-block" id="print_dampak_fasyankes"></div>
@@ -209,12 +172,20 @@
                         <label class="form-label mt-3">11. Rekomendasi</label>
                         <textarea class="form-control form-control-sm" name="rekomendasi" rows="3"></textarea>
 
-                        <label class="form-label mt-3">12. Tindakan yang akan dilakukan</label>
-                        <textarea class="form-control form-control-sm" name="tindakan_dilakukan" rows="3"></textarea>
+                        <div class="p-3 bg-light border rounded mt-3 mb-3">
+                            <label class="form-label mt-0">12. Tindakan yang akan dilakukan</label>
+                            <textarea class="form-control form-control-sm mb-2" name="tindakan_dilakukan" rows="2" placeholder="Langkah perbaikan konkrit..."></textarea>
+                            
+                            <div class="row g-2">
+                                <div class="col-md-7">
+                                    <label class="sub-label text-dark mt-0">Penanggung Jawab (PIC)</label>
+                                    <input type="text" class="form-control form-control-sm border-secondary" name="pj_tindakan" placeholder="Nama / Jabatan Pelaksana">
+                                </div>
+                            </div>
+                        </div>
 
                         <label class="form-label mt-3 text-primary"><i class="fas fa-tools me-1"></i> 13. Tindakan perbaikan (Bisa pilih > 1)</label>
                         <div class="ps-3 border-start border-3 border-primary ms-1 mb-3">
-                            
                             <label class="sub-label text-dark mt-0">a. Kepada Pasien</label>
                             <div class="mb-2 bg-white p-2 border rounded shadow-sm d-print-none" style="font-size: 0.85rem;">
                                 <div class="form-check"><input class="form-check-input chk-perbaikan-pasien" type="checkbox" value="Penata laksanaan penyakit" id="pb_p1"><label class="form-check-label" for="pb_p1">Penata laksanaan penyakit</label></div>
@@ -239,12 +210,10 @@
                             </div>
                             <input type="hidden" name="perbaikan_fasyankes" id="hidden_perbaikan_fasyankes">
                             <div class="d-none d-print-block" id="print_perbaikan_fasyankes"></div>
-
                         </div>
 
                         <label class="form-label mt-3 text-success"><i class="fas fa-shield-virus me-1"></i> 14. Tindakan untuk mengurangi risiko (Bisa pilih > 1)</label>
                         <div class="ps-3 border-start border-3 border-success ms-1 mb-3">
-                            
                             <label class="sub-label text-dark mt-0">a. Kepada Pasien</label>
                             <div class="mb-2 bg-white p-2 border rounded shadow-sm d-print-none" style="font-size: 0.85rem;">
                                 <div class="form-check"><input class="form-check-input chk-risiko-pasien" type="checkbox" value="Pemberian pelayanan optimal" id="rk_p1"><label class="form-check-label" for="rk_p1">Pemberian pelayanan optimal</label></div>
@@ -289,7 +258,6 @@
                             </div>
                             <input type="hidden" name="risiko_faktor" id="hidden_risiko_faktor">
                             <div class="d-none d-print-block" id="print_risiko_faktor"></div>
-
                         </div>
 
                         <label class="form-label mt-3">15. Pembelajaran</label>
@@ -369,23 +337,11 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            // MENGGUNAKAN VARIABEL GLOBAL DARI config.js
             const scriptURL = API_CONFIG.IKP;
             
-            // =========================================================================
-            // 1. AMBIL DATA DARI MEMORI TERLEBIH DAHULU
-            // =========================================================================
             const analisisDataStr = localStorage.getItem('analisisDataIKP');
             if (!analisisDataStr) {
-                Swal.fire({
-                    title: 'Data Tidak Ditemukan!',
-                    text: 'Mengarahkan kembali ke daftar insiden...',
-                    icon: 'warning',
-                    timer: 2000,
-                    showConfirmButton: false
-                }).then(() => {
-                    window.location.href = 'daftar_insiden.html';
-                });
+                window.location.href = 'daftar_insiden.html';
                 return;
             }
 
@@ -395,79 +351,22 @@
             document.getElementById('lblInsiden').innerText = data['Insiden'] || '-';
             document.getElementById('lblTanggal').innerText = data['Tgl & Waktu insiden'] ? new Date(data['Tgl & Waktu insiden']).toLocaleString('id-ID') : '-';
 
-            // =========================================================================
-            // 2. KAMUS DATA
-            // =========================================================================
             const taksonomiInsiden = {
-                "1. ADMINISTRASI KLINIK": {
-                    "a. Proses": ["Serah terima", "Perjanjian", "Daftar tunggu / Antrian", "Rujukan / Konsultasi", "Admisi", "Keluar/Pulang dari Ranap/RS", "Pindah Perawatan (Transfer of care)", "Identifikasi Pasien", "Consent", "Pembagian tugas", "Respons terhadap kegawatdaruratan"],
-                    "b. Masalah": ["Tidak performed ketika dibutuhkan/indikasi", "Tidak lengkap / Inadekuat", "Tidak tersedia", "Salah pasien", "Salah proses / pelayanan"]
-                },
-                "2. PROSES / PROSEDUR KLINIS": {
-                    "a. Proses": ["Skrining / Pencegahan / Medical check up", "Diagnosis / Assessment", "Prosedur / Pengobatan / Intervensi", "General care / Management", "Test / Investigasi", "Spesimen / Hasil", "Belum dipulangkan (Detention/Restraint)"],
-                    "b. Masalah": ["Tidak performance ketika dibutuhkan/ indikasi", "Tidak lengkap / Inadekuat", "Tidak tersedia", "Salah pasien", "Salah proses / pengobatan / prosedur", "Salah bagian tubuh / sisi"]
-                },
-                "3. DOKUMENTASI": {
-                    "a. Dokumen Terkait": ["Order / Permintaan", "Chart / Rekam medik / Assessment/ Konsultasi", "Check list", "Form / sertifikat", "Instruksi / Informasi / Kebijakan / SPO /Guideline", "Label / Stiker / Identifikasi Bands / Kartu", "Surat / E-mail / Rekaman Komunikasi", "Laporan / Hasil / Images"],
-                    "b. Masalah": ["Dokumen hilang / tidak tersedia", "Terlambat mengakses dokumen", "Salah dokumen / Salah orang", "Tidak jelas / Membingungkan /Illegible"]
-                },
-                "4. INFEKSI NOSOKOMIAL (HAI)": {
-                    "a. Tipe organisme": ["Bakteri", "Virus", "Jamur", "Parasit", "Protozoa", "Rickettsia", "Prion (Partikel protein yang infeksius)", "Organisme tidak teridentifikasi"],
-                    "b. Tipe / Bagian infeksi": ["Bloodstream", "Bagian yang dioperasi", "Abses", "Pneumonia", "Kanul IV", "Protesis infeksi", "Drain/ tube urin", "Jaringan lunak"]
-                },
-                "5. MEDIKASI/ CAIRAN INFUS": {
-                    "a. Medikasi/Cairan terkait": ["Daftar Medikasi", "Daftar Cairan infus"],
-                    "b. Proses penggunaan": ["Peresepan", "Persiapan / Dispensing", "Pemaketan", "Pengantaran", "Pemberian", "Supply / pesan", "Penyimpanan", "Monitoring"],
-                    "c. Masalah": ["Salah pasien", "Salah obat", "Salah dosis / kekuatan / frekuensi", "Salah formulasi / presentasi", "Salah rute pemberian", "Salah jumlah / kuantitas", "Salah Dispensing Label / Instruksi", "Kontraindikasi", "Salah penyimpanan", "Ommited medicine or dose", "Obat kadaluarsa", "Adverse drug"]
-                },
-                "6. TRANSFUSI DARAH / PRODUK DARAH": {
-                    "a. Produk terkait": ["Produk selular", "Faktor pembekuan (clothing)", "Albumin / Plasma protein", "Imunoglobulin"],
-                    "b. Proses Transfusi": ["Tes pre transfusi", "Peresepan", "Persiapan / Dispensing", "Pengantaran", "Pemberian", "Penyimpanan", "Monitoring", "Presentasi / Pemaketan", "Suply / Pesan"],
-                    "c. Masalah": ["Salah pasien", "Salah Darah / Produk darah", "Salah dosis / Frekuensi", "Salah jumlah", "Salah label dispensing / Instruksi", "Kontraindikasi", "Salah penyimpanan", "Obat atau Dosis yang diabaikan", "Darah kadaluarsa", "Efek samping (Adverse effect)"]
-                },
-                "7. NUTRISI": {
-                    "a. Nutrisi terkait": ["Nutrisi umum", "Nutrisi khusus"],
-                    "b. Proses nutrisi": ["Peresepan / Permintaan", "Pesiapan / Manufaktur / memasak", "Supply / order", "Penyajian", "Dispensing / Alokasi", "Pengantaran", "Pemberian", "Penyimpanan"],
-                    "c. Masalah": ["Salah pasien", "Salah diet", "Salah jumlah", "Salah Frekuensi", "Salah konsistensi"]
-                },
-                "8. OKSIGEN / GAS": {
-                    "a. Oksigen / Gas terkait": ["Daftar oksigen /gas terkait"],
-                    "b. Proses penggunaan": ["Label silinder / warna kode / Index pin", "Peresepan", "Pemberian", "Pengantaran", "Suply / order"],
-                    "c. Masalah": ["Salah pasien", "Salah gas", "Salah rate / flow/ konsentrasi", "Salah mode pengantaran", "Kontraindikasi", "Salah penyimpanan", "Gagal pemberian", "Kontaminasi"]
-                },
-                "9. ALAT MEDIS / ALAT KESEHATAN": {
-                    "a. Tipe Alat / Equipment": ["Daftar Alat medis / Alat kesehatan / Equipment property"],
-                    "b. Masalah": ["Presentasi / Pemaketan tidak baik", "Ketidaktersediaan", "Inapropiate for task", "Tidak bersih / Tidak steril", "Kegagalan / Malfungsi"]
-                },
-                "10. PASIEN": {
-                    "a. Perilaku pasien": ["Tidak kooperatif", "Tidak pantas / Sikap bermusuhan / Kasar", "Berisiko/ Sembrono / Berbahaya", "Masalah dengan penggunaan substansi / Abuse", "Menggangu (Harrassment)", "Diskriminasitif / Berprasangka", "Berkeliaran, Melarikan diri.", "Sengaja mencederai diri, Bunuh diri."],
-                    "b. Agresi / Assault": ["Agresi verbal", "Kekerasan fisik", "Ancaman nyawa"]
-                },
-                "11. JATUH": {
-                    "a. Tipe Jatuh": ["Tersandung", "Slip", "Kolaps", "Hilang keseimbangan"],
-                    "b. Keterlibatan saat jatuh": ["Velbed", "Tempat tidur", "Kursi", "Strecher", "Toilet", "Peralatan terapi", "Tangga", "Dibawa/dibantu oleh orang lain"]
-                },
-                "12. KECELAKAAN": {
-                    "a. Benturan tumpul": ["Kontak dengan benda/binatang", "Kontak dengan orang", "Hancur, remuk"],
-                    "b. Serangan tajam/ tusukan": ["Cakaran", "Sayatan", "Tusukan", "Gigitan", "Sengatan"],
-                    "c. Kejadian mekanik lain": ["Benturan akibat ledakan bom", "Kontak dengan mesin"],
-                    "d. Mekanisme Panas": ["Panas yg berlebihan, dingin yg berlebihan"],
-                    "e. Ancaman pernafasan": ["Ancaman mekanik pernafasan, tenggelam atau hampir tenggelam, pembatasan oksigen - kekurangan tempat"],
-                    "g. Paparan bahan kimia": ["Keracunan bahan kimia atau substansi lain", "Bahan kimia korosif"],
-                    "h. Mekanisme spesifik lain": ["Paparan listrik/radiasi", "Paparan suara/ getaran"]
-                },
-                "13. INFRASTRUKTUR / BANGUNAN": {
-                    "a. Keterlibatan Struktur": ["Daftar struktur", "Daftar Bangunan", "Daftar Furniture"],
-                    "b. Masalah": ["Inadekuat", "Damaged/Faulty/Worn"]
-                },
-                "14. RESOURCE / MANAJEMEN ORGANISASI": {
-                    "a. Beban kerja manajemen": ["Ketersediaan/ keadekuatan tempat tidur/ pelayanan", "Sumber Daya Manusia", "Ketersediaan/ keadekuatan staf", "Organisasi/ Tim"],
-                    "b. Protocols/ SOP Guideline": ["Tidak Ada SOP", "SOP Inadekuat/Tidak Jelas", "SOP Tidak Dipatuhi"],
-                    "c. Ketersediaan / Adequacy": ["Inadekuat", "Tidak Tersedia"]
-                },
-                "15. LABORATORIUM / PATOLOGI": {
-                    "a. Proses Lab": ["Pengambilan/ Pick up", "Transport", "Sorting", "Data entry", "Prosesing", "Verifikasi / Validasi Hasil"]
-                }
+                "1. ADMINISTRASI KLINIK": { "a. Proses": ["Serah terima", "Perjanjian", "Daftar tunggu / Antrian", "Rujukan / Konsultasi", "Admisi", "Keluar/Pulang dari Ranap/RS", "Pindah Perawatan (Transfer of care)", "Identifikasi Pasien", "Consent", "Pembagian tugas", "Respons terhadap kegawatdaruratan"], "b. Masalah": ["Tidak performed ketika dibutuhkan/indikasi", "Tidak lengkap / Inadekuat", "Tidak tersedia", "Salah pasien", "Salah proses / pelayanan"] },
+                "2. PROSES / PROSEDUR KLINIS": { "a. Proses": ["Skrining / Pencegahan / Medical check up", "Diagnosis / Assessment", "Prosedur / Pengobatan / Intervensi", "General care / Management", "Test / Investigasi", "Spesimen / Hasil", "Belum dipulangkan (Detention/Restraint)"], "b. Masalah": ["Tidak performance ketika dibutuhkan/ indikasi", "Tidak lengkap / Inadekuat", "Tidak tersedia", "Salah pasien", "Salah proses / pengobatan / prosedur", "Salah bagian tubuh / sisi"] },
+                "3. DOKUMENTASI": { "a. Dokumen Terkait": ["Order / Permintaan", "Chart / Rekam medik / Assessment/ Konsultasi", "Check list", "Form / sertifikat", "Instruksi / Informasi / Kebijakan / SPO /Guideline", "Label / Stiker / Identifikasi Bands / Kartu", "Surat / E-mail / Rekaman Komunikasi", "Laporan / Hasil / Images"], "b. Masalah": ["Dokumen hilang / tidak tersedia", "Terlambat mengakses dokumen", "Salah dokumen / Salah orang", "Tidak jelas / Membingungkan /Illegible"] },
+                "4. INFEKSI NOSOKOMIAL (HAI)": { "a. Tipe organisme": ["Bakteri", "Virus", "Jamur", "Parasit", "Protozoa", "Rickettsia", "Prion (Partikel protein yang infeksius)", "Organisme tidak teridentifikasi"], "b. Tipe / Bagian infeksi": ["Bloodstream", "Bagian yang dioperasi", "Abses", "Pneumonia", "Kanul IV", "Protesis infeksi", "Drain/ tube urin", "Jaringan lunak"] },
+                "5. MEDIKASI/ CAIRAN INFUS": { "a. Medikasi/Cairan terkait": ["Daftar Medikasi", "Daftar Cairan infus"], "b. Proses penggunaan": ["Peresepan", "Persiapan / Dispensing", "Pemaketan", "Pengantaran", "Pemberian", "Supply / pesan", "Penyimpanan", "Monitoring"], "c. Masalah": ["Salah pasien", "Salah obat", "Salah dosis / kekuatan / frekuensi", "Salah formulasi / presentasi", "Salah rute pemberian", "Salah jumlah / kuantitas", "Salah Dispensing Label / Instruksi", "Kontraindikasi", "Salah penyimpanan", "Ommited medicine or dose", "Obat kadaluarsa", "Adverse drug"] },
+                "6. TRANSFUSI DARAH / PRODUK DARAH": { "a. Produk terkait": ["Produk selular", "Faktor pembekuan (clothing)", "Albumin / Plasma protein", "Imunoglobulin"], "b. Proses Transfusi": ["Tes pre transfusi", "Peresepan", "Persiapan / Dispensing", "Pengantaran", "Pemberian", "Penyimpanan", "Monitoring", "Presentasi / Pemaketan", "Suply / Pesan"], "c. Masalah": ["Salah pasien", "Salah Darah / Produk darah", "Salah dosis / Frekuensi", "Salah jumlah", "Salah label dispensing / Instruksi", "Kontraindikasi", "Salah penyimpanan", "Obat atau Dosis yang diabaikan", "Darah kadaluarsa", "Efek samping (Adverse effect)"] },
+                "7. NUTRISI": { "a. Nutrisi terkait": ["Nutrisi umum", "Nutrisi khusus"], "b. Proses nutrisi": ["Peresepan / Permintaan", "Pesiapan / Manufaktur / memasak", "Supply / order", "Penyajian", "Dispensing / Alokasi", "Pengantaran", "Pemberian", "Penyimpanan"], "c. Masalah": ["Salah pasien", "Salah diet", "Salah jumlah", "Salah Frekuensi", "Salah konsistensi"] },
+                "8. OKSIGEN / GAS": { "a. Oksigen / Gas terkait": ["Daftar oksigen /gas terkait"], "b. Proses penggunaan": ["Label silinder / warna kode / Index pin", "Peresepan", "Pemberian", "Pengantaran", "Suply / order"], "c. Masalah": ["Salah pasien", "Salah gas", "Salah rate / flow/ konsentrasi", "Salah mode pengantaran", "Kontraindikasi", "Salah penyimpanan", "Gagal pemberian", "Kontaminasi"] },
+                "9. ALAT MEDIS / ALAT KESEHATAN": { "a. Tipe Alat / Equipment": ["Daftar Alat medis / Alat kesehatan / Equipment property"], "b. Masalah": ["Presentasi / Pemaketan tidak baik", "Ketidaktersediaan", "Inapropiate for task", "Tidak bersih / Tidak steril", "Kegagalan / Malfungsi"] },
+                "10. PASIEN": { "a. Perilaku pasien": ["Tidak kooperatif", "Tidak pantas / Sikap bermusuhan / Kasar", "Berisiko/ Sembrono / Berbahaya", "Masalah dengan penggunaan substansi / Abuse", "Menggangu (Harrassment)", "Diskriminasitif / Berprasangka", "Berkeliaran, Melarikan diri.", "Sengaja mencederai diri, Bunuh diri."], "b. Agresi / Assault": ["Agresi verbal", "Kekerasan fisik", "Ancaman nyawa"] },
+                "11. JATUH": { "a. Tipe Jatuh": ["Tersandung", "Slip", "Kolaps", "Hilang keseimbangan"], "b. Keterlibatan saat jatuh": ["Velbed", "Tempat tidur", "Kursi", "Strecher", "Toilet", "Peralatan terapi", "Tangga", "Dibawa/dibantu oleh orang lain"] },
+                "12. KECELAKAAN": { "a. Benturan tumpul": ["Kontak dengan benda/binatang", "Kontak dengan orang", "Hancur, remuk"], "b. Serangan tajam/ tusukan": ["Cakaran", "Sayatan", "Tusukan", "Gigitan", "Sengatan"], "c. Kejadian mekanik lain": ["Benturan akibat ledakan bom", "Kontak dengan mesin"], "d. Mekanisme Panas": ["Panas yg berlebihan, dingin yg berlebihan"], "e. Ancaman pernafasan": ["Ancaman mekanik pernafasan, tenggelam atau hampir tenggelam, pembatasan oksigen - kekurangan tempat"], "g. Paparan bahan kimia": ["Keracunan bahan kimia atau substansi lain", "Bahan kimia korosif"], "h. Mekanisme spesifik lain": ["Paparan listrik/radiasi", "Paparan suara/ getaran"] },
+                "13. INFRASTRUKTUR / BANGUNAN": { "a. Keterlibatan Struktur": ["Daftar struktur", "Daftar Bangunan", "Daftar Furniture"], "b. Masalah": ["Inadekuat", "Damaged/Faulty/Worn"] },
+                "14. RESOURCE / MANAJEMEN ORGANISASI": { "a. Beban kerja manajemen": ["Ketersediaan/ keadekuatan tempat tidur/ pelayanan", "Sumber Daya Manusia", "Ketersediaan/ keadekuatan staf", "Organisasi/ Tim"], "b. Protocols/ SOP Guideline": ["Tidak Ada SOP", "SOP Inadekuat/Tidak Jelas", "SOP Tidak Dipatuhi"], "c. Ketersediaan / Adequacy": ["Inadekuat", "Tidak Tersedia"] },
+                "15. LABORATORIUM / PATOLOGI": { "a. Proses Lab": ["Pengambilan/ Pick up", "Transport", "Sorting", "Data entry", "Prosesing", "Verifikasi / Validasi Hasil"] }
             };
 
             const taksonomiRootCause = {
@@ -519,11 +418,6 @@
                 "5. Faktor Lingkungan": { "a. Lingkungan Fisik/ Infrastruktur": null, "b. Lokasi yang jauh dari fasilitas pelayanan/ Remote area": null, "c. Asesmen resiko lingkungan/ evaluasi keselamatan lingkungan": null, "d. Regulasi/ kode yang digunakan saat ini": null }
             };
 
-            // =========================================================================
-            // 3. INISIALISASI TAMPILAN ANTARMUKA (SANGAT PENTING DILAKUKAN DI AWAL)
-            // =========================================================================
-            
-            // Tipe Insiden
             const selectUtama = document.getElementById('ui_tipe_insiden');
             const containerSub = document.getElementById('subTipeContainer');
             for (let kategori in taksonomiInsiden) { selectUtama.add(new Option(kategori, kategori)); }
@@ -540,7 +434,6 @@
                 } else { containerSub.style.display = 'none'; }
             });
 
-            // Root Cause
             const selectRcUtama = document.getElementById('ui_rc_utama');
             const containerRcSub = document.getElementById('rcSubContainer');
             const selectRcSub = document.getElementById('ui_rc_sub');
@@ -553,7 +446,6 @@
                 } else { containerRcSub.style.display = 'none'; }
             });
 
-            // Orang Terlibat
             const selectOtUtama = document.getElementById('ui_ot_utama');
             const containerOtSub = document.getElementById('otSubContainer');
             const selectOtSub = document.getElementById('ui_ot_sub');
@@ -566,7 +458,6 @@
                 } else { containerOtSub.style.display = 'none'; }
             });
 
-            // Pohon Checkbox Faktor Kontributor
             function buildCheckboxTree(obj, path = "", isRoot = true) {
                 let html = isRoot ? '<ul class="list-unstyled mb-0">' : '<ul class="list-unstyled ms-4 border-start ps-3 mb-1 mt-1">';
                 for (let key in obj) {
@@ -597,10 +488,6 @@
             }
             document.querySelectorAll('.chk-faktor').forEach(cb => { cb.addEventListener('change', updateFaktorPreview); });
 
-            // =========================================================================
-            // 4. AUTO-FILL DATA LAMA (MODE EDIT)
-            // =========================================================================
-            
             if (data['Tipe & Sub Tipe Insiden']) {
                 let savedString = data['Tipe & Sub Tipe Insiden']; let parts = savedString.split(' | '); let mainCat = parts[0];
                 if (taksonomiInsiden[mainCat]) {
@@ -662,7 +549,6 @@
                 else { document.getElementById('ui_faktor_preview').value = savedFaktor; document.getElementById('hidden_faktor_kontributor').value = savedFaktor; }
             }
 
-            // Fungsi Pembacaan Multi-Checkbox Bawah & Cetak PDF
             const isiSemuaCheckboxKustom = (dbValue, selectorClass, printTargetId) => {
                 if (!dbValue) return;
                 let arrValue = dbValue.split(', ').map(s => s.trim());
@@ -692,6 +578,7 @@
             const fieldMapping = {
                 'masalah_cmp': 'Masalah CMP', 'masalah_sdp': 'Masalah SDP', 'penyebab_langsung': 'Penyebab Langsung', 'akar_masalah': 'Akar Masalah',
                 'proses_pelayanan': 'Proses/Fase Pelayanan', 'cara_mendeteksi': 'Cara Mendeteksi', 'rekomendasi': 'Rekomendasi', 'tindakan_dilakukan': 'Tindakan Akan Dilakukan', 
+                'pj_tindakan': 'Dilakukan Oleh', 
                 'pembelajaran': 'Pembelajaran', 'safety_alert': 'Safety Alert'
             };
             for (const [inputName, sheetHeader] of Object.entries(fieldMapping)) {
@@ -701,9 +588,6 @@
                 }
             }
 
-            // =========================================================================
-            // 5. PROSES PENGIRIMAN DATA (SUBMIT)
-            // =========================================================================
             const form = document.getElementById("formAnalisis");
             const submitBtn = document.getElementById("btnSimpanAnalisis");
 
@@ -746,7 +630,6 @@
                 submitBtn.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i> Menyimpan..."; 
                 submitBtn.disabled = true;
 
-                // Menyusun urutan data secara paksa berdasarkan atribut 'name' agar tidak bergeser
                 const inputData = {
                     "tipe_insiden": document.getElementById('hidden_tipe_insiden').value,
                     "tipe_harm": document.getElementById('hidden_tipe_harm').value,
@@ -765,6 +648,7 @@
                     "dampak_fasyankes": document.getElementById('hidden_dampak_fasyankes').value,
                     "rekomendasi": form.querySelector('[name="rekomendasi"]').value,
                     "tindakan_dilakukan": form.querySelector('[name="tindakan_dilakukan"]').value,
+                    "pj_tindakan": form.querySelector('[name="pj_tindakan"]').value, 
                     "perbaikan_pasien": document.getElementById('hidden_perbaikan_pasien').value,
                     "perbaikan_fasyankes": document.getElementById('hidden_perbaikan_fasyankes').value,
                     "risiko_pasien": document.getElementById('hidden_risiko_pasien').value,
@@ -806,7 +690,6 @@
             });
         });
 
-        // FUNGSI METODE 5 WHY
         window.terapkan5Why = function() {
             let m = document.getElementById('why_masalah').value.trim();
             let w1 = document.getElementById('why_1').value.trim();
@@ -826,8 +709,6 @@
             if (w5) hasil += `\n5. Why? (Root Cause): ${w5}`;
 
             document.getElementById('textarea_akar_masalah').value = hasil;
-            
-            // Tutup Modal
             bootstrap.Modal.getInstance(document.getElementById('modal5Why')).hide();
         };
     </script>
