@@ -16,9 +16,9 @@
         .table-custom th { background-color: #f8f9fa; color: #495057; border-bottom: 2px solid #dee2e6; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px;}
         .table-custom td { vertical-align: middle; font-size: 0.9rem; border-bottom: 1px solid #f1f3f5;}
         
-        /* Animasi Loading */
         .shimmer { animation: shimmer 2s infinite linear; background: linear-gradient(to right, #eff1f3 4%, #e2e2e2 25%, #eff1f3 36%); background-size: 1000px 100%; }
         @keyframes shimmer { 0% { background-position: -1000px 0; } 100% { background-position: 1000px 0; } }
+        .loader-overlay { display: none; background: rgba(255,255,255,0.95); position: absolute; top:0; left:0; right:0; bottom:0; z-index: 10; border-radius: 8px; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
@@ -32,7 +32,7 @@
                 <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-satellite-dish text-primary me-2"></i> Command Center Mutu</h3>
                 <p class="text-muted mb-0">Dasbor Eksekutif Pemantauan Kinerja RSUD Saras Adyatma</p>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex gap-2 align-items-center flex-wrap">
                 <select id="filterBulan" class="form-select border-primary fw-bold shadow-sm" style="width: 140px;" onchange="muatDataKepatuhan()">
                     <option value="1">Januari</option><option value="2">Februari</option>
                     <option value="3">Maret</option><option value="4">April</option>
@@ -42,6 +42,10 @@
                     <option value="11">November</option><option value="12">Desember</option>
                 </select>
                 <select id="filterTahun" class="form-select border-primary fw-bold shadow-sm" style="width: 120px;" onchange="muatDataKepatuhan()"></select>
+                
+                <button class="btn text-white fw-bold shadow-sm ms-2" style="background-color: #6f42c1;" onclick="bukaModalCompiler()">
+                    <i class="fas fa-file-word me-2"></i> Cetak Laporan Terintegrasi
+                </button>
             </div>
         </div>
 
@@ -127,7 +131,7 @@
                 <div class="card-custom p-4">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="fw-bold text-dark mb-0"><i class="fas fa-clipboard-check text-warning me-2"></i> Pemantauan PDSA Berjalan</h5>
-                        <a href="pdsa.html" class="btn btn-sm btn-outline-warning text-dark rounded-pill px-3">Buka Papan PDSA</a>
+                        <a href="dasbor_pdsa.html" class="btn btn-sm btn-outline-warning text-dark rounded-pill px-3">Buka Papan PDSA</a>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-hover table-custom" id="tabelPDSAMini">
@@ -150,6 +154,71 @@
 
     </div>
 
+    <div class="modal fade" id="modalCompiler" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white" style="background-color: #6f42c1;">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-magic me-2"></i> Generator Laporan PMKP</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-light p-4 position-relative">
+                    
+                    <div class="loader-overlay" id="loaderOverlay">
+                        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h6 class="fw-bold text-dark text-center mb-1">Menghubungkan ke 4 Database...</h6>
+                        <p class="text-muted text-center px-3 mb-0" style="font-size: 0.85rem;">
+                            Sistem sedang merekap data Mutu, IKP, Risiko, dan KPC lalu merakitnya ke Microsoft Word. Proses ini butuh waktu 15-30 detik.
+                        </p>
+                    </div>
+
+                    <form id="formGenerator">
+                        <div class="mb-3">
+                            <label class="fw-bold mb-1 text-dark"><i class="fas fa-calendar-alt me-1"></i> Periode Laporan</label>
+                            <select class="form-select border-primary" id="inp_periode_laporan" required>
+                                <option value="">-- Pilih Jenis Laporan --</option>
+                                
+                                <optgroup label="Bulanan">
+                                    <option value="Januari">Januari</option><option value="Februari">Februari</option>
+                                    <option value="Maret">Maret</option><option value="April">April</option>
+                                    <option value="Mei">Mei</option><option value="Juni">Juni</option>
+                                    <option value="Juli">Juli</option><option value="Agustus">Agustus</option>
+                                    <option value="September">September</option><option value="Oktober">Oktober</option>
+                                    <option value="November">November</option><option value="Desember">Desember</option>
+                                </optgroup>
+                                
+                                <optgroup label="Triwulanan">
+                                    <option value="Triwulan I">Triwulan I (Jan - Mar)</option>
+                                    <option value="Triwulan II">Triwulan II (Apr - Jun)</option>
+                                    <option value="Triwulan III">Triwulan III (Jul - Sep)</option>
+                                    <option value="Triwulan IV">Triwulan IV (Okt - Des)</option>
+                                </optgroup>
+                                <optgroup label="Semesteran">
+                                    <option value="Semester I">Semester I (Jan - Jun)</option>
+                                    <option value="Semester II">Semester II (Jul - Des)</option>
+                                </optgroup>
+                                <optgroup label="Tahunan">
+                                    <option value="Tahunan">Laporan Tahunan (1 Tahun)</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="fw-bold mb-1 text-dark"><i class="fas fa-clock me-1"></i> Tahun</label>
+                            <select class="form-select border-primary" id="inp_tahun_laporan" required></select>
+                        </div>
+                        <div class="text-end border-top pt-3">
+                            <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn text-white fw-bold px-4 shadow-sm" style="background-color: #6f42c1;">
+                                <i class="fas fa-cogs me-1"></i> Generate Laporan .docx
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
@@ -159,7 +228,6 @@
         let myChart = null;
 
         document.addEventListener("DOMContentLoaded", function() {
-            // Set Default Filter ke Bulan & Tahun Saat Ini
             const date = new Date();
             document.getElementById('filterBulan').value = date.getMonth() + 1;
             
@@ -173,7 +241,6 @@
         });
 
         function muatDataKepatuhan() {
-            // Dipanggil saat filter bulan/tahun diganti
             muatDataEksekutif();
         }
 
@@ -182,21 +249,17 @@
             const thn = document.getElementById('filterTahun').value;
             const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : ""; 
 
-            // Tampilkan loading state
             document.getElementById('scoreSudahLapor').innerHTML = '<i class="fas fa-spinner fa-spin fs-5"></i>';
             document.getElementById('scoreBelumLapor').innerHTML = '<i class="fas fa-spinner fa-spin fs-5"></i>';
             document.getElementById('scorePDSA').innerHTML = '<i class="fas fa-spinner fa-spin fs-5"></i>';
             document.getElementById('scoreIndikator').innerHTML = '<i class="fas fa-spinner fa-spin fs-5"></i>';
 
-            // KITA LAKUKAN 2 REQUEST SEKALIGUS MENGGUNAKAN PROMISE.ALL
-            // 1. Ambil Kepatuhan
             const reqKepatuhan = fetch(scriptURL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify({ action: "cek_kepatuhan", bulan: bln, tahun: thn })
             }).then(res => res.json());
 
-            // 2. Ambil PDSA & Rekap Mutu
             const reqDashboard = fetch(`${scriptURL}?action=get_dashboard`).then(res => res.json());
 
             Promise.all([reqKepatuhan, reqDashboard]).then(results => {
@@ -234,12 +297,10 @@
                 `;
             });
 
-            // Update Scorecards
             document.getElementById('scoreSudahLapor').innerText = jmlSudah;
             document.getElementById('scoreBelumLapor').innerText = jmlBelum;
-            document.getElementById('scoreIndikator').innerText = data.length; // Total Form
+            document.getElementById('scoreIndikator').innerText = data.length; 
             
-            // Update Progress Bar
             let total = jmlSudah + jmlBelum;
             let persen = total === 0 ? 0 : Math.round((jmlSudah / total) * 100);
             const bar = document.getElementById('barKepatuhan');
@@ -261,11 +322,10 @@
                 return;
             }
 
-            // Tampilkan maksimal 5 PDSA terbaru saja agar tidak kepanjangan
             let tampilData = dataPDSA.reverse().slice(0, 5);
 
             tampilData.forEach(row => {
-                let badge = '<span class="badge bg-warning text-dark">Plan (Perencanaan)</span>'; // Asumsi default dari raw_data
+                let badge = '<span class="badge bg-warning text-dark">Plan (Perencanaan)</span>'; 
                 
                 tbody.innerHTML += `
                     <tr>
@@ -279,20 +339,16 @@
         }
 
         function renderGrafikMutu(dataRekap) {
-            // Karena ini dasbor eksekutif, kita buat dummy grafik yang mensimulasikan agregat tren mutu per bulan
-            // (Dalam implementasi nyata, Anda bisa mem-filter dataRekap berdasarkan bulan pengisian)
-            
             const ctx = document.getElementById('chartMutu').getContext('2d');
-            
             if (myChart) { myChart.destroy(); }
 
             myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'], // Simulasikan 6 bulan terakhir
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'], 
                     datasets: [{
                         label: 'Rata-rata Capaian Mutu RS (%)',
-                        data: [85, 88, 86, 92, 90, 95], // Data simulasi tren
+                        data: [85, 88, 86, 92, 90, 95], 
                         borderColor: '#198754',
                         backgroundColor: 'rgba(25, 135, 84, 0.2)',
                         borderWidth: 3,
@@ -300,26 +356,96 @@
                         pointBorderColor: '#198754',
                         pointRadius: 5,
                         fill: true,
-                        tension: 0.4 // Membuat garis melengkung elegan
+                        tension: 0.4 
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
                         y: {
-                            beginAtZero: false,
-                            min: 60,
-                            max: 100,
+                            beginAtZero: false, min: 60, max: 100,
                             ticks: { callback: function(value) { return value + "%" } }
                         }
                     }
                 }
             });
         }
+
+        // ========================================================
+        // LOGIKA MASTER COMPILER LAPORAN
+        // ========================================================
+        // KINI URL DIAMBIL DARI config.js
+        const COMPILER_URL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.COMPILER : "";
+
+        function bukaModalCompiler() {
+            const yearSelect = document.getElementById('inp_tahun_laporan');
+            yearSelect.innerHTML = '';
+            const currentYear = new Date().getFullYear();
+            for (let y = 2024; y <= currentYear + 3; y++) {
+                let option = document.createElement('option');
+                option.value = y; option.text = y;
+                if (y === currentYear) option.selected = true;
+                yearSelect.appendChild(option);
+            }
+            
+            new bootstrap.Modal(document.getElementById('modalCompiler')).show();
+        }
+
+        document.getElementById('formGenerator').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const periode = document.getElementById('inp_periode_laporan').value;
+            const tahun = document.getElementById('inp_tahun_laporan').value;
+
+            if(!periode) {
+                Swal.fire('Peringatan', 'Silakan pilih Periode Laporan terlebih dahulu!', 'warning');
+                return;
+            }
+
+            if(!COMPILER_URL) {
+                Swal.fire('Error Konfigurasi', 'URL Compiler belum diatur di config.js', 'error');
+                return;
+            }
+
+            document.getElementById('loaderOverlay').style.display = 'flex';
+
+            const payload = {
+                action: 'generate_laporan',
+                periode: periode,
+                tahun: tahun
+            };
+
+            fetch(COMPILER_URL, {
+                method: "POST",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(result => {
+                document.getElementById('loaderOverlay').style.display = 'none';
+                
+                if (result.status === "success") {
+                    bootstrap.Modal.getInstance(document.getElementById('modalCompiler')).hide();
+                    Swal.fire({
+                        title: 'Laporan Selesai!',
+                        text: 'Dokumen Microsoft Word Anda sudah siap diunduh.',
+                        icon: 'success',
+                        confirmButtonText: '<i class="fas fa-download me-1"></i> Download File',
+                        confirmButtonColor: '#198754'
+                    }).then(() => {
+                        window.location.href = result.download_url;
+                    });
+                } else {
+                    Swal.fire('Gagal!', 'Terjadi kesalahan: ' + result.message, 'error');
+                }
+            })
+            .catch(err => {
+                document.getElementById('loaderOverlay').style.display = 'none';
+                Swal.fire('Error Jaringan', 'Gagal menghubungi Master Compiler.', 'error');
+            });
+        });
     </script>
 </body>
 </html>
