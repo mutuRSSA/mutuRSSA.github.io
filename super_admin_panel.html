@@ -33,9 +33,14 @@
                 <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-tools text-primary me-2"></i> Pengaturan Ekosistem Mutu</h3>
                 <p class="text-muted mb-0">Kelola unit kerja, indikator wajib, dan otomatisasi database rumah sakit.</p>
             </div>
-            <button class="btn btn-primary fw-bold shadow-sm px-4 rounded-pill" onclick="bukaModalUnit()">
-                <i class="fas fa-plus-circle me-2"></i> Onboarding Unit Baru
-            </button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-warning fw-bold shadow-sm px-4 rounded-pill" id="btnSyncMaster" onclick="sinkronisasiSekarang()">
+                    <i class="fas fa-sync-alt me-2"></i> Sinkronisasi Master
+                </button>
+                <button class="btn btn-primary fw-bold shadow-sm px-4 rounded-pill" onclick="bukaModalUnit()">
+                    <i class="fas fa-plus-circle me-2"></i> Onboarding Unit Baru
+                </button>
+             </div>
         </div>
 
         <div class="row">
@@ -52,12 +57,12 @@
                         <table class="table table-hover table-custom" id="tabelUnit">
                             <thead>
                                 <tr>
-                                    <th width="5%">No</th>
+                                    <th width="5%" class="text-center">No</th>
                                     <th width="15%">Nama Unit</th>
-                                    <th width="20%">Spreadsheet ID</th>
+                                    <th width="15%">Spreadsheet ID</th>
                                     <th width="35%">Daftar Indikator Wajib</th>
-                                    <th width="15%">WhatsApp PIC</th>
-                                    <th width="10%" class="text-center">Aksi</th>
+                                    <th width="10%">WhatsApp PIC</th>
+                                    <th width="20%" class="text-center">Aksi Setup & Deploy</th>
                                 </tr>
                             </thead>
                             <tbody id="bodyUnit"></tbody>
@@ -73,7 +78,7 @@
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-dark text-white p-4">
-                    <h5 class="modal-title fw-bold"><i class="fas fa-magic me-2 text-warning"></i> Onboarding Unit & Auto-Database</h5>
+                    <h5 class="modal-title fw-bold" id="modalTitleUnit"><i class="fas fa-magic me-2 text-warning"></i> Onboarding Unit & Auto-Database</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body bg-light p-4">
@@ -106,7 +111,7 @@
                                 </div>
                                 
                                 <div class="row g-2 overflow-auto" style="max-height: 400px;" id="wadahCheckboxIndikator">
-                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -121,20 +126,57 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modalDeploy" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-success text-white p-3">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-robot me-2"></i> Deploy Rumus ke Unit</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-white p-4">
+                    <div class="alert alert-warning border-0 shadow-sm mb-4" style="font-size: 0.85rem;">
+                        <i class="fas fa-exclamation-triangle me-1"></i> Robot akan menyuntikkan 12 baris rumus ke tab <strong>SHADOW_REKAP</strong> milik unit ini.
+                    </div>
+
+                    <form id="formDeployRobot">
+                        <div class="mb-3">
+                            <label class="form-label">Unit Sasaran</label>
+                            <input type="text" class="form-control bg-light fw-bold" id="deploy_nama_unit" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tahun Pengukuran</label>
+                            <input type="number" class="form-control fw-bold" id="deploy_tahun" required>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label">Judul Indikator <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control border-success" id="deploy_judul" placeholder="Ketik Judul Indikator (Persis seperti di Kamus)" required>
+                            <small class="text-muted">Masukkan <b>Judul Indikator</b> dari Kamus Mutu (contoh: <i>Kepatuhan Identifikasi Pasien</i>).</small>
+                        </div>
+                        <div class="d-grid mt-2">
+                            <button type="submit" class="btn btn-success fw-bold py-2 shadow-sm" id="btnJalankanRobot">
+                                <i class="fas fa-paper-plane me-2"></i> Suntikkan Rumus Sekarang
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : ""; 
+        const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : ""; 
         const session = JSON.parse(localStorage.getItem("sessionMutu")) || {};
         let masterFormList = [];
         let dataUnitGlobal = [];
         
-        // Variabel untuk melacak status Edit
         let isEditMode = false;
         let originalUnitName = "";
+        let targetDeployUnitId = ""; // Untuk menyimpan ID Spreadsheet sasaran deploy
 
         document.addEventListener("DOMContentLoaded", function() {
             muatDataAwal();
@@ -164,13 +206,18 @@ const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
                     <tr>
                         <td class="text-center fw-bold">${index + 1}</td>
                         <td class="fw-bold text-primary">${item.unit}</td>
-                        <td><code>${item.id_sheet}</code></td>
+                        <td><code>${item.id_sheet.substring(0, 15)}...</code></td>
                         <td>${badgeHTML}</td>
                         <td class="fw-bold text-success">${item.wa}</td>
                         <td class="text-center">
-                            <button class="btn btn-sm btn-outline-primary shadow-sm" onclick="bukaModalEdit(${index})">
-                                <i class="fas fa-edit"></i> Edit
-                            </button>
+                            <div class="d-flex flex-column gap-2">
+                                <button class="btn btn-sm btn-outline-primary shadow-sm" onclick="bukaModalEdit(${index})">
+                                    <i class="fas fa-edit"></i> Edit Unit
+                                </button>
+                                <button class="btn btn-sm btn-outline-success shadow-sm" onclick="bukaModalDeploy(${index})">
+                                    <i class="fas fa-magic"></i> Deploy Rumus
+                                </button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -180,10 +227,12 @@ const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
             document.getElementById('tableContainer').classList.remove('d-none');
         }
 
+        // ==========================================
+        // FUNGSI UNTUK MODAL ONBOARDING UNIT
+        // ==========================================
         function renderCheckboxes(list) {
             const wadah = document.getElementById('wadahCheckboxIndikator');
             wadah.innerHTML = '';
-            
             list.forEach(form => {
                 wadah.innerHTML += `
                     <div class="col-md-6">
@@ -201,7 +250,6 @@ const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
         function updateCount() {
             const count = document.querySelectorAll('#wadahCheckboxIndikator input:checked').length;
             document.getElementById('countSelected').innerText = `${count} indikator dipilih`;
-            
             document.querySelectorAll('#wadahCheckboxIndikator input').forEach(inp => {
                 if(inp.checked) inp.closest('.indicator-item').classList.add('selected');
                 else inp.closest('.indicator-item').classList.remove('selected');
@@ -211,14 +259,12 @@ const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
         function bukaModalUnit() {
             isEditMode = false;
             originalUnitName = "";
-            document.querySelector('.modal-title').innerHTML = '<i class="fas fa-magic me-2 text-warning"></i> Onboarding Unit & Auto-Database';
+            document.getElementById('modalTitleUnit').innerHTML = '<i class="fas fa-magic me-2 text-warning"></i> Onboarding Unit & Auto-Database';
             document.getElementById('btnProses').innerHTML = '<i class="fas fa-rocket me-2"></i> Jalankan Auto-Provisioning';
-            
             document.getElementById('inp_nama_unit').value = '';
             document.getElementById('inp_wa').value = '';
             document.querySelectorAll('#wadahCheckboxIndikator input').forEach(i => i.checked = false);
             updateCount();
-            
             new bootstrap.Modal(document.getElementById('modalUnit')).show();
         }
 
@@ -226,14 +272,11 @@ const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
             isEditMode = true;
             let unitData = dataUnitGlobal[index];
             originalUnitName = unitData.unit;
-
-            document.querySelector('.modal-title').innerHTML = '<i class="fas fa-edit me-2 text-primary"></i> Edit Konfigurasi Unit';
+            document.getElementById('modalTitleUnit').innerHTML = '<i class="fas fa-edit me-2 text-primary"></i> Edit Konfigurasi Unit';
             document.getElementById('btnProses').innerHTML = '<i class="fas fa-save me-2"></i> Simpan Perubahan';
-
             document.getElementById('inp_nama_unit').value = unitData.unit;
             document.getElementById('inp_wa').value = unitData.wa;
             
-            // Centang indikator yang sudah ada
             let formsMilikUnit = unitData.daftar_form.split(',').map(s => s.trim());
             document.querySelectorAll('#wadahCheckboxIndikator input').forEach(i => {
                 i.checked = formsMilikUnit.includes(i.value);
@@ -258,61 +301,131 @@ const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
                 : `Sistem akan membuat database otomatis untuk unit '${nama}'. Lanjutkan?`;
 
             Swal.fire({
-                title: 'Konfirmasi',
-                text: pesanKonfirmasi,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: isEditMode ? 'Ya, Simpan!' : 'Ya, Jalankan Robot!',
-                cancelButtonText: 'Batal'
+                title: 'Konfirmasi', text: pesanKonfirmasi, icon: 'question', showCancelButton: true,
+                confirmButtonText: isEditMode ? 'Ya, Simpan!' : 'Ya, Jalankan Robot!', cancelButtonText: 'Batal'
             }).then((result) => {
-                if (result.isConfirmed) {
-                    eksekusiBackend(nama, wa, checked.join(','));
-                }
+                if (result.isConfirmed) eksekusiBackend(nama, wa, checked.join(','));
             });
         }
 
         function eksekusiBackend(nama, wa, daftarForm) {
             const btn = document.getElementById('btnProses');
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i> Memproses Data...`;
+            btn.disabled = true; btn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i> Memproses Data...`;
 
             const payload = {
                 action: isEditMode ? "update_unit_setup" : "generate_unit_otomatis",
-                role: session.role,
-                original_nama: originalUnitName,
-                nama_unit: nama,
-                no_wa: wa,
-                daftar_form: daftarForm
+                role: session.role, original_nama: originalUnitName, nama_unit: nama, no_wa: wa, daftar_form: daftarForm
             };
 
-            fetch(scriptURL, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify(payload)
-            })
+            fetch(scriptURL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) })
             .then(res => res.json())
             .then(res => {
                 if(res.status === 'success') {
-                    Swal.fire({
-                        title: 'Misi Berhasil!',
-                        text: res.message,
-                        icon: 'success',
-                        confirmButtonText: 'Mantap!'
-                    }).then(() => location.reload());
+                    Swal.fire({ title: 'Misi Berhasil!', text: res.message, icon: 'success', confirmButtonText: 'Mantap!' }).then(() => location.reload());
                 } else {
-                    Swal.fire('Gagal', res.message, 'error');
-                    resetBtn();
+                    Swal.fire('Gagal', res.message, 'error'); resetBtn();
                 }
-            })
-            .catch(err => {
-                Swal.fire('Error Jaringan', 'Terjadi masalah koneksi ke server Google.', 'error');
-                resetBtn();
-            });
+            }).catch(err => { Swal.fire('Error Jaringan', 'Terjadi masalah koneksi ke server Google.', 'error'); resetBtn(); });
 
             function resetBtn() {
                 btn.disabled = false;
                 btn.innerHTML = isEditMode ? `<i class="fas fa-save me-2"></i> Simpan Perubahan` : `<i class="fas fa-rocket me-2"></i> Jalankan Auto-Provisioning`;
             }
+        }
+
+        // ==========================================
+        // FUNGSI UNTUK MODAL DEPLOY ROBOT (BARU)
+        // ==========================================
+        function bukaModalDeploy(index) {
+            let unitData = dataUnitGlobal[index];
+            targetDeployUnitId = unitData.id_sheet; // Ambil ID Spreadsheet asli dari tabel
+            
+            document.getElementById('deploy_nama_unit').value = unitData.unit;
+            document.getElementById('deploy_tahun').value = new Date().getFullYear();
+            document.getElementById('deploy_judul').value = "";
+            
+            new bootstrap.Modal(document.getElementById('modalDeploy')).show();
+        }
+
+        document.getElementById('formDeployRobot').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const namaUnit = document.getElementById('deploy_nama_unit').value;
+            const tahun = document.getElementById('deploy_tahun').value;
+            const judul = document.getElementById('deploy_judul').value.trim();
+
+            const payload = {
+                action: 'deploy_indikator',
+                data: {
+                    id_unit: targetDeployUnitId, // ID Langsung Diambil otomatis
+                    nama_unit: namaUnit,
+                    tahun: tahun,
+                    judul_indikator: judul
+                }
+            };
+
+            const btnSubmit = document.getElementById('btnJalankanRobot');
+            btnSubmit.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i> Robot sedang bekerja...";
+            btnSubmit.disabled = true;
+
+            fetch(scriptURL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    Swal.fire('Sukses!', result.message, 'success');
+                    document.getElementById('deploy_judul').value = ""; 
+                } else {
+                    Swal.fire('Gagal!', 'Error: ' + result.message, 'error');
+                }
+            })
+            .catch(err => Swal.fire('Error Jaringan', 'Tidak dapat terhubung ke server', 'error'))
+            .finally(() => {
+                btnSubmit.innerHTML = "<i class='fas fa-paper-plane me-2'></i> Suntikkan Rumus Sekarang";
+                btnSubmit.disabled = false;
+            });
+        });
+
+        // ==========================================
+        // FUNGSI UNTUK SINKRONISASI MASTER
+        // ==========================================
+        function sinkronisasiSekarang() {
+            Swal.fire({
+                title: 'Mulai Sinkronisasi?',
+                text: "Sistem akan menarik seluruh data dari SHADOW_REKAP semua unit ke REKAP_GABUNGAN. Proses ini mungkin memakan waktu 5-15 detik.",
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Tarik Data',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const btn = document.getElementById('btnSyncMaster');
+                    btn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i> Menarik Data...`;
+                    btn.disabled = true;
+
+                    fetch(scriptURL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ action: 'sync_master', role: session.role })
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.status === 'success') {
+                            Swal.fire('Berhasil!', res.message, 'success');
+                        } else {
+                            Swal.fire('Gagal', res.message, 'error');
+                        }
+                    })
+                    .catch(err => Swal.fire('Error', 'Gagal menyambung ke server', 'error'))
+                    .finally(() => {
+                        btn.innerHTML = `<i class="fas fa-sync-alt me-2"></i> Sinkronisasi Master`;
+                        btn.disabled = false;
+                    });
+                }
+            });
         }
     </script>
 </body>
