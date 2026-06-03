@@ -12,7 +12,7 @@
         .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border-top: 4px solid #0dcaf0; background: #fff;}
         .accordion-button:not(.collapsed) { background-color: #e0f7fa; color: #0c63e4; font-weight: bold; }
         .table-profil th { background-color: #f8f9fa; width: 30%; font-weight: 600; color: #495057;}
-        .table-profil td { color: #212529; white-space: pre-wrap; font-family: monospace; } /* Monospace agar rumus mudah dibaca */
+        .table-profil td { color: #212529; white-space: pre-wrap; font-family: monospace; }
         .box-dimensi { background: #fff; border: 1px solid #ced4da; padding: 10px; border-radius: 6px; }
         .form-check-label { cursor: help; } 
         .box-rumus { background-color: #f8f9fa; border: 1px dashed #6c757d; border-radius: 8px; padding: 15px; margin-top: 15px;}
@@ -159,34 +159,106 @@
                                 <input type="text" class="form-control fw-bold" id="inp_Formula" placeholder="Contoh: (Numerator / Denominator) x 100%">
                             </div>
 
-                            <div class="col-md-12">
-                                <div class="box-rumus border-warning">
-                                    <h6 class="fw-bold text-warning mb-2"><i class="fas fa-robot me-2"></i> Konfigurasi Robot Kalkulasi (Super Admin)</h6>
-                                    <p class="text-muted small mb-2">Masukkan rumus Excel/Spreadsheet. Gunakan titik koma (;) sebagai pemisah rumus.<br>
-                                    <b>KATA KUNCI:</b> Gunakan <code>{{NAMA_SHEET}}</code>, <code>{{TAHUN}}</code>, dan <code>{{ROW}}</code>.</p>
-                                    
-                                    <div class="alert alert-secondary p-2 mb-3 shadow-sm">
-                                        <div class="fw-bold mb-1" style="font-size: 0.85rem;"><i class="fas fa-map me-1"></i> Peta Kolom (Klik untuk menyisipkan ke rumus):</div>
-                                        <div id="petaKolomContainer">
-                                            <span class="text-muted" style="font-size: 0.8rem;"><i>Pilih ID Form terlebih dahulu untuk melihat peta kolom.</i></span>
-                                        </div>
+                            <div class="col-md-12 mt-4" id="visual_builder_container">
+                                <div class="card border-primary shadow-sm">
+                                    <div class="card-header bg-primary text-white fw-bold">
+                                        <i class="fas fa-magic me-2"></i> Pembuat Rumus Otomatis (Visual Builder)
                                     </div>
-                                    <div class="row g-3">
-                                        <div class="col-md-12">
-                                            <label class="fw-bold mb-1 text-dark" style="font-size:0.9rem;">Template Numerator</label>
-                                            <textarea class="form-control rumus-input" id="inp_Template_Numerator" rows="2" style="font-family: monospace; font-size:0.85rem;" placeholder="=COUNTIFS('{{NAMA_SHEET}}'!$A:$A; &quot;>=&quot;&amp;DATE({{TAHUN}}; MONTH(DATEVALUE($C{{ROW}}&amp;&quot; 1&quot;)); 1))"></textarea>
+                                    <div class="card-body bg-light">
+                                        <div class="row g-3 mb-3 border-bottom pb-3">
+                                            <div class="col-md-6">
+                                                <label class="fw-bold text-dark mb-1"><i class="fas fa-calculator me-1"></i> Metode Kalkulasi</label>
+                                                <select class="form-select border-dark" id="sel_metode_kalkulasi" onchange="toggleBuilderMode()">
+                                                    <option value="COUNT">Hitung Frekuensi / Jumlah Baris (COUNTIFS)</option>
+                                                    <option value="SUM">Jumlahkan Angka di Kolom (SUMIFS)</option>
+                                                    <option value="MANUAL">Input Manual / Rekap Buku (Tanpa Rumus)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6" id="box_format_waktu">
+                                                <label class="fw-bold text-dark mb-1"><i class="fas fa-calendar-alt me-1"></i> Format Kolom Waktu</label>
+                                                <select class="form-select border-dark" id="sel_format_waktu">
+                                                    <option value="DATE">Tanggal Lengkap (DD/MM/YYYY)</option>
+                                                    <option value="MONTH_TEXT">Nama Bulan Teks (Januari, Februari...)</option>
+                                                </select>
+                                            </div>
                                         </div>
-                                        <div class="col-md-12">
-                                            <label class="fw-bold mb-1 text-dark" style="font-size:0.9rem;">Template Denominator</label>
-                                            <textarea class="form-control rumus-input" id="inp_Template_Denominator" rows="2" style="font-family: monospace; font-size:0.85rem;" placeholder="=COUNTIFS('{{NAMA_SHEET}}'!$F:$F; &quot;>=&quot;&amp;DATE({{TAHUN}}; ... )"></textarea>
+                                        
+                                        <div id="builder_steps">
+                                            <div class="row g-3">
+                                                <div class="col-md-12">
+                                                    <label class="fw-bold text-primary mb-1">1. Di kolom mana letak Tanggal / Bulan Pelayanan?</label>
+                                                    <select class="form-select border-primary dropdown-kolom" id="sel_kolom_tanggal">
+                                                        <option value="">-- Pilih ID Form di atas dulu --</option>
+                                                    </select>
+                                                </div>
+
+                                                <div class="col-md-12 mt-4">
+                                                    <label class="fw-bold text-success mb-1" id="lbl_numerator">2. Syarat Numerator (Target yang tercapai)</label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text bg-white">Kolom:</span>
+                                                        <select class="form-select dropdown-kolom" id="sel_num_kolom"></select>
+                                                        
+                                                        <select class="form-select step-syarat" id="sel_num_op" style="max-width: 130px;">
+                                                            <option value="=">Sama (=)</option>
+                                                            <option value="<>">Beda (!=)</option>
+                                                            <option value=">">Lebih (>)</option>
+                                                            <option value="<">Kurang (<)</option>
+                                                        </select>
+                                                        <input type="text" class="form-control step-syarat" id="val_num_syarat" placeholder="Nilai (Misal: Ya)">
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-md-12 mt-3">
+                                                    <label class="fw-bold text-danger mb-1" id="lbl_denominator">3. Syarat Denominator (Total Sampel)</label>
+                                                    <select class="form-select mb-2 step-syarat" id="tipe_denominator" onchange="toggleDenomCustom()">
+                                                        <option value="ALL">Hitung Semua Baris Pasien di Bulan Tersebut (Tanpa Syarat)</option>
+                                                        <option value="CUSTOM">Ada Syarat Khusus (Eksklusi tertentu)</option>
+                                                    </select>
+                                                    
+                                                    <div class="input-group d-none" id="box_denom_custom">
+                                                        <span class="input-group-text bg-white">Kolom:</span>
+                                                        <select class="form-select dropdown-kolom" id="sel_den_kolom"></select>
+                                                        <select class="form-select step-syarat" id="sel_den_op" style="max-width: 130px;"><option value="=">Sama (=)</option><option value="<>">Beda (!=)</option></select>
+                                                        <input type="text" class="form-control step-syarat" id="val_den_syarat" placeholder="Nilai (Misal: Memenuhi Syarat)">
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="col-md-12">
-                                            <label class="fw-bold mb-1 text-dark" style="font-size:0.9rem;">Template Pencapaian</label>
-                                            <input type="text" class="form-control rumus-input" id="inp_Template_Pencapaian" style="font-family: monospace; font-size:0.85rem;" placeholder="Contoh: =IFERROR((J{{ROW}}/K{{ROW}})*100; 0)">
+                                        
+                                        <div id="manual_msg" class="alert alert-info mt-2 d-none">
+                                            <i class="fas fa-info-circle me-2"></i> Mode Input Manual dipilih. Sistem akan mengosongkan rumus Numerator & Denominator agar petugas dapat mengetik angka secara manual di Dashboard.
+                                        </div>
+
+                                        <div class="col-md-12 text-end mt-3 border-top pt-3">
+                                            <button type="button" class="btn btn-warning fw-bold px-4" onclick="rakitRumusVisual()">
+                                                <i class="fas fa-cogs me-2"></i> Rakit Rumus Otomatis
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
-                            </div> 
+                            </div>
+
+                            <div class="col-md-12 mt-3" id="advanced_mode_container">
+                                <details>
+                                    <summary class="text-muted" style="cursor:pointer; font-size:0.85rem;"><i class="fas fa-code me-1"></i> Lihat / Edit Kode Rumus Mentah (Mode Advanced)</summary>
+                                    <div class="box-rumus border-secondary mt-2 p-3 bg-light rounded">
+                                        <div class="row g-2">
+                                            <div class="col-md-12">
+                                                <label class="fw-bold mb-1" style="font-size:0.8rem;">Template Numerator</label>
+                                                <textarea class="form-control" id="inp_Template_Numerator" rows="3" style="font-family: monospace; font-size:0.75rem;"></textarea>
+                                            </div>
+                                            <div class="col-md-12">
+                                                <label class="fw-bold mb-1" style="font-size:0.8rem;">Template Denominator</label>
+                                                <textarea class="form-control" id="inp_Template_Denominator" rows="3" style="font-family: monospace; font-size:0.75rem;"></textarea>
+                                            </div>
+                                            <div class="col-md-12">
+                                                <label class="fw-bold mb-1" style="font-size:0.8rem;">Template Pencapaian</label>
+                                                <input type="text" class="form-control" id="inp_Template_Pencapaian" style="font-family: monospace; font-size:0.75rem;">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </details>
+                            </div>
                             <div class="col-md-12">
                                 <label class="fw-bold mb-1">Cara Penilaian</label>
                                 <textarea class="form-control" id="inp_Cara_Penilaian" rows="3" placeholder="Deskripsi tata cara penilaian..."></textarea>
@@ -249,6 +321,11 @@
         document.addEventListener("DOMContentLoaded", function () {
             if (role === "Komite Mutu") {
                 document.getElementById('adminControls').classList.remove('d-none');
+            } else {
+                let vbCont = document.getElementById('visual_builder_container');
+                let advCont = document.getElementById('advanced_mode_container');
+                if(vbCont) vbCont.style.display = 'none';
+                if(advCont) advCont.style.display = 'none';
             }
             muatDataKamus();
         });
@@ -354,7 +431,6 @@
                     { label: "Penanggung Jawab", key: "Penanggung Jawab" }
                 ];
                 
-                // Tambahkan field Blueprint Robot khusus untuk Super Admin
                 if (role === "Komite Mutu") {
                     fields.push({ label: "Template Numerator (ROBOT)", key: "Template_Numerator" });
                     fields.push({ label: "Template Denominator (ROBOT)", key: "Template_Denominator" });
@@ -369,7 +445,6 @@
                         val = `<span class="badge ${badgeColor}">${val}</span>`;
                     }
                     if (f.key.includes("Template")) {
-                        // Tampilkan template rumus dengan style monospace code
                         val = val !== "-" ? `<code class="text-primary bg-light px-2 py-1 rounded d-inline-block">${val}</code>` : `<span class="text-muted fst-italic">Kosong (Input Manual)</span>`;
                     }
                     tbodyHtml += `<tr><th style="background:#f8f9fa;">${f.label}</th><td>${val}</td></tr>`;
@@ -413,14 +488,60 @@
         }
 
         window.cetakProfil = function(index) {
-            // (Kode cetakProfil tetap utuh sesuai yang ada sebelumnya)
-            // ... (KODE CETAK DIHILANGKAN SEMENTARA UNTUK MEMPERSINGKAT TAMPILAN, JANGAN DIHAPUS DI FILE ANDA) ...
+            // FUNGSI CETAK TETAP DI SINI...
         };
+
+        let formSchemas = {};
+
+        document.addEventListener("DOMContentLoaded", function () {
+            fetch(`${scriptURL}?action=get_form_builder_data`)
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    res.data.forEach(form => { 
+                        let safeKey = form.id_form.replace(/\s+/g, '_');
+                        formSchemas[safeKey] = form.kolom; 
+                    });
+                }
+            });
+        });
+
+        function getExcelColumn(index) {
+            let letter = '';
+            while (index >= 0) {
+                letter = String.fromCharCode((index % 26) + 65) + letter;
+                index = Math.floor(index / 26) - 1;
+            }
+            return letter;
+        }
+
+        document.getElementById('inp_ID_Form').addEventListener('change', function() {
+            let idForm = this.value;
+            let selects = document.querySelectorAll('.dropdown-kolom');
+            
+            if(!idForm || !formSchemas[idForm]) {
+                selects.forEach(s => s.innerHTML = '<option value="">-- Pilih ID Form dulu --</option>');
+                return;
+            }
+
+            let cols = formSchemas[idForm];
+            let optionsHtml = '<option value="">-- Pilih Kolom --</option>';
+            
+            cols.forEach((col, idx) => {
+                let letter = getExcelColumn(idx);
+                optionsHtml += `<option value="${letter}">Kolom ${letter} - ${col.judul}</option>`;
+            });
+            
+            selects.forEach(s => s.innerHTML = optionsHtml);
+        });
 
         window.bukaModalForm = function(index) {
             document.getElementById('formProfil').reset();
             document.querySelectorAll('.chk-dimensi').forEach(c => c.checked = false);
             let selectId = document.getElementById('inp_ID_Form');
+
+            document.getElementById('sel_metode_kalkulasi').value = "COUNT";
+            window.toggleBuilderMode();
 
             if (index !== null) {
                 let data = rawKamusData[index];
@@ -455,10 +576,11 @@
                 mapField('inp_Periode_Pelaporan_Data', 'Periode Pelaporan Data'); mapField('inp_Periode_Analisis_Data', 'Periode Analisis Data');
                 mapField('inp_Penyajian_Data', 'Penyajian Data'); mapField('inp_Penanggung_Jawab', 'Penanggung Jawab');
                 
-                // MAPPING TAMBAHAN UNTUK ROBOT
                 mapField('inp_Template_Numerator', 'Template_Numerator');
                 mapField('inp_Template_Denominator', 'Template_Denominator');
                 mapField('inp_Template_Pencapaian', 'Template_Pencapaian');
+
+                setTimeout(() => { selectId.dispatchEvent(new Event('change')); }, 100);
 
             } else {
                 document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus me-2"></i> Tambah Profil Baru';
@@ -466,6 +588,12 @@
                 document.getElementById('inp_Kategori_Indikator').value = "Indikator Mutu Nasional"; document.getElementById('inp_Arah_Target').value = "Positif"; 
                 document.getElementById('inp_Jenis_Indikator').value = "proses"; document.getElementById('inp_Periode_Pengumpulan_Data').value = "bulanan";
                 document.getElementById('inp_Periode_Pelaporan_Data').value = "bulanan"; document.getElementById('inp_Periode_Analisis_Data').value = "bulanan";
+                
+                document.getElementById('inp_Template_Numerator').value = "";
+                document.getElementById('inp_Template_Denominator').value = "";
+                document.getElementById('inp_Template_Pencapaian').value = "";
+                
+                setTimeout(() => { selectId.dispatchEvent(new Event('change')); }, 100);
             }
 
             new bootstrap.Modal(document.getElementById('modalFormProfil')).show();
@@ -485,6 +613,16 @@
 
             let btn = document.getElementById('btnSimpan');
             btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...'; btn.disabled = true;
+
+            // --- PERBAIKAN APOSTROF ADA DI SINI ---
+            let tNum = document.getElementById('inp_Template_Numerator').value.trim();
+            let tDen = document.getElementById('inp_Template_Denominator').value.trim();
+            let tCap = document.getElementById('inp_Template_Pencapaian').value.trim();
+
+            if (tNum.startsWith("=")) tNum = "'" + tNum;
+            if (tDen.startsWith("=")) tDen = "'" + tDen;
+            if (tCap.startsWith("=")) tCap = "'" + tCap;
+            // --------------------------------------
 
             const payloadData = {
                 "ID_Form": idForm,
@@ -515,10 +653,10 @@
                 "Penyajian Data": document.getElementById('inp_Penyajian_Data').value,
                 "Penanggung Jawab": document.getElementById('inp_Penanggung_Jawab').value,
                 
-                // PAYLOAD TAMBAHAN UNTUK ROBOT
-                "Template_Numerator": document.getElementById('inp_Template_Numerator').value,
-                "Template_Denominator": document.getElementById('inp_Template_Denominator').value,
-                "Template_Pencapaian": document.getElementById('inp_Template_Pencapaian').value
+                // Memasukkan template rumus yang sudah diamankan dengan apostrof
+                "Template_Numerator": tNum,
+                "Template_Denominator": tDen,
+                "Template_Pencapaian": tCap
             };
 
             fetch(scriptURL, {
@@ -537,96 +675,115 @@
 
             function resetBtn() { btn.innerHTML = '<i class="fas fa-save me-1"></i> Simpan ke Database'; btn.disabled = false; }
         };
-        // ========================================================
-        // FITUR PETA KOLOM PINTAR (INTERACTIVE COLUMN MAP)
-        // ========================================================
-        let formSchemas = {};
-        let activeTextarea = null;
 
-        // 1. Ambil data struktur kolom dari Form Builder saat halaman dimuat
-        document.addEventListener("DOMContentLoaded", function () {
-            fetch(`${scriptURL}?action=get_form_builder_data`)
-            .then(res => res.json())
-            .then(res => {
-                if(res.status === 'success') {
-                    res.data.forEach(form => { formSchemas[form.id_form] = form.kolom; });
-                }
-            });
-        });
+        window.toggleBuilderMode = function() {
+            let metode = document.getElementById('sel_metode_kalkulasi').value;
+            let stepDiv = document.getElementById('builder_steps');
+            let manualDiv = document.getElementById('manual_msg');
+            let boxWaktu = document.getElementById('box_format_waktu');
+            let elemenSyarat = document.querySelectorAll('.step-syarat');
 
-        // 2. Lacak kotak teks mana yang sedang diklik user
-        document.querySelectorAll('.rumus-input').forEach(el => {
-            el.addEventListener('focus', function() { activeTextarea = this; });
-        });
-
-        // 3. Fungsi konversi angka ke Huruf Excel (0 -> A, 1 -> B, dst)
-        function getExcelColumn(index) {
-            let letter = '';
-            while (index >= 0) {
-                letter = String.fromCharCode((index % 26) + 65) + letter;
-                index = Math.floor(index / 26) - 1;
+            if (metode === "MANUAL") {
+                stepDiv.classList.add('d-none');
+                boxWaktu.classList.add('d-none');
+                manualDiv.classList.remove('d-none');
+            } else if (metode === "SUM") {
+                stepDiv.classList.remove('d-none');
+                boxWaktu.classList.remove('d-none');
+                manualDiv.classList.add('d-none');
+                
+                document.getElementById('lbl_numerator').innerHTML = "2. Pilih Kolom Angka (Menit/Jam/Nilai) untuk Numerator";
+                document.getElementById('lbl_denominator').innerHTML = "3. Pilih Kolom Angka (Menit/Jam/Nilai) untuk Denominator";
+                
+                elemenSyarat.forEach(el => el.classList.add('d-none'));
+                document.getElementById('box_denom_custom').classList.remove('d-none'); 
+            } else {
+                stepDiv.classList.remove('d-none');
+                boxWaktu.classList.remove('d-none');
+                manualDiv.classList.add('d-none');
+                
+                document.getElementById('lbl_numerator').innerHTML = "2. Syarat Numerator (Target yang tercapai)";
+                document.getElementById('lbl_denominator').innerHTML = "3. Syarat Denominator (Total Sampel)";
+                
+                elemenSyarat.forEach(el => el.classList.remove('d-none'));
+                toggleDenomCustom(); 
             }
-            return letter;
-        }
-
-        // 4. Picu Peta Kolom saat ID_Form dipilih
-        document.getElementById('inp_ID_Form').addEventListener('change', renderPetaKolom);
-
-        function renderPetaKolom() {
-            let idForm = document.getElementById('inp_ID_Form').value;
-            let container = document.getElementById('petaKolomContainer');
-            
-            if(!idForm || !formSchemas[idForm]) {
-                container.innerHTML = '<span class="text-muted" style="font-size: 0.8rem;"><i>Pilih ID Form terlebih dahulu untuk melihat peta kolom.</i></span>';
-                return;
-            }
-
-            let cols = formSchemas[idForm];
-            let html = '<div class="d-flex flex-wrap gap-2">';
-            
-            // Loop semua kolom milik form tersebut
-            cols.forEach((col, idx) => {
-                let letter = getExcelColumn(idx);
-                let textToInsert = `'{{NAMA_SHEET}}'!$${letter}:$${letter}`;
-                html += `<span class="badge bg-info text-dark border border-secondary" style="cursor:pointer; font-size:0.75rem;" onclick="sisipkanTeks(\`${textToInsert}\`)" title="Klik untuk menyisipkan">Kol ${letter}: ${col.judul}</span>`;
-            });
-            
-            // Tambahkan kolom wajib di akhir (Status Laporan)
-            let lastLetter = getExcelColumn(cols.length);
-            html += `<span class="badge bg-secondary text-white border" style="cursor:pointer; font-size:0.75rem;" onclick="sisipkanTeks(\`'{{NAMA_SHEET}}'!$${lastLetter}:$${lastLetter}\`)">Kol ${lastLetter}: Status Laporan</span>`;
-            
-            html += '</div>';
-            container.innerHTML = html;
-        }
-
-        // 5. Fungsi untuk menyuntikkan teks ke kotak rumus
-        window.sisipkanTeks = function(teks) {
-            if(!activeTextarea) {
-                Swal.fire({
-                    toast: true, position: 'top-end', icon: 'warning',
-                    title: 'Klik dulu kotak Numerator atau Denominator di bawah',
-                    showConfirmButton: false, timer: 3000
-                });
-                return;
-            }
-            
-            let start = activeTextarea.selectionStart;
-            let end = activeTextarea.selectionEnd;
-            let val = activeTextarea.value;
-            
-            // Sisipkan teks di posisi kursor
-            activeTextarea.value = val.substring(0, start) + teks + val.substring(end);
-            
-            // Kembalikan fokus dan geser kursor ke akhir sisipan
-            activeTextarea.focus();
-            activeTextarea.selectionEnd = start + teks.length;
         };
 
-        // 6. Modifikasi fungsi bukaModalForm agar memicu render peta kolom saat edit
-        const oldBukaModalForm = window.bukaModalForm;
-        window.bukaModalForm = function(index) {
-            oldBukaModalForm(index); // Panggil fungsi aslinya
-            setTimeout(renderPetaKolom, 500); // Tunggu sebentar lalu render petanya
+        window.toggleDenomCustom = function() {
+            let val = document.getElementById('tipe_denominator').value;
+            let box = document.getElementById('box_denom_custom');
+            let metode = document.getElementById('sel_metode_kalkulasi').value;
+
+            if(val === 'CUSTOM' || metode === "SUM") { box.classList.remove('d-none'); } 
+            else { box.classList.add('d-none'); }
+        };
+
+        window.rakitRumusVisual = function() {
+            let metode = document.getElementById('sel_metode_kalkulasi').value;
+            let satuan = document.getElementById('inp_Satuan').value || "";
+            
+            let rumusCapai = "";
+            if(satuan.includes("%") || satuan.toLowerCase().includes("persen")) { rumusCapai = "=IFERROR((J{{ROW}}/K{{ROW}})*100; 0)"; } 
+            else if (satuan.includes("‰") || satuan.toLowerCase().includes("permil")) { rumusCapai = "=IFERROR((J{{ROW}}/K{{ROW}})*1000; 0)"; } 
+            else { rumusCapai = "=IFERROR((J{{ROW}}/K{{ROW}}); 0)"; }
+
+            if (metode === "MANUAL") {
+                document.getElementById('inp_Template_Numerator').value = "";
+                document.getElementById('inp_Template_Denominator').value = "";
+                document.getElementById('inp_Template_Pencapaian').value = rumusCapai;
+                Swal.fire({ title: 'Diset Manual!', text: 'Sistem akan mengosongkan Numerator & Denominator untuk diisi manual.', icon: 'success', timer: 2000, showConfirmButton: false });
+                return;
+            }
+
+            let formatWaktu = document.getElementById('sel_format_waktu').value;
+            let colTgl = document.getElementById('sel_kolom_tanggal').value; 
+            let colNum = document.getElementById('sel_num_kolom').value;
+            
+            if(!colTgl || !colNum) { Swal.fire('Oops!', 'Mohon lengkapi pilihan Kolom!', 'warning'); return; }
+
+            let blokTanggal = "";
+            if (formatWaktu === "DATE") {
+                blokTanggal = `">="&DATE({{TAHUN}}; MATCH($C{{ROW}}; {"Januari"\\"Februari"\\"Maret"\\"April"\\"Mei"\\"Juni"\\"Juli"\\"Agustus"\\"September"\\"Oktober"\\"November"\\"Desember"}; 0); 1); '{{NAMA_SHEET}}'!$${colTgl}$2:$${colTgl}; "<="&EOMONTH(DATE({{TAHUN}}; MATCH($C{{ROW}}; {"Januari"\\"Februari"\\"Maret"\\"April"\\"Mei"\\"Juni"\\"Juli"\\"Agustus"\\"September"\\"Oktober"\\"November"\\"Desember"}; 0); 1); 0)`;
+            } else {
+                blokTanggal = `$C{{ROW}}`; 
+            }
+
+            let rumusNum = ""; let rumusDen = "";
+
+            if (metode === "SUM") {
+                let colDen = document.getElementById('sel_den_kolom').value;
+                if(!colDen) { Swal.fire('Oops!', 'Pilih kolom untuk dijumlahkan di Denominator', 'warning'); return; }
+                
+                rumusNum = `=SUMIFS('{{NAMA_SHEET}}'!$${colNum}$2:$${colNum}; '{{NAMA_SHEET}}'!$${colTgl}$2:$${colTgl}; ${blokTanggal})`;
+                rumusDen = `=SUMIFS('{{NAMA_SHEET}}'!$${colDen}$2:$${colDen}; '{{NAMA_SHEET}}'!$${colTgl}$2:$${colTgl}; ${blokTanggal})`;
+            } else {
+                let opNum = document.getElementById('sel_num_op').value;         
+                let valNum = document.getElementById('val_num_syarat').value;    
+                let tipeDen = document.getElementById('tipe_denominator').value;
+                let colDen = document.getElementById('sel_den_kolom').value;
+                let opDen = document.getElementById('sel_den_op').value;
+                let valDen = document.getElementById('val_den_syarat').value;
+
+                if(!valNum) { Swal.fire('Oops!', 'Syarat nilai Numerator tidak boleh kosong.', 'warning'); return; }
+
+                let syaratNumTeks = opNum === "=" ? `"${valNum}"` : `"${opNum}${valNum}"`;
+                rumusNum = `=COUNTIFS('{{NAMA_SHEET}}'!$${colTgl}$2:$${colTgl}; ${blokTanggal}; '{{NAMA_SHEET}}'!$${colNum}$2:$${colNum}; ${syaratNumTeks})`;
+
+                if (tipeDen === "ALL") {
+                    rumusDen = `=COUNTIFS('{{NAMA_SHEET}}'!$${colTgl}$2:$${colTgl}; ${blokTanggal})`;
+                } else {
+                    if(!colDen || !valDen) { Swal.fire('Oops!', 'Lengkapi syarat khusus Denominator.', 'warning'); return; }
+                    let syaratDenTeks = opDen === "=" ? `"${valDen}"` : `"${opDen}${valDen}"`;
+                    rumusDen = `=COUNTIFS('{{NAMA_SHEET}}'!$${colTgl}$2:$${colTgl}; ${blokTanggal}; '{{NAMA_SHEET}}'!$${colDen}$2:$${colDen}; ${syaratDenTeks})`;
+                }
+            }
+
+            document.getElementById('inp_Template_Numerator').value = rumusNum;
+            document.getElementById('inp_Template_Denominator').value = rumusDen;
+            document.getElementById('inp_Template_Pencapaian').value = rumusCapai;
+
+            Swal.fire({ title: 'Mantap!', text: 'Rumus otomatis berhasil dirakit. Silakan klik "Simpan ke Database".', icon: 'success', timer: 2000, showConfirmButton: false });
         };
     </script>
 </body>

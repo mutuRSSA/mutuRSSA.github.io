@@ -185,15 +185,28 @@
             document.getElementById('tableContainer').classList.remove('d-none');
         }
 
+        function escapeHTML(str) {
+            if (!str) return "";
+            return str.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
         function tambahBarisKolomBuilder(data = null) {
             const container = document.getElementById('containerKolomRows');
             const randId = 'row_' + Math.random().toString(36).substring(2, 9);
 
-            let judul = data ? data.judul : '';
+            let judul = data ? escapeHTML(data.judul) : '';
             let tipe = data ? data.tipe : 'text';
-            let opsi = data ? data.opsi : '';
+            let opsi = data ? escapeHTML(data.opsi) : '';
             let lebar = data ? data.lebar : '';
-            let formula = data ? data.formula : '';
+            
+            // PASTIKAN FORMULA DIAMANKAN DARI TANDA KUTIP ATAU KARAKTER HTML
+            let formula = data ? escapeHTML(data.formula) : ''; 
+            
             let akses = data ? data.akses : 'ALL';
 
             let selectTypes = ['text', 'number', 'dropdown', 'checkbox', 'calendar', 'time', 'durasi_hm', 'durasi_hms', 'durasi_ms', 'readonly'];
