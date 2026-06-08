@@ -12,5 +12,5 @@ const API_CONFIG = {
     RISK: "https://script.google.com/macros/s/AKfycbztzI8Gu1NcLPJgw0xy6lf4mqnmqy31V0FKDcj9ipPy9m84lEJ2-_jSTCzvUjOfud6g9g/exec",
     // Tambahkan URL menu dinamis dari components.js
     MENU: "https://script.google.com/macros/s/AKfycbxRcpdb3tnHFWXWVLBzIymqAQnmygkxc_QoRVR43At859Yi6ZwYNkN0mSJaaKa5i4GJ/exec",
-    COMPILER: "https://script.google.com/macros/s/AKfycbyjlLcIrN9EfHewonrvKTKjZt1hUVGNB60w50Dfw0sUJ_tPTpRU34FyGxOIEnEZqRVk/exec"
+    COMPILER: "https://script.google.com/macros/s/AKfycbyYDKum4WD-GMtcIp4-pJit1lTN7NuD1D5OO-5ijbXo4uCHbWtnpgphGiExxYKKcx8C/exec"
 };
