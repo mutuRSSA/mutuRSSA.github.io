@@ -29,8 +29,8 @@
     .month-tab-btn:hover { background-color: #e9ecef; }
     .month-tab-btn.active { background-color: #0dcaf0 !important; color: #fff !important; border-color: #0dcaf0 !important; box-shadow: 0 2px 4px rgba(13,202,240,0.3);}
 
-    .handsontable { font-family: 'Segoe UI', Tahoma, sans-serif !important; font-size: 13px !important; color: #495057 !important; box-shadow: none !important; background-color: #ffffff !important;}
-    .handsontable .wtHolder, .handsontable .wtHider, .ht_master, .ht_clone_left, .ht_clone_top, .ht_clone_top_left_corner { background-color: #ffffff !important; background: #ffffff !important; }
+    /* PERBAIKAN CSS HANDSONTABLE */
+    .handsontable { font-family: 'Segoe UI', Tahoma, sans-serif !important; font-size: 13px !important; color: #495057 !important; box-shadow: none !important;}
     .handsontableInput { color: #2c3e50 !important; background-color: #ffffff !important; font-size: 13px !important; box-shadow: 0 0 0 2px #0dcaf0 !important; padding: 4px !important; }
     
     .handsontable th, .handsontable th .colHeader { 
@@ -38,7 +38,7 @@
         border-color: #dee2e6 !important; text-align: center; vertical-align: middle !important; 
         padding: 8px 30px 8px 8px !important; font-size: 12px !important; line-height: 1.4 !important;      
         white-space: normal !important; word-wrap: normal !important; overflow-wrap: normal !important; word-break: normal !important;
-        min-width: 150px !important;
+        /* min-width: 150px dihapus agar tidak merusak kalkulasi JS */
     }
     
     .handsontable thead th { border-bottom: 2px solid #0dcaf0 !important; }
@@ -238,6 +238,7 @@
                         };
                         result.data.forEach((row, rowIndex) => { applyFormulasToRow(row, rowIndex, result.columns); });
 
+                        // PERBAIKAN DEPRECATION WARNING: correctFormat dihapus
                         let hotColumns = result.columns.map(c => {
                             let rawType = (c.type || 'text').toString().toLowerCase().trim();
                             let config = { type: 'text', readOnly: c.readOnly || false, wordWrap: true }; 
@@ -247,13 +248,13 @@
                             } else if (rawType === 'checkbox') {
                                 config.type = 'checkbox'; config.checkedTemplate = 'Ya'; config.uncheckedTemplate = 'Tidak'; config.className = 'htCenter htMiddle';
                             } else if (rawType === 'calendar' || rawType === 'date') {
-                                config.type = 'date'; config.dateFormat = 'DD/MM/YYYY'; config.correctFormat = true;
+                                config.type = 'date'; config.dateFormat = 'DD/MM/YYYY'; 
                             } else if (rawType === 'durasi_hm' || rawType === 'durasi_ms') {
                                 config.type = 'text'; config.validator = /^[0-9]+:[0-5][0-9]$/;
                             } else if (rawType === 'durasi_hms') {
                                 config.type = 'text'; config.validator = /^[0-9]+:[0-5][0-9]:[0-5][0-9]$/;
                             } else if (rawType === 'time') {
-                                config.type = 'time'; config.timeFormat = 'HH:mm:ss'; config.correctFormat = true;
+                                config.type = 'time'; config.timeFormat = 'HH:mm:ss'; 
                             }
                             return config;
                         });
@@ -278,11 +279,10 @@
                             renderAllRows: false, viewportRowRenderingOffset: 100, minSpareRows: 3,
                             contextMenu: true, formulas: { engine: HyperFormula }, licenseKey: 'non-commercial-and-evaluation', 
                             
-                            // MENGHIDUPKAN KEMBALI HIDDENROWS
                             filters: false, 
                             dropdownMenu: false, 
                             columnSorting: false, 
-                            hiddenRows: true, // KUNCI PENTING UNTUK MEMPERBAIKI FILTER BULAN!
+                            hiddenRows: true, 
                             
                             autoColumnSize: false, 
                             manualColumnResize: true, 
