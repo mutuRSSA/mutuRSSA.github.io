@@ -590,15 +590,16 @@
                 }
             });
 
+            // PERBAIKAN: Memecah string script agar tidak membocorkan tag HTML utama
             htmlContent += `
-                <script>
+                <sc` + `ript>
                     window.onload = function() { 
                         setTimeout(function() {
                             window.print(); 
                             window.onafterprint = function(){ window.close(); } 
                         }, 500);
                     };
-                </script>
+                </sc` + `ript>
             </body>
             </html>
             `;
@@ -607,7 +608,7 @@
             printWindow.document.write(htmlContent);
             printWindow.document.close();
         };
-
+        
         let formSchemas = {};
 
         document.addEventListener("DOMContentLoaded", function () {
