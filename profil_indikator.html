@@ -503,7 +503,6 @@
                 return;
             }
 
-            // Membuka jendela baru khusus untuk format cetak (print)
             let printWindow = window.open('', '_blank');
             
             let htmlContent = `
@@ -513,84 +512,112 @@
                 <title>Cetak Kamus Indikator Mutu</title>
                 <style>
                     body { font-family: 'Arial', sans-serif; font-size: 12px; line-height: 1.5; color: #000; margin: 20px; }
-                    .page-break { page-break-after: always; }
                     .kop { text-align: center; border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
                     .kop h2 { margin: 0; font-size: 16px; text-transform: uppercase; font-weight: bold;}
                     .kop p { margin: 0; font-size: 12px; }
-                    .judul-kamus { text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; background-color: #e9ecef; padding: 8px; border: 1px solid #000;}
-                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                    th, td { border: 1px solid #000; padding: 6px 10px; vertical-align: top; }
+                    
+                    /* Styling Pengelompokan Kategori & Unit */
+                    .kategori-title { font-size: 16px; font-weight: bold; background-color: #2c3e50; color: #fff; padding: 10px; margin-top: 30px; text-transform: uppercase; text-align: center; }
+                    .unit-title { font-size: 14px; font-weight: bold; background-color: #6c757d; color: #fff; padding: 8px; margin-top: 20px; text-transform: uppercase; }
+                    .judul-kamus { text-align: center; font-size: 13px; font-weight: bold; margin-top: 20px; margin-bottom: 10px; text-transform: uppercase; background-color: #e9ecef; padding: 8px; border: 1px solid #000;}
+                    
+                    /* PERBAIKAN: CSS Sakti agar Tabel Bisa Terpotong Normal Tanpa Sisakan Halaman Kosong */
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; page-break-inside: auto; }
+                    tr { page-break-inside: auto; page-break-after: auto; } /* Mengizinkan baris terpotong ke halaman berikutnya */
+                    th, td { border: 1px solid #000; padding: 6px 10px; vertical-align: top; page-break-inside: auto; }
                     th { width: 30%; text-align: left; background-color: #f8f9fa; font-weight: bold; }
                     td { width: 70%; white-space: pre-wrap; text-align: justify; }
+                    
+                    /* Class khusus pemecah halaman antar indikator */
+                    .page-break-before { page-break-before: always; }
+                    
                     @media print {
                         body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0;}
                         @page { margin: 1cm; size: A4 portrait; }
-                        table { page-break-inside: auto; }
-                        tr { page-break-inside: avoid; page-break-after: auto; }
                     }
                 </style>
             </head>
             <body>
+                <div class="kop">
+                    <h2>RSUD SARAS ADYATMA</h2>
+                    <p>Jl. Kebon Agung No.1, Karanglo, Sleman, Yogyakarta</p>
+                </div>
             `;
 
             const fields = [
-                { label: "Kategori Indikator", key: "Kategori Indikator" },
-                { label: "Satuan", key: "Satuan" },
-                { label: "Target Sasaran", key: "Target" },
-                { label: "Arah Target", key: "Arah Target" },
-                { label: "Dasar Pemikiran", key: "Dasar Pemikiran" },
-                { label: "Dimensi Mutu", key: "Dimensi Mutu" },
-                { label: "Tujuan", key: "Tujuan" },
-                { label: "Definisi Operasional", key: "Definisi Operasional" },
-                { label: "Jenis Indikator", key: "Jenis Indikator" },
-                { label: "Deskripsi Numerator", key: "Numerator" },
-                { label: "Deskripsi Denominator", key: "Denominator" },
-                { label: "Kriteria Inklusi", key: "Kriteria Inklusi" },
-                { label: "Kriteria Eksklusi", key: "Kriteria Eksklusi" },
-                { label: "Formula Perhitungan", key: "Formula" },
-                { label: "Cara Penilaian", key: "Cara Penilaian" },
-                { label: "Metode Pengumpulan Data", key: "Metode Pengumpulan Data" },
-                { label: "Sumber Data", key: "Sumber Data" },
-                { label: "Instrumen Pengambilan Data", key: "Instrumen Pengambilan Data" },
-                { label: "Besar Sampel", key: "Besar Sampel" },
-                { label: "Cara Pengambilan Sampel", key: "Cara Pengambilan Sampel" },
-                { label: "Periode Pengumpulan Data", key: "Periode Pengumpulan Data" },
-                { label: "Periode Pelaporan Data", key: "Periode Pelaporan Data" },
-                { label: "Periode Analisis Data", key: "Periode Analisis Data" },
-                { label: "Penyajian Data", key: "Penyajian Data" },
+                { label: "Kategori Indikator", key: "Kategori Indikator" }, { label: "Satuan", key: "Satuan" },
+                { label: "Target Sasaran", key: "Target" }, { label: "Arah Target", key: "Arah Target" },
+                { label: "Dasar Pemikiran", key: "Dasar Pemikiran" }, { label: "Dimensi Mutu", key: "Dimensi Mutu" },
+                { label: "Tujuan", key: "Tujuan" }, { label: "Definisi Operasional", key: "Definisi Operasional" },
+                { label: "Jenis Indikator", key: "Jenis Indikator" }, { label: "Deskripsi Numerator", key: "Numerator" },
+                { label: "Deskripsi Denominator", key: "Denominator" }, { label: "Kriteria Inklusi", key: "Kriteria Inklusi" },
+                { label: "Kriteria Eksklusi", key: "Kriteria Eksklusi" }, { label: "Formula Perhitungan", key: "Formula" },
+                { label: "Cara Penilaian", key: "Cara Penilaian" }, { label: "Metode Pengumpulan Data", key: "Metode Pengumpulan Data" },
+                { label: "Sumber Data", key: "Sumber Data" }, { label: "Instrumen Pengambilan Data", key: "Instrumen Pengambilan Data" },
+                { label: "Besar Sampel", key: "Besar Sampel" }, { label: "Cara Pengambilan Sampel", key: "Cara Pengambilan Sampel" },
+                { label: "Periode Pengumpulan Data", key: "Periode Pengumpulan Data" }, { label: "Periode Pelaporan Data", key: "Periode Pelaporan Data" },
+                { label: "Periode Analisis Data", key: "Periode Analisis Data" }, { label: "Penyajian Data", key: "Penyajian Data" },
                 { label: "Penanggung Jawab", key: "Penanggung Jawab" }
             ];
 
-            dataToPrint.forEach((row, idx) => {
+            const renderTabelIndikator = (row, isFirstIndicator) => {
                 let judulIndikator = row['Judul Indikator'] || row['Kolom_Kriteria'] || "PROFIL INDIKATOR MUTU";
+                let breakClass = isFirstIndicator ? "" : " page-break-before"; 
                 
-                htmlContent += `
-                    <div class="kop">
-                        <h2>RSUD SARAS ADYATMA</h2>
-                        <p>Jl. Kebon Agung No.1, Karanglo, Sleman, Yogyakarta</p>
-                    </div>
-                    <div class="judul-kamus">KAMUS PROFIL INDIKATOR: ${judulIndikator}</div>
-                    <table>
-                        <tbody>
-                `;
-
+                let html = `<div class="judul-kamus${breakClass}">KAMUS PROFIL INDIKATOR: ${judulIndikator}</div><table><tbody>`;
                 fields.forEach(f => {
                     let val = row[f.key] || "-";
-                    htmlContent += `<tr><th>${f.label}</th><td>${val}</td></tr>`;
+                    html += `<tr><th>${f.label}</th><td>${val}</td></tr>`;
+                });
+                html += `</tbody></table>`;
+                return html;
+            };
+
+            // LOGIKA PENGELOMPOKAN
+            if (index === null) {
+                let inm = [], imprs = [], impUnitGroups = {};
+                
+                dataToPrint.forEach(row => {
+                    let cat = (row['Kategori Indikator'] || "").trim();
+                    if (cat === "Indikator Mutu Nasional") inm.push(row);
+                    else if (cat === "IMP-RS") imprs.push(row);
+                    else {
+                        let unit = row['ID_Form'] || row['ID Form'] || "Unit Lainnya";
+                        unit = unit.replace(/_/g, ' ').toUpperCase(); 
+                        if (!impUnitGroups[unit]) impUnitGroups[unit] = [];
+                        impUnitGroups[unit].push(row);
+                    }
                 });
 
-                htmlContent += `
-                        </tbody>
-                    </table>
-                `;
-
-                // Sisipkan jeda halaman (page-break) agar setiap kamus tercetak di halaman berbeda
-                if (idx < dataToPrint.length - 1) {
-                    htmlContent += `<div class="page-break"></div>`;
+                if (inm.length > 0) {
+                    htmlContent += `<div class="kategori-title">A. Indikator Nasional Mutu (INM)</div>`;
+                    inm.forEach((row, idx) => { htmlContent += renderTabelIndikator(row, idx === 0); });
                 }
-            });
 
-            // PERBAIKAN: Memecah string script agar tidak membocorkan tag HTML utama
+                if (imprs.length > 0) {
+                    let pbClass = inm.length > 0 ? " page-break-before" : "";
+                    htmlContent += `<div class="kategori-title${pbClass}">B. Indikator Mutu Prioritas Rumah Sakit (IMP-RS)</div>`;
+                    imprs.forEach((row, idx) => { htmlContent += renderTabelIndikator(row, idx === 0); });
+                }
+
+                let unitKeys = Object.keys(impUnitGroups).sort();
+                if (unitKeys.length > 0) {
+                    let pbClass = (inm.length > 0 || imprs.length > 0) ? " page-break-before" : "";
+                    htmlContent += `<div class="kategori-title${pbClass}">C. Indikator Mutu Prioritas Unit (IMP-Unit)</div>`;
+                    
+                    unitKeys.forEach(unit => {
+                        htmlContent += `<div class="unit-title">UNIT: ${unit}</div>`;
+                        impUnitGroups[unit].forEach((row, idx) => { 
+                            htmlContent += renderTabelIndikator(row, idx === 0); 
+                        });
+                    });
+                }
+
+            } else {
+                // Cetak Satuan
+                htmlContent += renderTabelIndikator(dataToPrint[0], true);
+            }
+
             htmlContent += `
                 <sc` + `ript>
                     window.onload = function() { 
@@ -608,7 +635,7 @@
             printWindow.document.write(htmlContent);
             printWindow.document.close();
         };
-        
+
         let formSchemas = {};
 
         document.addEventListener("DOMContentLoaded", function () {
