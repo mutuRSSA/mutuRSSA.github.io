@@ -488,7 +488,124 @@
         }
 
         window.cetakProfil = function(index) {
-            // FUNGSI CETAK TETAP DI SINI...
+            let dataToPrint = [];
+            
+            // Jika index null, berarti tombol "Cetak Semua Kamus" ditekan
+            if (index === null) {
+                dataToPrint = rawKamusData; 
+            } else {
+                // Jika index berisi angka, berarti tombol "Cetak DO" di accordion tertentu ditekan
+                dataToPrint = [rawKamusData[index]]; 
+            }
+
+            if (dataToPrint.length === 0) {
+                Swal.fire('Info', 'Tidak ada data untuk dicetak.', 'info');
+                return;
+            }
+
+            // Membuka jendela baru khusus untuk format cetak (print)
+            let printWindow = window.open('', '_blank');
+            
+            let htmlContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Cetak Kamus Indikator Mutu</title>
+                <style>
+                    body { font-family: 'Arial', sans-serif; font-size: 12px; line-height: 1.5; color: #000; margin: 20px; }
+                    .page-break { page-break-after: always; }
+                    .kop { text-align: center; border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+                    .kop h2 { margin: 0; font-size: 16px; text-transform: uppercase; font-weight: bold;}
+                    .kop p { margin: 0; font-size: 12px; }
+                    .judul-kamus { text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; background-color: #e9ecef; padding: 8px; border: 1px solid #000;}
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                    th, td { border: 1px solid #000; padding: 6px 10px; vertical-align: top; }
+                    th { width: 30%; text-align: left; background-color: #f8f9fa; font-weight: bold; }
+                    td { width: 70%; white-space: pre-wrap; text-align: justify; }
+                    @media print {
+                        body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0;}
+                        @page { margin: 1cm; size: A4 portrait; }
+                        table { page-break-inside: auto; }
+                        tr { page-break-inside: avoid; page-break-after: auto; }
+                    }
+                </style>
+            </head>
+            <body>
+            `;
+
+            const fields = [
+                { label: "Kategori Indikator", key: "Kategori Indikator" },
+                { label: "Satuan", key: "Satuan" },
+                { label: "Target Sasaran", key: "Target" },
+                { label: "Arah Target", key: "Arah Target" },
+                { label: "Dasar Pemikiran", key: "Dasar Pemikiran" },
+                { label: "Dimensi Mutu", key: "Dimensi Mutu" },
+                { label: "Tujuan", key: "Tujuan" },
+                { label: "Definisi Operasional", key: "Definisi Operasional" },
+                { label: "Jenis Indikator", key: "Jenis Indikator" },
+                { label: "Deskripsi Numerator", key: "Numerator" },
+                { label: "Deskripsi Denominator", key: "Denominator" },
+                { label: "Kriteria Inklusi", key: "Kriteria Inklusi" },
+                { label: "Kriteria Eksklusi", key: "Kriteria Eksklusi" },
+                { label: "Formula Perhitungan", key: "Formula" },
+                { label: "Cara Penilaian", key: "Cara Penilaian" },
+                { label: "Metode Pengumpulan Data", key: "Metode Pengumpulan Data" },
+                { label: "Sumber Data", key: "Sumber Data" },
+                { label: "Instrumen Pengambilan Data", key: "Instrumen Pengambilan Data" },
+                { label: "Besar Sampel", key: "Besar Sampel" },
+                { label: "Cara Pengambilan Sampel", key: "Cara Pengambilan Sampel" },
+                { label: "Periode Pengumpulan Data", key: "Periode Pengumpulan Data" },
+                { label: "Periode Pelaporan Data", key: "Periode Pelaporan Data" },
+                { label: "Periode Analisis Data", key: "Periode Analisis Data" },
+                { label: "Penyajian Data", key: "Penyajian Data" },
+                { label: "Penanggung Jawab", key: "Penanggung Jawab" }
+            ];
+
+            dataToPrint.forEach((row, idx) => {
+                let judulIndikator = row['Judul Indikator'] || row['Kolom_Kriteria'] || "PROFIL INDIKATOR MUTU";
+                
+                htmlContent += `
+                    <div class="kop">
+                        <h2>RSUD SARAS ADYATMA</h2>
+                        <p>Jl. Kebon Agung No.1, Karanglo, Sleman, Yogyakarta</p>
+                    </div>
+                    <div class="judul-kamus">KAMUS PROFIL INDIKATOR: ${judulIndikator}</div>
+                    <table>
+                        <tbody>
+                `;
+
+                fields.forEach(f => {
+                    let val = row[f.key] || "-";
+                    htmlContent += `<tr><th>${f.label}</th><td>${val}</td></tr>`;
+                });
+
+                htmlContent += `
+                        </tbody>
+                    </table>
+                `;
+
+                // Sisipkan jeda halaman (page-break) agar setiap kamus tercetak di halaman berbeda
+                if (idx < dataToPrint.length - 1) {
+                    htmlContent += `<div class="page-break"></div>`;
+                }
+            });
+
+            htmlContent += `
+                <script>
+                    window.onload = function() { 
+                        setTimeout(function() {
+                            window.print(); 
+                            window.onafterprint = function(){ window.close(); } 
+                        }, 500);
+                    };
+                </script>
+            </body>
+            </html>
+            `;
+
+            printWindow.document.open();
+            printWindow.document.write(htmlContent);
+            printWindow.document.close();
         };
 
         let formSchemas = {};
