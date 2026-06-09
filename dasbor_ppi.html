@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Surveilans PPI</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-stats { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.03); transition: 0.3s; background: #fff;}
+        .card-stats:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,.06); }
+        .card-chart { border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,.04); background: #fff; padding: 20px; }
+        .nav-pills .nav-link.active { background-color: #198754 !important; box-shadow: 0 2px 4px rgba(25,135,84,0.3); }
+        .nav-pills .nav-link { color: #495057; font-weight: 600; }
+        .table-ppi th { background-color: #2c3e50; color: #fff; text-align: center; vertical-align: middle; font-size: 12px; }
+        .table-ppi td { vertical-align: middle; text-align: center; font-size: 13px; }
+        .badge-rate { font-size: 0.85rem; padding: 5px 10px; border-radius: 20px; }
+    </style>
+</head>
+<body>
+
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4">
+        
+        <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4 flex-wrap gap-3">
+            <div>
+                <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-shield-virus text-success me-2"></i> Dashboard Surveilans Infeksi (PPI)</h3>
+                <p class="text-muted mb-0">Analisis insiden HAIs per Unit Ruangan dan Surgical Site Infections (SSI) per Jenis Operasi.</p>
+            </div>
+            
+            <div class="d-flex align-items-center gap-2 bg-white p-2 rounded shadow-sm border">
+                <label class="fw-bold text-secondary mb-0 px-2" style="font-size: 0.85rem;"><i class="fas fa-filter"></i> Periode:</label>
+                <select class="form-select form-select-sm fw-bold border-0 text-success" id="filterBulan" onchange="renderScreenData()" style="width: 150px; cursor: pointer;">
+                    <option value="Januari">Januari</option>
+                    <option value="Februari">Februari</option>
+                    <option value="Maret">Maret</option>
+                    <option value="April">April</option>
+                    <option value="Mei">Mei</option>
+                    <option value="Juni" selected>Juni</option>
+                    <option value="Juli">Juli</option>
+                    <option value="Agustus">Agustus</option>
+                    <option value="September">September</option>
+                    <option value="Oktober">Oktober</option>
+                    <option value="November">November</option>
+                    <option value="Desember">Desember</option>
+                </select>
+            </div>
+        </div>
+
+        <ul class="nav nav-pills mb-4 gap-2" id="ppiTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active btn shadow-sm px-4 py-2" id="hais-tab" data-bs-toggle="pill" data-bs-target="#panel-hais"><i class="fas fa-hospital-user me-2"></i>Surveilans HAIs (Per Unit)</button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link btn shadow-sm px-4 py-2" id="ssi-tab" data-bs-toggle="pill" data-bs-target="#panel-ssi"><i class="fas fa-syringe me-2"></i>Surveilans SSI / IDO (Per Operasi)</button>
+            </li>
+        </ul>
+
+        <div id="loadingOverlay" class="text-center py-5">
+            <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;"></div>
+            <p class="mt-3 text-muted fw-semibold">Menghubungkan ke API Database PPI...</p>
+        </div>
+
+        <div class="tab-content d-none" id="ppiTabContent">
+            
+            <div class="tab-pane fade show active" id="panel-hais">
+                
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-lg-3">
+                        <div class="card card-stats p-3 border-start border-4 border-info">
+                            <small class="text-muted fw-bold text-uppercase">Total Kasus CAUTI</small>
+                            <h3 class="fw-bold my-1 text-dark" id="txt_total_cauti">0</h3>
+                            <small class="text-muted" id="txt_rate_cauti">Rate RS: 0 ‰</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="card card-stats p-3 border-start border-4 border-warning">
+                            <small class="text-muted fw-bold text-uppercase">Total Kasus VAP</small>
+                            <h3 class="fw-bold my-1 text-dark" id="txt_total_vap">0</h3>
+                            <small class="text-muted" id="txt_rate_vap">Rate RS: 0 ‰</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="card card-stats p-3 border-start border-4 border-primary">
+                            <small class="text-muted fw-bold text-uppercase">Total Kasus CLABSI</small>
+                            <h3 class="fw-bold my-1 text-dark" id="txt_total_clabsi">0</h3>
+                            <small class="text-muted" id="txt_rate_clabsi">Rate RS: 0 ‰</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="card card-stats p-3 border-start border-4 border-danger">
+                            <small class="text-muted fw-bold text-uppercase">Total Kasus Phlebitis</small>
+                            <h3 class="fw-bold my-1 text-dark" id="txt_total_phlebitis">0</h3>
+                            <small class="text-muted" id="txt_rate_phlebitis">Rate RS: 0 ‰</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-12">
+                        <div class="card card-chart">
+                            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="fas fa-chart-bar text-success me-2"></i> Perbandingan Angka Insiden Rate HAIs Antar Unit Ruangan (‰)</h5>
+                            <div style="height: 320px; position: relative;">
+                                <canvas id="chartHaisUnit"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card card-chart p-0 overflow-hidden">
+                    <div class="p-3 bg-light border-bottom">
+                        <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-table me-2"></i> Tabel Breakdown Angka Kejadian & Pemakaian Alat Per Ruangan</h6>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped table-ppi mb-0">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2">Nama Bangsal / Unit</th>
+                                    <th colspan="3">CAUTI</th>
+                                    <th colspan="3">VAP</th>
+                                    <th colspan="3">CLABSI</th>
+                                    <th colspan="3">Phlebitis</th>
+                                </tr>
+                                <tr>
+                                    <th>Kasus</th><th>Hari Alat</th><th>Rate</th>
+                                    <th>Kasus</th><th>Hari Alat</th><th>Rate</th>
+                                    <th>Kasus</th><th>Hari Alat</th><th>Rate</th>
+                                    <th>Kasus</th><th>Hari Alat</th><th>Rate</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody_hais">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="panel-ssi">
+                <div class="row g-4">
+                    <div class="col-md-5">
+                        <div class="card card-chart">
+                            <h5 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="fas fa-bullseye text-danger me-2"></i> Ringkasan IDO Bulan Ini</h5>
+                            <div class="alert alert-info py-2" style="font-size:0.85rem;">
+                                <i class="fas fa-info-circle me-1"></i> Sumbu Y menghitung persentase (%) angka infeksi luka operasi dari total tindakan operasi.
+                            </div>
+                            <div style="height: 350px; position: relative;">
+                                <canvas id="chartSsiTindakan"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-7">
+                        <div class="card card-chart p-0 overflow-hidden">
+                            <div class="p-3 bg-light border-bottom">
+                                <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-folder-minus me-2"></i> Distribusi Kasus SSI Berdasarkan Jenis Tindakan Operasi</h6>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-striped table-ppi mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th style="text-align:left;">Jenis Tindakan Operasi</th>
+                                            <th>Jumlah Kasus Infeksi (Num)</th>
+                                            <th>Total Jumlah Operasi (Den)</th>
+                                            <th>Persentase Insiden (%)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody_ssi">
+                                        </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const scriptURL = API_CONFIG.PPI;
+        
+        let rawPpiDataHAIs = [];
+        let rawPpiDataSSI = [];
+        let chartInstanceHais = null;
+        let chartInstanceSsi = null;
+
+        document.addEventListener("DOMContentLoaded", function() {
+            ambilDataDariApiPPI();
+        });
+
+        function ambilDataDariApiPPI() {
+            fetch(`${scriptURL}?action=get_surveilans_ppi`)
+            .then(res => res.json())
+            .then(result => {
+                document.getElementById('loadingOverlay').classList.add('d-none');
+                document.getElementById('ppiTabContent').classList.remove('d-none');
+                
+                if(result.status === 'success') {
+                    rawPpiDataHAIs = result.data_hais || [];
+                    rawPpiDataSSI = result.data_ssi || [];
+                    renderScreenData();
+                } else {
+                    Swal.fire('Gagal!', 'Gagal memilah data dari API PPI: ' + result.message, 'error');
+                }
+            })
+            .catch(err => {
+                document.getElementById('loadingOverlay').innerHTML = `<div class="alert alert-danger"><i class="fas fa-wifi me-2"></i> Hubungan Terputus. Pastikan Web App Anda sudah di-Deploy sebagai 'Anyone'.</div>`;
+            });
+        }
+
+        // MESIN PEMINDAH HAIs (Pencari Kolom)
+        function dapatkanNilaiKolom(row, keywordKasus) {
+            let keys = Object.keys(row);
+            let keyKasus = keys.find(k => k.toLowerCase().includes(keywordKasus.toLowerCase()) && (k.toLowerCase().includes('kasus') || k.toLowerCase().includes('phlebitis')));
+            if(!keyKasus) return { kasus: 0, hari: 0 };
+            
+            let idx = keys.indexOf(keyKasus);
+            let kasusVal = parseFloat(row[keyKasus]) || 0;
+            
+            // Kolom sebelahnya adalah denominator (Hari Pemakaian)
+            let hariVal = (idx !== -1 && keys[idx + 1]) ? (parseFloat(row[keys[idx + 1]]) || 0) : 0;
+            
+            return { kasus: kasusVal, hari: hariVal };
+        }
+
+        function renderScreenData() {
+            let bulanTerpilih = document.getElementById('filterBulan').value;
+            
+            // 1. OLAH DATA HAIs 
+            let dataHaisBulanIni = rawPpiDataHAIs.filter(r => (r['BULAN'] || r['Bulan'] || "").trim().toLowerCase() === bulanTerpilih.toLowerCase());
+            
+            let totalRs = { cautiN:0, cautiD:0, vapN:0, vapD:0, clabsiN:0, clabsiD:0, phlebitisN:0, phlebitisD:0 };
+            let arrLabelsUnit = [];
+            let arrChartCauti = [], arrChartVap = [], arrChartClabsi = [], arrChartPhlebitis = [];
+            let tbodyHtmlHais = "";
+
+            if(dataHaisBulanIni.length === 0) {
+                tbodyHtmlHais = `<tr><td colspan="13" class="text-muted py-4 fst-italic">Tidak ada laporan entri data surveilans HAIs pada bulan ${bulanTerpilih}</td></tr>`;
+            } else {
+                dataHaisBulanIni.forEach(row => {
+                    let unitName = row['Bangsal'] || row['BANGSAL'] || row['Unit'] || "-";
+                    
+                    let cauti = dapatkanNilaiKolom(row, 'cauti');
+                    let vap = dapatkanNilaiKolom(row, 'vap');
+                    let clabsi = dapatkanNilaiKolom(row, 'clabsi');
+                    let phlebitis = dapatkanNilaiKolom(row, 'phlebitis');
+                    
+                    totalRs.cautiN += cauti.kasus; totalRs.cautiD += cauti.hari;
+                    totalRs.vapN += vap.kasus; totalRs.vapD += vap.hari;
+                    totalRs.clabsiN += clabsi.kasus; totalRs.clabsiD += clabsi.hari;
+                    totalRs.phlebitisN += phlebitis.kasus; totalRs.phlebitisD += phlebitis.hari;
+                    
+                    let rCauti = cauti.hari > 0 ? ((cauti.kasus / cauti.hari) * 1000).toFixed(2) : "0.00";
+                    let rVap = vap.hari > 0 ? ((vap.kasus / vap.hari) * 1000).toFixed(2) : "0.00";
+                    let rClabsi = clabsi.hari > 0 ? ((clabsi.kasus / clabsi.hari) * 1000).toFixed(2) : "0.00";
+                    let rPhlebitis = phlebitis.hari > 0 ? ((phlebitis.kasus / phlebitis.hari) * 1000).toFixed(2) : "0.00";
+                    
+                    arrLabelsUnit.push(unitName);
+                    arrChartCauti.push(parseFloat(rCauti)); arrChartVap.push(parseFloat(rVap));
+                    arrChartClabsi.push(parseFloat(rClabsi)); arrChartPhlebitis.push(parseFloat(rPhlebitis));
+                    
+                    tbodyHtmlHais += `
+                        <tr>
+                            <td class="fw-bold text-dark text-start" style="padding-left:15px;">${unitName}</td>
+                            <td>${cauti.kasus}</td><td>${cauti.hari}</td><td><span class="badge bg-info badge-rate">${rCauti} ‰</span></td>
+                            <td>${vap.kasus}</td><td>${vap.hari}</td><td><span class="badge bg-warning text-dark badge-rate">${rVap} ‰</span></td>
+                            <td>${clabsi.kasus}</td><td>${clabsi.hari}</td><td><span class="badge bg-primary badge-rate">${rClabsi} ‰</span></td>
+                            <td>${phlebitis.kasus}</td><td>${phlebitis.hari}</td><td><span class="badge bg-danger badge-rate">${rPhlebitis} ‰</span></td>
+                        </tr>`;
+                });
+            }
+            
+            document.getElementById('tbody_hais').innerHTML = tbodyHtmlHais;
+            
+            document.getElementById('txt_total_cauti').innerText = totalRs.cautiN;
+            document.getElementById('txt_rate_cauti').innerText = "Rate RS: " + (totalRs.cautiD > 0 ? ((totalRs.cautiN / totalRs.cautiD) * 1000).toFixed(2) : "0.00") + " ‰";
+            document.getElementById('txt_total_vap').innerText = totalRs.vapN;
+            document.getElementById('txt_rate_vap').innerText = "Rate RS: " + (totalRs.vapD > 0 ? ((totalRs.vapN / totalRs.vapD) * 1000).toFixed(2) : "0.00") + " ‰";
+            document.getElementById('txt_total_clabsi').innerText = totalRs.clabsiN;
+            document.getElementById('txt_rate_clabsi').innerText = "Rate RS: " + (totalRs.clabsiD > 0 ? ((totalRs.clabsiN / totalRs.clabsiD) * 1000).toFixed(2) : "0.00") + " ‰";
+            document.getElementById('txt_total_phlebitis').innerText = totalRs.phlebitisN;
+            document.getElementById('txt_rate_phlebitis').innerText = "Rate RS: " + (totalRs.phlebitisD > 0 ? ((totalRs.phlebitisN / totalRs.phlebitisD) * 1000).toFixed(2) : "0.00") + " ‰";
+            
+            buildHaisChart(arrLabelsUnit, arrChartCauti, arrChartVap, arrChartClabsi, arrChartPhlebitis);
+
+            // ========================================================
+            // 2. MESIN PARSER BARU UNTUK SSI (WIDE FORMAT)
+            // ========================================================
+            let dataSsiBulanIni = rawPpiDataSSI.filter(r => (r['BULAN'] || r['Bulan'] || "").trim().toLowerCase() === bulanTerpilih.toLowerCase());
+            
+            let tbodyHtmlSsi = "";
+            let arrLabelsSsi = [];
+            let arrRatesSsi = [];
+            
+            // Objek wadah untuk akumulasi jika ada lebih dari 1 baris di bulan yang sama
+            let ssiAgregat = {}; 
+
+            if(dataSsiBulanIni.length === 0) {
+                tbodyHtmlSsi = `<tr><td colspan="5" class="text-muted py-4 fst-italic">Tidak ada laporan kasus SSI/IDO pada bulan ${bulanTerpilih}</td></tr>`;
+            } else {
+                dataSsiBulanIni.forEach((row) => {
+                    // Ambil semua nama Header/Kolom, buang kolom Bulan dan Status
+                    let keys = Object.keys(row).filter(k => k.toUpperCase() !== 'BULAN' && k.toUpperCase() !== 'STATUS LAPORAN');
+                    
+                    // Baca berpasangan (Numerator & Denominator)
+                    for(let i = 0; i < keys.length; i += 2) {
+                        let numKey = keys[i];
+                        let denKey = keys[i+1];
+                        
+                        if(!denKey) break; // Jika ganjil/kolom terakhir terpotong
+
+                        // Mengekstrak nama operasi yang bersih dari label Denominator
+                        let namaOperasi = denKey.replace(/Jumlah Kasus /gi, '').replace(/Jumlah Operasi /gi, '').replace(/Operasi /gi, '').trim();
+                        // Membuat huruf depannya kapital (Capitalize)
+                        namaOperasi = namaOperasi.charAt(0).toUpperCase() + namaOperasi.slice(1);
+
+                        // Ambil angka mentah, jika isinya 'tdd' atau huruf lain, jadikan 0
+                        let num = parseFloat(row[numKey]) || 0;
+                        let den = parseFloat(row[denKey]) || 0;
+
+                        // Akumulasi data ke dalam wadah Agregat
+                        if(!ssiAgregat[namaOperasi]) ssiAgregat[namaOperasi] = { num: 0, den: 0 };
+                        ssiAgregat[namaOperasi].num += num;
+                        ssiAgregat[namaOperasi].den += den;
+                    }
+                });
+
+                // Setelah diakumulasi, cetak ke tabel dan masukkan ke array grafik
+                let index = 1;
+                for(let op in ssiAgregat) {
+                    let num = ssiAgregat[op].num;
+                    let den = ssiAgregat[op].den;
+                    
+                    // Kemenkes IDO dihitung persentase (%) 
+                    let rate = den > 0 ? ((num / den) * 100).toFixed(2) : "0.00";
+
+                    arrLabelsSsi.push(op);
+                    arrRatesSsi.push(parseFloat(rate));
+
+                    tbodyHtmlSsi += `
+                        <tr>
+                            <td>${index++}</td>
+                            <td class="text-start fw-semibold text-dark">${op}</td>
+                            <td>${num}</td>
+                            <td>${den}</td>
+                            <td><span class="badge bg-danger fs-6 px-3 rounded-pill">${rate} %</span></td>
+                        </tr>`;
+                }
+            }
+
+            document.getElementById('tbody_ssi').innerHTML = tbodyHtmlSsi;
+
+            // BANGUN GRAFIK BATANG MENYAMPING UNTUK SSI AGAR LABEL BISA TERBACA JELAS
+            const ctxSsi = document.getElementById('chartSsiTindakan').getContext('2d');
+            if (chartInstanceSsi) { chartInstanceSsi.destroy(); }
+
+            chartInstanceSsi = new Chart(ctxSsi, {
+                type: 'bar',
+                data: {
+                    labels: arrLabelsSsi,
+                    datasets: [{
+                        label: 'Insiden IDO / SSI (%)',
+                        data: arrRatesSsi,
+                        backgroundColor: 'rgba(220, 53, 69, 0.8)',
+                        borderColor: 'rgb(220, 53, 69)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', // Ubah menjadi horizontal bar agar nama operasi tidak tumpang tindih
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { beginAtZero: true, title: { display: true, text: 'Persentase Insiden (%)' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function buildHaisChart(labels, cauti, vap, clabsi, phlebitis) {
+            const ctx = document.getElementById('chartHaisUnit').getContext('2d');
+            if (chartInstanceHais) { chartInstanceHais.destroy(); }
+            
+            chartInstanceHais = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { label: 'CAUTI (‰)', data: cauti, backgroundColor: '#0dcaf0' },
+                        { label: 'VAP (‰)', data: vap, backgroundColor: '#ffc107' },
+                        { label: 'CLABSI (‰)', data: clabsi, backgroundColor: '#0d6efd' },
+                        { label: 'Phlebitis (‰)', data: phlebitis, backgroundColor: '#dc3545' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: 'Nilai Insiden Rate (‰)' } }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

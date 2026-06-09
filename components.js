@@ -84,9 +84,8 @@ function loadNavigation() {
     const page = window.location.pathname.split("/").pop(); 
 
     // =========================================================================
-    // 2. FRONTEND SECURITY GUARD (DIPERBARUI)
+    // 2. FRONTEND SECURITY GUARD
     // =========================================================================
-    // MODIFIKASI: Menambahkan daftar_fmea.html dan fmea_builder.html ke dalam penjagaan
     const adminPages = ['command_center.html', 'dasbor_kepatuhan.html', 'capa.html', 'dasbor_pdsa.html', 'daftar_insiden.html', 'analisis.html', 'analisis_sederhana.html', 'daftar_kpc.html', 'analisis_kpc.html', 'rekapitulasi.html', 'dasbor_budaya.html', 'dasbor_risiko.html', 'profil_risiko_rs.html', 'super_admin_panel.html', 'form_builder.html', 'daftar_fmea.html', 'fmea_builder.html'];
     
     if (adminPages.includes(page) && role !== "Komite Mutu") {
@@ -147,9 +146,22 @@ function loadNavigation() {
                 <i class="fas fa-exclamation-triangle me-3 text-secondary"></i> Manajemen Risiko <i class="fas fa-lock float-end mt-1 text-danger" style="font-size: 0.8rem;"></i>
            </a>`;
 
+    // MENU BARU: SURVEILANS PPI
+    let menuPPI = isLoggedIn
+        ? `<a class="list-group-item list-group-item-action py-3 sidebar-link" data-bs-toggle="collapse" href="#collapsePPI" role="button" aria-expanded="false">
+                <i class="fas fa-shield-virus me-3 text-secondary"></i> Surveilans PPI <i class="fas fa-chevron-down float-end mt-1" style="font-size: 0.8rem;"></i>
+           </a>
+           <div class="collapse" id="collapsePPI">
+                <div class="list-group list-group-flush bg-light">
+                    <a href="dasbor_ppi.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link" id="menu-dasbor-ppi" style="font-size: 0.95rem;"><i class="fas fa-chart-bar me-2"></i> Dasbor HAIs & IDO</a>
+                </div>
+           </div>`
+        : `<a href="#" onclick="window.showLockAlert(); return false;" class="list-group-item list-group-item-action py-3 sidebar-link text-muted">
+                <i class="fas fa-shield-virus me-3 text-secondary"></i> Surveilans PPI <i class="fas fa-lock float-end mt-1 text-danger" style="font-size: 0.8rem;"></i>
+           </a>`;
+
     let menuRahasiaKomite = '';
     if (role === "Komite Mutu") {
-        // MODIFIKASI: Menambahkan "Arsip Proyek FMEA" ke dalam Panel Komite Mutu
         menuRahasiaKomite = `
             <div class="mt-4 mb-2 px-3 text-uppercase text-muted fw-bold" style="font-size: 0.75rem; letter-spacing: 1px;">Manajemen Eksekutif</div>
             
@@ -218,6 +230,7 @@ function loadNavigation() {
                 
                 ${menuMutu}
                 ${menuRisiko}
+                ${menuPPI}
                 
                 <a class="list-group-item list-group-item-action py-3 sidebar-link" data-bs-toggle="collapse" href="#collapseKeselamatan" role="button" aria-expanded="false">
                     <i class="fas fa-user-shield me-3 text-secondary"></i> Keselamatan Pasien <i class="fas fa-chevron-down float-end mt-1" style="font-size: 0.8rem;"></i>
@@ -311,16 +324,19 @@ function loadNavigation() {
     else if (page === 'pdsa.html') { document.getElementById('menu-pdsa')?.classList.add('active'); document.getElementById('collapseMutu')?.classList.add('show'); }
     else if (page === 'laporan_mutu.html') { document.getElementById('menu-laporan-triwulan')?.classList.add('active'); document.getElementById('collapseMutu')?.classList.add('show'); }
     else if (page === 'input_mutu.html') { document.getElementById('collapseMutu')?.classList.add('show'); }
+    
     else if (page === 'risk_register.html') { document.getElementById('menu-risk-register')?.classList.add('active'); document.getElementById('collapseRisiko')?.classList.add('show'); } 
+    
+    // ACTIVE STATE UNTUK PPI
+    else if (page === 'dasbor_ppi.html') { document.getElementById('menu-dasbor-ppi')?.classList.add('active'); document.getElementById('collapsePPI')?.classList.add('show'); } 
+    
     else if (page === 'ikp.html') { document.getElementById('menu-ikp')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); } 
     else if (page === 'kpc.html') { document.getElementById('menu-kpc')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); } 
     else if (page === 'survey_budaya.html') { document.getElementById('menu-survey-budaya')?.classList.add('active'); document.getElementById('collapseKeselamatan')?.classList.add('show'); }
     
-    // Active State untuk menu Setup
     else if (page === 'super_admin_panel.html') { document.getElementById('menu-super-admin')?.classList.add('active'); document.getElementById('collapseSystem')?.classList.add('show'); }
     else if (page === 'form_builder.html') { document.getElementById('menu-form-builder')?.classList.add('active'); document.getElementById('collapseSystem')?.classList.add('show'); }
     
-    // Active State untuk menu Komite
     else if (page === 'dasbor_kepatuhan.html') { document.getElementById('menu-kepatuhan')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'dasbor_pdsa.html') { document.getElementById('menu-dasbor-pdsa')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'capa.html') { document.getElementById('menu-capa')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
@@ -330,8 +346,6 @@ function loadNavigation() {
     else if (page === 'dasbor_budaya.html') { document.getElementById('menu-dasbor-budaya')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'dasbor_risiko.html') { document.getElementById('menu-dasbor-risiko')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'profil_risiko_rs.html') { document.getElementById('menu-profil-risiko')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
-    
-    // MODIFIKASI: Active State untuk menu FMEA
     else if (page === 'daftar_fmea.html' || page === 'fmea_builder.html') { 
         let menuElem = document.getElementById('menu-daftar-fmea');
         if (menuElem) menuElem.classList.add('active'); 
