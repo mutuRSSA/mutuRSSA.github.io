@@ -74,7 +74,7 @@
                             </div>
                             <div class="col-md-4">
                                 <label class="fw-bold mb-1">Kategori Indikator <span class="text-danger">*</span></label>
-                                <select class="form-select fw-bold text-dark" id="inp_Kategori_Indikator">
+                                <select class="form-select fw-bold text-dark" id="inp_Kategori_Indikator" onchange="toggleUnitPelaksana()">
                                     <option value="Indikator Mutu Nasional">Indikator Mutu Nasional</option>
                                     <option value="IMP-RS">IMP-RS</option>
                                     <option value="IMP-Unit">IMP-Unit</option>
@@ -85,6 +85,13 @@
                                 <select class="form-select fw-bold text-dark" id="inp_Arah_Target">
                                     <option value="Positif">Positif (Semakin Tinggi Semakin Baik)</option>
                                     <option value="Negatif">Negatif (Semakin Rendah Semakin Baik)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-12" id="container_Unit_Pelaksana" style="display: none;">
+                                <label class="fw-bold mb-1 text-primary">Unit Pelaksana (Pilih Unit untuk IMP-Unit) <span class="text-danger">*</span></label>
+                                <select class="form-select fw-bold border-primary text-dark" id="inp_Unit_Pelaksana">
+                                    <option value="">-- Pilih Unit Pelaksana --</option>
                                 </select>
                             </div>
 
@@ -310,7 +317,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const scriptURL = API_CONFIG.MUTU;
+        const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
         const role = sessionMutu.role || "";
         const userUnit = sessionMutu.unit || "GUEST";
@@ -327,6 +334,19 @@
                 if(vbCont) vbCont.style.display = 'none';
                 if(advCont) advCont.style.display = 'none';
             }
+
+            // TARIK DATA UNIT KE DROPDOWN UNIT PELAKSANA
+            fetch(`${scriptURL}?action=get_panel_setup`)
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    const selUnit = document.getElementById('inp_Unit_Pelaksana');
+                    res.listUnit.map(u => u.unit).sort().forEach(unit => {
+                        selUnit.add(new Option(unit, unit));
+                    });
+                }
+            });
+
             muatDataKamus();
         });
 
@@ -393,49 +413,53 @@
 
             if (data.length === 0) { document.getElementById('noDataMessage').style.display = 'block'; return; }
 
+            const fields = [
+                { label: "ID Form / Kode", key: "ID_Form" },
+                { label: "Unit Pelaksana", key: "Unit Pelaksana" },
+                { label: "Kategori Indikator", key: "Kategori Indikator" },
+                { label: "Satuan", key: "Satuan" },
+                { label: "Target Sasaran", key: "Target" },
+                { label: "Arah Target", key: "Arah Target" },
+                { label: "Dasar Pemikiran", key: "Dasar Pemikiran" },
+                { label: "Dimensi Mutu", key: "Dimensi Mutu" },
+                { label: "Tujuan", key: "Tujuan" },
+                { label: "Definisi Operasional", key: "Definisi Operasional" },
+                { label: "Jenis Indikator", key: "Jenis Indikator" },
+                { label: "Deskripsi Numerator", key: "Numerator" },
+                { label: "Deskripsi Denominator", key: "Denominator" },
+                { label: "Kriteria Inklusi", key: "Kriteria Inklusi" },
+                { label: "Kriteria Eksklusi", key: "Kriteria Eksklusi" },
+                { label: "Formula Perhitungan", key: "Formula" },
+                { label: "Cara Penilaian", key: "Cara Penilaian" },
+                { label: "Metode Pengumpulan Data", key: "Metode Pengumpulan Data" },
+                { label: "Sumber Data", key: "Sumber Data" },
+                { label: "Instrumen Pengambilan Data", key: "Instrumen Pengambilan Data" },
+                { label: "Besar Sampel", key: "Besar Sampel" },
+                { label: "Cara Pengambilan Sampel", key: "Cara Pengambilan Sampel" },
+                { label: "Periode Pengumpulan Data", key: "Periode Pengumpulan Data" },
+                { label: "Periode Pelaporan Data", key: "Periode Pelaporan Data" },
+                { label: "Periode Analisis Data", key: "Periode Analisis Data" },
+                { label: "Penyajian Data", key: "Penyajian Data" },
+                { label: "Penanggung Jawab", key: "Penanggung Jawab" }
+            ];
+            
+            if (role === "Komite Mutu") {
+                fields.push({ label: "Template Numerator (ROBOT)", key: "Template_Numerator" });
+                fields.push({ label: "Template Denominator (ROBOT)", key: "Template_Denominator" });
+                fields.push({ label: "Template Pencapaian (ROBOT)", key: "Template_Pencapaian" });
+            }
+
             data.forEach((row, index) => {
                 let idForm = row['ID_Form'] || row['ID Form'] || `Unknown_${index}`;
                 let judulIndikator = row['Judul Indikator'] || row['Kolom_Kriteria'] || "-";
                 let kategori = row['Kategori Indikator'] || "-";
                 let jenis = row['Jenis Indikator'] || "-";
+                
+                let unit = row['Unit Pelaksana'] || "";
+                let unitBadge = unit ? `<span class="badge bg-secondary ms-1"><i class="fas fa-hospital me-1"></i>${unit}</span>` : '';
 
                 let btnCetakSatu = `<button class="btn btn-sm btn-outline-secondary ms-2" onclick="cetakProfil(${index}); event.stopPropagation();" title="Cetak Kamus Ini"><i class="fas fa-print"></i> Cetak DO</button>`;
                 let btnEdit = (role === "Komite Mutu") ? `<button class="btn btn-sm btn-outline-primary ms-2" onclick="bukaModalForm(${index}); event.stopPropagation();"><i class="fas fa-edit"></i> Edit DO</button>` : ``;
-
-                const fields = [
-                    { label: "ID Form / Kode", key: "ID_Form" },
-                    { label: "Kategori Indikator", key: "Kategori Indikator" },
-                    { label: "Satuan", key: "Satuan" },
-                    { label: "Target Sasaran", key: "Target" },
-                    { label: "Arah Target", key: "Arah Target" },
-                    { label: "Dasar Pemikiran", key: "Dasar Pemikiran" },
-                    { label: "Dimensi Mutu", key: "Dimensi Mutu" },
-                    { label: "Tujuan", key: "Tujuan" },
-                    { label: "Definisi Operasional", key: "Definisi Operasional" },
-                    { label: "Jenis Indikator", key: "Jenis Indikator" },
-                    { label: "Deskripsi Numerator", key: "Numerator" },
-                    { label: "Deskripsi Denominator", key: "Denominator" },
-                    { label: "Kriteria Inklusi", key: "Kriteria Inklusi" },
-                    { label: "Kriteria Eksklusi", key: "Kriteria Eksklusi" },
-                    { label: "Formula Perhitungan", key: "Formula" },
-                    { label: "Cara Penilaian", key: "Cara Penilaian" },
-                    { label: "Metode Pengumpulan Data", key: "Metode Pengumpulan Data" },
-                    { label: "Sumber Data", key: "Sumber Data" },
-                    { label: "Instrumen Pengambilan Data", key: "Instrumen Pengambilan Data" },
-                    { label: "Besar Sampel", key: "Besar Sampel" },
-                    { label: "Cara Pengambilan Sampel", key: "Cara Pengambilan Sampel" },
-                    { label: "Periode Pengumpulan Data", key: "Periode Pengumpulan Data" },
-                    { label: "Periode Pelaporan Data", key: "Periode Pelaporan Data" },
-                    { label: "Periode Analisis Data", key: "Periode Analisis Data" },
-                    { label: "Penyajian Data", key: "Penyajian Data" },
-                    { label: "Penanggung Jawab", key: "Penanggung Jawab" }
-                ];
-                
-                if (role === "Komite Mutu") {
-                    fields.push({ label: "Template Numerator (ROBOT)", key: "Template_Numerator" });
-                    fields.push({ label: "Template Denominator (ROBOT)", key: "Template_Denominator" });
-                    fields.push({ label: "Template Pencapaian (ROBOT)", key: "Template_Pencapaian" });
-                }
 
                 let tbodyHtml = '';
                 fields.forEach(f => {
@@ -458,7 +482,7 @@
                 <div class="accordion-item mb-2 border rounded overflow-hidden kamus-item">
                     <h2 class="accordion-header" id="heading${index}">
                         <button class="accordion-button collapsed d-flex justify-content-between align-items-center" type="button" data-bs-toggle="collapse" data-bs-target="#collapse${index}">
-                            <span><i class="fas fa-file-medical text-info me-2"></i><b>${judulIndikator.toUpperCase()}</b> <span class="badge ${colorBadge} ms-2">${kategori}</span> <span class="badge bg-dark ms-1">${jenis}</span></span>
+                            <span><i class="fas fa-file-medical text-info me-2"></i><b>${judulIndikator.toUpperCase()}</b> <span class="badge ${colorBadge} ms-2">${kategori}</span> <span class="badge bg-dark ms-1">${jenis}</span>${unitBadge}</span>
                             <div class="d-flex align-items-center">
                                 ${btnCetakSatu} ${btnEdit}
                             </div>
@@ -490,11 +514,9 @@
         window.cetakProfil = function(index) {
             let dataToPrint = [];
             
-            // Jika index null, berarti tombol "Cetak Semua Kamus" ditekan
             if (index === null) {
                 dataToPrint = rawKamusData; 
             } else {
-                // Jika index berisi angka, berarti tombol "Cetak DO" di accordion tertentu ditekan
                 dataToPrint = [rawKamusData[index]]; 
             }
 
@@ -516,19 +538,16 @@
                     .kop h2 { margin: 0; font-size: 16px; text-transform: uppercase; font-weight: bold;}
                     .kop p { margin: 0; font-size: 12px; }
                     
-                    /* Styling Pengelompokan Kategori & Unit */
                     .kategori-title { font-size: 16px; font-weight: bold; background-color: #2c3e50; color: #fff; padding: 10px; margin-top: 30px; text-transform: uppercase; text-align: center; }
                     .unit-title { font-size: 14px; font-weight: bold; background-color: #6c757d; color: #fff; padding: 8px; margin-top: 20px; text-transform: uppercase; }
                     .judul-kamus { text-align: center; font-size: 13px; font-weight: bold; margin-top: 20px; margin-bottom: 10px; text-transform: uppercase; background-color: #e9ecef; padding: 8px; border: 1px solid #000;}
                     
-                    /* PERBAIKAN: CSS Sakti agar Tabel Bisa Terpotong Normal Tanpa Sisakan Halaman Kosong */
                     table { width: 100%; border-collapse: collapse; margin-bottom: 30px; page-break-inside: auto; }
-                    tr { page-break-inside: auto; page-break-after: auto; } /* Mengizinkan baris terpotong ke halaman berikutnya */
+                    tr { page-break-inside: auto; page-break-after: auto; } 
                     th, td { border: 1px solid #000; padding: 6px 10px; vertical-align: top; page-break-inside: auto; }
                     th { width: 30%; text-align: left; background-color: #f8f9fa; font-weight: bold; }
                     td { width: 70%; white-space: pre-wrap; text-align: justify; }
                     
-                    /* Class khusus pemecah halaman antar indikator */
                     .page-break-before { page-break-before: always; }
                     
                     @media print {
@@ -545,6 +564,7 @@
             `;
 
             const fields = [
+                { label: "Unit Pelaksana", key: "Unit Pelaksana" },
                 { label: "Kategori Indikator", key: "Kategori Indikator" }, { label: "Satuan", key: "Satuan" },
                 { label: "Target Sasaran", key: "Target" }, { label: "Arah Target", key: "Arah Target" },
                 { label: "Dasar Pemikiran", key: "Dasar Pemikiran" }, { label: "Dimensi Mutu", key: "Dimensi Mutu" },
@@ -573,7 +593,6 @@
                 return html;
             };
 
-            // LOGIKA PENGELOMPOKAN
             if (index === null) {
                 let inm = [], imprs = [], impUnitGroups = {};
                 
@@ -582,8 +601,8 @@
                     if (cat === "Indikator Mutu Nasional") inm.push(row);
                     else if (cat === "IMP-RS") imprs.push(row);
                     else {
-                        let unit = row['ID_Form'] || row['ID Form'] || "Unit Lainnya";
-                        unit = unit.replace(/_/g, ' ').toUpperCase(); 
+                        let unit = row['Unit Pelaksana'] || row['Penanggung Jawab'] || "Unit Lainnya";
+                        unit = unit.toUpperCase(); 
                         if (!impUnitGroups[unit]) impUnitGroups[unit] = [];
                         impUnitGroups[unit].push(row);
                     }
@@ -606,7 +625,7 @@
                     htmlContent += `<div class="kategori-title${pbClass}">C. Indikator Mutu Prioritas Unit (IMP-Unit)</div>`;
                     
                     unitKeys.forEach(unit => {
-                        htmlContent += `<div class="unit-title">UNIT: ${unit}</div>`;
+                        htmlContent += `<div class="unit-title">UNIT PELAKSANA: ${unit}</div>`;
                         impUnitGroups[unit].forEach((row, idx) => { 
                             htmlContent += renderTabelIndikator(row, idx === 0); 
                         });
@@ -614,7 +633,6 @@
                 }
 
             } else {
-                // Cetak Satuan
                 htmlContent += renderTabelIndikator(dataToPrint[0], true);
             }
 
@@ -680,8 +698,22 @@
             selects.forEach(s => s.innerHTML = optionsHtml);
         });
 
+        // FUNGSI TOGGLE UNTUK MENYEMBUNYIKAN/MEMUNCULKAN DROPDOWN UNIT
+        window.toggleUnitPelaksana = function() {
+            let val = document.getElementById('inp_Kategori_Indikator').value;
+            let container = document.getElementById('container_Unit_Pelaksana');
+            
+            if(val === 'IMP-Unit') {
+                container.style.display = 'block';
+            } else {
+                container.style.display = 'none';
+                document.getElementById('inp_Unit_Pelaksana').value = ""; 
+            }
+        };
+
         window.bukaModalForm = function(index) {
             document.getElementById('formProfil').reset();
+            document.getElementById('inp_Unit_Pelaksana').value = ""; 
             document.querySelectorAll('.chk-dimensi').forEach(c => c.checked = false);
             let selectId = document.getElementById('inp_ID_Form');
 
@@ -710,7 +742,11 @@
                 
                 const mapField = (id, key) => { if(document.getElementById(id)) document.getElementById(id).value = data[key] || ""; };
                 
-                mapField('inp_Kategori_Indikator', 'Kategori Indikator'); mapField('inp_Arah_Target', 'Arah Target');
+                mapField('inp_Kategori_Indikator', 'Kategori Indikator'); 
+                toggleUnitPelaksana(); // Memicu tampil tidaknya form unit berdasarkan kategori yang baru dimuat
+                mapField('inp_Unit_Pelaksana', 'Unit Pelaksana');
+                
+                mapField('inp_Arah_Target', 'Arah Target');
                 mapField('inp_Satuan', 'Satuan'); mapField('inp_Target', 'Target'); mapField('inp_Dasar_Pemikiran', 'Dasar Pemikiran');
                 mapField('inp_Jenis_Indikator', 'Jenis Indikator'); mapField('inp_Tujuan', 'Tujuan'); mapField('inp_Definisi_Operasional', 'Definisi Operasional');
                 mapField('inp_Numerator', 'Numerator'); mapField('inp_Denominator', 'Denominator'); mapField('inp_Kriteria_Inklusi', 'Kriteria Inklusi');
@@ -730,7 +766,9 @@
             } else {
                 document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus me-2"></i> Tambah Profil Baru';
                 selectId.disabled = false; currentEditingJudul = "";
-                document.getElementById('inp_Kategori_Indikator').value = "Indikator Mutu Nasional"; document.getElementById('inp_Arah_Target').value = "Positif"; 
+                document.getElementById('inp_Kategori_Indikator').value = "Indikator Mutu Nasional"; 
+                toggleUnitPelaksana(); 
+                document.getElementById('inp_Arah_Target').value = "Positif"; 
                 document.getElementById('inp_Jenis_Indikator').value = "proses"; document.getElementById('inp_Periode_Pengumpulan_Data').value = "bulanan";
                 document.getElementById('inp_Periode_Pelaporan_Data').value = "bulanan"; document.getElementById('inp_Periode_Analisis_Data').value = "bulanan";
                 
@@ -759,7 +797,6 @@
             let btn = document.getElementById('btnSimpan');
             btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...'; btn.disabled = true;
 
-            // --- PERBAIKAN APOSTROF ADA DI SINI ---
             let tNum = document.getElementById('inp_Template_Numerator').value.trim();
             let tDen = document.getElementById('inp_Template_Denominator').value.trim();
             let tCap = document.getElementById('inp_Template_Pencapaian').value.trim();
@@ -767,10 +804,10 @@
             if (tNum.startsWith("=")) tNum = "'" + tNum;
             if (tDen.startsWith("=")) tDen = "'" + tDen;
             if (tCap.startsWith("=")) tCap = "'" + tCap;
-            // --------------------------------------
 
             const payloadData = {
                 "ID_Form": idForm,
+                "Unit Pelaksana": document.getElementById('inp_Unit_Pelaksana').value.trim(), 
                 "Judul Indikator": judulIndikatorBaru, 
                 "Kategori Indikator": document.getElementById('inp_Kategori_Indikator').value,
                 "Arah Target": document.getElementById('inp_Arah_Target').value,
@@ -798,7 +835,6 @@
                 "Penyajian Data": document.getElementById('inp_Penyajian_Data').value,
                 "Penanggung Jawab": document.getElementById('inp_Penanggung_Jawab').value,
                 
-                // Memasukkan template rumus yang sudah diamankan dengan apostrof
                 "Template_Numerator": tNum,
                 "Template_Denominator": tDen,
                 "Template_Pencapaian": tCap
