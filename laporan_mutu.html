@@ -42,8 +42,12 @@
 
     <div class="container-fluid px-4">
         <div class="bg-white p-4 mb-4 card-custom d-print-none">
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                 <h4 class="mb-0 text-dark fw-bold"><i class="fas fa-chart-line text-info me-2"></i> Dashboard Capaian Mutu Terpadu</h4>
+                <button class="btn btn-warning fw-bold shadow-sm text-dark" onclick="sinkronisasiData()" id="btnSync">
+                    <i class="fas fa-sync-alt me-2"></i> Sinkronisasi Data Terkini
+                </button>
             </div>
             
             <div class="row g-3 bg-light p-3 rounded border align-items-end">
@@ -97,9 +101,8 @@
         let rawDataAnalisa = []; 
         let chartInstances = [];
         let activePeriodeTitle = "";
-        let mappingArahGlobal = {}; // Wadah untuk menyimpan arah target dari Backend
+        let mappingArahGlobal = {}; 
 
-        // Mengambil profil sesi pengguna dari penyimpanan browser
         let sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
         let userUnit = sessionMutu.unit || "";
         let userRole = sessionMutu.role || "";
@@ -111,23 +114,64 @@
             'tahunan': { '1': ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] }
         };
 
-        // =========================================================================
-        // FUNGSI PENDETEKSI TERCAPAI / GAGAL BERDASARKAN ARAH TARGET DARI BACKEND
-        // =========================================================================
+        // FUNGSI SINKRONISASI MANUAL DARI FRONTEND
+        window.sinkronisasiData = function() {
+            Swal.fire({
+                title: 'Tarik Data Terbaru?',
+                text: "Sistem akan menarik data operasional terbaru dari seluruh unit kerja. Proses ini memakan waktu beberapa detik.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#198754',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Sinkronkan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    let btn = document.getElementById('btnSync');
+                    let originalHtml = btn.innerHTML;
+                    btn.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i> Menyinkronkan...";
+                    btn.disabled = true;
+
+                    fetch(API_CONFIG.MUTU, {
+                        method: "POST",
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify({ action: 'sinkronisasi' }) 
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.status === 'success') {
+                            Swal.fire({
+                                title: 'Berhasil!', 
+                                text: 'Data mutu telah disinkronkan ke versi terbaru.', 
+                                icon: 'success',
+                                timer: 1500,
+                                showConfirmButton: false
+                            }).then(() => window.location.reload());
+                        } else {
+                            Swal.fire('Gagal!', res.message || 'Terjadi kesalahan sistem.', 'error');
+                            btn.innerHTML = originalHtml;
+                            btn.disabled = false;
+                        }
+                    })
+                    .catch(err => {
+                        Swal.fire('Error', 'Gagal menghubungi server database.', 'error');
+                        btn.innerHTML = originalHtml;
+                        btn.disabled = false;
+                    });
+                }
+            });
+        };
+
         window.cekTercapai = function(judul, capaian, target) {
             let c = parseFloat(capaian);
             let t = parseFloat(target);
-            
-            // Bersihkan judul dari emoji khusus jika ada
-            let judulMurni = judul.replace(" 🔍", "").trim();
-            
-            // Ambil setting dari mapping (default ke Positif jika tidak ditemukan)
+            let judulMurni = judul.trim();
             let arah = mappingArahGlobal[judulMurni] || "Positif";
 
             if (arah.toLowerCase() === "negatif") {
-                return c <= t; // Makin rendah makin baik
+                return c <= t; 
             } else {
-                return c >= t; // Makin tinggi makin baik
+                return c >= t; 
             }
         };
 
@@ -160,7 +204,7 @@
                 if (result.status === 'success') {
                     rawData = result.data; 
                     rawDataAnalisa = result.dataAnalisa || []; 
-                    mappingArahGlobal = result.mappingArah || {}; // Simpan data arah dari backend
+                    mappingArahGlobal = result.mappingArah || {}; 
 
                     document.getElementById('loadingMessage').style.display = 'none';
                     document.getElementById('chartCard').style.display = 'block';
@@ -226,10 +270,6 @@
             chartInstances = [];
             const dashboardContent = document.getElementById('dashboardContent');
             dashboardContent.innerHTML = '';
-
-            // ==============================================================
-            // LOGIKA FILTER
-            // ==============================================================
             
             let periodData = rawData.filter(row => {
                 let matchTahun = ((row['Tahun'] || "").toString().trim() === selectedTahun);
@@ -240,12 +280,10 @@
 
             let filteredData = periodData.filter(row => {
                 let matchUnit = (selectedUnit === "RS_ALL") ? true : (row['Unit'] === selectedUnit);
-
                 if (selectedUnit === "RS_ALL") {
                     let jenis = (row['Jenis Indikator'] || "").toUpperCase();
                     if (jenis.includes("UNIT")) return false; 
                 }
-
                 return matchUnit;
             });
 
@@ -274,15 +312,6 @@
                 let c = parseFloat((row['Pencapaian'] || 0).toString().replace(',', '.'));
 
                 let isKepuasan = judul.toLowerCase().includes('kepuasan');
-
-                let judulUpper = judul.toUpperCase();
-                let isHAI = judulUpper.includes('CAUTI') || judulUpper.includes('VAP') || judulUpper.includes('CLABSI') || judulUpper.includes('PHLEBITIS') || judulUpper.includes('FLEBITIS');
-                let isSSI = judulUpper.includes('SSI ');
-
-                if (selectedUnit !== "Komite PPI") {
-                    if (isHAI) judul = "Total Insidensi HAIs 🔍";
-                    if (isSSI) judul = "Total Insidensi SSI 🔍";
-                }
 
                 if (!groupedData[jenis]) groupedData[jenis] = {};
                 if (!groupedData[jenis][judul]) {
@@ -357,7 +386,6 @@
                     if (valid > 0) {
                         avgC = avgC / valid; 
                         
-                        // MENGGUNAKAN LOGIKA CEK TERCAPAI
                         if (cekTercapai(judul, avgC, t)) stats.hit++; 
                         else stats.miss++;
                         
@@ -412,7 +440,6 @@
                 </div>
             </div>`;
             
-            // =================================================================
             let thBulan = namaBulan.map(b => "<th colspan='2' style='min-width:90px;'>" + b + "</th>").join('');
             let thTargetCapai = namaBulan.map(() => "<th>Tgt</th><th>Cpa</th>").join('');
 
@@ -447,7 +474,6 @@
 
                         if (t === null) return "<td>-</td><td>-</td>";
                         
-                        // MENGGUNAKAN LOGIKA CEK TERCAPAI
                         let cl = cekTercapai(judul, c, t) ? 'status-tercapai' : 'status-gagal';
 
                         let infoNumDen = "";
@@ -459,15 +485,8 @@
 
                         return "<td class='target-text text-center align-middle'>" + t + "</td><td class='text-center align-middle " + cl + "'>" + c + infoNumDen + "</td>";
                     }).join('');
-
-                    let judulDisplay = judul;
-                    if (judul.includes("HAIs 🔍")) {
-                        judulDisplay = `<a href="#" class="text-decoration-none text-primary" data-bs-toggle="modal" data-bs-target="#modalHAIs"><i class="fas fa-hand-pointer me-2"></i>${judul}</a>`;
-                    } else if (judul.includes("SSI 🔍")) {
-                        judulDisplay = `<a href="#" class="text-decoration-none text-primary" data-bs-toggle="modal" data-bs-target="#modalSSI"><i class="fas fa-hand-pointer me-2"></i>${judul}</a>`;
-                    }
                     
-                    tableRows += "<tr><td class='text-center align-middle'>" + (nomor++) + "</td><td class='fw-bold align-middle'>" + judulDisplay + "</td><td class='text-center align-middle'>" + item.satuan + "</td>" + tdHtml + "</tr>";
+                    tableRows += "<tr><td class='text-center align-middle'>" + (nomor++) + "</td><td class='fw-bold align-middle'>" + judul + "</td><td class='text-center align-middle'>" + item.satuan + "</td>" + tdHtml + "</tr>";
 
                     let htmlAnalisaText = "";
                     if (isAnalyzed && analisaMap[judul]) {
@@ -491,140 +510,6 @@
                 
                 fullHtml += "<div class='mt-4 mb-2'><h5 class='fw-bold text-primary border-start border-4 border-primary ps-2'>" + jenis + "</h5></div>" +
                     "<div class='table-responsive mb-4 shadow-sm'><table class='table table-bordered table-hover mb-0' style='font-size: 0.8rem; background:#fff;'><thead class='text-center bg-light'><tr><th rowspan='2' class='align-middle'>No</th><th rowspan='2' class='align-middle'>Indikator</th><th rowspan='2' class='align-middle'>Sat</th>" + thBulan + "</tr><tr>" + thTargetCapai + "</tr></thead><tbody>" + tableRows + "</tbody></table></div><div class='row'>" + cardsHtml + "</div>";
-            }
-
-            // =================================================================
-            // TABEL KHUSUS HAIs & SSI (VERSI MODAL POP-UP)
-            // =================================================================
-            
-            function getSumNumDen(keywordsIndikator, keywordUnit) {
-                let num = 0; let den = 0; let found = false;
-                let keys = Array.isArray(keywordsIndikator) ? keywordsIndikator : [keywordsIndikator];
-                
-                periodData.forEach(r => {
-                    let u = (r['Unit'] || "").toUpperCase();
-                    let j = (r['Judul indikator'] || "").toUpperCase();
-                    
-                    let matchIndikator = keys.some(k => j.includes(k));
-                    
-                    if ((keywordUnit === "ALL" || u === keywordUnit || u.includes(keywordUnit)) && matchIndikator) {
-                        num += parseFloat((r['Numerator'] || 0).toString().replace(',', '.')) || 0;
-                        den += parseFloat((r['Denominator'] || 0).toString().replace(',', '.')) || 0;
-                        found = true;
-                    }
-                });
-                let capai = den > 0 ? parseFloat(((num / den) * 100).toFixed(2)) : 0;
-                return { n: num, d: den, c: capai, exist: found };
-            }
-
-            // MODAL HAIs
-            let haisUnits = [...new Set(periodData.filter(r => {
-                let j = (r['Judul indikator'] || "").toUpperCase();
-                return j.includes('CAUTI') || j.includes('VAP') || j.includes('CLABSI') || j.includes('PHLEBITIS') || j.includes('FLEBITIS');
-            }).map(r => r['Unit']))].filter(Boolean).sort();
-
-            if (selectedUnit !== "Komite PPI" && (selectedUnit === "RS_ALL" || haisUnits.includes(selectedUnit))) {
-                let innerHtmlHAIs = "<div class='table-responsive mb-0'><table class='table table-bordered table-hover mb-0' style='font-size: 0.85rem; background:#fff; min-width: 1200px;'>" +
-                    "<thead class='text-center bg-light'><tr><th rowspan='2' class='align-middle'>Ruang</th><th colspan='3'>CAUTI</th><th colspan='3'>VAP</th><th colspan='3'>CLABSI</th><th colspan='3'>Phlebitis</th></tr>" +
-                    "<tr><th class='align-middle'>Jumlah<br>Kasus</th><th class='align-middle text-muted' style='font-size:0.75rem;'>Jumlah lama hari pemakaian<br>kateter urin menetap</th><th class='align-middle'>Insiden(%)</th>" +
-                    "<th class='align-middle'>Jumlah<br>Kasus</th><th class='align-middle text-muted' style='font-size:0.75rem;'>Jumlah lama hari pemakaian<br>ventilator</th><th class='align-middle'>Insiden(%)</th>" +
-                    "<th class='align-middle'>Jumlah<br>Kasus</th><th class='align-middle text-muted' style='font-size:0.75rem;'>Jumlah lama hari pemakaian<br>kateter vena sentral</th><th class='align-middle'>Insiden(%)</th>" +
-                    "<th class='align-middle'>Jumlah<br>Kasus</th><th class='align-middle text-muted' style='font-size:0.75rem;'>Jumlah lama hari pemakaian<br>kateter vena perifer</th><th class='align-middle'>Insiden(%)</th></tr></thead><tbody>";
-
-                let targetUnits = selectedUnit === "RS_ALL" ? haisUnits : [selectedUnit];
-                if (targetUnits.length === 0) targetUnits = ['-']; 
-
-                let tH = { cn:0, cd:0, vn:0, vd:0, cln:0, cld:0, pn:0, pd:0 };
-
-                targetUnits.forEach(u => {
-                    let unitKey = u.toUpperCase(); 
-                    let cauti = getSumNumDen(['CAUTI'], unitKey); 
-                    let vap = getSumNumDen(['VAP'], unitKey); 
-                    let clabsi = getSumNumDen(['CLABSI'], unitKey);
-                    let phlebitis = getSumNumDen(['PHLEBITIS', 'FLEBITIS'], unitKey);
-
-                    tH.cn += cauti.n; tH.cd += cauti.d; tH.vn += vap.n; tH.vd += vap.d;
-                    tH.cln += clabsi.n; tH.cld += clabsi.d; tH.pn += phlebitis.n; tH.pd += phlebitis.d;
-
-                    innerHtmlHAIs += "<tr><td class='fw-bold align-middle'>" + u + "</td>" +
-                        "<td class='text-center align-middle'>" + cauti.n + "</td><td class='text-center align-middle'>" + cauti.d + "</td><td class='text-center align-middle'>" + cauti.c + " %</td>" +
-                        "<td class='text-center align-middle'>" + vap.n + "</td><td class='text-center align-middle'>" + vap.d + "</td><td class='text-center align-middle'>" + vap.c + " %</td>" +
-                        "<td class='text-center align-middle'>" + clabsi.n + "</td><td class='text-center align-middle'>" + clabsi.d + "</td><td class='text-center align-middle'>" + clabsi.c + " %</td>" +
-                        "<td class='text-center align-middle'>" + phlebitis.n + "</td><td class='text-center align-middle'>" + phlebitis.d + "</td><td class='text-center align-middle'>" + phlebitis.c + " %</td></tr>";
-                });
-
-                if (targetUnits.length > 1) {
-                    let cc = tH.cd > 0 ? ((tH.cn/tH.cd)*100).toFixed(2) : 0; let vc = tH.vd > 0 ? ((tH.vn/tH.vd)*100).toFixed(2) : 0;
-                    let clc = tH.cld > 0 ? ((tH.cln/tH.cld)*100).toFixed(2) : 0; let pc = tH.pd > 0 ? ((tH.pn/tH.pd)*100).toFixed(2) : 0;
-                    
-                    innerHtmlHAIs += "<tr class='bg-warning bg-opacity-10'><td class='fw-bold text-end align-middle'>TOTAL</td>" +
-                        "<td class='text-center fw-bold align-middle'>" + tH.cn + "</td><td class='text-center fw-bold align-middle'>" + tH.cd + "</td><td class='text-center fw-bold align-middle'>" + cc + " %</td>" +
-                        "<td class='text-center fw-bold align-middle'>" + tH.vn + "</td><td class='text-center fw-bold align-middle'>" + tH.vd + "</td><td class='text-center fw-bold align-middle'>" + vc + " %</td>" +
-                        "<td class='text-center fw-bold align-middle'>" + tH.cln + "</td><td class='text-center fw-bold align-middle'>" + tH.cld + "</td><td class='text-center fw-bold align-middle'>" + clc + " %</td>" +
-                        "<td class='text-center fw-bold align-middle'>" + tH.pn + "</td><td class='text-center fw-bold align-middle'>" + tH.pd + "</td><td class='text-center fw-bold align-middle'>" + pc + " %</td></tr>";
-                }
-
-                innerHtmlHAIs += "</tbody></table></div>";
-
-                fullHtml += `
-                <div class="modal fade" id="modalHAIs" tabindex="-1" aria-hidden="true">
-                  <div class="modal-dialog modal-xl modal-dialog-centered">
-                    <div class="modal-content">
-                      <div class="modal-header bg-custom-dark text-white">
-                        <h5 class="modal-title fw-bold">Detail Data Ruangan (HAIs) - Periode ${activePeriodeTitle}</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                      </div>
-                      <div class="modal-body bg-light p-4">${innerHtmlHAIs}</div>
-                    </div>
-                  </div>
-                </div>`;
-            }
-
-            // MODAL SSI
-            if (selectedUnit !== "Komite PPI" && (selectedUnit === "RS_ALL" || selectedUnit.toUpperCase().includes("BEDAH") || selectedUnit.toUpperCase().includes("OPERASI"))) {
-                let innerHtmlSSI = "<div class='table-responsive mb-0'><table class='table table-bordered table-hover mb-0' style='font-size: 0.85rem; background:#fff;'>" +
-                    "<thead class='text-center bg-light'><tr><th rowspan='2' class='align-middle'>Jenis Tindakan Operasi di RS</th><th colspan='3'>SSI</th></tr>" +
-                    "<tr><th class='align-middle'>Jumlah Kasus</th><th class='align-middle'>Jumlah Tindakan Operasi</th><th class='align-middle'>Insiden (%)</th></tr></thead><tbody>";
-
-                const opsSSI = [
-                    { label: 'Bedah Orthopedi (ORIF atau Total Hip Replacement)', keys: ['ORTHO'] }, 
-                    { label: 'Seksio Sesarea', keys: ['SEKSI', 'SECTI', 'SESAR'] },
-                    { label: 'Apendektomi', keys: ['APEND', 'APPEN'] }, 
-                    { label: 'Herniotomi', keys: ['HERNIO'] },
-                    { label: 'Katarak', keys: ['KATARAK'] }, 
-                    { label: 'CABG', keys: ['CABG'] }, 
-                    { label: 'Tumor Jinak Payudara', keys: ['TUMOR', 'MAMMAE'] }
-                ];
-
-                let tSsiN = 0; let tSsiD = 0;
-
-                opsSSI.forEach(op => {
-                    let sum = getSumNumDen(op.keys, selectedUnit === "RS_ALL" ? "ALL" : selectedUnit.toUpperCase());
-                    if (!sum.exist) {
-                        innerHtmlSSI += "<tr><td class='fw-bold align-middle'>" + op.label + "</td><td colspan='3' class='text-center text-muted fw-bold align-middle bg-light'>N/A</td></tr>";
-                    } else {
-                        tSsiN += sum.n; tSsiD += sum.d;
-                        innerHtmlSSI += "<tr><td class='fw-bold align-middle'>" + op.label + "</td><td class='text-center align-middle'>" + sum.n + "</td><td class='text-center align-middle'>" + sum.d + "</td><td class='text-center align-middle'>" + sum.c + " %</td></tr>";
-                    }
-                });
-
-                let tC = tSsiD > 0 ? ((tSsiN/tSsiD)*100).toFixed(2) : 0;
-                innerHtmlSSI += "<tr class='bg-warning bg-opacity-10'><td class='fw-bold text-end align-middle'>TOTAL</td><td class='text-center fw-bold align-middle'>" + tSsiN + "</td><td class='text-center fw-bold align-middle'>" + tSsiD + "</td><td class='text-center fw-bold align-middle'>" + tC + " %</td></tr>";
-
-                innerHtmlSSI += "</tbody></table></div>";
-
-                fullHtml += `
-                <div class="modal fade" id="modalSSI" tabindex="-1" aria-hidden="true">
-                  <div class="modal-dialog modal-lg modal-dialog-centered">
-                    <div class="modal-content">
-                      <div class="modal-header bg-custom-dark text-white">
-                        <h5 class="modal-title fw-bold">Detail Data Tindakan Operasi RS - Periode ${activePeriodeTitle}</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                      </div>
-                      <div class="modal-body bg-light p-4">${innerHtmlSSI}</div>
-                    </div>
-                  </div>
-                </div>`;
             }
 
             if (!isAnalyzed) {
