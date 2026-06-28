@@ -15,7 +15,6 @@
         .form-label { font-weight: bold; color: #495057; font-size: 0.9rem; }
         .badge-form { background-color: #e9ecef; color: #495057; font-weight: 500; font-size: 0.75rem; border: 1px solid #dee2e6; }
         
-        /* Checkbox Custom Styling */
         .indicator-item { border-radius: 8px; transition: 0.2s; cursor: pointer; border: 1px solid #dee2e6; padding: 10px; height: 100%; background: #fff; }
         .indicator-item:hover { border-color: #0dcaf0; background: #f0fbff; }
         .indicator-item input:checked + label { color: #055160; font-weight: bold; }
@@ -71,7 +70,6 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <div class="modal fade" id="modalUnit" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
@@ -86,7 +84,6 @@
                         <i class="fas fa-info-circle me-2"></i> 
                         <strong>Proses Otomatis:</strong> Sistem akan membuat file Google Sheets baru, mengatur tab indikator, dan mendaftarkan unit ke routing global dalam sekali klik.
                     </div>
-
                     <div class="row g-4">
                         <div class="col-lg-4">
                             <div class="bg-white p-4 rounded-3 shadow-sm h-100">
@@ -102,16 +99,13 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="col-lg-8">
                             <div class="bg-white p-4 rounded-3 shadow-sm h-100">
                                 <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
                                     <h6 class="fw-bold mb-0"><i class="fas fa-tasks me-2"></i> Pilih Indikator Mutu Wajib</h6>
                                     <small class="text-muted" id="countSelected">0 dipilih</small>
                                 </div>
-                                
-                                <div class="row g-2 overflow-auto" style="max-height: 400px;" id="wadahCheckboxIndikator">
-                                </div>
+                                <div class="row g-2 overflow-auto" style="max-height: 400px;" id="wadahCheckboxIndikator"></div>
                             </div>
                         </div>
                     </div>
@@ -130,12 +124,12 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-success text-white p-3">
-                    <h5 class="modal-title fw-bold"><i class="fas fa-robot me-2"></i> Deploy Rumus ke Unit</h5>
+                    <h5 class="modal-title fw-bold"><i class="fas fa-robot me-2"></i> Mass Deploy Rumus Mutu</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body bg-white p-4">
                     <div class="alert alert-warning border-0 shadow-sm mb-4" style="font-size: 0.85rem;">
-                        <i class="fas fa-exclamation-triangle me-1"></i> Robot akan menyuntikkan 12 baris rumus ke tab <strong>SHADOW_REKAP</strong> milik unit ini.
+                        <i class="fas fa-magic me-1"></i> Robot akan memindai Kamus Profil Indikator dan menarik <strong>seluruh rumus</strong> untuk semua indikator yang ditugaskan ke unit ini sekaligus.
                     </div>
 
                     <form id="formDeployRobot">
@@ -143,18 +137,14 @@
                             <label class="form-label">Unit Sasaran</label>
                             <input type="text" class="form-control bg-light fw-bold" id="deploy_nama_unit" readonly>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Tahun Pengukuran</label>
-                            <input type="number" class="form-control fw-bold" id="deploy_tahun" required>
-                        </div>
                         <div class="mb-4">
-                            <label class="form-label">Judul Indikator <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control border-success" id="deploy_judul" placeholder="Ketik Judul Indikator (Persis seperti di Kamus)" required>
-                            <small class="text-muted">Masukkan <b>Judul Indikator</b> dari Kamus Mutu (contoh: <i>Kepatuhan Identifikasi Pasien</i>).</small>
+                            <label class="form-label">Tahun Pengukuran</label>
+                            <input type="number" class="form-control fw-bold border-success text-success" id="deploy_tahun" required>
                         </div>
+                        
                         <div class="d-grid mt-2">
                             <button type="submit" class="btn btn-success fw-bold py-2 shadow-sm" id="btnJalankanRobot">
-                                <i class="fas fa-paper-plane me-2"></i> Suntikkan Rumus Sekarang
+                                <i class="fas fa-paper-plane me-2"></i> Suntikkan Semua Rumus Sekarang
                             </button>
                         </div>
                     </form>
@@ -176,7 +166,9 @@
         
         let isEditMode = false;
         let originalUnitName = "";
-        let targetDeployUnitId = ""; // Untuk menyimpan ID Spreadsheet sasaran deploy
+        
+        let targetDeployUnitId = ""; 
+        let targetDeployForms = ""; // Menyimpan daftar form untuk mass deploy
 
         document.addEventListener("DOMContentLoaded", function() {
             muatDataAwal();
@@ -215,7 +207,7 @@
                                     <i class="fas fa-edit"></i> Edit Unit
                                 </button>
                                 <button class="btn btn-sm btn-outline-success shadow-sm" onclick="bukaModalDeploy(${index})">
-                                    <i class="fas fa-magic"></i> Deploy Rumus
+                                    <i class="fas fa-magic"></i> Mass Deploy Rumus
                                 </button>
                             </div>
                         </td>
@@ -227,9 +219,6 @@
             document.getElementById('tableContainer').classList.remove('d-none');
         }
 
-        // ==========================================
-        // FUNGSI UNTUK MODAL ONBOARDING UNIT
-        // ==========================================
         function renderCheckboxes(list) {
             const wadah = document.getElementById('wadahCheckboxIndikator');
             wadah.innerHTML = '';
@@ -334,15 +323,15 @@
         }
 
         // ==========================================
-        // FUNGSI UNTUK MODAL DEPLOY ROBOT (BARU)
+        // FUNGSI UNTUK MODAL MASS DEPLOY ROBOT
         // ==========================================
         function bukaModalDeploy(index) {
             let unitData = dataUnitGlobal[index];
-            targetDeployUnitId = unitData.id_sheet; // Ambil ID Spreadsheet asli dari tabel
+            targetDeployUnitId = unitData.id_sheet; 
+            targetDeployForms = unitData.daftar_form; // MENYIMPAN DAFTAR FORM UNTUK BACKEND
             
             document.getElementById('deploy_nama_unit').value = unitData.unit;
             document.getElementById('deploy_tahun').value = new Date().getFullYear();
-            document.getElementById('deploy_judul').value = "";
             
             new bootstrap.Modal(document.getElementById('modalDeploy')).show();
         }
@@ -352,20 +341,19 @@
 
             const namaUnit = document.getElementById('deploy_nama_unit').value;
             const tahun = document.getElementById('deploy_tahun').value;
-            const judul = document.getElementById('deploy_judul').value.trim();
 
             const payload = {
                 action: 'deploy_indikator',
                 data: {
-                    id_unit: targetDeployUnitId, // ID Langsung Diambil otomatis
+                    id_unit: targetDeployUnitId,
                     nama_unit: namaUnit,
                     tahun: tahun,
-                    judul_indikator: judul
+                    daftar_form: targetDeployForms // MENGIRIM SELURUH DAFTAR FORM
                 }
             };
 
             const btnSubmit = document.getElementById('btnJalankanRobot');
-            btnSubmit.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i> Robot sedang bekerja...";
+            btnSubmit.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i> Robot sedang menyuntikkan data...";
             btnSubmit.disabled = true;
 
             fetch(scriptURL, {
@@ -377,15 +365,15 @@
             .then(result => {
                 if (result.status === 'success') {
                     Swal.fire('Sukses!', result.message, 'success');
-                    document.getElementById('deploy_judul').value = ""; 
                 } else {
                     Swal.fire('Gagal!', 'Error: ' + result.message, 'error');
                 }
             })
             .catch(err => Swal.fire('Error Jaringan', 'Tidak dapat terhubung ke server', 'error'))
             .finally(() => {
-                btnSubmit.innerHTML = "<i class='fas fa-paper-plane me-2'></i> Suntikkan Rumus Sekarang";
+                btnSubmit.innerHTML = "<i class='fas fa-paper-plane me-2'></i> Suntikkan Semua Rumus Sekarang";
                 btnSubmit.disabled = false;
+                bootstrap.Modal.getInstance(document.getElementById('modalDeploy')).hide();
             });
         });
 
