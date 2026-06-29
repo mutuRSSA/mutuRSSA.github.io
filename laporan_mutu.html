@@ -32,6 +32,11 @@
             .col-md-6 { width: 50% !important; float: left; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             @page { margin: 1cm; size: landscape; }
+            
+            /* CSS Cetak Khusus agar Accordion IMP-Unit terbuka semua saat di-print */
+            .collapse:not(.show) { display: block !important; height: auto !important; }
+            .accordion-button::after { display: none !important; }
+            .accordion-button { background-color: #f8f9fa !important; border-bottom: 2px solid #000 !important; }
         }
     </style>
 </head>
@@ -95,7 +100,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        const scriptURL = API_CONFIG.MUTU;
+        const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
         
         let rawData = [];
         let rawDataAnalisa = []; 
@@ -114,7 +119,6 @@
             'tahunan': { '1': ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] }
         };
 
-        // FUNGSI SINKRONISASI MANUAL DARI FRONTEND
         window.sinkronisasiData = function() {
             Swal.fire({
                 title: 'Tarik Data Terbaru?',
@@ -278,12 +282,14 @@
                 return matchTahun && matchBulan;
             });
 
+            // LOGIKA FILTER DIPERBARUI: Menghapus Data "#N/A" (Data mentah PPI/HAIs)
             let filteredData = periodData.filter(row => {
+                let jenis = (row['Jenis Indikator'] || "").toString().toUpperCase().trim();
+                
+                // MENGHILANGKAN SEMUA DATA YANG KATEGORINYA #N/A (TERMASUK HAIs MENTAH)
+                if (jenis === "#N/A" || jenis === "N/A" || jenis === "") return false;
+                
                 let matchUnit = (selectedUnit === "RS_ALL") ? true : (row['Unit'] === selectedUnit);
-                if (selectedUnit === "RS_ALL") {
-                    let jenis = (row['Jenis Indikator'] || "").toUpperCase();
-                    if (jenis.includes("UNIT")) return false; 
-                }
                 return matchUnit;
             });
 
@@ -299,12 +305,16 @@
                 riwayat.forEach(r => { analisaMap[r['Judul Indikator']] = { analisa: r['Analisa'], tl: r['Tindak Lanjut'] }; });
             }
 
+            // DIPISAH MENJADI DUA WADAH: groupedData (INM/IMP-RS) dan unitGroupedData (IMP-Unit)
             let groupedData = {};
+            let unitGroupedData = {};
+
             filteredData.forEach(row => {
                 let jenis = row['Jenis Indikator'] || 'Lainnya'; 
                 let judul = row['Judul indikator'] || 'Tanpa Judul';
                 let satuan = (row['Satuan'] || '-').toString().trim();
                 let bulanNormalized = (row['Bulan'] || "").toString().trim().replace(/^\w/, c => c.toUpperCase());
+                let unitName = row['Unit'] || 'Unit Lainnya';
                 
                 let num = parseFloat((row['Numerator'] || 0).toString().replace(',', '.')) || 0;
                 let den = parseFloat((row['Denominator'] || 0).toString().replace(',', '.')) || 0;
@@ -313,38 +323,57 @@
 
                 let isKepuasan = judul.toLowerCase().includes('kepuasan');
 
-                if (!groupedData[jenis]) groupedData[jenis] = {};
-                if (!groupedData[jenis][judul]) {
-                    groupedData[jenis][judul] = { satuan: satuan, bulans: {} };
-                    namaBulan.forEach(b => groupedData[jenis][judul].bulans[b] = { target: null, capai: null, num: 0, den: 0, sumC: 0, countC: 0 });
-                }
-                
-                if (groupedData[jenis][judul].bulans[bulanNormalized] !== undefined) {
-                    let pointer = groupedData[jenis][judul].bulans[bulanNormalized];
+                // JIKA SELURUH RS DIPILIH & JENISNYA IMP-UNIT -> MASUKKAN KE WADAH UNIT
+                if (selectedUnit === "RS_ALL" && jenis.toUpperCase().includes("UNIT")) {
+                    if (!unitGroupedData[unitName]) unitGroupedData[unitName] = {};
+                    if (!unitGroupedData[unitName][judul]) {
+                        unitGroupedData[unitName][judul] = { satuan: satuan, bulans: {} };
+                        namaBulan.forEach(b => unitGroupedData[unitName][judul].bulans[b] = { target: null, capai: null, num: 0, den: 0 });
+                    }
                     
-                    pointer.target = Math.round(t * 100) / 100;
-
-                    if (selectedUnit === "RS_ALL") {
-                        pointer.num += num;
-                        pointer.den += den;
-                        
-                        if (isKepuasan || (num === 0 && den === 0 && c > 0)) {
-                            pointer.sumC += c;
-                            pointer.countC += 1;
-                            pointer.capai = Math.round((pointer.sumC / pointer.countC) * 100) / 100;
-                        } else {
-                            if (pointer.den > 0) {
-                                let hitungUlang = pointer.num / pointer.den;
-                                if (satuan.includes('%')) hitungUlang *= 100;
-                                pointer.capai = Math.round(hitungUlang * 100) / 100;
-                            } else {
-                                pointer.capai = 0;
-                            }
-                        }
-                    } else {
+                    if (unitGroupedData[unitName][judul].bulans[bulanNormalized] !== undefined) {
+                        let pointer = unitGroupedData[unitName][judul].bulans[bulanNormalized];
+                        pointer.target = Math.round(t * 100) / 100;
                         pointer.capai = Math.round(c * 100) / 100;
                         pointer.num = num;
                         pointer.den = den;
+                    }
+                } 
+                // JIKA BUKAN IMP-UNIT ATAU SEDANG MEMBUKA 1 UNIT SAJA -> MASUKKAN KE WADAH GLOBAL
+                else {
+                    if (!groupedData[jenis]) groupedData[jenis] = {};
+                    if (!groupedData[jenis][judul]) {
+                        groupedData[jenis][judul] = { satuan: satuan, bulans: {} };
+                        namaBulan.forEach(b => groupedData[jenis][judul].bulans[b] = { target: null, capai: null, num: 0, den: 0, sumC: 0, countC: 0 });
+                    }
+                    
+                    if (groupedData[jenis][judul].bulans[bulanNormalized] !== undefined) {
+                        let pointer = groupedData[jenis][judul].bulans[bulanNormalized];
+                        
+                        pointer.target = Math.round(t * 100) / 100;
+
+                        if (selectedUnit === "RS_ALL") {
+                            pointer.num += num;
+                            pointer.den += den;
+                            
+                            if (isKepuasan || (num === 0 && den === 0 && c > 0)) {
+                                pointer.sumC += c;
+                                pointer.countC += 1;
+                                pointer.capai = Math.round((pointer.sumC / pointer.countC) * 100) / 100;
+                            } else {
+                                if (pointer.den > 0) {
+                                    let hitungUlang = pointer.num / pointer.den;
+                                    if (satuan.includes('%')) hitungUlang *= 100;
+                                    pointer.capai = Math.round(hitungUlang * 100) / 100;
+                                } else {
+                                    pointer.capai = 0;
+                                }
+                            }
+                        } else {
+                            pointer.capai = Math.round(c * 100) / 100;
+                            pointer.num = num;
+                            pointer.den = den;
+                        }
                     }
                 }
             });
@@ -364,16 +393,16 @@
             let chartConfigs = []; let chartIdCounter = 0;
             
             // =================================================================
-            // SCORECARD RINGKASAN EKSEKUTIF 
+            // SCORECARD RINGKASAN EKSEKUTIF (GABUNGAN SEMUA DATA)
             // =================================================================
             let stats = { total: 0, hit: 0, miss: 0, sumInmCpa: 0, countInm: 0 };
 
+            // Hitung dari Wadah Global
             for (let jenis in groupedData) {
                 let isINM = jenis.toLowerCase().includes("nasional") || jenis.toLowerCase().includes("inm");
                 for (let judul in groupedData[jenis]) {
                     stats.total++;
                     let item = groupedData[jenis][judul];
-                    
                     let avgC = 0; let t = 0; let valid = 0;
                     namaBulan.forEach(b => {
                         if (item.bulans[b].capai !== null && item.bulans[b].target !== null) {
@@ -382,17 +411,30 @@
                             valid++;
                         }
                     });
-                    
                     if (valid > 0) {
                         avgC = avgC / valid; 
-                        
-                        if (cekTercapai(judul, avgC, t)) stats.hit++; 
-                        else stats.miss++;
-                        
-                        if (isINM) {
-                            stats.sumInmCpa += avgC;
-                            stats.countInm++;
+                        if (cekTercapai(judul, avgC, t)) stats.hit++; else stats.miss++;
+                        if (isINM) { stats.sumInmCpa += avgC; stats.countInm++; }
+                    }
+                }
+            }
+
+            // Hitung juga dari Wadah Unit (Agar direktur tahu persentase sukses keseluruhan)
+            for (let uName in unitGroupedData) {
+                for (let judul in unitGroupedData[uName]) {
+                    stats.total++;
+                    let item = unitGroupedData[uName][judul];
+                    let avgC = 0; let t = 0; let valid = 0;
+                    namaBulan.forEach(b => {
+                        if (item.bulans[b].capai !== null && item.bulans[b].target !== null) {
+                            avgC += parseFloat(item.bulans[b].capai);
+                            t = parseFloat(item.bulans[b].target); 
+                            valid++;
                         }
+                    });
+                    if (valid > 0) {
+                        avgC = avgC / valid; 
+                        if (cekTercapai(judul, avgC, t)) stats.hit++; else stats.miss++;
                     }
                 }
             }
@@ -443,6 +485,9 @@
             let thBulan = namaBulan.map(b => "<th colspan='2' style='min-width:90px;'>" + b + "</th>").join('');
             let thTargetCapai = namaBulan.map(() => "<th>Tgt</th><th>Cpa</th>").join('');
 
+            // =================================================================
+            // 1. RENDER WADAH GLOBAL (INM, IMP-RS, dll)
+            // =================================================================
             for (let jenis in groupedData) {
                 let tableRows = ''; let nomor = 1; let cardsHtml = '';
                 let daftarJudul = Object.keys(groupedData[jenis]);
@@ -466,6 +511,8 @@
 
                 for (let judul of daftarJudul) {
                     let item = groupedData[jenis][judul];
+                    let anyFailed = false; // Penanda untuk border merah baris
+
                     let tdHtml = namaBulan.map(b => {
                         let t = item.bulans[b].target; 
                         let c = item.bulans[b].capai;
@@ -474,7 +521,11 @@
 
                         if (t === null) return "<td>-</td><td>-</td>";
                         
-                        let cl = cekTercapai(judul, c, t) ? 'status-tercapai' : 'status-gagal';
+                        let isTercapai = cekTercapai(judul, c, t);
+                        let cl = isTercapai ? 'status-tercapai' : 'status-gagal';
+                        let bgCell = isTercapai ? '' : 'bg-danger bg-opacity-10'; // Highlight merah pada sel bulan
+                        
+                        if (!isTercapai) anyFailed = true;
 
                         let infoNumDen = "";
                         let isKepuasan = judul.toLowerCase().includes('kepuasan');
@@ -483,25 +534,34 @@
                             infoNumDen = `<br><small class='text-muted' style='font-size: 0.65rem;'>(N:${num} / D:${den})</small>`;
                         }
 
-                        return "<td class='target-text text-center align-middle'>" + t + "</td><td class='text-center align-middle " + cl + "'>" + c + infoNumDen + "</td>";
+                        return "<td class='target-text text-center align-middle'>" + t + "</td><td class='text-center align-middle " + cl + " " + bgCell + "'>" + c + infoNumDen + "</td>";
                     }).join('');
                     
-                    tableRows += "<tr><td class='text-center align-middle'>" + (nomor++) + "</td><td class='fw-bold align-middle'>" + judul + "</td><td class='text-center align-middle'>" + item.satuan + "</td>" + tdHtml + "</tr>";
-
-                    let htmlAnalisaText = "";
-                    if (isAnalyzed && analisaMap[judul]) {
-                        htmlAnalisaText = "<div class='mt-3 pt-2 border-top'><p class='mb-1 fw-bold text-danger' style='font-size:0.8rem;'>Analisa:</p><div class='p-2 bg-light border rounded' style='font-size:0.85rem;'>" + analisaMap[judul].analisa + "</div>" +
-                            "<p class='mb-1 mt-2 fw-bold text-success' style='font-size:0.8rem;'>Tindak Lanjut:</p><div class='p-2 bg-light border rounded' style='font-size:0.85rem;'>" + analisaMap[judul].tl + "</div></div>";
-                    } else if (!isAnalyzed) {
-                        htmlAnalisaText = "<div class='analisa-container mt-3 pt-2 border-top' style='display: none;'><label class='fw-bold text-danger' style='font-size:0.8rem;'>Analisa:</label><textarea class='form-control form-control-sm input-analisa' data-judul='" + judul + "' rows='2'></textarea>" +
-                            "<label class='fw-bold text-success mt-2' style='font-size:0.8rem;'>Tindak Lanjut:</label><textarea class='form-control form-control-sm input-tl' data-judul='" + judul + "' rows='2'></textarea></div>";
-                    }
+                    let trClass = anyFailed ? "border-start border-4 border-danger" : "";
+                    tableRows += "<tr class='" + trClass + "'><td class='text-center align-middle'>" + (nomor++) + "</td><td class='fw-bold align-middle'>" + judul + "</td><td class='text-center align-middle'>" + item.satuan + "</td>" + tdHtml + "</tr>";
 
                     let canvasId = "chart-" + (chartIdCounter++);
                     let colWidth = (selectedTipe === 'tahunan' || selectedTipe === 'bulanan') ? 'col-12' : 'col-md-6';
-                    let chartAreaHtml = selectedTipe === 'bulanan' ? "" : "<div class='chart-container'><canvas id='" + canvasId + "'></canvas></div>";
                     
-                    cardsHtml += "<div class='" + colWidth + " mb-4'><div class='card h-100 shadow-sm'><div class='card-body'><h6 class='text-center fw-bold'>" + judul + "</h6>" + chartAreaHtml + htmlAnalisaText + "</div></div></div>";
+                    let titleHtml = "<h6 class='text-center fw-bold text-dark'>" + judul + "</h6>";
+                    let chartAreaHtml = selectedTipe === 'bulanan' ? "" : titleHtml + "<div class='chart-container'><canvas id='" + canvasId + "'></canvas></div>";
+                    
+                    let htmlAnalisaText = "";
+                    if (isAnalyzed && analisaMap[judul]) {
+                        let analisaTitle = selectedTipe === 'bulanan' ? titleHtml : "";
+                        htmlAnalisaText = analisaTitle + "<div class='mt-3 pt-2 border-top'><p class='mb-1 fw-bold text-danger' style='font-size:0.8rem;'>Analisa:</p><div class='p-2 bg-light border rounded' style='font-size:0.85rem;'>" + analisaMap[judul].analisa + "</div>" +
+                            "<p class='mb-1 mt-2 fw-bold text-success' style='font-size:0.8rem;'>Tindak Lanjut:</p><div class='p-2 bg-light border rounded' style='font-size:0.85rem;'>" + analisaMap[judul].tl + "</div></div>";
+                    } else if (!isAnalyzed) {
+                        let analisaTitle = selectedTipe === 'bulanan' ? titleHtml : "";
+                        htmlAnalisaText = "<div class='analisa-container' style='display: none;'>" + analisaTitle + "<div class='mt-3 pt-2 border-top'><label class='fw-bold text-danger' style='font-size:0.8rem;'>Analisa:</label><textarea class='form-control form-control-sm input-analisa' data-judul='" + judul + "' rows='2'></textarea>" +
+                            "<label class='fw-bold text-success mt-2' style='font-size:0.8rem;'>Tindak Lanjut:</label><textarea class='form-control form-control-sm input-tl' data-judul='" + judul + "' rows='2'></textarea></div></div>";
+                    }
+
+                    let isHiddenCard = (selectedTipe === 'bulanan' && !isAnalyzed);
+                    let displayStyle = isHiddenCard ? "display: none;" : "";
+                    let cardClass = isHiddenCard ? "card-analisa-only" : "";
+                    
+                    cardsHtml += "<div class='" + colWidth + " mb-4 " + cardClass + "' style='" + displayStyle + "'><div class='card h-100 shadow-sm'><div class='card-body'>" + chartAreaHtml + htmlAnalisaText + "</div></div></div>";
                     
                     if (selectedTipe !== 'bulanan') {
                         chartConfigs.push({ id: canvasId, labels: namaBulan, target: namaBulan.map(b => item.bulans[b].target), capai: namaBulan.map(b => item.bulans[b].capai), satuan: item.satuan });
@@ -510,6 +570,85 @@
                 
                 fullHtml += "<div class='mt-4 mb-2'><h5 class='fw-bold text-primary border-start border-4 border-primary ps-2'>" + jenis + "</h5></div>" +
                     "<div class='table-responsive mb-4 shadow-sm'><table class='table table-bordered table-hover mb-0' style='font-size: 0.8rem; background:#fff;'><thead class='text-center bg-light'><tr><th rowspan='2' class='align-middle'>No</th><th rowspan='2' class='align-middle'>Indikator</th><th rowspan='2' class='align-middle'>Sat</th>" + thBulan + "</tr><tr>" + thTargetCapai + "</tr></thead><tbody>" + tableRows + "</tbody></table></div><div class='row'>" + cardsHtml + "</div>";
+            }
+
+            // =================================================================
+            // 2. RENDER WADAH UNIT (ACCORDION IMP-UNIT KHUSUS RS_ALL)
+            // =================================================================
+            if (selectedUnit === "RS_ALL" && Object.keys(unitGroupedData).length > 0) {
+                fullHtml += "<div class='mt-5 mb-3'><h4 class='fw-bold text-dark border-bottom pb-2'><i class='fas fa-layer-group text-primary me-2'></i> Indikator Mutu Prioritas Unit (IMP-Unit)</h4><p class='text-muted d-print-none'>Klik nama unit di bawah ini untuk melihat rincian capaian indikator prioritas masing-masing unit.</p></div>";
+                fullHtml += "<div class='accordion shadow-sm' id='accordionImpUnit'>";
+                
+                let unitNames = Object.keys(unitGroupedData).sort();
+                unitNames.forEach((uName, uIdx) => {
+                    let collapseId = "collapseUnit_" + uIdx;
+                    
+                    let uTableRows = "";
+                    let uNomor = 1;
+                    let uCardsHtml = "";
+                    let uDaftarJudul = Object.keys(unitGroupedData[uName]).sort();
+                    
+                    uDaftarJudul.forEach(uJudul => {
+                        let uItem = unitGroupedData[uName][uJudul];
+                        let anyFailedU = false;
+                        
+                        let uTdHtml = namaBulan.map(b => {
+                            let ut = uItem.bulans[b].target;
+                            let uc = uItem.bulans[b].capai;
+                            let unum = uItem.bulans[b].num;
+                            let uden = uItem.bulans[b].den;
+                            
+                            if (ut === null) return "<td>-</td><td>-</td>";
+                            
+                            let isTercapaiU = cekTercapai(uJudul, uc, ut);
+                            let ucl = isTercapaiU ? 'status-tercapai' : 'status-gagal';
+                            let uBg = isTercapaiU ? '' : 'bg-danger bg-opacity-10'; // Highlight merah
+                            if (!isTercapaiU) anyFailedU = true;
+                            
+                            let uInfoNumDen = "";
+                            if (!uJudul.toLowerCase().includes('kepuasan') && unum !== '' && uden !== '' && unum !== null && uden !== null) {
+                                uInfoNumDen = `<br><small class='text-muted' style='font-size: 0.65rem;'>(N:${unum} / D:${uden})</small>`;
+                            }
+                            return "<td class='target-text text-center align-middle'>" + ut + "</td><td class='text-center align-middle " + ucl + " " + uBg + "'>" + uc + uInfoNumDen + "</td>";
+                        }).join('');
+                        
+                        let uTrClass = anyFailedU ? "border-start border-4 border-danger" : "";
+                        uTableRows += "<tr class='" + uTrClass + "'><td class='text-center align-middle'>" + (uNomor++) + "</td><td class='fw-bold align-middle'>" + uJudul + "</td><td class='text-center align-middle'>" + uItem.satuan + "</td>" + uTdHtml + "</tr>";
+                        
+                        let canvasId = "chart-u-" + (chartIdCounter++);
+                        let colWidth = (selectedTipe === 'tahunan' || selectedTipe === 'bulanan') ? 'col-12' : 'col-md-6';
+                        let titleHtml = "<h6 class='text-center fw-bold text-dark'>" + uJudul + "</h6>";
+                        let chartAreaHtml = selectedTipe === 'bulanan' ? "" : titleHtml + "<div class='chart-container'><canvas id='" + canvasId + "'></canvas></div>";
+                        
+                        let isHiddenCard = (selectedTipe === 'bulanan'); 
+                        let displayStyle = isHiddenCard ? "display: none;" : "";
+                        let cardClass = isHiddenCard ? "card-analisa-only" : "";
+                        
+                        uCardsHtml += "<div class='" + colWidth + " mb-4 " + cardClass + "' style='" + displayStyle + "'><div class='card h-100 shadow-sm border-0 bg-white'><div class='card-body'>" + chartAreaHtml + "</div></div></div>";
+                        
+                        if (selectedTipe !== 'bulanan') {
+                            chartConfigs.push({ id: canvasId, labels: namaBulan, target: namaBulan.map(b => uItem.bulans[b].target), capai: namaBulan.map(b => uItem.bulans[b].capai), satuan: uItem.satuan });
+                        }
+                    });
+                    
+                    let unitTableHtml = "<div class='table-responsive mb-4'><table class='table table-bordered table-hover mb-0' style='font-size: 0.8rem; background:#fff;'><thead class='text-center bg-light'><tr><th rowspan='2' class='align-middle'>No</th><th rowspan='2' class='align-middle'>Indikator</th><th rowspan='2' class='align-middle'>Sat</th>" + thBulan + "</tr><tr>" + thTargetCapai + "</tr></thead><tbody>" + uTableRows + "</tbody></table></div><div class='row'>" + uCardsHtml + "</div>";
+                    
+                    fullHtml += `
+                    <div class="accordion-item border mb-3 shadow-sm" style="border-radius: 8px; overflow: hidden;">
+                        <h2 class="accordion-header" id="heading_${collapseId}">
+                            <button class="accordion-button collapsed fw-bold text-primary bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" style="font-size: 1rem;">
+                                <i class="fas fa-clinic-medical me-2 text-secondary"></i> UNIT: ${uName}
+                            </button>
+                        </h2>
+                        <div id="${collapseId}" class="accordion-collapse collapse" data-bs-parent="#accordionImpUnit">
+                            <div class="accordion-body bg-white pt-4">
+                                ${unitTableHtml}
+                            </div>
+                        </div>
+                    </div>`;
+                });
+                
+                fullHtml += "</div>"; 
             }
 
             if (!isAnalyzed) {
@@ -538,11 +677,18 @@
 
         window.toggleAnalisaMode = function() {
             const cont = document.querySelectorAll('.analisa-container');
+            const hiddenCards = document.querySelectorAll('.card-analisa-only');
             const foot = document.getElementById('analisaFooter');
             const btn = document.getElementById('btnToggleAnalisa');
-            if (cont.length > 0) {
-                const isHidden = cont[0].style.display === 'none';
+            
+            if (cont.length > 0 || hiddenCards.length > 0) {
+                let isHidden = true;
+                if (cont.length > 0) { isHidden = cont[0].style.display === 'none'; }
+                else if (hiddenCards.length > 0) { isHidden = hiddenCards[0].style.display === 'none'; }
+                
                 cont.forEach(el => el.style.display = isHidden ? 'block' : 'none');
+                hiddenCards.forEach(el => el.style.display = isHidden ? 'block' : 'none');
+                
                 if(foot) foot.style.display = isHidden ? 'block' : 'none';
                 if (isHidden) {
                     btn.innerHTML = "<i class='fas fa-times me-1'></i> Batal Analisa";
@@ -555,6 +701,12 @@
         };
 
         window.exportKeWord = function() {
+            // Memaksa semua menu Accordion untuk Terbuka sebelum di-export ke Word
+            document.querySelectorAll('.accordion-collapse').forEach(el => {
+                el.classList.add('show');
+                el.style.display = 'block';
+            });
+
             const content = document.getElementById('dashboardContent').cloneNode(true);
             const originalCanvases = document.querySelectorAll('canvas');
             const clonedCanvases = content.querySelectorAll('canvas');
@@ -577,6 +729,11 @@
             link.href = URL.createObjectURL(blob); 
             link.download = "Laporan_Mutu_" + activePeriodeTitle.replace(/ /g, "_") + ".doc";
             link.click();
+            
+            // Mengembalikan status Accordion setelah selesai Export
+            document.querySelectorAll('.accordion-collapse').forEach(el => {
+                el.style.display = '';
+            });
         };
 
         window.kirimAnalisaKeServer = function() {
