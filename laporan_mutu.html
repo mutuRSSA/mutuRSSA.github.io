@@ -33,7 +33,6 @@
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             @page { margin: 1cm; size: landscape; }
             
-            /* CSS Cetak Khusus agar Accordion IMP-Unit terbuka semua saat di-print */
             .collapse:not(.show) { display: block !important; height: auto !important; }
             .accordion-button::after { display: none !important; }
             .accordion-button { background-color: #f8f9fa !important; border-bottom: 2px solid #000 !important; }
@@ -172,11 +171,8 @@
             let judulMurni = judul.trim();
             let arah = mappingArahGlobal[judulMurni] || "Positif";
 
-            if (arah.toLowerCase() === "negatif") {
-                return c <= t; 
-            } else {
-                return c >= t; 
-            }
+            if (arah.toLowerCase() === "negatif") { return c <= t; } 
+            else { return c >= t; }
         };
 
         document.addEventListener("DOMContentLoaded", function () {
@@ -237,9 +233,7 @@
             
             if (userUnit && userUnit !== "Non-Unit" && userRole !== "Komite Mutu") {
                 let optionExists = Array.from(unitSelect.options).some(opt => opt.value === userUnit);
-                if (!optionExists) {
-                    unitSelect.add(new Option(userUnit, userUnit));
-                }
+                if (!optionExists) { unitSelect.add(new Option(userUnit, userUnit)); }
                 
                 unitSelect.value = userUnit;
                 unitSelect.setAttribute("disabled", "true");
@@ -262,13 +256,9 @@
             const selectedDetail = document.getElementById('filterDetailPeriode').value;
             const namaBulan = kamusWaktu[selectedTipe][selectedDetail];
             
-            if (selectedTipe === 'tahunan') {
-                activePeriodeTitle = "Tahunan " + selectedTahun;
-            } else if (selectedTipe === 'bulanan') {
-                activePeriodeTitle = "Bulan " + namaBulan[0] + " " + selectedTahun;
-            } else {
-                activePeriodeTitle = selectedTipe.charAt(0).toUpperCase() + selectedTipe.slice(1) + " " + selectedDetail + " Tahun " + selectedTahun;
-            }
+            if (selectedTipe === 'tahunan') { activePeriodeTitle = "Tahunan " + selectedTahun; } 
+            else if (selectedTipe === 'bulanan') { activePeriodeTitle = "Bulan " + namaBulan[0] + " " + selectedTahun; } 
+            else { activePeriodeTitle = selectedTipe.charAt(0).toUpperCase() + selectedTipe.slice(1) + " " + selectedDetail + " Tahun " + selectedTahun; }
             
             if (chartInstances.length > 0) chartInstances.forEach(chart => chart.destroy());
             chartInstances = [];
@@ -282,11 +272,10 @@
                 return matchTahun && matchBulan;
             });
 
-            // LOGIKA FILTER DIPERBARUI: Menghapus Data "#N/A" (Data mentah PPI/HAIs)
+            // PERBAIKAN: Membaca kolom "Kategori Indikator" dengan fallback ke "Jenis Indikator"
             let filteredData = periodData.filter(row => {
-                let jenis = (row['Jenis Indikator'] || "").toString().toUpperCase().trim();
+                let jenis = (row['Kategori Indikator'] || row['Jenis Indikator'] || "").toString().toUpperCase().trim();
                 
-                // MENGHILANGKAN SEMUA DATA YANG KATEGORINYA #N/A (TERMASUK HAIs MENTAH)
                 if (jenis === "#N/A" || jenis === "N/A" || jenis === "") return false;
                 
                 let matchUnit = (selectedUnit === "RS_ALL") ? true : (row['Unit'] === selectedUnit);
@@ -305,12 +294,12 @@
                 riwayat.forEach(r => { analisaMap[r['Judul Indikator']] = { analisa: r['Analisa'], tl: r['Tindak Lanjut'] }; });
             }
 
-            // DIPISAH MENJADI DUA WADAH: groupedData (INM/IMP-RS) dan unitGroupedData (IMP-Unit)
             let groupedData = {};
             let unitGroupedData = {};
 
             filteredData.forEach(row => {
-                let jenis = row['Jenis Indikator'] || 'Lainnya'; 
+                // PERBAIKAN: Membaca Kategori Indikator
+                let jenis = row['Kategori Indikator'] || row['Jenis Indikator'] || 'Lainnya'; 
                 let judul = row['Judul indikator'] || 'Tanpa Judul';
                 let satuan = (row['Satuan'] || '-').toString().trim();
                 let bulanNormalized = (row['Bulan'] || "").toString().trim().replace(/^\w/, c => c.toUpperCase());
@@ -323,7 +312,6 @@
 
                 let isKepuasan = judul.toLowerCase().includes('kepuasan');
 
-                // JIKA SELURUH RS DIPILIH & JENISNYA IMP-UNIT -> MASUKKAN KE WADAH UNIT
                 if (selectedUnit === "RS_ALL" && jenis.toUpperCase().includes("UNIT")) {
                     if (!unitGroupedData[unitName]) unitGroupedData[unitName] = {};
                     if (!unitGroupedData[unitName][judul]) {
@@ -339,7 +327,6 @@
                         pointer.den = den;
                     }
                 } 
-                // JIKA BUKAN IMP-UNIT ATAU SEDANG MEMBUKA 1 UNIT SAJA -> MASUKKAN KE WADAH GLOBAL
                 else {
                     if (!groupedData[jenis]) groupedData[jenis] = {};
                     if (!groupedData[jenis][judul]) {
@@ -392,12 +379,8 @@
 
             let chartConfigs = []; let chartIdCounter = 0;
             
-            // =================================================================
-            // SCORECARD RINGKASAN EKSEKUTIF (GABUNGAN SEMUA DATA)
-            // =================================================================
             let stats = { total: 0, hit: 0, miss: 0, sumInmCpa: 0, countInm: 0 };
 
-            // Hitung dari Wadah Global
             for (let jenis in groupedData) {
                 let isINM = jenis.toLowerCase().includes("nasional") || jenis.toLowerCase().includes("inm");
                 for (let judul in groupedData[jenis]) {
@@ -419,7 +402,6 @@
                 }
             }
 
-            // Hitung juga dari Wadah Unit (Agar direktur tahu persentase sukses keseluruhan)
             for (let uName in unitGroupedData) {
                 for (let judul in unitGroupedData[uName]) {
                     stats.total++;
@@ -495,23 +477,16 @@
                 daftarJudul.sort((a, b) => {
                     let textA = a.toLowerCase();
                     let textB = b.toLowerCase();
-                    const keywords = [
-                        "kebersihan tangan", "pelindung diri", "identifikasi pasien", 
-                        "seksio sesarea", "alur klinis", "tunggu rawat jalan", "penundaan operasi", 
-                        "visite dokter", "kritis", "formularium", "risiko pasien jatuh", 
-                        "tanggap komplain", "kepuasan"
-                    ];
-                    let indexA = keywords.findIndex(k => textA.includes(k));
-                    let indexB = keywords.findIndex(k => textB.includes(k));
-                    if (indexA === -1) indexA = 999;
-                    if (indexB === -1) indexB = 999;
+                    const keywords = ["kebersihan tangan", "pelindung diri", "identifikasi pasien", "seksio sesarea", "alur klinis", "tunggu rawat jalan", "penundaan operasi", "visite dokter", "kritis", "formularium", "risiko pasien jatuh", "tanggap komplain", "kepuasan"];
+                    let indexA = keywords.findIndex(k => textA.includes(k)); let indexB = keywords.findIndex(k => textB.includes(k));
+                    if (indexA === -1) indexA = 999; if (indexB === -1) indexB = 999;
                     if (indexA !== indexB) return indexA - indexB;
                     return textA.localeCompare(textB);
                 });
 
                 for (let judul of daftarJudul) {
                     let item = groupedData[jenis][judul];
-                    let anyFailed = false; // Penanda untuk border merah baris
+                    let anyFailed = false; 
 
                     let tdHtml = namaBulan.map(b => {
                         let t = item.bulans[b].target; 
@@ -523,7 +498,7 @@
                         
                         let isTercapai = cekTercapai(judul, c, t);
                         let cl = isTercapai ? 'status-tercapai' : 'status-gagal';
-                        let bgCell = isTercapai ? '' : 'bg-danger bg-opacity-10'; // Highlight merah pada sel bulan
+                        let bgCell = isTercapai ? '' : 'bg-danger bg-opacity-10'; 
                         
                         if (!isTercapai) anyFailed = true;
 
@@ -582,10 +557,7 @@
                 let unitNames = Object.keys(unitGroupedData).sort();
                 unitNames.forEach((uName, uIdx) => {
                     let collapseId = "collapseUnit_" + uIdx;
-                    
-                    let uTableRows = "";
-                    let uNomor = 1;
-                    let uCardsHtml = "";
+                    let uTableRows = ""; let uNomor = 1; let uCardsHtml = "";
                     let uDaftarJudul = Object.keys(unitGroupedData[uName]).sort();
                     
                     uDaftarJudul.forEach(uJudul => {
@@ -602,7 +574,7 @@
                             
                             let isTercapaiU = cekTercapai(uJudul, uc, ut);
                             let ucl = isTercapaiU ? 'status-tercapai' : 'status-gagal';
-                            let uBg = isTercapaiU ? '' : 'bg-danger bg-opacity-10'; // Highlight merah
+                            let uBg = isTercapaiU ? '' : 'bg-danger bg-opacity-10'; 
                             if (!isTercapaiU) anyFailedU = true;
                             
                             let uInfoNumDen = "";
@@ -701,7 +673,6 @@
         };
 
         window.exportKeWord = function() {
-            // Memaksa semua menu Accordion untuk Terbuka sebelum di-export ke Word
             document.querySelectorAll('.accordion-collapse').forEach(el => {
                 el.classList.add('show');
                 el.style.display = 'block';
@@ -730,7 +701,6 @@
             link.download = "Laporan_Mutu_" + activePeriodeTitle.replace(/ /g, "_") + ".doc";
             link.click();
             
-            // Mengembalikan status Accordion setelah selesai Export
             document.querySelectorAll('.accordion-collapse').forEach(el => {
                 el.style.display = '';
             });
