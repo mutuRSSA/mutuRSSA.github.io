@@ -83,7 +83,7 @@
         </div>
 
         <div id="loadingMessage" class="alert alert-info text-center shadow-sm fw-bold">
-            <i class="fas fa-spinner fa-spin me-2"></i> Mengambil data dari server...
+            <i class="fas fa-spinner fa-spin me-2"></i> Melakukan validasi target indikator mutu...
         </div>
 
         <div class="bg-white p-4 card-custom" id="chartCard" style="display: none;">
@@ -138,7 +138,6 @@
                     fetch(API_CONFIG.MUTU, {
                         method: "POST",
                         headers: { "Content-Type": "text/plain;charset=utf-8" },
-                        // PERBAIKAN: Action disesuaikan dengan backend dan role dikirimkan
                         body: JSON.stringify({ action: 'sync_master', role: userRole }) 
                     })
                     .then(res => res.json())
@@ -166,14 +165,20 @@
             });
         };
 
+        // FUNGSI PENILAIAN TARGET DIPERKETAT
         window.cekTercapai = function(judul, capaian, target) {
             let c = parseFloat(capaian);
             let t = parseFloat(target);
             let judulMurni = judul.trim();
+            
+            // Mengambil arah dari mapping (baku: Positif jika tidak ditemukan)
             let arah = mappingArahGlobal[judulMurni] || "Positif";
 
-            if (arah.toLowerCase() === "negatif") { return c <= t; } 
-            else { return c >= t; }
+            if (arah.toLowerCase().includes("negatif")) { 
+                return c <= t; // Jika negatif (seperti CAUTI, VAP), capaian HARUS kurang dari atau sama dengan target
+            } else { 
+                return c >= t; // Jika positif (seperti Kepatuhan), capaian HARUS lebih dari atau sama dengan target
+            }
         };
 
         document.addEventListener("DOMContentLoaded", function () {
@@ -201,20 +206,38 @@
             });
             document.getElementById('filterTipeLaporan').dispatchEvent(new Event('change'));
 
-            fetch(scriptURL).then(res => res.json()).then(result => {
-                if (result.status === 'success') {
-                    rawData = result.data; 
-                    rawDataAnalisa = result.dataAnalisa || []; 
-                    mappingArahGlobal = result.mappingArah || {}; 
+            // PERBAIKAN KRUSIAL: Menarik Data Laporan DAN Data Kamus Sekaligus (Cross-Reference)
+            Promise.all([
+                fetch(scriptURL).then(res => res.json()),
+                fetch(scriptURL + "?action=get_profil_indikator").then(res => res.json())
+            ])
+            .then(([resDashboard, resProfil]) => {
+                if (resDashboard.status === 'success') {
+                    rawData = resDashboard.data; 
+                    rawDataAnalisa = resDashboard.dataAnalisa || []; 
+                    
+                    // Membangun Ulang Kamus Arah Target (Sangat Presisi)
+                    mappingArahGlobal = {};
+                    if (resProfil.status === 'success' && resProfil.data) {
+                        resProfil.data.forEach(profil => {
+                            let judul = profil['Judul Indikator'] || profil['Kolom_Kriteria'];
+                            let arah = profil['Arah Target'];
+                            if (judul && arah) {
+                                mappingArahGlobal[judul.trim()] = arah.trim();
+                            }
+                        });
+                    }
 
                     document.getElementById('loadingMessage').style.display = 'none';
                     document.getElementById('chartCard').style.display = 'block';
                     
                     populateDropdowns(); 
                     aturKunciUnitDanRender();
+                } else {
+                    throw new Error("Gagal mengambil data rekap gabungan.");
                 }
             }).catch(err => {
-                document.getElementById('loadingMessage').innerHTML = '<i class="fas fa-exclamation-triangle text-danger me-2"></i> Gagal memuat data dari server.';
+                document.getElementById('loadingMessage').innerHTML = "<i class='fas fa-exclamation-triangle text-danger me-2'></i> Gagal memuat data dari server.";
             });
         });
 
@@ -466,6 +489,9 @@
             let thBulan = namaBulan.map(b => "<th colspan='2' style='min-width:90px;'>" + b + "</th>").join('');
             let thTargetCapai = namaBulan.map(() => "<th>Tgt</th><th>Cpa</th>").join('');
 
+            // =================================================================
+            // 1. RENDER WADAH GLOBAL (INM, IMP-RS, dll)
+            // =================================================================
             for (let jenis in groupedData) {
                 let tableRows = ''; let nomor = 1; let cardsHtml = '';
                 let daftarJudul = Object.keys(groupedData[jenis]);
@@ -543,6 +569,9 @@
                     "<div class='table-responsive mb-4 shadow-sm'><table class='table table-bordered table-hover mb-0' style='font-size: 0.8rem; background:#fff;'><thead class='text-center bg-light'><tr><th rowspan='2' class='align-middle'>No</th><th rowspan='2' class='align-middle'>Indikator</th><th rowspan='2' class='align-middle'>Sat</th>" + thBulan + "</tr><tr>" + thTargetCapai + "</tr></thead><tbody>" + tableRows + "</tbody></table></div><div class='row'>" + cardsHtml + "</div>";
             }
 
+            // =================================================================
+            // 2. RENDER WADAH UNIT (ACCORDION IMP-UNIT KHUSUS RS_ALL)
+            // =================================================================
             if (selectedUnit === "RS_ALL" && Object.keys(unitGroupedData).length > 0) {
                 fullHtml += "<div class='mt-5 mb-3'><h4 class='fw-bold text-dark border-bottom pb-2'><i class='fas fa-layer-group text-primary me-2'></i> Indikator Mutu Prioritas Unit (IMP-Unit)</h4><p class='text-muted d-print-none'>Klik nama unit di bawah ini untuk melihat rincian capaian indikator prioritas masing-masing unit.</p></div>";
                 fullHtml += "<div class='accordion shadow-sm' id='accordionImpUnit'>";
