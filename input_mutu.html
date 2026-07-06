@@ -9,7 +9,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" rel="stylesheet">
@@ -29,7 +28,6 @@
     .month-tab-btn:hover { background-color: #e9ecef; }
     .month-tab-btn.active { background-color: #0dcaf0 !important; color: #fff !important; border-color: #0dcaf0 !important; box-shadow: 0 2px 4px rgba(13,202,240,0.3);}
 
-    /* PERBAIKAN CSS HANDSONTABLE */
     .handsontable { font-family: 'Segoe UI', Tahoma, sans-serif !important; font-size: 13px !important; color: #495057 !important; box-shadow: none !important;}
     .handsontableInput { color: #2c3e50 !important; background-color: #ffffff !important; font-size: 13px !important; box-shadow: 0 0 0 2px #0dcaf0 !important; padding: 4px !important; }
     
@@ -38,7 +36,6 @@
         border-color: #dee2e6 !important; text-align: center; vertical-align: middle !important; 
         padding: 8px 30px 8px 8px !important; font-size: 12px !important; line-height: 1.4 !important;      
         white-space: normal !important; word-wrap: normal !important; overflow-wrap: normal !important; word-break: normal !important;
-        /* min-width: 150px dihapus agar tidak merusak kalkulasi JS */
     }
     
     .handsontable thead th { border-bottom: 2px solid #0dcaf0 !important; }
@@ -174,7 +171,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        const scriptURL = API_CONFIG.MUTU;
+        const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
         
         let hot = null; 
         let activeFormType = new URLSearchParams(window.location.search).get('form');
@@ -196,6 +193,41 @@
                 index = Math.floor(index / 26) - 1;
             }
             return letter;
+        };
+
+        // ALAT TRANSLASI TANGGAL INDONESIA KE MESIN
+        const parseIndoDate = (dateStr) => {
+            if (!dateStr) return moment.invalid();
+            if (typeof dateStr.getMonth === 'function') return moment(dateStr);
+            let s = String(dateStr).toLowerCase().trim();
+            const indoMonths = {'januari':'01', 'februari':'02', 'maret':'03', 'april':'04', 'mei':'05', 'juni':'06', 'juli':'07', 'agustus':'08', 'september':'09', 'oktober':'10', 'november':'11', 'desember':'12'};
+            for (let id in indoMonths) {
+                if (s.includes(id)) {
+                    let replaced = s.replace(id, indoMonths[id]);
+                    return moment(replaced, ["D MM YYYY", "DD MM YYYY", "D/MM/YYYY", "DD/MM/YYYY", "DD-MM-YYYY"]);
+                }
+            }
+            return moment(dateStr, ["DD/MM/YYYY", "YYYY-MM-DD", "DD-MM-YYYY", "YYYY/MM/DD", "D/M/YY", "D/M/YYYY", moment.ISO_8601], false);
+        };
+
+        // ALAT TRANSLASI WAKTU 24 JAM
+        const parseTime24 = (timeStr) => {
+            if (!timeStr) return null;
+            let s = String(timeStr).trim();
+            
+            // Format aneh dari Google Sheets (e.g. 1899-12-30T09:48:00.000Z)
+            if (s.includes('T') && s.includes('Z')) {
+                let m = moment(s);
+                if (m.isValid()) return m.format('HH:mm:ss');
+            }
+            
+            s = s.replace(/\./g, ':');
+            if (/^\d{1,2}:\d{2}$/.test(s)) s += ":00"; // Paksa tambah detik
+            
+            let m = moment(s, ["HH:mm:ss", "H:mm:ss", "HH:mm", "H:mm", "hh:mm:ss A", "h:mm:ss a", "hh:mm A", "h:mm a", "hh:mmA", "h:mma"], true);
+            if (!m.isValid()) m = moment(s, ["HH:mm:ss", "H:mm:ss", "hh:mm:ss A", "h:mm:ss a", "hh:mm A", "h:mm a"]);
+            
+            return m.isValid() ? m.format('HH:mm:ss') : s;
         };
 
         let judulIndikatorAktif = "";
@@ -226,6 +258,14 @@
                             renderMonthTabsUI();
                         }
 
+                        let timeColIndices = [];
+                        result.columns.forEach((col, idx) => {
+                            let t = (col.type || '').toString().toLowerCase().trim();
+                            if (t === 'time' || t === 'waktu' || t === 'jam' || t === 'durasi_hm' || t === 'durasi_hms' || t === 'durasi_ms') {
+                                timeColIndices.push({ index: idx, type: t });
+                            }
+                        });
+
                         const applyFormulasToRow = (rowArray, rowIndex, columnsDef) => {
                             columnsDef.forEach((col, colIndex) => {
                                 if (col.formula && col.formula.trim() !== "") {
@@ -236,9 +276,24 @@
                                 }
                             });
                         };
-                        result.data.forEach((row, rowIndex) => { applyFormulasToRow(row, rowIndex, result.columns); });
 
-                        // PERBAIKAN DEPRECATION WARNING: correctFormat dihapus
+                        result.data.forEach((row, rowIndex) => { 
+                            applyFormulasToRow(row, rowIndex, result.columns); 
+                            
+                            // SANITASI WAKTU 24 JAM
+                            timeColIndices.forEach(colInfo => {
+                                let val = row[colInfo.index];
+                                if (val && !String(val).startsWith('=')) {
+                                    let parsed = parseTime24(val);
+                                    if (colInfo.type === 'durasi_hm' || colInfo.type === 'durasi_ms') {
+                                        row[colInfo.index] = parsed ? parsed.substring(0, 5) : val; // HH:mm
+                                    } else {
+                                        row[colInfo.index] = parsed || val; // HH:mm:ss
+                                    }
+                                }
+                            });
+                        });
+
                         let hotColumns = result.columns.map(c => {
                             let rawType = (c.type || 'text').toString().toLowerCase().trim();
                             let config = { type: 'text', readOnly: c.readOnly || false, wordWrap: true }; 
@@ -253,8 +308,10 @@
                                 config.type = 'text'; config.validator = /^[0-9]+:[0-5][0-9]$/;
                             } else if (rawType === 'durasi_hms') {
                                 config.type = 'text'; config.validator = /^[0-9]+:[0-5][0-9]:[0-5][0-9]$/;
-                            } else if (rawType === 'time') {
-                                config.type = 'time'; config.timeFormat = 'HH:mm:ss'; 
+                            } else if (rawType === 'time' || rawType === 'waktu' || rawType === 'jam') {
+                                config.type = 'time'; 
+                                config.timeFormat = 'HH:mm:ss';
+                                config.correctFormat = true;
                             }
                             return config;
                         });
@@ -331,8 +388,21 @@
                                 var cellProperties = {};
                                 cellProperties.renderer = function(instance, td, r, c, prop, value, cellProps) {
                                     var cellType = cellProps.type || 'text';
+                                    var colDef = result.columns[c];
+                                    var cType = (colDef.type || '').toString().toLowerCase().trim();
+                                    
+                                    // PENCEGAH TAMPILAN AM/PM VISUAL
+                                    if (value && typeof value === 'string' && (cType === 'time' || cType === 'waktu' || cType === 'jam' || cType === 'durasi_hm' || cType === 'durasi_ms' || cType === 'durasi_hms')) {
+                                        if (value.toLowerCase().includes('am') || value.toLowerCase().includes('pm')) {
+                                            value = parseTime24(value);
+                                            if (cType === 'durasi_hm' || cType === 'durasi_ms') value = value.substring(0, 5);
+                                        }
+                                    }
+
                                     var baseRenderer = Handsontable.renderers.getRenderer(cellType);
-                                    baseRenderer.apply(this, arguments);
+                                    var args = Array.prototype.slice.call(arguments);
+                                    args[5] = value; 
+                                    baseRenderer.apply(this, args);
                                     
                                     let statusColIndex = instance.getSettings().columns.length - 1;
                                     let status = instance.getDataAtCell(r, statusColIndex);
@@ -378,13 +448,19 @@
                                     }    
 
                                     if (newVal && typeof newVal === 'string' && newVal.trim() !== "") {
-                                        if (colSettings.type === 'time' || colDef.type === 'durasi_hm' || colDef.type === 'durasi_hms' || colDef.type === 'durasi_ms') {
-                                            change[3] = newVal.replace(/\./g, ':');
+                                        let colType = (colSettings.type || colDef.type || '').toString().toLowerCase().trim();
+                                        
+                                        if (colType === 'time' || colType === 'waktu' || colType === 'jam') {
+                                            let parsed = parseTime24(newVal);
+                                            if (parsed) change[3] = parsed;
+                                        }
+                                        else if (colType === 'durasi_hm' || colType === 'durasi_hms' || colType === 'durasi_ms') {
+                                            let parsed = parseTime24(newVal);
+                                            if (parsed) change[3] = (colType === 'durasi_hm' || colType === 'durasi_ms') ? parsed.substring(0, 5) : parsed;
                                         }
                                         else if (colSettings.type === 'date' || colDef.type === 'date' || colDef.type === 'calendar') {
-                                            let tebakanTanggal = moment(newVal, ["YYYY-MM-DD", "DD/MM/YYYY", "DD-MM-YYYY", "YYYY/MM/DD", "D/M/YY", "D/M/YYYY", moment.ISO_8601], true);
-                                            if (!tebakanTanggal.isValid()) tebakanTanggal = moment(newVal); 
-                                            if (tebakanTanggal.isValid()) change[3] = tebakanTanggal.format('DD/MM/YYYY'); 
+                                            let tebakan = parseIndoDate(newVal);
+                                            if (tebakan.isValid()) change[3] = tebakan.format('DD/MM/YYYY'); 
                                         }
                                     }
 
@@ -410,15 +486,22 @@
 
                             const rowCount = hot.countRows();
                             const rowsToHide = [];
+                            const monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
+                            const currentMonthName = monthNames[monthNum - 1];
+
                             for(let r = 0; r < rowCount; r++) {
                                 if(hot.isEmptyRow(r)) continue;
                                 let dateVal = hot.getDataAtCell(r, dateColumnIndex);
+                                
                                 if(dateVal) {
-                                    let parsedDate = moment(dateVal, ["YYYY-MM-DD", "DD/MM/YYYY", "DD-MM-YYYY", "YYYY/MM/DD", "D/M/YY", "D/M/YYYY", moment.ISO_8601], true);
-                                    if (!parsedDate.isValid()) parsedDate = moment(dateVal);
-                                    
+                                    let parsedDate = parseIndoDate(dateVal);
                                     if (parsedDate.isValid()) {
                                         if ((parsedDate.month() + 1) !== monthNum) {
+                                            rowsToHide.push(r);
+                                        }
+                                    } else {
+                                        // PENCEGAH TANGGAL INDONESIA YANG LOLOS DARI MESIN
+                                        if (!String(dateVal).toLowerCase().includes(currentMonthName)) {
                                             rowsToHide.push(r);
                                         }
                                     }
@@ -603,9 +686,7 @@
                         if (isDailyForm && dateColumnIndex !== -1) {
                             let dateVal = row[dateColumnIndex];
                             if (dateVal) {
-                                let parsedDate = moment(dateVal, ["YYYY-MM-DD", "DD/MM/YYYY", "DD-MM-YYYY", "YYYY/MM/DD", "D/M/YY", "D/M/YYYY", moment.ISO_8601], true);
-                                if (!parsedDate.isValid()) parsedDate = moment(dateVal);
-                                
+                                let parsedDate = parseIndoDate(dateVal);
                                 if (parsedDate.isValid() && (parsedDate.month() + 1) === activeMonthFilter) {
                                     lockThisRow = true;
                                 }
