@@ -11,7 +11,7 @@
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
         .card-custom { box-shadow: 0 4px 6px rgba(0,0,0,.05); border-radius: 8px; border-top: 4px solid #0dcaf0; }
         .bg-custom-dark { background-color: #3c8dbc; }
-        .chart-container { position: relative; height: 250px; width: 100%; }
+        .chart-container { position: relative; height: 260px; width: 100%; }
         
         .status-tercapai { color: #198754; font-weight: 900; }
         .status-gagal { color: #dc3545; font-weight: 900; }
@@ -127,7 +127,9 @@
     <script src="components.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 
     <script>
         const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
@@ -141,6 +143,9 @@
         let sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
         let userUnit = sessionMutu.unit || "";
         let userRole = sessionMutu.role || "";
+
+        // Registrasi Plugin Datalabels untuk seluruh Chart di halaman ini
+        Chart.register(ChartDataLabels);
 
         const kamusWaktu = {
             'bulanan': { '1': ['Januari'], '2': ['Februari'], '3': ['Maret'], '4': ['April'], '5': ['Mei'], '6': ['Juni'], '7': ['Juli'], '8': ['Agustus'], '9': ['September'], '10': ['Oktober'], '11': ['November'], '12': ['Desember'] },
@@ -203,11 +208,13 @@
             
             let arah = mappingArahGlobal[judulMurni] || "Positif";
 
-            if (arah.toLowerCase().includes("negatif")) { return c <= t; } 
-            else { return c >= t; }
+            if (arah.toLowerCase().includes("negatif")) { 
+                return c <= t; 
+            } else { 
+                return c >= t; 
+            }
         };
 
-        // FUNGSI DIINJEKSI: Menampilkan Modal Detail Penginput Data Unit Kerja
         window.lihatDetailUnit = function(judul, bulan, target, satuan) {
             document.getElementById('md_judul').innerText = judul;
             document.getElementById('md_periode').innerText = bulan;
@@ -224,7 +231,7 @@
             });
             
             if(rincianUnit.length === 0) {
-                tbody.innerHTML = "<tr><td colspan='5' class='text-center text-muted py-3'>Tidak ada rincian data unit<\/td><\/tr>";
+                tbody.innerHTML = "<tr><td colspan='5' class='text-center text-muted py-3'>Tidak ada rincian data unit</td></tr>";
             } else {
                 rincianUnit.sort((a, b) => (a['Unit'] || "").localeCompare(b['Unit'] || ""));
                 rincianUnit.forEach((row, idx) => {
@@ -236,16 +243,16 @@
                     let isUnitTercapai = cekTercapai(judul, capai, target);
                     let rowClass = isUnitTercapai ? "" : "table-danger border-start border-4 border-danger";
                     let textClass = isUnitTercapai ? "text-success fw-bold" : "text-danger fw-bold";
-                    let icon = isUnitTercapai ? "<i class='fas fa-check-circle me-1'><\/i>" : "<i class='fas fa-exclamation-triangle me-1'><\/i>";
+                    let icon = isUnitTercapai ? "<i class='fas fa-check-circle me-1'></i>" : "<i class='fas fa-exclamation-triangle me-1'></i>";
                     
                     tbody.innerHTML += 
                         "<tr class='" + rowClass + "'>" +
-                            "<td class='text-center fw-bold'>" + (idx + 1) + "<\/td>" +
-                            "<td class='fw-bold'>" + uName + "<\/td>" +
-                            "<td class='text-center'>" + num + "<\/td>" +
-                            "<td class='text-center'>" + den + "<\/td>" +
-                            "<td class='text-center " + textClass + "'>" + icon + capai + " " + satuan + "<\/td>" +
-                        "<\/tr>";
+                            "<td class='text-center fw-bold'>" + (idx + 1) + "</td>" +
+                            "<td class='fw-bold'>" + uName + "</td>" +
+                            "<td class='text-center'>" + num + "</td>" +
+                            "<td class='text-center'>" + den + "</td>" +
+                            "<td class='text-center " + textClass + "'>" + icon + capai + " " + satuan + "</td>" +
+                        "</tr>";
                 });
             }
             
@@ -557,8 +564,9 @@
                 </div>
             </div>`;
             
-            let thBulan = namaBulan.map(b => "<th colspan='2' style='min-width:90px;'>" + b + "</th>").join('');
-            let thTargetCapai = namaBulan.map(() => "<th>Tgt</th><th>Cpa</th>").join('');
+            // PERBAIKAN KOLOM TABEL: Memecah menjadi Target, N, D, Capaian
+            let thBulan = namaBulan.map(b => "<th colspan='4' style='min-width:160px; text-align:center;'>" + b + "</th>").join('');
+            let thTargetCapai = namaBulan.map(() => "<th class='text-center text-muted'>Tgt</th><th class='text-center text-primary'>N</th><th class='text-center text-primary'>D</th><th class='text-center text-success'>Cpa</th>").join('');
 
             // =================================================================
             // 1. RENDER WADAH GLOBAL (INM, IMP-RS, dll)
@@ -587,7 +595,7 @@
                         let num = item.bulans[b].num;
                         let den = item.bulans[b].den;
 
-                        if (t === null) return "<td>-</td><td>-</td>";
+                        if (t === null) return "<td class='text-center text-muted'>-</td><td class='text-center text-muted'>-</td><td class='text-center text-muted'>-</td><td class='text-center text-muted'>-</td>";
                         
                         let isTercapai = cekTercapai(judul, c, t);
                         let cl = isTercapai ? 'status-tercapai' : 'status-gagal';
@@ -595,21 +603,23 @@
                         
                         if (!isTercapai) anyFailed = true;
 
-                        let infoNumDen = "";
-                        let isKepuasan = judul.toLowerCase().includes('kepuasan');
-                        
-                        if (!isKepuasan && num !== '' && den !== '' && num !== null && den !== null) {
-                            infoNumDen = `<br><small class='text-muted' style='font-size: 0.65rem;'>(N:${num} / D:${den})</small>`;
+                        let nText = (num !== '' && num !== null) ? num : '-';
+                        let dText = (den !== '' && den !== null) ? den : '-';
+                        if (judul.toLowerCase().includes('kepuasan')) {
+                            nText = '-'; dText = '-';
                         }
 
-                        // MODIFIKASI FITUR BARU: Menambahkan trigger klik modal breakdown jika sedang melihat mode "RS_ALL"
                         let clickAction = (selectedUnit === "RS_ALL") ? `onclick="lihatDetailUnit('${judul.replace(/'/g, "\\'")}', '${b}', ${t}, '${item.satuan}')" style="cursor:pointer;" title="Klik untuk audit kontribusi unit kerja"` : "";
 
-                        return "<td class='target-text text-center align-middle'>" + t + "</td><td class='text-center align-middle " + cl + " " + bgCell + "' " + clickAction + ">" + c + infoNumDen + "</td>";
+                        // Memisahkan N, D, dan Capaian ke kolom tersendiri
+                        return `<td class='target-text text-center align-middle'>${t}</td>
+                                <td class='text-center align-middle text-primary fw-bold'>${nText}</td>
+                                <td class='text-center align-middle text-primary fw-bold'>${dText}</td>
+                                <td class='text-center align-middle ${cl} ${bgCell}' ${clickAction}>${c}</td>`;
                     }).join('');
                     
                     let trClass = anyFailed ? "border-start border-4 border-danger" : "";
-                    tableRows += "<tr class='" + trClass + "'><td class='text-center align-middle'>" + (nomor++) + "</td><td class='fw-bold align-middle'>" + judul + "</td><td class='text-center align-middle'>" + item.satuan + "</td>" + tdHtml + "</tr>";
+                    tableRows += "<tr class='" + trClass + "'><td class='text-center align-middle'>" + (nomor++) + "</td><td class='fw-bold align-middle' style='width: 25%;'>" + judul + "</td><td class='text-center align-middle'>" + item.satuan + "</td>" + tdHtml + "</tr>";
 
                     let canvasId = "chart-" + (chartIdCounter++);
                     let colWidth = (selectedTipe === 'tahunan' || selectedTipe === 'bulanan') ? 'col-12' : 'col-md-6';
@@ -666,22 +676,27 @@
                             let unum = uItem.bulans[b].num;
                             let uden = uItem.bulans[b].den;
                             
-                            if (ut === null) return "<td>-</td><td>-</td>";
+                            if (ut === null) return "<td class='text-center text-muted'>-</td><td class='text-center text-muted'>-</td><td class='text-center text-muted'>-</td><td class='text-center text-muted'>-</td>";
                             
                             let isTercapaiU = cekTercapai(uJudul, uc, ut);
                             let ucl = isTercapaiU ? 'status-tercapai' : 'status-gagal';
                             let uBg = isTercapaiU ? '' : 'bg-danger bg-opacity-10'; 
                             if (!isTercapaiU) anyFailedU = true;
                             
-                            let uInfoNumDen = "";
-                            if (!uJudul.toLowerCase().includes('kepuasan') && unum !== '' && uden !== '' && unum !== null && uden !== null) {
-                                uInfoNumDen = `<br><small class='text-muted' style='font-size: 0.65rem;'>(N:${unum} / D:${uden})</small>`;
+                            let nText = (unum !== '' && unum !== null) ? unum : '-';
+                            let dText = (uden !== '' && uden !== null) ? uden : '-';
+                            if (uJudul.toLowerCase().includes('kepuasan')) {
+                                nText = '-'; dText = '-';
                             }
-                            return "<td class='target-text text-center align-middle'>" + ut + "</td><td class='text-center align-middle " + ucl + " " + uBg + "'>" + uc + uInfoNumDen + "</td>";
+                            
+                            return `<td class='target-text text-center align-middle'>${ut}</td>
+                                    <td class='text-center align-middle text-primary fw-bold'>${nText}</td>
+                                    <td class='text-center align-middle text-primary fw-bold'>${dText}</td>
+                                    <td class='text-center align-middle ${ucl} ${uBg}'>${uc}</td>`;
                         }).join('');
                         
                         let uTrClass = anyFailedU ? "border-start border-4 border-danger" : "";
-                        uTableRows += "<tr class='" + uTrClass + "'><td class='text-center align-middle'>" + (uNomor++) + "</td><td class='fw-bold align-middle'>" + uJudul + "</td><td class='text-center align-middle'>" + uItem.satuan + "</td>" + uTdHtml + "</tr>";
+                        uTableRows += "<tr class='" + uTrClass + "'><td class='text-center align-middle'>" + (uNomor++) + "</td><td class='fw-bold align-middle' style='width: 25%;'>" + uJudul + "</td><td class='text-center align-middle'>" + uItem.satuan + "</td>" + uTdHtml + "</tr>";
                         
                         let canvasId = "chart-u-" + (chartIdCounter++);
                         let colWidth = (selectedTipe === 'tahunan' || selectedTipe === 'bulanan') ? 'col-12' : 'col-md-6';
@@ -730,15 +745,51 @@
 
             cekAksesTombolBackup();
 
+            // KONFIGURASI GRAFIK DENGAN DATALABELS
             chartConfigs.forEach(conf => {
                 let ctx = document.getElementById(conf.id).getContext('2d');
                 chartInstances.push(new Chart(ctx, {
                     type: 'line',
-                    data: { labels: conf.labels, datasets: [
-                        { label: 'Target', data: conf.target, borderColor: '#dc3545', borderDash: [5, 5], fill: false, tension: 0 },
-                        { label: 'Pencapaian', data: conf.capai, borderColor: '#0dcaf0', backgroundColor: 'rgba(13, 202, 240, 0.1)', fill: true, tension: 0.3, pointRadius: 5 }
-                    ]},
-                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { position: 'bottom' } } }
+                    data: { 
+                        labels: conf.labels, 
+                        datasets: [
+                            { 
+                                label: 'Target', 
+                                data: conf.target, 
+                                borderColor: '#dc3545', 
+                                borderDash: [5, 5], 
+                                fill: false, 
+                                tension: 0,
+                                datalabels: { display: false } // Matikan label untuk garis target agar tidak penuh
+                            },
+                            { 
+                                label: 'Pencapaian', 
+                                data: conf.capai, 
+                                borderColor: '#0dcaf0', 
+                                backgroundColor: 'rgba(13, 202, 240, 0.1)', 
+                                fill: true, 
+                                tension: 0.3, 
+                                pointRadius: 5,
+                                datalabels: {
+                                    display: true,
+                                    align: 'top',
+                                    anchor: 'end',
+                                    color: '#0c63e4',
+                                    font: { weight: 'bold', size: 11 },
+                                    formatter: function(value) {
+                                        return value + (conf.satuan.includes('%') ? '%' : '');
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false,
+                        layout: { padding: { top: 25, right: 15 } }, // Beri ruang ekstra agar angka tidak terpotong margin
+                        scales: { y: { beginAtZero: true } }, 
+                        plugins: { legend: { position: 'bottom' } } 
+                    }
                 }));
             });
         }
