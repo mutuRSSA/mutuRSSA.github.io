@@ -245,7 +245,7 @@ function loadNavigation() {
 
                 ${menuRahasiaKomite} 
             </div>
-            <div class="mt-4 pt-3 border-top px-3 pb-3 text-center text-muted" style="font-size: 0.8rem;">Sistem Informasi PMKP &copy; ${currentYear}</div>
+            <div class="mt-4 pt-3 border-top px-3 pb-3 text-center text-muted" style="font-size: 0.8rem;">Husni Muarif &copy; ${currentYear}</div>
         </div>
     </div>`;
 
