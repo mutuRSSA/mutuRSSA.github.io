@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Akun & Otorisasi - SIM PMKP</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        body { background-color: #f0f2f5; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff;}
+        .table-custom th { background-color: #2c3e50; color: white; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; border: none; padding: 12px; }
+        .table-custom td { vertical-align: middle; font-size: 0.95rem; border-bottom: 1px solid #f1f3f5; padding: 12px; }
+        .badge-role { font-size: 0.8rem; padding: 5px 10px; border-radius: 6px; }
+        
+        .perm-item { border: 1px solid #dee2e6; border-radius: 8px; padding: 10px 15px; margin-bottom: 8px; transition: 0.2s; background: #fff; cursor: pointer; }
+        .perm-item:hover { border-color: #6f42c1; background: #f8f6ff; }
+        .perm-item input:checked + label { color: #6f42c1; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4" style="max-width: 1200px;">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-users-cog text-primary me-2"></i> Manajemen Akun & Otorisasi</h3>
+                <p class="text-muted mb-0">Kelola pengguna RS dan atur Hak Akses Halaman secara dinamis.</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-warning fw-bold shadow-sm px-4 rounded-pill text-dark" onclick="bukaModalRole()">
+                    <i class="fas fa-key me-2"></i> Panel Otorisasi (RBAC)
+                </button>
+                <button class="btn btn-primary fw-bold shadow-sm px-4 rounded-pill" onclick="bukaModalTambah()">
+                    <i class="fas fa-user-plus me-2"></i> Tambah Pengguna
+                </button>
+            </div>
+        </div>
+
+        <div class="card-custom p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0"><i class="fas fa-list text-secondary me-2"></i> Daftar Pengguna Sistem</h5>
+                <div class="input-group" style="max-width: 300px;">
+                    <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0" id="searchUser" placeholder="Cari nama atau unit..." onkeyup="cariUser()">
+                </div>
+            </div>
+
+            <div id="loadingMessage" class="text-center py-5">
+                <i class="fas fa-spinner fa-spin fa-3x text-primary mb-3"></i>
+                <h6 class="text-muted">Mengambil data dari Brankas Keamanan...</h6>
+            </div>
+
+            <div class="table-responsive d-none" id="tableContainer">
+                <table class="table table-hover table-custom" id="tabelUsers">
+                    <thead>
+                        <tr>
+                            <th width="5%" class="text-center">No</th>
+                            <th width="15%">ID User</th>
+                            <th width="20%">Nama Lengkap</th>
+                            <th width="15%">Username</th>
+                            <th width="15%" class="text-center">Role Akses</th>
+                            <th width="15%">Unit Kerja</th>
+                            <th width="10%" class="text-center">Status</th>
+                            <th width="5%" class="text-center"><i class="fas fa-cog"></i></th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyUsers"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalUser" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white p-3">
+                    <h5 class="modal-title fw-bold" id="modalTitle"><i class="fas fa-user-edit me-2 text-warning"></i> Form Pengguna</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-light p-4">
+                    <form id="formUser">
+                        <input type="hidden" id="inp_id_user">
+                        
+                        <div class="mb-3">
+                            <label class="fw-bold mb-1 text-dark">Nama Lengkap <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="inp_nama" placeholder="Contoh: dr. Budi Santoso, Sp.PD" required>
+                        </div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="fw-bold mb-1 text-dark">Username <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control fw-bold text-primary" id="inp_username" placeholder="Tanpa spasi" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold mb-1 text-dark">Password <span class="text-danger" id="req_pass">*</span></label>
+                                <input type="password" class="form-control" id="inp_password" placeholder="Ketik sandi...">
+                                <small class="text-muted" id="hint_pass" style="display:none; font-size: 0.75rem;">Kosongkan jika tidak mereset sandi.</small>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="fw-bold mb-1 text-dark">Role (Hak Akses) <span class="text-danger">*</span></label>
+                            <select class="form-select border-primary fw-bold text-primary" id="inp_role" required>
+                                <option value="">-- Pilih Role --</option>
+                            </select>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-7">
+                                <label class="fw-bold mb-1 text-dark">Unit Kerja / Ruangan <span class="text-danger">*</span></label>
+                                <select class="form-select" id="inp_unit" required>
+                                    <option value="">-- Memuat Daftar Unit... --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="fw-bold mb-1 text-dark">Status Akun</label>
+                                <select class="form-select" id="inp_status" required>
+                                    <option value="Aktif">Aktif</option>
+                                    <option value="Nonaktif">Nonaktif (Blokir)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="d-grid mt-4">
+                            <button type="button" class="btn btn-primary fw-bold py-2 shadow-sm" id="btnSimpan" onclick="simpanUser()">
+                                <i class="fas fa-save me-2"></i> Simpan Data Pengguna
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalRole" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #6f42c1 0%, #4e2a84 100%);">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-shield-alt me-2 text-warning"></i> Matrix Otorisasi Sistem (RBAC)</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-light p-4">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="bg-white p-3 rounded shadow-sm mb-3">
+                                <label class="fw-bold mb-2 text-dark">Pilih Role Akses:</label>
+                                <select class="form-select border-primary fw-bold text-primary mb-3" id="select_role_matrix" onchange="renderRoleCheckboxes()">
+                                    <option value="">-- Sedang memuat role... --</option>
+                                </select>
+                            </div>
+                            
+                            <div class="bg-white p-3 rounded shadow-sm border border-warning">
+                                <label class="fw-bold mb-1 text-dark text-uppercase" style="font-size:0.75rem;"><i class="fas fa-plus text-warning me-1"></i> Buat Kategori Role Baru</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control form-control-sm border-warning" id="inp_role_baru" placeholder="Misal: Direktur / SPI">
+                                    <button class="btn btn-sm btn-warning fw-bold text-dark" onclick="tambahKategoriRoleBaru()"><i class="fas fa-plus"></i> Tambah</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="bg-white p-3 rounded shadow-sm h-100">
+                                <h6 class="fw-bold mb-3 border-bottom pb-2">Konfigurasi Akses Halaman</h6>
+                                <div class="row g-2" id="wadahHalaman" style="max-height: 400px; overflow-y: auto;">
+                                    <div class="text-center py-4 w-100"><i class="fas fa-spinner fa-spin text-muted"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-white border-top p-3">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Tutup</button>
+                    <button type="button" class="btn fw-bold text-white px-5 shadow-sm" style="background-color: #6f42c1;" id="btnSimpanRole" onclick="simpanOtorisasiRole()">
+                        <i class="fas fa-save me-2"></i> Terapkan Hak Akses
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const AUTH_URL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.AUTH : "";
+        const MUTU_URL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
+        
+        const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        const role = sessionMutu.role || "";
+        let listUsers = [];
+        let listRolesData = []; 
+
+        const masterHalaman = [
+            { url: "index.html", nama: "Beranda Utama", deskripsi: "Menu publik portal mutu" },
+            { url: "buku_panduan.html", nama: "Buku Panduan", deskripsi: "Panduan pemakaian sistem" },
+            { url: "profil_indikator.html", nama: "Kamus Indikator Mutu", deskripsi: "Melihat DO & Rumus" },
+            { url: "input_mutu.html", nama: "Input Laporan Mutu", deskripsi: "Formulir ketik capaian unit" },
+            { url: "laporan_mutu.html", nama: "Dasbor Capaian Mutu", deskripsi: "Melihat grafik & rekap bulanan" },
+            { url: "pdsa.html", nama: "Papan Kerja PDSA", deskripsi: "Form pembuatan Plan-Do-Study-Act" },
+            { url: "dasbor_ppi.html", nama: "Dasbor Surveilans PPI", deskripsi: "Rekap HAIs dan IDO" },
+            { url: "ikp.html", nama: "Formulir IKP", deskripsi: "Pelaporan insiden keselamatan" },
+            { url: "kpc.html", nama: "Formulir KPC", deskripsi: "Pelaporan potensi cedera" },
+            { url: "survey_budaya.html", nama: "Survei Budaya Keselamatan", deskripsi: "Pengisian kuesioner budaya" },
+            { url: "risk_register.html", nama: "Risk Register Unit", deskripsi: "Manajemen risiko klinis & non-klinis" },
+            
+            { url: "command_center.html", nama: "[Admin] Command Center", deskripsi: "Dasbor Eksekutif Terpadu" },
+            { url: "dasbor_kepatuhan.html", nama: "[Admin] Dasbor Kepatuhan", deskripsi: "Monitoring kepatuhan setor data" },
+            { url: "capa.html", nama: "[Admin] Pantau CAPA", deskripsi: "Supervisi aksi tindak lanjut" },
+            { url: "dasbor_pdsa.html", nama: "[Admin] Dasbor PDSA", deskripsi: "Supervisi kualitas analisa masalah" },
+            { url: "daftar_insiden.html", nama: "[Admin] Tabel Raw IKP", deskripsi: "Akses ke seluruh data insiden" },
+            { url: "daftar_kpc.html", nama: "[Admin] Tabel Raw KPC", deskripsi: "Akses ke seluruh data potensi cedera" },
+            { url: "rekapitulasi.html", nama: "[Admin] Rekap IKP Mutu", deskripsi: "Matriks dan pie-chart insiden" },
+            { url: "dasbor_budaya.html", nama: "[Admin] Analitik Budaya", deskripsi: "Agregat skor budaya RS" },
+            { url: "dasbor_risiko.html", nama: "[Admin] Supervisi Risiko", deskripsi: "Pemantauan heatmap risiko unit" },
+            { url: "profil_risiko_rs.html", nama: "[Admin] Profil Risiko RS", deskripsi: "10 Besar risiko prioritas korporat" },
+            { url: "daftar_fmea.html", nama: "[Admin] Arsip FMEA", deskripsi: "Manajemen proyek redesign sistem" },
+            { url: "fmea_builder.html", nama: "[Admin] FMEA Builder", deskripsi: "Alat pembuatan matriks FMEA" },
+            { url: "super_admin_panel.html", nama: "[System] Pengaturan Unit", deskripsi: "Auto-provisioning & mapping sheet" },
+            { url: "form_builder.html", nama: "[System] Form Builder", deskripsi: "Desain struktur tabel dinamis" },
+            { url: "manajemen_akun.html", nama: "[System] Manajemen Akun", deskripsi: "Pembuatan akun & pengaturan otorisasi" }
+        ];
+
+        document.addEventListener("DOMContentLoaded", function () {
+            if (!AUTH_URL) {
+                Swal.fire('Error', 'URL AUTH belum dikonfigurasi di config.js', 'error');
+                return;
+            }
+            loadUsers();
+            loadDaftarUnit(); 
+            loadDaftarRole(); // Tarik database role saat pertama kali halaman dibuka
+        });
+
+        // FUNGSI PERBAIKAN: Mengambil daftar role secara dinamis dari database
+        function loadDaftarRole(callback) {
+            fetch(AUTH_URL, { method: "POST", body: JSON.stringify({ action: "get_roles", role: role }) })
+            .then(res => res.json())
+            .then(res => {
+                if (res.status === 'success') {
+                    listRolesData = res.data;
+                    
+                    // Update Dropdown di Form Tambah User
+                    const selectUserRole = document.getElementById('inp_role');
+                    selectUserRole.innerHTML = '<option value="">-- Pilih Role --</option>';
+                    listRolesData.forEach(r => {
+                        selectUserRole.add(new Option(r.role_name, r.role_name));
+                    });
+
+                    if(callback) callback();
+                }
+            });
+        }
+
+        // FITUR BARU: Menambahkan kategori role baru secara virtual sebelum ditembak ke DB
+        window.tambahKategoriRoleBaru = function() {
+            let namaRoleBaru = document.getElementById('inp_role_baru').value.trim();
+            if (!namaRoleBaru) { Swal.fire('Oops', 'Ketikkan nama role baru terlebih dahulu!', 'warning'); return; }
+            
+            // Standarisasi nama agar rapi
+            namaRoleBaru = namaRoleBaru.replace(/\b\w/g, l => l.toUpperCase());
+
+            let roleSudahAda = listRolesData.some(r => r.role_name.toLowerCase() === namaRoleBaru.toLowerCase());
+            if (roleSudahAda) { Swal.fire('Peringatan', 'Kategori Role tersebut sudah ada di dalam database.', 'warning'); return; }
+
+            // Suntikkan ke array lokal sementara
+            listRolesData.push({ role_name: namaRoleBaru, pages: ["index.html", "login.html"] });
+            
+            // Refresh elemen select matrix
+            const selectRole = document.getElementById('select_role_matrix');
+            selectRole.innerHTML = '<option value="">-- Pilih Role untuk Dikonfigurasi --</option>';
+            listRolesData.forEach(r => { selectRole.add(new Option(r.role_name, r.role_name)); });
+            
+            // Pilih otomatis role baru tersebut agar admin bisa langsung mencentang halaman
+            selectRole.value = namaRoleBaru;
+            renderRoleCheckboxes();
+            
+            document.getElementById('inp_role_baru').value = "";
+            Swal.fire('Berhasil!', 'Kategori "' + namaRoleBaru + '" siap dikonfigurasi. Silakan centang hak akses halamannya lalu klik Terapkan.', 'success');
+        };
+
+        function loadDaftarUnit() {
+            if (!MUTU_URL) return;
+            fetch(MUTU_URL + "?action=get_panel_setup").then(res => res.json()).then(res => {
+                if (res.status === 'success') {
+                    const selUnit = document.getElementById('inp_unit');
+                    selUnit.innerHTML = '<option value="">-- Pilih Unit Kerja --</option>';
+                    selUnit.add(new Option("🏥 SELURUH RS (RS_ALL)", "RS_ALL"));
+                    res.listUnit.map(u => u.unit).sort().forEach(unit => { selUnit.add(new Option(unit, unit)); });
+                }
+            });
+        }
+
+        function loadUsers() {
+            document.getElementById('loadingMessage').classList.remove('d-none');
+            document.getElementById('tableContainer').classList.add('d-none');
+            fetch(AUTH_URL, { method: "POST", body: JSON.stringify({ action: "get_users", role: role }) })
+            .then(res => res.json()).then(res => {
+                document.getElementById('loadingMessage').classList.add('d-none');
+                if (res.status === 'success') { listUsers = res.data; renderTable(listUsers); document.getElementById('tableContainer').classList.remove('d-none'); } 
+                else { Swal.fire('Gagal!', res.message, 'error'); }
+            });
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('bodyUsers'); tbody.innerHTML = '';
+            data.forEach((user, idx) => {
+                let badgeClass = "bg-secondary";
+                if (user.role === "Komite Mutu") badgeClass = "bg-danger";
+                else if (user.role === "Kepala Unit") badgeClass = "bg-warning text-dark";
+                else if (user.role === "Admin PPI") badgeClass = "bg-info text-dark";
+                else if (user.role === "Petugas Input") badgeClass = "bg-success";
+                let statusBadge = user.status === "Aktif" ? `<span class="badge bg-success rounded-pill px-3"><i class="fas fa-check me-1"></i> : Aktif</span>` : `<span class="badge bg-secondary rounded-pill px-3"><i class="fas fa-ban me-1"></i> Diblokir</span>`;
+                
+                tbody.innerHTML += `
+                    <tr class="${user.status !== "Aktif" ? "opacity-50 bg-light" : ""} user-row">
+                        <td class="text-center fw-bold text-muted">${idx + 1}</td>
+                        <td><code>${user.id_user}</code></td>
+                        <td class="fw-bold search-target">${user.nama_lengkap}</td>
+                        <td class="text-primary fw-bold">@${user.username}</td>
+                        <td class="text-center"><span class="badge badge-role ${badgeClass}">${user.role}</span></td>
+                        <td class="search-target">${user.unit}</td>
+                        <td class="text-center">${statusBadge}</td>
+                        <td class="text-center"><button class="btn btn-sm btn-outline-primary rounded-circle" onclick="bukaModalEdit('${user.id_user}')"><i class="fas fa-pen"></i></button></td>
+                    </tr>`;
+            });
+        }
+
+        function cariUser() {
+            let input = document.getElementById('searchUser').value.toLowerCase();
+            document.querySelectorAll('.user-row').forEach(row => { row.style.display = row.innerText.toLowerCase().includes(input) ? '' : 'none'; });
+        }
+
+        function bukaModalTambah() {
+            loadDaftarRole(function() {
+                document.getElementById('formUser').reset(); document.getElementById('inp_id_user').value = "";
+                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-plus me-2 text-warning"></i> Tambah Pengguna Baru';
+                document.getElementById('req_pass').style.display = 'inline'; document.getElementById('hint_pass').style.display = 'none';
+                document.getElementById('inp_password').required = true; document.getElementById('inp_status').value = "Aktif";
+                new bootstrap.Modal(document.getElementById('modalUser')).show();
+            });
+        }
+
+        function bukaModalEdit(idUser) {
+            loadDaftarRole(function() {
+                const user = listUsers.find(u => u.id_user === idUser); if(!user) return;
+                document.getElementById('inp_id_user').value = user.id_user;
+                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-edit me-2 text-primary"></i> Edit Pengguna';
+                document.getElementById('inp_nama').value = user.nama_lengkap; document.getElementById('inp_username').value = user.username;
+                
+                document.getElementById('inp_role').value = user.role;
+                let unitSelect = document.getElementById('inp_unit');
+                if (!Array.from(unitSelect.options).some(opt => opt.value === user.unit) && user.unit) { unitSelect.add(new Option(user.unit + " (Unit Tidak Aktif)", user.unit)); }
+                unitSelect.value = user.unit; document.getElementById('inp_status').value = user.status;
+                document.getElementById('req_pass').style.display = 'none'; document.getElementById('hint_pass').style.display = 'block'; document.getElementById('inp_password').required = false;
+                new bootstrap.Modal(document.getElementById('modalUser')).show();
+            });
+        }
+
+        window.simpanUser = function() {
+            const payloadData = {
+                id_user: document.getElementById('inp_id_user').value, username: document.getElementById('inp_username').value.trim(),
+                password: document.getElementById('inp_password').value, nama_lengkap: document.getElementById('inp_nama').value.trim(),
+                role_akun: document.getElementById('inp_role').value, unit_kerja: document.getElementById('inp_unit').value.trim(), status: document.getElementById('inp_status').value
+            };
+            if (!payloadData.nama_lengkap || !payloadData.username || !payloadData.role_akun || !payloadData.unit_kerja) { Swal.fire('Oops', 'Lengkapi semua field (*)', 'warning'); return; }
+            if (!payloadData.id_user && !payloadData.password) { Swal.fire('Oops', 'Password wajib untuk pengguna baru!', 'warning'); return; }
+
+            const btn = document.getElementById('btnSimpan'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
+            fetch(AUTH_URL, { method: "POST", body: JSON.stringify({ action: 'save_user', role: role, data: payloadData }) })
+            .then(res => res.json()).then(res => {
+                if (res.status === 'success') { Swal.fire({ title: 'Berhasil!', text: res.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { bootstrap.Modal.getInstance(document.getElementById('modalUser')).hide(); loadUsers(); }); } 
+                else { Swal.fire('Gagal!', res.message, 'error'); }
+            }).finally(() => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Data Pengguna'; });
+        };
+
+        function bukaModalRole() {
+            new bootstrap.Modal(document.getElementById('modalRole')).show();
+            const selectRole = document.getElementById('select_role_matrix');
+            const wadah = document.getElementById('wadahHalaman');
+            wadah.innerHTML = '<div class="text-center py-4 w-100"><i class="fas fa-spinner fa-spin text-primary"></i> Menarik konfigurasi keamanan...</div>';
+            
+            fetch(AUTH_URL, { method: "POST", body: JSON.stringify({ action: "get_roles", role: role }) })
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    listRolesData = res.data;
+                    selectRole.innerHTML = '<option value="">-- Pilih Role untuk Dikonfigurasi --</option>';
+                    listRolesData.forEach(r => { selectRole.add(new Option(r.role_name, r.role_name)); });
+                    wadah.innerHTML = '<div class="alert alert-warning text-center w-100"><i class="fas fa-mouse-pointer me-2"></i> Silakan pilih role di kolom kiri terlebih dahulu.</div>';
+                }
+            });
+        }
+
+        window.renderRoleCheckboxes = function() {
+            const roleSelected = document.getElementById('select_role_matrix').value;
+            const wadah = document.getElementById('wadahHalaman');
+            if(!roleSelected) { wadah.innerHTML = '<div class="alert alert-warning text-center w-100"><i class="fas fa-mouse-pointer me-2"></i> Silakan pilih role di kolom kiri terlebih dahulu.</div>'; return; }
+            
+            const roleData = listRolesData.find(r => r.role_name === roleSelected);
+            const activePages = roleData ? roleData.pages : [];
+            
+            let html = '';
+            masterHalaman.forEach((page, idx) => {
+                let isChecked = activePages.includes(page.url) ? 'checked' : '';
+                let lockIcon = (page.url === 'index.html' || page.url === 'login.html') ? 'disabled checked' : ''; 
+                if(lockIcon) isChecked = 'checked';
+
+                html += `
+                <div class="col-md-6">
+                    <div class="perm-item d-flex align-items-center">
+                        <input class="form-check-input me-3 chk-permission" type="checkbox" value="${page.url}" id="chk_page_${idx}" ${isChecked} ${lockIcon}>
+                        <label class="form-check-label flex-grow-1" for="chk_page_${idx}" style="cursor:pointer;">
+                            <div class="fw-bold" style="font-size: 0.9rem;">${page.nama}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">${page.url}</div>
+                        </label>
+                    </div>
+                </div>`;
+            });
+            wadah.innerHTML = html;
+        };
+
+        window.simpanOtorisasiRole = function() {
+            const roleSelected = document.getElementById('select_role_matrix').value;
+            if(!roleSelected) { Swal.fire('Perhatian', 'Pilih Role terlebih dahulu sebelum menyimpan.', 'warning'); return; }
+
+            const checkedBoxes = document.querySelectorAll('.chk-permission:checked');
+            let allowedPages = [];
+            checkedBoxes.forEach(cb => allowedPages.push(cb.value));
+
+            if(!allowedPages.includes("index.html")) allowedPages.push("index.html");
+            if(!allowedPages.includes("login.html")) allowedPages.push("login.html");
+
+            const btn = document.getElementById('btnSimpanRole');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
+
+            fetch(AUTH_URL, {
+                method: "POST",
+                body: JSON.stringify({
+                    action: "save_role_permissions",
+                    role: role,
+                    target_role: roleSelected,
+                    pages_str: allowedPages.join(',')
+                })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    Swal.fire('Otorisasi Disimpan!', res.message, 'success').then(() => {
+                        bootstrap.Modal.getInstance(document.getElementById('modalRole')).hide();
+                        loadDaftarRole(); // Sinkronisasi ulang form dropdown pengguna
+                    });
+                } else {
+                    Swal.fire('Gagal!', res.message, 'error');
+                }
+            })
+            .finally(() => {
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Terapkan Hak Akses';
+            });
+        };
+    </script>
+</body>
+</html>

@@ -1,17 +1,14 @@
 // =====================================================================
-// auth.js - PENJAGA GERBANG UTAMA & MANAJEMEN SESI (KEAMANAN)
+// auth.js - PENJAGA GERBANG UTAMA (DYNAMIC ROLE-BASED ACCESS CONTROL)
 // =====================================================================
 
 document.addEventListener("DOMContentLoaded", function() {
     const sessionStr = localStorage.getItem("sessionMutu");
     const currentPage = window.location.pathname.split("/").pop();
     
-    // 1. CEK AUTENTIKASI: Jika tidak ada data login sama sekali (belum login)
+    // 1. CEK AUTENTIKASI DASAR (Belum Login Sama Sekali)
     if (!sessionStr) {
-        // Jangan blokir jika dia sedang berada di halaman index (Beranda) atau login
         if (currentPage !== "index.html" && currentPage !== "login.html" && currentPage !== "") {
-            
-            // Gunakan SweetAlert2 jika tersedia, jika gagal muat gunakan alert biasa
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
                     title: 'Akses Terkunci!',
@@ -25,36 +22,54 @@ document.addEventListener("DOMContentLoaded", function() {
                     window.location.href = "login.html";
                 });
             } else {
-                alert("Akses Terkunci! Anda harus login terlebih dahulu untuk mengakses halaman ini.");
+                alert("Akses Terkunci! Anda harus login terlebih dahulu.");
                 window.location.href = "login.html";
+            }
+        }
+        return; // Hentikan pengecekan jika belum login
+    }
+
+    // 2. CEK OTORISASI (Pencocokan Hak Akses Berdasarkan Database)
+    const userData = JSON.parse(sessionStr);
+    const allowedPages = userData.allowed_pages || [];
+
+    if (currentPage !== "index.html" && currentPage !== "login.html" && currentPage !== "") {
+        if (!allowedPages.includes(currentPage)) {
+            // Jika halaman yang dibuka TIDAK ADA di dalam daftar izin milik User
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Akses Ditolak!',
+                    html: `Anda masuk sebagai <b>${userData.role}</b>.<br>Role Anda tidak memiliki izin untuk membuka halaman ini.`,
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545',
+                    allowOutsideClick: false
+                }).then(() => {
+                    window.location.href = "index.html"; // Tendang kembali ke beranda
+                });
+            } else {
+                alert(`Akses Ditolak! Role ${userData.role} dilarang membuka halaman ini.`);
+                window.location.href = "index.html";
             }
         }
     }
 });
 
 // =====================================================================
-// 2. FITUR AUTO-LOGOUT (INACTIVITY TIMEOUT)
-// Mencegah penyalahgunaan akun jika petugas lupa logout di komputer ruangan
+// FITUR AUTO-LOGOUT (INACTIVITY TIMEOUT - 30 Menit)
 // =====================================================================
-
-// Pengaturan Waktu Habis: 30 menit (30 * 60 * 1000 milidetik)
 const INACTIVITY_LIMIT = 30 * 60 * 1000; 
 let timeoutTimer;
 
 function resetTimer() {
     clearTimeout(timeoutTimer);
-    // Jika ada sesi login yang aktif, mulai hitung mundur
     if (localStorage.getItem("sessionMutu")) {
         timeoutTimer = setTimeout(autoLogout, INACTIVITY_LIMIT);
     }
 }
 
 function autoLogout() {
-    // Hapus kredensial dari memori browser
     localStorage.removeItem("sessionMutu");
     localStorage.removeItem("menuMutu");
-    
-    // Hapus sisa draft form jika ada
     localStorage.removeItem('editDataIKP');
     localStorage.removeItem('editDataKPC');
     localStorage.removeItem('analisisDataIKP');
@@ -78,7 +93,7 @@ function autoLogout() {
     }
 }
 
-// Deteksi aktivitas pengguna (gerak mouse, klik, ketik, scroll) untuk mereset timer
+// Deteksi aktivitas pengguna untuk mereset timer
 window.onload = resetTimer;
 document.onmousemove = resetTimer;
 document.onkeypress = resetTimer;

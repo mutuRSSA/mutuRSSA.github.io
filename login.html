@@ -3,138 +3,154 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Portal Komite Mutu</title>
+    <title>Login - SIM PMKP RSUD</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Tambahkan SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
-        body { background-color: #f4f6f9; height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Segoe UI', Tahoma, sans-serif;}
-        .login-card { max-width: 400px; width: 100%; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); border-top: 5px solid #6f42c1; }
-        .input-group-text { border-right: none; background-color: #fff; }
-        .form-control { border-left: none; }
-        .form-control:focus { box-shadow: none; border-color: #dee2e6; }
-        .input-group:focus-within { outline: 0; box-shadow: 0 0 0 .25rem rgba(111,66,193,.25); border-radius: 0.375rem; }
-        .toggle-password { cursor: pointer; border-left: none; background-color: #fff; }
+        body { 
+            background: linear-gradient(135deg, #2c3e50 0%, #1a252f 100%); 
+            height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            margin: 0;
+        }
+        .login-card {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 420px;
+            padding: 40px 30px;
+            border-top: 5px solid #6f42c1;
+        }
+        .brand-logo {
+            width: 64px;
+            height: 64px;
+            background: rgba(111, 66, 193, 0.1);
+            color: #6f42c1;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin: 0 auto 20px auto;
+        }
+        .form-control:focus {
+            box-shadow: 0 0 0 3px rgba(111, 66, 193, 0.2);
+            border-color: #6f42c1;
+        }
     </style>
 </head>
 <body>
 
-    <div class="card bg-white login-card p-4 border-0">
-        <div class="text-center mb-4">
-            <i class="fas fa-hospital-user fa-3x mb-3" style="color: #6f42c1;"></i>
-            <h4 class="fw-bold text-dark">Portal Komite Mutu</h4>
-            <p class="text-muted" style="font-size: 0.85rem;">Login untuk mengakses Dasbor & Laporan</p>
+    <div class="login-card text-center">
+        <div class="brand-logo">
+            <i class="fas fa-hospital-user"></i>
         </div>
-
-        <form id="formLogin">
-            <div class="mb-3">
-                <label class="form-label fw-bold text-secondary" style="font-size: 0.9rem;">Username</label>
-                <div class="input-group border rounded">
-                    <span class="input-group-text text-muted"><i class="fas fa-user"></i></span>
-                    <input type="text" class="form-control" id="username" placeholder="Masukkan username" required autocomplete="off">
-                </div>
-            </div>
-            <div class="mb-4">
-                <label class="form-label fw-bold text-secondary" style="font-size: 0.9rem;">Password</label>
-                <div class="input-group border rounded">
-                    <span class="input-group-text text-muted"><i class="fas fa-lock"></i></span>
-                    <input type="password" class="form-control" id="password" placeholder="Masukkan password" required>
-                    <span class="input-group-text toggle-password text-muted" id="togglePasswordBtn">
-                        <i class="fas fa-eye" id="eyeIcon"></i>
-                    </span>
+        <h4 class="fw-bold text-dark mb-1">SIM-PMKP Terpadu</h4>
+        <p class="text-muted mb-4" style="font-size: 0.9rem;">Sistem Informasi Manajemen Mutu & Keselamatan Pasien</p>
+        
+        <form id="formLogin" onsubmit="eksekusiLogin(event)">
+            <div class="mb-3 text-start">
+                <label class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">Username</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-user text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0 fw-bold" id="inp_user" placeholder="Ketik nama pengguna..." required autocomplete="username">
                 </div>
             </div>
             
-            <button type="submit" id="btnLogin" class="btn w-100 fw-bold py-2 mb-3 text-white" style="background-color: #6f42c1; border:none;">MASUK KE SISTEM</button>
-            <a href="index.html" class="btn btn-light border w-100 text-secondary fw-bold"><i class="fas fa-home me-2"></i>Kembali ke Beranda</a>
+            <div class="mb-4 text-start">
+                <label class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">Kata Sandi (Password)</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-lock text-muted"></i></span>
+                    <input type="password" class="form-control border-start-0 ps-0" id="inp_pass" placeholder="Ketik kata sandi..." required autocomplete="current-password">
+                </div>
+            </div>
+            
+            <div class="d-grid">
+                <button type="submit" class="btn text-white fw-bold py-2 shadow" style="background-color: #6f42c1;" id="btnLogin">
+                    <i class="fas fa-sign-in-alt me-2"></i> Masuk ke Sistem
+                </button>
+            </div>
         </form>
+        
+        <div class="mt-4 pt-3 border-top">
+            <a href="index.html" class="text-decoration-none text-muted" style="font-size: 0.85rem;">
+                <i class="fas fa-arrow-left me-1"></i> Kembali ke Beranda Publik
+            </a>
+        </div>
     </div>
 
-    <!-- Script Pusat Konfigurasi & Autentikasi -->
     <script src="config.js"></script>
 
     <script>
-        // Fitur Toggle Show/Hide Password
-        document.getElementById('togglePasswordBtn').addEventListener('click', function() {
-            const passInput = document.getElementById('password');
-            const eyeIcon = document.getElementById('eyeIcon');
-            if (passInput.type === 'password') {
-                passInput.type = 'text';
-                eyeIcon.classList.remove('fa-eye');
-                eyeIcon.classList.add('fa-eye-slash');
-            } else {
-                passInput.type = 'password';
-                eyeIcon.classList.remove('fa-eye-slash');
-                eyeIcon.classList.add('fa-eye');
-            }
-        });
+        const AUTH_URL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.AUTH : "";
 
-        document.getElementById("formLogin").addEventListener("submit", function(e) {
+        // Bersihkan seluruh sisa sesi lama saat halaman login dibuka
+        localStorage.removeItem("sessionMutu");
+        localStorage.removeItem("menuMutu");
+
+        function eksekusiLogin(e) {
             e.preventDefault();
-            const btn = document.getElementById("btnLogin");
-            const user = document.getElementById("username").value;
-            const pass = document.getElementById("password").value;
 
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Memeriksa Autentikasi...';
+            if (!AUTH_URL) {
+                Swal.fire('Konfigurasi Salah', 'URL API modul AUTH belum dipasang di config.js', 'error');
+                return;
+            }
+
+            const username = document.getElementById('inp_user').value.trim();
+            const password = document.getElementById('inp_pass').value;
+            const btn = document.getElementById('btnLogin');
+
             btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i> Memvalidasi Kredensial...';
 
-            const payload = { action: "login", username: user, password: pass };
+            const payload = {
+                action: "login",
+                username: username,
+                password: password
+            };
 
-            // Menggunakan API_CONFIG.AUTH dari config.js
-            fetch(API_CONFIG.AUTH, {
+            fetch(AUTH_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify(payload)
             })
             .then(res => res.json())
-            .then(result => {
-                if(result.status === "success") {
+            .then(res => {
+                if (res.status === "success") {
+                    // Simpan data sesi baru hasil verifikasi database secara utuh
+                    localStorage.setItem("sessionMutu", JSON.stringify(res.data));
                     
-                    // ========================================================
-                    // PEMBARUAN KRUSIAL: Menyimpan UNIT ke dalam LocalStorage
-                    // ========================================================
-                    localStorage.setItem("sessionMutu", JSON.stringify({ 
-                        username: result.username, 
-                        role: result.role,
-                        unit: result.unit // <--- MENYIMPAN DATA UNIT
-                    }));
-                    
-                    // Menggunakan SweetAlert2 untuk Notifikasi Login Berhasil
                     Swal.fire({
                         title: 'Login Berhasil!',
-                        text: `Selamat datang, ${result.username} dari unit ${result.unit}`,
+                        text: 'Selamat datang kembali, ' + res.data.nama_lengkap,
                         icon: 'success',
                         timer: 1500,
                         showConfirmButton: false
                     }).then(() => {
-                        window.location.href = "index.html"; 
+                        window.location.href = "index.html";
                     });
                 } else {
-                    // Menggunakan SweetAlert2 untuk Notifikasi Login Gagal
-                    Swal.fire({
-                        title: 'Akses Ditolak!',
-                        text: result.message,
-                        icon: 'error',
-                        confirmButtonText: 'Coba Lagi',
-                        confirmButtonColor: '#6f42c1'
-                    });
+                    Swal.fire('Akses Ditolak', res.message, 'error');
+                    resetButton();
                 }
             })
             .catch(err => {
-                Swal.fire({
-                    title: 'Gangguan Koneksi',
-                    text: 'Tidak dapat terhubung ke server pusat. Silakan coba lagi.',
-                    icon: 'warning',
-                    confirmButtonText: 'Tutup',
-                    confirmButtonColor: '#6f42c1'
-                });
-            })
-            .finally(() => { 
-                btn.innerHTML = 'MASUK KE SISTEM'; 
-                btn.disabled = false; 
+                Swal.fire('Masalah Jaringan', 'Gagal menghubungi server keamanan internal.', 'error');
+                resetButton();
             });
-        });
+
+            function resetButton() {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i> Masuk ke Sistem';
+            }
+        }
     </script>
 </body>
 </html>
