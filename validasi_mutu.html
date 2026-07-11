@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validasi Indikator Mutu - SIM PMKP</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        body { background-color: #f0f2f5; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff;}
+        .table-custom th { background-color: #2c3e50; color: white; font-size: 0.85rem; border: none; padding: 10px; }
+        .table-custom td { vertical-align: middle; font-size: 0.85rem; border-bottom: 1px solid #f1f3f5; padding: 8px 10px; }
+        .info-box { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 8px; padding: 15px; border-left: 4px solid #6f42c1; }
+        
+        .status-valid { color: #198754; font-weight: 900; font-size: 1.2rem;}
+        .status-invalid { color: #dc3545; font-weight: 900; font-size: 1.2rem;}
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4" style="max-width: 1400px;">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-check-double text-success me-2"></i> Validasi Data Indikator Mutu</h3>
+                <p class="text-muted mb-0">Uji akurasi pelaporan data menggunakan metode Random Sampling Slovin.</p>
+            </div>
+            <a href="laporan_mutu.html" class="btn btn-outline-secondary fw-bold shadow-sm rounded-pill px-4">
+                <i class="fas fa-arrow-left me-2"></i> Kembali ke Dasbor Mutu
+            </a>
+        </div>
+
+        <div class="card-custom p-4 mb-4 border-top border-4 border-success shadow-sm">
+            <h5 class="fw-bold text-dark mb-3"><i class="fas fa-filter text-secondary me-2"></i> Parameter Uji Validasi</h5>
+            <div class="row g-3 align-items-end">
+                <div class="col-md-2">
+                    <label class="form-label fw-bold text-secondary mb-1" style="font-size:0.85rem;">Tahun</label>
+                    <select id="inp_tahun" class="form-select border-primary fw-bold text-dark"></select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label fw-bold text-secondary mb-1" style="font-size:0.85rem;">Bulan</label>
+                    <select id="inp_bulan" class="form-select border-primary fw-bold text-dark">
+                        <option value="1">Januari</option><option value="2">Februari</option>
+                        <option value="3">Maret</option><option value="4">April</option>
+                        <option value="5">Mei</option><option value="6">Juni</option>
+                        <option value="7">Juli</option><option value="8">Agustus</option>
+                        <option value="9">September</option><option value="10">Oktober</option>
+                        <option value="11">November</option><option value="12">Desember</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-secondary mb-1" style="font-size:0.85rem;">Unit Kerja</label>
+                    <select id="inp_unit" class="form-select border-primary fw-bold text-dark" onchange="updateFormDropdown()">
+                        <option value="">-- Memuat Unit... --</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-bold text-secondary mb-1" style="font-size:0.85rem;">Indikator Mutu</label>
+                    <select id="inp_form" class="form-select border-primary fw-bold text-dark">
+                        <option value="">-- Pilih Unit Dulu --</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-success fw-bold w-100 shadow-sm" id="btnTarik" onclick="tarikSampelValidasi()">
+                        <i class="fas fa-magic me-2"></i> Tarik Sampel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loadingWorkspace" class="text-center py-5 d-none">
+            <i class="fas fa-circle-notch fa-spin fa-3x text-success mb-3"></i>
+            <h6 class="text-muted">Robot sedang menghitung populasi dan mengacak sampel pasien...</h6>
+        </div>
+
+        <div id="workspaceValidasi" class="d-none">
+            <div class="row g-4 mb-4">
+                <div class="col-md-5">
+                    <div class="card-custom p-4 h-100 border border-info">
+                        <h6 class="fw-bold border-bottom pb-2 mb-3"><i class="fas fa-calculator text-primary me-2"></i> Kalkulasi Sampel (Slovin)</h6>
+                        <div class="row text-center mb-3">
+                            <div class="col-6">
+                                <p class="text-muted mb-0" style="font-size:0.85rem;">Populasi Total (N)</p>
+                                <h2 class="fw-bold text-dark mb-0" id="lbl_N">-</h2>
+                                <small class="text-muted" style="font-size:0.75rem;">Pasien/Data</small>
+                            </div>
+                            <div class="col-6">
+                                <p class="text-muted mb-0" style="font-size:0.85rem;">Target Sampel (n)</p>
+                                <h2 class="fw-bold text-primary mb-0" id="lbl_n">-</h2>
+                                <small class="text-muted" style="font-size:0.75rem;">Margin Error 5%</small>
+                            </div>
+                        </div>
+                        <div class="info-box">
+                            <p class="mb-1" style="font-size:0.85rem;"><strong>Capaian Total (A) yang dilaporkan Unit:</strong></p>
+                            <h3 class="fw-bold text-success mb-0" id="lbl_capaian_A">-</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-7">
+                    <div class="card-custom p-4 h-100 border border-warning" style="background-color: #fffdf5;">
+                        <h6 class="fw-bold border-bottom pb-2 mb-3"><i class="fas fa-gavel text-warning me-2"></i> Audit & Penilaian Validator</h6>
+                        
+                        <div class="mb-3">
+                            <label class="fw-bold text-dark mb-1" style="font-size:0.85rem;">Nama Petugas Validator</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="fas fa-user-edit text-muted"></i></span>
+                                <input type="text" class="form-control fw-bold text-primary" id="inp_nama_validator" placeholder="Ketik nama pemeriksa...">
+                            </div>
+                        </div>
+
+                        <div class="row align-items-center mt-3">
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label class="fw-bold text-dark mb-2">Capaian Sampel (B)</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.01" class="form-control form-control-lg fw-bold text-primary" id="inp_capaian_B" placeholder="0.00" onkeyup="hitungAkurasi()">
+                                    <span class="input-group-text fw-bold">% / ‰</span>
+                                </div>
+                                <small class="text-muted d-block mt-2" style="font-size:0.75rem;">Masukkan capaian riil hasil telusur Anda.</small>
+                            </div>
+                            <div class="col-md-6 text-center border-start">
+                                <p class="text-muted mb-1" style="font-size:0.85rem;">Akurasi Data = (B / A) x 100%</p>
+                                <h1 class="fw-bold mb-0" id="lbl_akurasi">0%</h1>
+                                <div class="mt-2" id="lbl_status_validitas"><span class="badge bg-secondary">Menunggu Input</span></div>
+                            </div>
+                        </div>
+
+                        <div class="text-end mt-4 pt-3 border-top">
+                            <button class="btn btn-primary fw-bold px-5 rounded-pill shadow" id="btnSimpan" onclick="simpanHasilValidasi()" disabled>
+                                <i class="fas fa-save me-2"></i> Simpan Hasil Validasi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-custom p-4 shadow-sm mb-5">
+                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-users text-info me-2"></i> Daftar Pasien / Data Terpilih (Acak)</h5>
+                    <span class="badge bg-info text-dark"><i class="fas fa-dice me-1"></i> Fisher-Yates Algorithm</span>
+                </div>
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                    <table class="table table-hover table-custom table-bordered" id="tabelSampel">
+                        <thead id="theadSampel" style="position: sticky; top: 0; z-index: 1;"></thead>
+                        <tbody id="tbodySampel"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const MUTU_URL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
+        const session = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        
+        let unitDataCache = [];
+        let formMasterCache = [];
+        
+        // State Validasi Aktif
+        let current_N = 0;
+        let current_n = 0;
+        let current_A = 0;
+        let current_Judul = "";
+
+        document.addEventListener("DOMContentLoaded", function () {
+            const date = new Date();
+            document.getElementById('inp_bulan').value = date.getMonth() + 1;
+            
+            const dropdownTahun = document.getElementById('inp_tahun');
+            const thn = date.getFullYear();
+            dropdownTahun.add(new Option(thn, thn));
+            dropdownTahun.add(new Option(thn - 1, thn - 1));
+            dropdownTahun.value = thn;
+
+            // Set default nama validator dari akun yang login
+            document.getElementById('inp_nama_validator').value = session.nama_lengkap || session.username || "Komite Mutu";
+
+            muatKonfigurasiUnit();
+        });
+
+        function muatKonfigurasiUnit() {
+            if (!MUTU_URL) return;
+            fetch(MUTU_URL + "?action=get_panel_setup")
+            .then(res => res.json())
+            .then(res => {
+                if(res.status === 'success') {
+                    unitDataCache = res.listUnit;
+                    
+                    const selUnit = document.getElementById('inp_unit');
+                    selUnit.innerHTML = '<option value="">-- Pilih Unit Kerja --</option>';
+                    
+                    let units = unitDataCache.map(u => u.unit).sort();
+                    units.forEach(unit => { selUnit.add(new Option(unit, unit)); });
+                    
+                    fetch(MUTU_URL + "?action=get_profil_indikator").then(r => r.json()).then(r => {
+                        if(r.status === 'success') formMasterCache = r.mapping || {};
+                    });
+                }
+            });
+        }
+
+        function updateFormDropdown() {
+            const unit = document.getElementById('inp_unit').value;
+            const selForm = document.getElementById('inp_form');
+            selForm.innerHTML = '<option value="">-- Pilih Indikator --</option>';
+            
+            if(!unit) return;
+
+            let unitObj = unitDataCache.find(u => u.unit === unit);
+            if(unitObj && unitObj.daftar_form) {
+                let forms = unitObj.daftar_form.split(',').map(s => s.trim()).filter(Boolean);
+                forms.forEach(f => {
+                    let judulAsli = formMasterCache[f] || f.replace(/_/g, ' ');
+                    selForm.add(new Option(judulAsli, f));
+                });
+            }
+        }
+
+        window.tarikSampelValidasi = function() {
+            const unit = document.getElementById('inp_unit').value;
+            const id_form = document.getElementById('inp_form').value;
+            const bulan = document.getElementById('inp_bulan').value;
+            const tahun = document.getElementById('inp_tahun').value;
+
+            if(!unit || !id_form) {
+                Swal.fire('Oops', 'Silakan pilih Unit dan Indikator Mutu terlebih dahulu.', 'warning');
+                return;
+            }
+
+            document.getElementById('workspaceValidasi').classList.add('d-none');
+            document.getElementById('loadingWorkspace').classList.remove('d-none');
+            
+            const selForm = document.getElementById('inp_form');
+            current_Judul = selForm.options[selForm.selectedIndex].text;
+
+            const payload = {
+                action: 'siapkan_validasi', role: session.role,
+                unit: unit, id_form: id_form, bulan: bulan, tahun: tahun
+            };
+
+            fetch(MUTU_URL, {
+                method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload)
+            })
+            .then(res => res.json())
+            .then(res => {
+                document.getElementById('loadingWorkspace').classList.add('d-none');
+                
+                if (res.status === 'success') {
+                    current_N = res.N;
+                    current_n = res.n;
+                    current_A = parseFloat(res.capaian_A) || 0;
+                    
+                    document.getElementById('lbl_N').innerText = current_N;
+                    document.getElementById('lbl_n').innerText = current_n;
+                    document.getElementById('lbl_capaian_A').innerText = current_A;
+
+                    document.getElementById('inp_capaian_B').value = "";
+                    document.getElementById('lbl_akurasi').innerText = "0%";
+                    document.getElementById('lbl_status_validitas').innerHTML = '<span class="badge bg-secondary">Menunggu Input</span>';
+                    document.getElementById('btnSimpan').disabled = true;
+
+                    renderTabelSampel(res.headers, res.sampel);
+                    
+                    document.getElementById('workspaceValidasi').classList.remove('d-none');
+                    Swal.fire({ title: 'Sampel Didapatkan!', text: `Robot berhasil menarik ${current_n} sampel acak dari total ${current_N} pasien.`, icon: 'success', timer: 2000, showConfirmButton: false });
+                } else {
+                    Swal.fire('Gagal!', res.message, 'error');
+                }
+            })
+            .catch(err => {
+                document.getElementById('loadingWorkspace').classList.add('d-none');
+                Swal.fire('Error', 'Gagal menyambung ke server.', 'error');
+            });
+        }
+
+        function renderTabelSampel(headers, dataSampel) {
+            const thead = document.getElementById('theadSampel');
+            const tbody = document.getElementById('tbodySampel');
+            
+            let thHtml = '<tr><th class="text-center" width="5%">Baris (Sheet)</th>';
+            headers.forEach(h => { thHtml += `<th>${h}</th>`; });
+            thHtml += '</tr>';
+            thead.innerHTML = thHtml;
+
+            let tbHtml = '';
+            dataSampel.forEach(item => {
+                tbHtml += `<tr><td class="text-center fw-bold text-primary">#${item.rowNumber}</td>`;
+                item.data.forEach(cellVal => { tbHtml += `<td>${cellVal || '-'}</td>`; });
+                tbHtml += `</tr>`;
+            });
+            tbody.innerHTML = tbHtml;
+        }
+
+        window.hitungAkurasi = function() {
+            const strB = document.getElementById('inp_capaian_B').value;
+            const btnSimpan = document.getElementById('btnSimpan');
+            
+            if (strB === "") {
+                document.getElementById('lbl_akurasi').innerText = "0%";
+                document.getElementById('lbl_status_validitas').innerHTML = '<span class="badge bg-secondary">Menunggu Input</span>';
+                btnSimpan.disabled = true;
+                return;
+            }
+
+            const B = parseFloat(strB);
+            const A = current_A;
+            let akurasi = 0;
+
+            if (A === 0) {
+                if (B === 0) akurasi = 100; else akurasi = 0;
+            } else {
+                akurasi = (B / A) * 100;
+            }
+
+            akurasi = Math.round(akurasi * 100) / 100;
+            document.getElementById('lbl_akurasi').innerText = akurasi + "%";
+
+            if (akurasi >= 90) {
+                document.getElementById('lbl_akurasi').className = "fw-bold mb-0 status-valid";
+                document.getElementById('lbl_status_validitas').innerHTML = '<span class="badge bg-success px-3 py-2 fs-6"><i class="fas fa-check-circle me-1"></i> Data VALID</span>';
+            } else {
+                document.getElementById('lbl_akurasi').className = "fw-bold mb-0 status-invalid";
+                document.getElementById('lbl_status_validitas').innerHTML = '<span class="badge bg-danger px-3 py-2 fs-6"><i class="fas fa-exclamation-triangle me-1"></i> TIDAK VALID</span>';
+            }
+
+            btnSimpan.disabled = false;
+        }
+
+        window.simpanHasilValidasi = function() {
+            const B = document.getElementById('inp_capaian_B').value;
+            const namaValidator = document.getElementById('inp_nama_validator').value.trim();
+
+            if (B === "" || !namaValidator) {
+                Swal.fire('Perhatian', 'Capaian Sampel dan Nama Validator wajib diisi.', 'warning');
+                return;
+            }
+
+            const unit = document.getElementById('inp_unit').value;
+            const tahun = document.getElementById('inp_tahun').value;
+            const akurasiStr = document.getElementById('lbl_akurasi').innerText.replace('%', '');
+            const akurasi = parseFloat(akurasiStr);
+            const statusValiditas = akurasi >= 90 ? "VALID" : "TIDAK VALID";
+
+            Swal.fire({
+                title: 'Kunci Hasil Validasi?',
+                html: `Hasil validasi untuk indikator ini akan dicatat ke <b>Database Master</b> dengan status: <br><br><b class="${akurasi >= 90 ? 'text-success' : 'text-danger'} fs-4">${statusValiditas}</b>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#6f42c1',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Simpan',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const btn = document.getElementById('btnSimpan');
+                    btn.disabled = true;
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
+
+                    const payloadData = {
+                        unit: unit,
+                        judul_indikator: current_Judul,
+                        bulan: document.getElementById('inp_bulan').options[document.getElementById('inp_bulan').selectedIndex].text,
+                        tahun: tahun,
+                        N: current_N,
+                        n: current_n,
+                        capaian_A: current_A,
+                        capaian_B: parseFloat(B),
+                        akurasi: akurasi,
+                        status_validitas: statusValiditas,
+                        validator: namaValidator // Menggunakan nama dari form input
+                    };
+
+                    fetch(MUTU_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify({ action: "simpan_validasi", role: session.role, data: payloadData })
+                    })
+                    .then(res => res.json())
+                    .then(res => {
+                        if (res.status === 'success') {
+                            Swal.fire({
+                                title: 'Tersimpan!',
+                                text: 'Berita Acara Validasi telah terekam di sistem.',
+                                icon: 'success'
+                            }).then(() => {
+                                document.getElementById('workspaceValidasi').classList.add('d-none');
+                            });
+                        } else {
+                            Swal.fire('Gagal!', res.message, 'error');
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Hasil Validasi';
+                        }
+                    })
+                    .catch(err => {
+                        Swal.fire('Error', 'Gagal menyambung ke server.', 'error');
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Hasil Validasi';
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>

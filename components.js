@@ -161,6 +161,8 @@ function loadNavigation() {
                 <div class="list-group list-group-flush" style="background-color: #fdfdfd;">
                     <a href="dasbor_kepatuhan.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-kepatuhan" style="font-size: 0.95rem;"><i class="fas fa-radar me-2"></i> Dasbor Kepatuhan Unit</a>
                     <a href="dasbor_pdsa.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-dasbor-pdsa" style="font-size: 0.95rem;"><i class="fas fa-tachometer-alt me-2"></i> Dashboard Supervisi PDSA</a>
+                    <a href="validasi_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-validasi" style="font-size: 0.95rem;"><i class="fas fa-check-double me-2"></i> Uji Validasi Indikator</a>
+                    <a href="laporan_validasi.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-laporan-validasi" style="font-size: 0.95rem;"><i class="fas fa-file-signature me-2"></i> Laporan Validasi Mutu</a>
                     <a href="capa.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-capa" style="font-size: 0.95rem;"><i class="fas fa-bullseye me-2"></i> Pemantauan CAPA</a>
                     <a href="daftar_insiden.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0 mt-1" id="menu-daftar-ikp" style="font-size: 0.95rem;"><i class="fas fa-table me-2"></i> Daftar IKP</a>
                     <a href="daftar_kpc.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-daftar-kpc" style="font-size: 0.95rem;"><i class="fas fa-list-alt me-2"></i> Daftar KPC</a>
@@ -304,6 +306,8 @@ function loadNavigation() {
     
     else if (page === 'super_admin_panel.html') { document.getElementById('menu-super-admin')?.classList.add('active'); document.getElementById('collapseSystem')?.classList.add('show'); }
     else if (page === 'form_builder.html') { document.getElementById('menu-form-builder')?.classList.add('active'); document.getElementById('collapseSystem')?.classList.add('show'); }
+    else if (page === 'validasi_mutu.html') { document.getElementById('menu-validasi')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
+    else if (page === 'laporan_validasi.html') { document.getElementById('menu-laporan-validasi')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'manajemen_akun.html') { document.getElementById('menu-manajemen-akun')?.classList.add('active'); document.getElementById('collapseSystem')?.classList.add('show'); }
     
     else if (page === 'dasbor_kepatuhan.html') { document.getElementById('menu-kepatuhan')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
