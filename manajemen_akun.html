@@ -29,7 +29,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
                 <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-users-cog text-primary me-2"></i> Manajemen Akun & Otorisasi</h3>
-                <p class="text-muted mb-0">Kelola pengguna RS dan atur Hak Akses Halaman secara dinamis.</p>
+                <p class="text-muted mb-0">Kelola pengguna RS dan atur Hak Akses Halaman (Supabase DB).</p>
             </div>
             <div class="d-flex gap-2">
                 <button class="btn btn-warning fw-bold shadow-sm px-4 rounded-pill text-dark" onclick="bukaModalRole()">
@@ -52,7 +52,7 @@
 
             <div id="loadingMessage" class="text-center py-5">
                 <i class="fas fa-spinner fa-spin fa-3x text-primary mb-3"></i>
-                <h6 class="text-muted">Mengambil data dari Brankas Keamanan...</h6>
+                <h6 class="text-muted">Mengambil data dari Supabase...</h6>
             </div>
 
             <div class="table-responsive d-none" id="tableContainer">
@@ -63,10 +63,11 @@
                             <th width="15%">ID User</th>
                             <th width="20%">Nama Lengkap</th>
                             <th width="15%">Username</th>
-                            <th width="15%" class="text-center">Role Akses</th>
+                            <th width="12%" class="text-center">Role Akses</th>
                             <th width="15%">Unit Kerja</th>
-                            <th width="10%" class="text-center">Status</th>
-                            <th width="5%" class="text-center"><i class="fas fa-cog"></i></th>
+                            <th width="8%" class="text-center">Status</th>
+                            <!-- Diperlebar sedikit agar muat 2 tombol -->
+                            <th width="10%" class="text-center"><i class="fas fa-cogs"></i> Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="bodyUsers"></tbody>
@@ -75,6 +76,7 @@
         </div>
     </div>
 
+    <!-- MODAL FORM USER -->
     <div class="modal fade" id="modalUser" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
@@ -137,6 +139,7 @@
         </div>
     </div>
 
+    <!-- MODAL ROLE PERMISSIONS (RBAC) -->
     <div class="modal fade" id="modalRole" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg">
@@ -149,9 +152,15 @@
                         <div class="col-md-4">
                             <div class="bg-white p-3 rounded shadow-sm mb-3">
                                 <label class="fw-bold mb-2 text-dark">Pilih Role Akses:</label>
-                                <select class="form-select border-primary fw-bold text-primary mb-3" id="select_role_matrix" onchange="renderRoleCheckboxes()">
-                                    <option value="">-- Sedang memuat role... --</option>
-                                </select>
+                                <!-- FITUR BARU: Tambahan tombol hapus disamping select role -->
+                                <div class="d-flex gap-2 mb-3">
+                                    <select class="form-select border-primary fw-bold text-primary flex-grow-1" id="select_role_matrix" onchange="renderRoleCheckboxes()">
+                                        <option value="">-- Sedang memuat role... --</option>
+                                    </select>
+                                    <button class="btn btn-outline-danger d-none" id="btnHapusRole" onclick="hapusRoleTerpilih()" title="Hapus Permanen Role Ini">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
                             </div>
                             
                             <div class="bg-white p-3 rounded shadow-sm border border-warning">
@@ -182,17 +191,19 @@
         </div>
     </div>
 
+    <!-- 1. LIBRARY SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Skrip Utama -->
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const AUTH_URL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.AUTH : "";
         const MUTU_URL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
-        
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        const role = sessionMutu.role || "";
+        
         let listUsers = [];
         let listRolesData = []; 
 
@@ -208,11 +219,11 @@
             { url: "kpc.html", nama: "Formulir KPC", deskripsi: "Pelaporan potensi cedera" },
             { url: "survey_budaya.html", nama: "Survei Budaya Keselamatan", deskripsi: "Pengisian kuesioner budaya" },
             { url: "risk_register.html", nama: "Risk Register Unit", deskripsi: "Manajemen risiko klinis & non-klinis" },
-            { url: "analisis_kpc.html", nama: "Analisis KPC", deskripsi: "Analisis data potensi cedera" },
-            { url: "analisis.html", nama: "Analisis RCA IKP", deskripsi: "Analisis RCA IKP" },
-            { url: "analisis_sederhana.html", nama: "Analisis sederhana IKP", deskripsi: "Analisis Sederhana IKP" },
+            
             { url: "command_center.html", nama: "[Admin] Command Center", deskripsi: "Dasbor Eksekutif Terpadu" },
             { url: "dasbor_kepatuhan.html", nama: "[Admin] Dasbor Kepatuhan", deskripsi: "Monitoring kepatuhan setor data" },
+            { url: "validasi_mutu.html", nama: "[Admin] Validasi Mutu", deskripsi: "Uji akurasi Slovin & Random Sampling" },
+            { url: "laporan_validasi.html", nama: "[Admin] Laporan Validasi", deskripsi: "Cetak berita acara validasi" },
             { url: "capa.html", nama: "[Admin] Pantau CAPA", deskripsi: "Supervisi aksi tindak lanjut" },
             { url: "dasbor_pdsa.html", nama: "[Admin] Dasbor PDSA", deskripsi: "Supervisi kualitas analisa masalah" },
             { url: "daftar_insiden.html", nama: "[Admin] Tabel Raw IKP", deskripsi: "Akses ke seluruh data insiden" },
@@ -225,66 +236,116 @@
             { url: "fmea_builder.html", nama: "[Admin] FMEA Builder", deskripsi: "Alat pembuatan matriks FMEA" },
             { url: "super_admin_panel.html", nama: "[System] Pengaturan Unit", deskripsi: "Auto-provisioning & mapping sheet" },
             { url: "form_builder.html", nama: "[System] Form Builder", deskripsi: "Desain struktur tabel dinamis" },
-            { url: "manajemen_akun.html", nama: "[System] Manajemen Akun", deskripsi: "Pembuatan akun & pengaturan otorisasi" },
-            { url: "validasi_mutu.html", nama: "[Admin] Validasi Mutu", deskripsi: "Uji akurasi Slovin & Random Sampling" },
-            { url: "laporan_validasi.html", nama: "[Admin] Laporan Validasi", deskripsi: "Cetak berita acara validasi" },
+            { url: "manajemen_akun.html", nama: "[System] Manajemen Akun", deskripsi: "Pembuatan akun & pengaturan otorisasi" }
         ];
 
         document.addEventListener("DOMContentLoaded", function () {
-            if (!AUTH_URL) {
-                Swal.fire('Error', 'URL AUTH belum dikonfigurasi di config.js', 'error');
-                return;
-            }
+            if (!supabaseClient) { Swal.fire('Error', 'Supabase belum dikonfigurasi', 'error'); return; }
             loadUsers();
             loadDaftarUnit(); 
-            loadDaftarRole(); // Tarik database role saat pertama kali halaman dibuka
+            loadDaftarRole(); 
         });
 
-        // FUNGSI PERBAIKAN: Mengambil daftar role secara dinamis dari database
-        function loadDaftarRole(callback) {
-            fetch(AUTH_URL, { method: "POST", body: JSON.stringify({ action: "get_roles", role: role }) })
-            .then(res => res.json())
-            .then(res => {
-                if (res.status === 'success') {
-                    listRolesData = res.data;
-                    
-                    // Update Dropdown di Form Tambah User
-                    const selectUserRole = document.getElementById('inp_role');
-                    selectUserRole.innerHTML = '<option value="">-- Pilih Role --</option>';
-                    listRolesData.forEach(r => {
-                        selectUserRole.add(new Option(r.role_name, r.role_name));
-                    });
+        async function loadDaftarRole(callback) {
+            try {
+                const { data, error } = await supabaseClient.from('role_permissions').select('*');
+                if (error) throw error;
+                
+                listRolesData = data.map(r => ({
+                    role_name: r.role,
+                    pages: r.allowed_pages ? r.allowed_pages.split(',').map(s=>s.trim()) : []
+                }));
 
-                    if(callback) callback();
+                const selectUserRole = document.getElementById('inp_role');
+                selectUserRole.innerHTML = '<option value="">-- Pilih Role --</option>';
+                listRolesData.forEach(r => { selectUserRole.add(new Option(r.role_name, r.role_name)); });
+
+                // Update dropdown Matrix jika sedang terbuka
+                const selectRoleMatrix = document.getElementById('select_role_matrix');
+                if (selectRoleMatrix) {
+                    let currentVal = selectRoleMatrix.value;
+                    selectRoleMatrix.innerHTML = '<option value="">-- Pilih Role untuk Dikonfigurasi --</option>';
+                    listRolesData.forEach(r => { selectRoleMatrix.add(new Option(r.role_name, r.role_name)); });
+                    if(currentVal) selectRoleMatrix.value = currentVal;
                 }
-            });
+
+                if(callback) callback();
+            } catch (err) {
+                console.error("Gagal menarik role", err);
+            }
         }
 
-        // FITUR BARU: Menambahkan kategori role baru secara virtual sebelum ditembak ke DB
-        window.tambahKategoriRoleBaru = function() {
+        window.tambahKategoriRoleBaru = async function() {
             let namaRoleBaru = document.getElementById('inp_role_baru').value.trim();
             if (!namaRoleBaru) { Swal.fire('Oops', 'Ketikkan nama role baru terlebih dahulu!', 'warning'); return; }
-            
-            // Standarisasi nama agar rapi
             namaRoleBaru = namaRoleBaru.replace(/\b\w/g, l => l.toUpperCase());
 
-            let roleSudahAda = listRolesData.some(r => r.role_name.toLowerCase() === namaRoleBaru.toLowerCase());
-            if (roleSudahAda) { Swal.fire('Peringatan', 'Kategori Role tersebut sudah ada di dalam database.', 'warning'); return; }
+            if (listRolesData.some(r => r.role_name.toLowerCase() === namaRoleBaru.toLowerCase())) { 
+                Swal.fire('Peringatan', 'Kategori Role tersebut sudah ada.', 'warning'); return; 
+            }
 
-            // Suntikkan ke array lokal sementara
-            listRolesData.push({ role_name: namaRoleBaru, pages: ["index.html", "login.html"] });
-            
-            // Refresh elemen select matrix
-            const selectRole = document.getElementById('select_role_matrix');
-            selectRole.innerHTML = '<option value="">-- Pilih Role untuk Dikonfigurasi --</option>';
-            listRolesData.forEach(r => { selectRole.add(new Option(r.role_name, r.role_name)); });
-            
-            // Pilih otomatis role baru tersebut agar admin bisa langsung mencentang halaman
-            selectRole.value = namaRoleBaru;
-            renderRoleCheckboxes();
-            
-            document.getElementById('inp_role_baru').value = "";
-            Swal.fire('Berhasil!', 'Kategori "' + namaRoleBaru + '" siap dikonfigurasi. Silakan centang hak akses halamannya lalu klik Terapkan.', 'success');
+            try {
+                const { error } = await supabaseClient.from('role_permissions').insert([{ role: namaRoleBaru, allowed_pages: "index.html,login.html" }]);
+                if (error) throw error;
+
+                listRolesData.push({ role_name: namaRoleBaru, pages: ["index.html", "login.html"] });
+                
+                const selectRole = document.getElementById('select_role_matrix');
+                selectRole.innerHTML = '<option value="">-- Pilih Role untuk Dikonfigurasi --</option>';
+                listRolesData.forEach(r => { selectRole.add(new Option(r.role_name, r.role_name)); });
+                
+                selectRole.value = namaRoleBaru;
+                renderRoleCheckboxes();
+                loadDaftarRole();
+                
+                document.getElementById('inp_role_baru').value = "";
+                Swal.fire('Tersimpan di Database!', 'Role "' + namaRoleBaru + '" berhasil dibuat permanen.', 'success');
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Akses Ditolak', 'Gagal menyimpan ke database.', 'error');
+            }
+        };
+
+        // FITUR BARU: Hapus Role Permanen
+        window.hapusRoleTerpilih = function() {
+            const roleName = document.getElementById('select_role_matrix').value;
+            if (!roleName) return;
+
+            // Peringatan jika menghapus Komite Mutu (Bisa fatal)
+            if (roleName === "Komite Mutu") {
+                Swal.fire('Akses Ditolak', 'Role "Komite Mutu" adalah Administrator Utama dan tidak boleh dihapus.', 'error');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Hapus Role Permanen?',
+                html: `Anda yakin ingin menghapus role <b>"${roleName}"</b>?<br><small class="text-danger">Tindakan ini tidak dapat dibatalkan!</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus Role!',
+                cancelButtonText: 'Batal'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const { error } = await supabaseClient.from('role_permissions').delete().eq('role', roleName);
+                        if (error) throw error;
+                        
+                        Swal.fire('Terhapus!', `Role "${roleName}" berhasil dihapus dari database.`, 'success');
+                        
+                        document.getElementById('select_role_matrix').value = "";
+                        document.getElementById('btnHapusRole').classList.add('d-none');
+                        document.getElementById('wadahHalaman').innerHTML = '<div class="alert alert-warning text-center w-100"><i class="fas fa-mouse-pointer me-2"></i> Silakan pilih role di kolom kiri terlebih dahulu.</div>';
+                        
+                        loadDaftarRole(); 
+                    } catch (err) {
+                        console.error(err);
+                        Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus role. Pastikan Policy DELETE sudah diaktifkan di Supabase.', 'error');
+                    }
+                }
+            });
         };
 
         function loadDaftarUnit() {
@@ -299,15 +360,23 @@
             });
         }
 
-        function loadUsers() {
+        async function loadUsers() {
             document.getElementById('loadingMessage').classList.remove('d-none');
             document.getElementById('tableContainer').classList.add('d-none');
-            fetch(AUTH_URL, { method: "POST", body: JSON.stringify({ action: "get_users", role: role }) })
-            .then(res => res.json()).then(res => {
+            
+            try {
+                const { data, error } = await supabaseClient.from('users').select('*').order('id', { ascending: true });
+                if (error) throw error;
+                
+                listUsers = data;
+                renderTable(listUsers);
+                document.getElementById('tableContainer').classList.remove('d-none');
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal!', 'Tidak dapat memuat data pengguna dari Supabase', 'error');
+            } finally {
                 document.getElementById('loadingMessage').classList.add('d-none');
-                if (res.status === 'success') { listUsers = res.data; renderTable(listUsers); document.getElementById('tableContainer').classList.remove('d-none'); } 
-                else { Swal.fire('Gagal!', res.message, 'error'); }
-            });
+            }
         }
 
         function renderTable(data) {
@@ -318,18 +387,24 @@
                 else if (user.role === "Kepala Unit") badgeClass = "bg-warning text-dark";
                 else if (user.role === "Admin PPI") badgeClass = "bg-info text-dark";
                 else if (user.role === "Petugas Input") badgeClass = "bg-success";
-                let statusBadge = user.status === "Aktif" ? `<span class="badge bg-success rounded-pill px-3"><i class="fas fa-check me-1"></i> : Aktif</span>` : `<span class="badge bg-secondary rounded-pill px-3"><i class="fas fa-ban me-1"></i> Diblokir</span>`;
                 
+                let isAktif = (user.status === "Aktif" || user.status === "aktif" || user.status === "AKTIF");
+                let statusBadge = isAktif ? `<span class="badge bg-success rounded-pill px-3"><i class="fas fa-check me-1"></i> Aktif</span>` : `<span class="badge bg-secondary rounded-pill px-3"><i class="fas fa-ban me-1"></i> Diblokir</span>`;
+                
+                // FITUR BARU: Tambahan tombol hapus dengan warna merah (danger)
                 tbody.innerHTML += `
-                    <tr class="${user.status !== "Aktif" ? "opacity-50 bg-light" : ""} user-row">
+                    <tr class="${!isAktif ? "opacity-50 bg-light" : ""} user-row">
                         <td class="text-center fw-bold text-muted">${idx + 1}</td>
-                        <td><code>${user.id_user}</code></td>
+                        <td><code>${user.id}</code></td>
                         <td class="fw-bold search-target">${user.nama_lengkap}</td>
                         <td class="text-primary fw-bold">@${user.username}</td>
                         <td class="text-center"><span class="badge badge-role ${badgeClass}">${user.role}</span></td>
-                        <td class="search-target">${user.unit}</td>
+                        <td class="search-target">${user.unit_kerja || user.unit || '-'}</td>
                         <td class="text-center">${statusBadge}</td>
-                        <td class="text-center"><button class="btn btn-sm btn-outline-primary rounded-circle" onclick="bukaModalEdit('${user.id_user}')"><i class="fas fa-pen"></i></button></td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-primary rounded-circle me-1" onclick="bukaModalEdit('${user.id}')" title="Edit Akun"><i class="fas fa-pen"></i></button>
+                            <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="hapusUser('${user.id}', '${user.nama_lengkap}')" title="Hapus Permanen"><i class="fas fa-trash"></i></button>
+                        </td>
                     </tr>`;
             });
         }
@@ -340,70 +415,146 @@
         }
 
         function bukaModalTambah() {
-            loadDaftarRole(function() {
-                document.getElementById('formUser').reset(); document.getElementById('inp_id_user').value = "";
-                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-plus me-2 text-warning"></i> Tambah Pengguna Baru';
-                document.getElementById('req_pass').style.display = 'inline'; document.getElementById('hint_pass').style.display = 'none';
-                document.getElementById('inp_password').required = true; document.getElementById('inp_status').value = "Aktif";
-                new bootstrap.Modal(document.getElementById('modalUser')).show();
-            });
+            document.getElementById('formUser').reset(); 
+            document.getElementById('inp_id_user').value = "";
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-plus me-2 text-warning"></i> Tambah Pengguna Baru';
+            document.getElementById('req_pass').style.display = 'inline'; document.getElementById('hint_pass').style.display = 'none';
+            document.getElementById('inp_password').required = true; document.getElementById('inp_status').value = "Aktif";
+            new bootstrap.Modal(document.getElementById('modalUser')).show();
         }
 
         function bukaModalEdit(idUser) {
-            loadDaftarRole(function() {
-                const user = listUsers.find(u => u.id_user === idUser); if(!user) return;
-                document.getElementById('inp_id_user').value = user.id_user;
-                document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-edit me-2 text-primary"></i> Edit Pengguna';
-                document.getElementById('inp_nama').value = user.nama_lengkap; document.getElementById('inp_username').value = user.username;
-                
-                document.getElementById('inp_role').value = user.role;
-                let unitSelect = document.getElementById('inp_unit');
-                if (!Array.from(unitSelect.options).some(opt => opt.value === user.unit) && user.unit) { unitSelect.add(new Option(user.unit + " (Unit Tidak Aktif)", user.unit)); }
-                unitSelect.value = user.unit; document.getElementById('inp_status').value = user.status;
-                document.getElementById('req_pass').style.display = 'none'; document.getElementById('hint_pass').style.display = 'block'; document.getElementById('inp_password').required = false;
-                new bootstrap.Modal(document.getElementById('modalUser')).show();
-            });
+            const user = listUsers.find(u => u.id == idUser); 
+            if(!user) return;
+            
+            document.getElementById('inp_id_user').value = user.id;
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-edit me-2 text-primary"></i> Edit Pengguna';
+            document.getElementById('inp_nama').value = user.nama_lengkap; document.getElementById('inp_username').value = user.username;
+            
+            document.getElementById('inp_role').value = user.role;
+            let unitSelect = document.getElementById('inp_unit');
+            let unitVal = user.unit_kerja || user.unit;
+            if (!Array.from(unitSelect.options).some(opt => opt.value === unitVal) && unitVal) { unitSelect.add(new Option(unitVal + " (Unit Tidak Aktif)", unitVal)); }
+            unitSelect.value = unitVal; 
+            
+            let statVal = user.status;
+            document.getElementById('inp_status').value = (statVal === 'Aktif' || statVal === 'aktif' || statVal === 'AKTIF') ? 'Aktif' : 'Nonaktif';
+            
+            document.getElementById('req_pass').style.display = 'none'; document.getElementById('hint_pass').style.display = 'block'; document.getElementById('inp_password').required = false;
+            new bootstrap.Modal(document.getElementById('modalUser')).show();
         }
 
-        window.simpanUser = function() {
-            const payloadData = {
-                id_user: document.getElementById('inp_id_user').value, username: document.getElementById('inp_username').value.trim(),
-                password: document.getElementById('inp_password').value, nama_lengkap: document.getElementById('inp_nama').value.trim(),
-                role_akun: document.getElementById('inp_role').value, unit_kerja: document.getElementById('inp_unit').value.trim(), status: document.getElementById('inp_status').value
-            };
-            if (!payloadData.nama_lengkap || !payloadData.username || !payloadData.role_akun || !payloadData.unit_kerja) { Swal.fire('Oops', 'Lengkapi semua field (*)', 'warning'); return; }
-            if (!payloadData.id_user && !payloadData.password) { Swal.fire('Oops', 'Password wajib untuk pengguna baru!', 'warning'); return; }
+        window.simpanUser = async function() {
+            const idUser = document.getElementById('inp_id_user').value;
+            const nama = document.getElementById('inp_nama').value.trim();
+            const username = document.getElementById('inp_username').value.trim();
+            const password = document.getElementById('inp_password').value;
+            const roleAkun = document.getElementById('inp_role').value;
+            const unit = document.getElementById('inp_unit').value.trim();
+            const status = document.getElementById('inp_status').value;
 
-            const btn = document.getElementById('btnSimpan'); btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
-            fetch(AUTH_URL, { method: "POST", body: JSON.stringify({ action: 'save_user', role: role, data: payloadData }) })
-            .then(res => res.json()).then(res => {
-                if (res.status === 'success') { Swal.fire({ title: 'Berhasil!', text: res.message, icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { bootstrap.Modal.getInstance(document.getElementById('modalUser')).hide(); loadUsers(); }); } 
-                else { Swal.fire('Gagal!', res.message, 'error'); }
-            }).finally(() => { btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Data Pengguna'; });
+            if (!nama || !username || !roleAkun || !unit) { Swal.fire('Oops', 'Lengkapi semua field (*)', 'warning'); return; }
+            if (!idUser && !password) { Swal.fire('Oops', 'Password wajib untuk pengguna baru!', 'warning'); return; }
+
+            const btn = document.getElementById('btnSimpan'); 
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
+
+            const payloadData = {
+                username: username,
+                nama_lengkap: nama,
+                role: roleAkun,
+                unit_kerja: unit,
+                status: status
+            };
+
+            if (password) payloadData.password = password;
+
+            try {
+                if (idUser) {
+                    const { data: existing } = await supabaseClient.from('users').select('id').eq('username', username).neq('id', idUser).maybeSingle();
+                    if (existing) { Swal.fire('Oops', 'Username sudah dipakai akun lain!', 'warning'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Data Pengguna'; return; }
+                    
+                    const { error } = await supabaseClient.from('users').update(payloadData).eq('id', idUser);
+                    if (error) throw error;
+                } else {
+                    const { data: existing } = await supabaseClient.from('users').select('id').eq('username', username).maybeSingle();
+                    if (existing) { Swal.fire('Oops', 'Username sudah dipakai akun lain!', 'warning'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Data Pengguna'; return; }
+                    
+                    const { error } = await supabaseClient.from('users').insert([payloadData]);
+                    if (error) throw error;
+                }
+
+                Swal.fire({ title: 'Berhasil!', text: 'Data pengguna tersimpan di Supabase', icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { 
+                    bootstrap.Modal.getInstance(document.getElementById('modalUser')).hide(); 
+                    loadUsers(); 
+                });
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal!', 'Terjadi kesalahan saat menyimpan ke Supabase.', 'error');
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Data Pengguna';
+            }
+        };
+
+        // FITUR BARU: Hapus User Permanen
+        window.hapusUser = function(idUser, namaLengkap) {
+            // Proteksi akun sendiri (opsional)
+            if (idUser == sessionMutu.id_user) {
+                Swal.fire('Peringatan', 'Anda tidak dapat menghapus akun Anda sendiri saat sedang login.', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Hapus Permanen?',
+                html: `Anda yakin ingin menghapus akun <b>${namaLengkap}</b>?<br><small class="text-danger">Tindakan ini akan menghapus data selamanya!</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const { error } = await supabaseClient.from('users').delete().eq('id', idUser);
+                        if (error) throw error;
+                        
+                        Swal.fire('Terhapus!', `Akun ${namaLengkap} telah dihapus dari database.`, 'success');
+                        loadUsers();
+                    } catch (err) {
+                        console.error(err);
+                        Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus data. Pastikan Policy DELETE diizinkan.', 'error');
+                    }
+                }
+            });
         };
 
         function bukaModalRole() {
             new bootstrap.Modal(document.getElementById('modalRole')).show();
             const selectRole = document.getElementById('select_role_matrix');
             const wadah = document.getElementById('wadahHalaman');
-            wadah.innerHTML = '<div class="text-center py-4 w-100"><i class="fas fa-spinner fa-spin text-primary"></i> Menarik konfigurasi keamanan...</div>';
             
-            fetch(AUTH_URL, { method: "POST", body: JSON.stringify({ action: "get_roles", role: role }) })
-            .then(res => res.json())
-            .then(res => {
-                if(res.status === 'success') {
-                    listRolesData = res.data;
-                    selectRole.innerHTML = '<option value="">-- Pilih Role untuk Dikonfigurasi --</option>';
-                    listRolesData.forEach(r => { selectRole.add(new Option(r.role_name, r.role_name)); });
-                    wadah.innerHTML = '<div class="alert alert-warning text-center w-100"><i class="fas fa-mouse-pointer me-2"></i> Silakan pilih role di kolom kiri terlebih dahulu.</div>';
-                }
-            });
+            selectRole.innerHTML = '<option value="">-- Pilih Role untuk Dikonfigurasi --</option>';
+            listRolesData.forEach(r => { selectRole.add(new Option(r.role_name, r.role_name)); });
+            wadah.innerHTML = '<div class="alert alert-warning text-center w-100"><i class="fas fa-mouse-pointer me-2"></i> Silakan pilih role di kolom kiri terlebih dahulu.</div>';
+            
+            document.getElementById('btnHapusRole').classList.add('d-none');
         }
 
         window.renderRoleCheckboxes = function() {
             const roleSelected = document.getElementById('select_role_matrix').value;
             const wadah = document.getElementById('wadahHalaman');
-            if(!roleSelected) { wadah.innerHTML = '<div class="alert alert-warning text-center w-100"><i class="fas fa-mouse-pointer me-2"></i> Silakan pilih role di kolom kiri terlebih dahulu.</div>'; return; }
+            const btnHapus = document.getElementById('btnHapusRole');
+            
+            if(!roleSelected) { 
+                wadah.innerHTML = '<div class="alert alert-warning text-center w-100"><i class="fas fa-mouse-pointer me-2"></i> Silakan pilih role di kolom kiri terlebih dahulu.</div>'; 
+                btnHapus.classList.add('d-none');
+                return; 
+            }
+            
+            // Munculkan tombol Hapus Role jika ada role yang dipilih
+            btnHapus.classList.remove('d-none');
             
             const roleData = listRolesData.find(r => r.role_name === roleSelected);
             const activePages = roleData ? roleData.pages : [];
@@ -428,9 +579,9 @@
             wadah.innerHTML = html;
         };
 
-        window.simpanOtorisasiRole = function() {
+        window.simpanOtorisasiRole = async function() {
             const roleSelected = document.getElementById('select_role_matrix').value;
-            if(!roleSelected) { Swal.fire('Perhatian', 'Pilih Role terlebih dahulu sebelum menyimpan.', 'warning'); return; }
+            if(!roleSelected) { Swal.fire('Perhatian', 'Pilih Role terlebih dahulu.', 'warning'); return; }
 
             const checkedBoxes = document.querySelectorAll('.chk-permission:checked');
             let allowedPages = [];
@@ -442,29 +593,30 @@
             const btn = document.getElementById('btnSimpanRole');
             btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
 
-            fetch(AUTH_URL, {
-                method: "POST",
-                body: JSON.stringify({
-                    action: "save_role_permissions",
-                    role: role,
-                    target_role: roleSelected,
-                    pages_str: allowedPages.join(',')
-                })
-            })
-            .then(res => res.json())
-            .then(res => {
-                if(res.status === 'success') {
-                    Swal.fire('Otorisasi Disimpan!', res.message, 'success').then(() => {
-                        bootstrap.Modal.getInstance(document.getElementById('modalRole')).hide();
-                        loadDaftarRole(); // Sinkronisasi ulang form dropdown pengguna
-                    });
+            const strPages = allowedPages.join(',');
+
+            try {
+                const { data: exist } = await supabaseClient.from('role_permissions').select('role').eq('role', roleSelected).maybeSingle();
+                
+                if (exist) {
+                    const { error } = await supabaseClient.from('role_permissions').update({ allowed_pages: strPages }).eq('role', roleSelected);
+                    if (error) throw error;
                 } else {
-                    Swal.fire('Gagal!', res.message, 'error');
+                    const { error } = await supabaseClient.from('role_permissions').insert([{ role: roleSelected, allowed_pages: strPages }]);
+                    if (error) throw error;
                 }
-            })
-            .finally(() => {
+
+                Swal.fire('Otorisasi Disimpan!', 'Role telah di-update di Supabase.', 'success').then(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('modalRole')).hide();
+                    loadDaftarRole(); 
+                });
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal!', 'Gagal menyimpan otorisasi ke Supabase.', 'error');
+            } finally {
                 btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Terapkan Hak Akses';
-            });
+            }
         };
     </script>
 </body>

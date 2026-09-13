@@ -86,65 +86,99 @@
         </div>
     </div>
 
+    <!-- 1. WAJIB: Library Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- 2. Muat Konfigurasi Anda -->
     <script src="config.js"></script>
 
     <script>
-        const AUTH_URL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.AUTH : "";
-
         // Bersihkan seluruh sisa sesi lama saat halaman login dibuka
         localStorage.removeItem("sessionMutu");
         localStorage.removeItem("menuMutu");
 
-        function eksekusiLogin(e) {
+        async function eksekusiLogin(e) {
             e.preventDefault();
 
-            if (!AUTH_URL) {
-                Swal.fire('Konfigurasi Salah', 'URL API modul AUTH belum dipasang di config.js', 'error');
+            // PERBAIKAN 1: Gunakan supabaseClient (Sesuai config.js)
+            if (!supabaseClient) {
+                Swal.fire('Konfigurasi Salah', 'Supabase belum diinisialisasi di config.js', 'error');
                 return;
             }
 
-            const username = document.getElementById('inp_user').value.trim();
-            const password = document.getElementById('inp_pass').value;
+            const inputUsername = document.getElementById('inp_user').value.trim();
+            const inputPassword = document.getElementById('inp_pass').value;
             const btn = document.getElementById('btnLogin');
 
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i> Memvalidasi Kredensial...';
 
-            const payload = {
-                action: "login",
-                username: username,
-                password: password
-            };
+            try {
+                // PERBAIKAN 2: Semua nama kolom disesuaikan menjadi huruf kecil (lowercase)
+                const { data: userData, error: userError } = await supabaseClient
+                    .from('users') 
+                    .select('*')
+                    .eq('username', inputUsername) 
+                    .eq('password', inputPassword)
+                    .maybeSingle(); 
 
-            fetch(AUTH_URL, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(res => {
-                if (res.status === "success") {
-                    // Simpan data sesi baru hasil verifikasi database secara utuh
-                    localStorage.setItem("sessionMutu", JSON.stringify(res.data));
-                    
-                    Swal.fire({
-                        title: 'Login Berhasil!',
-                        text: 'Selamat datang kembali, ' + res.data.nama_lengkap,
-                        icon: 'success',
-                        timer: 1500,
-                        showConfirmButton: false
-                    }).then(() => {
-                        window.location.href = "index.html";
-                    });
-                } else {
-                    Swal.fire('Akses Ditolak', res.message, 'error');
+                if (userError || !userData) {
+                    Swal.fire('Akses Ditolak', 'Username atau Password salah!', 'error');
                     resetButton();
+                    return;
                 }
-            })
-            .catch(err => {
-                Swal.fire('Masalah Jaringan', 'Gagal menghubungi server keamanan internal.', 'error');
+
+                // Supabase terkadang sensitif, kita handle variasi huruf untuk 'aktif'
+                if (userData.status !== 'Aktif' && userData.status !== 'aktif' && userData.status !== 'AKTIF') {
+                    Swal.fire('Akses Ditolak', 'Akun Anda telah dinonaktifkan. Hubungi Komite Mutu.', 'error');
+                    resetButton();
+                    return;
+                }
+
+                let allowedPages = ["index.html", "login.html"];
+                
+                // Pencarian hak akses dengan huruf kecil
+                const { data: roleData, error: roleError } = await supabaseClient
+                    .from('role_permissions')
+                    .select('allowed_pages')
+                    .eq('role', userData.role)
+                    .single();
+
+                if (!roleError && roleData && roleData.allowed_pages) {
+                    allowedPages = roleData.allowed_pages.split(',').map(s => s.trim()).filter(Boolean);
+                }
+
+                if(!allowedPages.includes("index.html")) allowedPages.push("index.html");
+                if(!allowedPages.includes("login.html")) allowedPages.push("login.html");
+
+                // PERBAIKAN 3: Memperbaiki variabel allowedPages (P besar) dan ID yang benar
+                const sessionPayload = {
+                    id_user: userData.id,
+                    username: userData.username,
+                    nama_lengkap: userData.nama_lengkap,
+                    role: userData.role,
+                    unit: userData.unit_kerja,
+                    allowed_pages: allowedPages // <--- Diperbaiki di sini
+                };
+
+                // Simpan ke memori browser
+                localStorage.setItem("sessionMutu", JSON.stringify(sessionPayload));
+                
+                Swal.fire({
+                    title: 'Login Berhasil!',
+                    text: 'Selamat datang kembali, ' + userData.nama_lengkap,
+                    icon: 'success',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => {
+                    window.location.href = "index.html";
+                });
+
+            } catch (error) {
+                console.error("Login Error: ", error);
+                Swal.fire('Masalah Jaringan', 'Gagal menghubungi server database Supabase.', 'error');
                 resetButton();
-            });
+            }
 
             function resetButton() {
                 btn.disabled = false;

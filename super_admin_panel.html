@@ -3,148 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Admin Panel - SIM PMKP</title>
+    <title>Pengaturan Unit Kerja - SIM PMKP</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
         body { background-color: #f0f2f5; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
         .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff;}
-        .table-custom th { background-color: #2c3e50; color: white; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; border: none; }
-        .table-custom td { vertical-align: middle; font-size: 0.9rem; border-bottom: 1px solid #f1f3f5; }
-        .form-label { font-weight: bold; color: #495057; font-size: 0.9rem; }
-        .badge-form { background-color: #e9ecef; color: #495057; font-weight: 500; font-size: 0.75rem; border: 1px solid #dee2e6; }
-        
-        .indicator-item { border-radius: 8px; transition: 0.2s; cursor: pointer; border: 1px solid #dee2e6; padding: 10px; height: 100%; background: #fff; }
-        .indicator-item:hover { border-color: #0dcaf0; background: #f0fbff; }
-        .indicator-item input:checked + label { color: #055160; font-weight: bold; }
-        .indicator-item.selected { border-color: #0dcaf0; background: #f0fbff; box-shadow: 0 0 0 2px rgba(13, 202, 240, 0.2); }
+        .table-custom th { background-color: #2c3e50; color: white; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; border: none; padding: 12px; }
+        .table-custom td { vertical-align: middle; font-size: 0.95rem; border-bottom: 1px solid #f1f3f5; padding: 12px; }
     </style>
 </head>
 <body>
     <div id="navbar-container"></div>
     <div id="sidebar-container"></div>
 
-    <div class="container-fluid px-4" style="max-width: 1400px;">
-        
+    <div class="container-fluid px-4" style="max-width: 1200px;">
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
-                <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-tools text-primary me-2"></i> Pengaturan Ekosistem Mutu</h3>
-                <p class="text-muted mb-0">Kelola unit kerja, indikator wajib, dan otomatisasi database rumah sakit.</p>
+                <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-hospital text-primary me-2"></i> Manajemen Unit Kerja</h3>
+                <p class="text-muted mb-0">Kelola daftar ruangan/unit dan alokasi indikator mutu wajib.</p>
             </div>
-            <div class="d-flex gap-2">
-                <button class="btn btn-warning fw-bold shadow-sm px-4 rounded-pill" id="btnSyncMaster" onclick="sinkronisasiSekarang()">
-                    <i class="fas fa-sync-alt me-2"></i> Sinkronisasi Master
-                </button>
-                <button class="btn btn-primary fw-bold shadow-sm px-4 rounded-pill" onclick="bukaModalUnit()">
-                    <i class="fas fa-plus-circle me-2"></i> Onboarding Unit Baru
-                </button>
-             </div>
+            <button class="btn btn-primary fw-bold shadow-sm px-4 rounded-pill" onclick="bukaModalTambah()">
+                <i class="fas fa-plus-circle me-2"></i> Tambah Unit Baru
+            </button>
         </div>
 
-        <div class="row">
-            <div class="col-12">
-                <div class="bg-white p-4 card-custom">
-                    <h5 class="fw-bold mb-4"><i class="fas fa-hospital-alt text-secondary me-2"></i> Daftar Unit Terdaftar</h5>
-                    
-                    <div id="loadingTable" class="text-center py-5">
-                        <i class="fas fa-spinner fa-spin fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">Sinkronisasi data unit...</p>
-                    </div>
-
-                    <div class="table-responsive d-none" id="tableContainer">
-                        <table class="table table-hover table-custom" id="tabelUnit">
-                            <thead>
-                                <tr>
-                                    <th width="5%" class="text-center">No</th>
-                                    <th width="15%">Nama Unit</th>
-                                    <th width="15%">Spreadsheet ID</th>
-                                    <th width="35%">Daftar Indikator Wajib</th>
-                                    <th width="10%">WhatsApp PIC</th>
-                                    <th width="20%" class="text-center">Aksi Setup & Deploy</th>
-                                </tr>
-                            </thead>
-                            <tbody id="bodyUnit"></tbody>
-                        </table>
-                    </div>
+        <div class="card-custom p-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0"><i class="fas fa-list text-secondary me-2"></i> Daftar Unit RS</h5>
+                <div class="input-group" style="max-width: 300px;">
+                    <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0" id="searchUnit" placeholder="Cari unit..." onkeyup="cariUnit()">
                 </div>
+            </div>
+
+            <div id="loadingMessage" class="text-center py-5">
+                <i class="fas fa-circle-notch fa-spin fa-3x text-primary mb-3"></i>
+                <h6 class="text-muted">Memuat data dari Supabase...</h6>
+            </div>
+
+            <div class="table-responsive d-none" id="tableContainer">
+                <table class="table table-hover table-custom" id="tabelUnits">
+                    <thead>
+                        <tr>
+                            <th width="5%" class="text-center">No</th>
+                            <th width="20%">Nama Unit / Ruangan</th>
+                            <th width="20%">Kepala Unit / PIC</th>
+                            <th width="40%">Daftar Indikator (ID Form)</th>
+                            <th width="15%" class="text-center"><i class="fas fa-cogs"></i> Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bodyUnits"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
+    <!-- MODAL FORM UNIT -->
     <div class="modal fade" id="modalUnit" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-dark text-white p-4">
-                    <h5 class="modal-title fw-bold" id="modalTitleUnit"><i class="fas fa-magic me-2 text-warning"></i> Onboarding Unit & Auto-Database</h5>
+                <div class="modal-header bg-dark text-white p-3">
+                    <h5 class="modal-title fw-bold" id="modalTitle"><i class="fas fa-edit me-2 text-warning"></i> Form Unit Kerja</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body bg-light p-4">
-                    <div class="alert alert-info border-0 shadow-sm mb-4">
-                        <i class="fas fa-info-circle me-2"></i> 
-                        <strong>Proses Otomatis:</strong> Sistem akan membuat file Google Sheets baru, mengatur tab indikator, dan mendaftarkan unit ke routing global dalam sekali klik.
-                    </div>
-                    <div class="row g-4">
-                        <div class="col-lg-4">
-                            <div class="bg-white p-4 rounded-3 shadow-sm h-100">
-                                <h6 class="fw-bold border-bottom pb-2 mb-3"><i class="fas fa-id-card me-2"></i> Profil Unit</h6>
-                                <div class="mb-3">
-                                    <label class="form-label">Nama Unit / Ruangan <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-lg border-primary" id="inp_nama_unit" placeholder="Misal: Bangsal Mawar">
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Nomor WA PIC <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="inp_wa" placeholder="08xxxxxxxxxx">
-                                    <small class="text-muted">Digunakan untuk reminder otomatis.</small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-8">
-                            <div class="bg-white p-4 rounded-3 shadow-sm h-100">
-                                <div class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
-                                    <h6 class="fw-bold mb-0"><i class="fas fa-tasks me-2"></i> Pilih Indikator Mutu Wajib</h6>
-                                    <small class="text-muted" id="countSelected">0 dipilih</small>
-                                </div>
-                                <div class="row g-2 overflow-auto" style="max-height: 400px;" id="wadahCheckboxIndikator"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer bg-white p-4 border-top">
-                    <button type="button" class="btn btn-secondary px-4 rounded-pill" data-bs-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary fw-bold px-5 rounded-pill shadow" id="btnProses" onclick="prosesGenerateUnit()">
-                        <i class="fas fa-rocket me-2"></i> Jalankan Auto-Provisioning
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal fade" id="modalDeploy" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg">
-                <div class="modal-header bg-success text-white p-3">
-                    <h5 class="modal-title fw-bold"><i class="fas fa-robot me-2"></i> Mass Deploy Rumus Mutu</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body bg-white p-4">
-                    <div class="alert alert-warning border-0 shadow-sm mb-4" style="font-size: 0.85rem;">
-                        <i class="fas fa-magic me-1"></i> Robot akan memindai Kamus Profil Indikator dan menarik <strong>seluruh rumus</strong> untuk semua indikator yang ditugaskan ke unit ini sekaligus.
-                    </div>
-
-                    <form id="formDeployRobot">
-                        <div class="mb-3">
-                            <label class="form-label">Unit Sasaran</label>
-                            <input type="text" class="form-control bg-light fw-bold" id="deploy_nama_unit" readonly>
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label">Tahun Pengukuran</label>
-                            <input type="number" class="form-control fw-bold border-success text-success" id="deploy_tahun" required>
-                        </div>
+                    <form id="formUnit">
+                        <input type="hidden" id="inp_id">
                         
-                        <div class="d-grid mt-2">
-                            <button type="submit" class="btn btn-success fw-bold py-2 shadow-sm" id="btnJalankanRobot">
-                                <i class="fas fa-paper-plane me-2"></i> Suntikkan Semua Rumus Sekarang
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="fw-bold mb-1 text-dark">Nama Unit / Ruangan <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control fw-bold text-primary" id="inp_nama_unit" placeholder="Misal: UGD, ICU, Farmasi" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold mb-1 text-dark">Kepala Unit / Penanggung Jawab</label>
+                                <input type="text" class="form-control" id="inp_kepala_unit" placeholder="Nama lengkap beserta gelar">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="fw-bold mb-1 text-dark">Daftar Indikator Mutu Wajib (ID Form)</label>
+                            <textarea class="form-control" id="inp_daftar_form" rows="3" placeholder="Pisahkan dengan koma. Contoh: IAK_1, IAK_2, IAM_1"></textarea>
+                            <small class="text-muted" style="font-size: 0.8rem;">Indikator yang diketik di sini akan muncul di Dasbor Input Mutu unit tersebut.</small>
+                        </div>
+
+                        <div class="d-grid mt-2 border-top pt-3">
+                            <button type="button" class="btn btn-primary fw-bold py-2 shadow-sm" id="btnSimpan" onclick="simpanUnit()">
+                                <i class="fas fa-save me-2"></i> Simpan Data Unit
                             </button>
                         </div>
                     </form>
@@ -153,268 +102,183 @@
         </div>
     </div>
 
+    <!-- 1. WAJIB: Library Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Skrip Utama -->
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : ""; 
-        const session = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        let masterFormList = [];
-        let dataUnitGlobal = [];
-        
-        let isEditMode = false;
-        let originalUnitName = "";
-        
-        let targetDeployUnitId = ""; 
-        let targetDeployForms = ""; // Menyimpan daftar form untuk mass deploy
+        let listUnits = [];
 
-        document.addEventListener("DOMContentLoaded", function() {
-            muatDataAwal();
+        document.addEventListener("DOMContentLoaded", function () {
+            if (!supabaseClient) {
+                Swal.fire('Error', 'Supabase belum dikonfigurasi di config.js', 'error');
+                return;
+            }
+            loadUnits();
         });
 
-        function muatDataAwal() {
-            fetch(`${scriptURL}?action=get_panel_setup`)
-                .then(res => res.json())
-                .then(res => {
-                    if(res.status === 'success') {
-                        masterFormList = res.listFormMaster;
-                        dataUnitGlobal = res.listUnit;
-                        renderTabelUnit(dataUnitGlobal);
-                        renderCheckboxes(masterFormList);
-                    }
-                });
+        // 1. READ: AMBIL DATA DARI TABEL master_unit
+        async function loadUnits() {
+            document.getElementById('loadingMessage').classList.remove('d-none');
+            document.getElementById('tableContainer').classList.add('d-none');
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('master_unit')
+                    .select('*')
+                    .order('nama_unit', { ascending: true });
+                
+                if (error) throw error;
+                
+                listUnits = data;
+                renderTable(listUnits);
+                document.getElementById('tableContainer').classList.remove('d-none');
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal!', 'Tidak dapat memuat data unit dari Supabase', 'error');
+            } finally {
+                document.getElementById('loadingMessage').classList.add('d-none');
+            }
         }
 
-        function renderTabelUnit(data) {
-            const tbody = document.getElementById('bodyUnit');
+        function renderTable(data) {
+            const tbody = document.getElementById('bodyUnits'); 
             tbody.innerHTML = '';
             
-            data.forEach((item, index) => {
-                let badgeHTML = item.daftar_form.split(',').map(f => `<span class="badge badge-form me-1 mb-1">${f.trim().replace(/_/g, ' ')}</span>`).join('');
-                
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="text-center fw-bold">${index + 1}</td>
-                        <td class="fw-bold text-primary">${item.unit}</td>
-                        <td><code>${item.id_sheet.substring(0, 15)}...</code></td>
-                        <td>${badgeHTML}</td>
-                        <td class="fw-bold text-success">${item.wa}</td>
-                        <td class="text-center">
-                            <div class="d-flex flex-column gap-2">
-                                <button class="btn btn-sm btn-outline-primary shadow-sm" onclick="bukaModalEdit(${index})">
-                                    <i class="fas fa-edit"></i> Edit Unit
-                                </button>
-                                <button class="btn btn-sm btn-outline-success shadow-sm" onclick="bukaModalDeploy(${index})">
-                                    <i class="fas fa-magic"></i> Mass Deploy Rumus
-                                </button>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            document.getElementById('loadingTable').classList.add('d-none');
-            document.getElementById('tableContainer').classList.remove('d-none');
-        }
-
-        function renderCheckboxes(list) {
-            const wadah = document.getElementById('wadahCheckboxIndikator');
-            wadah.innerHTML = '';
-            list.forEach(form => {
-                wadah.innerHTML += `
-                    <div class="col-md-6">
-                        <div class="indicator-item d-flex align-items-center">
-                            <input class="form-check-input me-3" type="checkbox" value="${form}" id="check_${form}" onchange="updateCount()">
-                            <label class="form-check-label flex-grow-1" for="check_${form}" style="cursor:pointer;">
-                                ${form.replace(/_/g, ' ')}
-                            </label>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        function updateCount() {
-            const count = document.querySelectorAll('#wadahCheckboxIndikator input:checked').length;
-            document.getElementById('countSelected').innerText = `${count} indikator dipilih`;
-            document.querySelectorAll('#wadahCheckboxIndikator input').forEach(inp => {
-                if(inp.checked) inp.closest('.indicator-item').classList.add('selected');
-                else inp.closest('.indicator-item').classList.remove('selected');
-            });
-        }
-
-        function bukaModalUnit() {
-            isEditMode = false;
-            originalUnitName = "";
-            document.getElementById('modalTitleUnit').innerHTML = '<i class="fas fa-magic me-2 text-warning"></i> Onboarding Unit & Auto-Database';
-            document.getElementById('btnProses').innerHTML = '<i class="fas fa-rocket me-2"></i> Jalankan Auto-Provisioning';
-            document.getElementById('inp_nama_unit').value = '';
-            document.getElementById('inp_wa').value = '';
-            document.querySelectorAll('#wadahCheckboxIndikator input').forEach(i => i.checked = false);
-            updateCount();
-            new bootstrap.Modal(document.getElementById('modalUnit')).show();
-        }
-
-        function bukaModalEdit(index) {
-            isEditMode = true;
-            let unitData = dataUnitGlobal[index];
-            originalUnitName = unitData.unit;
-            document.getElementById('modalTitleUnit').innerHTML = '<i class="fas fa-edit me-2 text-primary"></i> Edit Konfigurasi Unit';
-            document.getElementById('btnProses').innerHTML = '<i class="fas fa-save me-2"></i> Simpan Perubahan';
-            document.getElementById('inp_nama_unit').value = unitData.unit;
-            document.getElementById('inp_wa').value = unitData.wa;
-            
-            let formsMilikUnit = unitData.daftar_form.split(',').map(s => s.trim());
-            document.querySelectorAll('#wadahCheckboxIndikator input').forEach(i => {
-                i.checked = formsMilikUnit.includes(i.value);
-            });
-            
-            updateCount();
-            new bootstrap.Modal(document.getElementById('modalUnit')).show();
-        }
-
-        function prosesGenerateUnit() {
-            const nama = document.getElementById('inp_nama_unit').value.trim();
-            const wa = document.getElementById('inp_wa').value.trim();
-            const checked = Array.from(document.querySelectorAll('#wadahCheckboxIndikator input:checked')).map(i => i.value);
-
-            if(!nama || !wa || checked.length === 0) {
-                Swal.fire('Form Belum Lengkap', 'Mohon isi nama unit, nomor WA, dan pilih minimal 1 indikator.', 'warning');
+            if(data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Belum ada unit yang didaftarkan.</td></tr>';
                 return;
             }
 
-            let pesanKonfirmasi = isEditMode 
-                ? `Apakah Anda yakin ingin memperbarui konfigurasi untuk '${originalUnitName}'? Jika ada penambahan indikator, tab baru akan dibuat secara otomatis.`
-                : `Sistem akan membuat database otomatis untuk unit '${nama}'. Lanjutkan?`;
-
-            Swal.fire({
-                title: 'Konfirmasi', text: pesanKonfirmasi, icon: 'question', showCancelButton: true,
-                confirmButtonText: isEditMode ? 'Ya, Simpan!' : 'Ya, Jalankan Robot!', cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) eksekusiBackend(nama, wa, checked.join(','));
-            });
-        }
-
-        function eksekusiBackend(nama, wa, daftarForm) {
-            const btn = document.getElementById('btnProses');
-            btn.disabled = true; btn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i> Memproses Data...`;
-
-            const payload = {
-                action: isEditMode ? "update_unit_setup" : "generate_unit_otomatis",
-                role: session.role, original_nama: originalUnitName, nama_unit: nama, no_wa: wa, daftar_form: daftarForm
-            };
-
-            fetch(scriptURL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload) })
-            .then(res => res.json())
-            .then(res => {
-                if(res.status === 'success') {
-                    Swal.fire({ title: 'Misi Berhasil!', text: res.message, icon: 'success', confirmButtonText: 'Mantap!' }).then(() => location.reload());
-                } else {
-                    Swal.fire('Gagal', res.message, 'error'); resetBtn();
-                }
-            }).catch(err => { Swal.fire('Error Jaringan', 'Terjadi masalah koneksi ke server Google.', 'error'); resetBtn(); });
-
-            function resetBtn() {
-                btn.disabled = false;
-                btn.innerHTML = isEditMode ? `<i class="fas fa-save me-2"></i> Simpan Perubahan` : `<i class="fas fa-rocket me-2"></i> Jalankan Auto-Provisioning`;
-            }
-        }
-
-        // ==========================================
-        // FUNGSI UNTUK MODAL MASS DEPLOY ROBOT
-        // ==========================================
-        function bukaModalDeploy(index) {
-            let unitData = dataUnitGlobal[index];
-            targetDeployUnitId = unitData.id_sheet; 
-            targetDeployForms = unitData.daftar_form; // MENYIMPAN DAFTAR FORM UNTUK BACKEND
-            
-            document.getElementById('deploy_nama_unit').value = unitData.unit;
-            document.getElementById('deploy_tahun').value = new Date().getFullYear();
-            
-            new bootstrap.Modal(document.getElementById('modalDeploy')).show();
-        }
-
-        document.getElementById('formDeployRobot').addEventListener('submit', function(e) {
-            e.preventDefault();
-
-            const namaUnit = document.getElementById('deploy_nama_unit').value;
-            const tahun = document.getElementById('deploy_tahun').value;
-
-            const payload = {
-                action: 'deploy_indikator',
-                data: {
-                    id_unit: targetDeployUnitId,
-                    nama_unit: namaUnit,
-                    tahun: tahun,
-                    daftar_form: targetDeployForms // MENGIRIM SELURUH DAFTAR FORM
-                }
-            };
-
-            const btnSubmit = document.getElementById('btnJalankanRobot');
-            btnSubmit.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i> Robot sedang menyuntikkan data...";
-            btnSubmit.disabled = true;
-
-            fetch(scriptURL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(result => {
-                if (result.status === 'success') {
-                    Swal.fire('Sukses!', result.message, 'success');
-                } else {
-                    Swal.fire('Gagal!', 'Error: ' + result.message, 'error');
-                }
-            })
-            .catch(err => Swal.fire('Error Jaringan', 'Tidak dapat terhubung ke server', 'error'))
-            .finally(() => {
-                btnSubmit.innerHTML = "<i class='fas fa-paper-plane me-2'></i> Suntikkan Semua Rumus Sekarang";
-                btnSubmit.disabled = false;
-                bootstrap.Modal.getInstance(document.getElementById('modalDeploy')).hide();
-            });
-        });
-
-        // ==========================================
-        // FUNGSI UNTUK SINKRONISASI MASTER
-        // ==========================================
-        function sinkronisasiSekarang() {
-            Swal.fire({
-                title: 'Mulai Sinkronisasi?',
-                text: "Sistem akan menarik seluruh data dari SHADOW_REKAP semua unit ke REKAP_GABUNGAN. Proses ini mungkin memakan waktu 5-15 detik.",
-                icon: 'info',
-                showCancelButton: true,
-                confirmButtonText: 'Ya, Tarik Data',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const btn = document.getElementById('btnSyncMaster');
-                    btn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i> Menarik Data...`;
-                    btn.disabled = true;
-
-                    fetch(scriptURL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                        body: JSON.stringify({ action: 'sync_master', role: session.role })
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        if (res.status === 'success') {
-                            Swal.fire('Berhasil!', res.message, 'success');
-                        } else {
-                            Swal.fire('Gagal', res.message, 'error');
-                        }
-                    })
-                    .catch(err => Swal.fire('Error', 'Gagal menyambung ke server', 'error'))
-                    .finally(() => {
-                        btn.innerHTML = `<i class="fas fa-sync-alt me-2"></i> Sinkronisasi Master`;
-                        btn.disabled = false;
+            data.forEach((unit, idx) => {
+                let badgeForms = '';
+                if(unit.daftar_form) {
+                    let forms = unit.daftar_form.split(',').map(s => s.trim()).filter(Boolean);
+                    forms.forEach(f => {
+                        badgeForms += `<span class="badge bg-info text-dark me-1 mb-1 border">${f}</span>`;
                     });
+                } else {
+                    badgeForms = '<span class="text-muted fst-italic" style="font-size:0.8rem;">Belum ada indikator</span>';
                 }
+
+                tbody.innerHTML += `
+                    <tr class="unit-row">
+                        <td class="text-center fw-bold text-muted">${idx + 1}</td>
+                        <td class="fw-bold text-primary search-target" style="font-size: 1.05rem;">${unit.nama_unit}</td>
+                        <td class="search-target">${unit.kepala_unit || '-'}</td>
+                        <td>${badgeForms}</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-primary rounded-circle me-1" onclick="bukaModalEdit('${unit.id}')" title="Edit Unit"><i class="fas fa-pen"></i></button>
+                            <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="hapusUnit('${unit.id}', '${unit.nama_unit}')" title="Hapus Permanen"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>`;
             });
         }
+
+        function cariUnit() {
+            let input = document.getElementById('searchUnit').value.toLowerCase();
+            document.querySelectorAll('.unit-row').forEach(row => { 
+                row.style.display = row.innerText.toLowerCase().includes(input) ? '' : 'none'; 
+            });
+        }
+
+        function bukaModalTambah() {
+            document.getElementById('formUnit').reset(); 
+            document.getElementById('inp_id').value = "";
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle me-2 text-primary"></i> Tambah Unit Baru';
+            new bootstrap.Modal(document.getElementById('modalUnit')).show();
+        }
+
+        function bukaModalEdit(idUnit) {
+            const unit = listUnits.find(u => u.id == idUnit); 
+            if(!unit) return;
+            
+            document.getElementById('inp_id').value = unit.id;
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit me-2 text-warning"></i> Edit Konfigurasi Unit';
+            document.getElementById('inp_nama_unit').value = unit.nama_unit;
+            document.getElementById('inp_kepala_unit').value = unit.kepala_unit || '';
+            document.getElementById('inp_daftar_form').value = unit.daftar_form || '';
+            
+            new bootstrap.Modal(document.getElementById('modalUnit')).show();
+        }
+
+        // 2. CREATE / UPDATE: SIMPAN DATA KE master_unit
+        window.simpanUnit = async function() {
+            const idUnit = document.getElementById('inp_id').value;
+            const namaUnit = document.getElementById('inp_nama_unit').value.trim();
+            const kepalaUnit = document.getElementById('inp_kepala_unit').value.trim();
+            const daftarForm = document.getElementById('inp_daftar_form').value.trim();
+
+            if (!namaUnit) { Swal.fire('Oops', 'Nama Unit wajib diisi!', 'warning'); return; }
+
+            const btn = document.getElementById('btnSimpan'); 
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
+
+            const payloadData = {
+                nama_unit: namaUnit,
+                kepala_unit: kepalaUnit,
+                daftar_form: daftarForm
+            };
+
+            try {
+                if (idUnit) {
+                    // UPDATE
+                    const { error } = await supabaseClient.from('master_unit').update(payloadData).eq('id', idUnit);
+                    if (error) throw error;
+                } else {
+                    // Cek apakah nama unit sudah ada (mencegah duplikat)
+                    const { data: existing } = await supabaseClient.from('master_unit').select('id').ilike('nama_unit', namaUnit).maybeSingle();
+                    if (existing) { Swal.fire('Oops', 'Unit dengan nama tersebut sudah terdaftar!', 'warning'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Data Unit'; return; }
+                    
+                    // INSERT
+                    const { error } = await supabaseClient.from('master_unit').insert([payloadData]);
+                    if (error) throw error;
+                }
+
+                Swal.fire({ title: 'Berhasil!', text: 'Konfigurasi unit tersimpan.', icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { 
+                    bootstrap.Modal.getInstance(document.getElementById('modalUnit')).hide(); 
+                    loadUnits(); 
+                });
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal!', 'Terjadi kesalahan saat menyimpan ke Supabase.', 'error');
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Data Unit';
+            }
+        };
+
+        // 3. DELETE: HAPUS DATA DARI master_unit
+        window.hapusUnit = function(idUnit, namaUnit) {
+            Swal.fire({
+                title: 'Hapus Permanen?',
+                html: `Anda yakin ingin menghapus unit <b>${namaUnit}</b>?<br><small class="text-danger">Akses unit ini ke form akan hilang.</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const { error } = await supabaseClient.from('master_unit').delete().eq('id', idUnit);
+                        if (error) throw error;
+                        
+                        Swal.fire('Terhapus!', `Unit ${namaUnit} telah dihapus dari database.`, 'success');
+                        loadUnits();
+                    } catch (err) {
+                        console.error(err);
+                        Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus data. Pastikan Policy DELETE diizinkan.', 'error');
+                    }
+                }
+            });
+        };
     </script>
 </body>
 </html>

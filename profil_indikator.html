@@ -3,1108 +3,585 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kamus Indikator Mutu</title>
+    <title>Kamus Profil Indikator Mutu - SIM PMKP</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
-        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border-top: 4px solid #0dcaf0; background: #fff;}
-        .accordion-button:not(.collapsed) { background-color: #e0f7fa; color: #0c63e4; font-weight: bold; }
-        .table-profil th { background-color: #f8f9fa; width: 30%; font-weight: 600; color: #495057;}
-        .table-profil td { color: #212529; white-space: pre-wrap; font-family: monospace; }
-        .box-dimensi { background: #fff; border: 1px solid #ced4da; padding: 10px; border-radius: 6px; }
-        .form-check-label { cursor: pointer; } 
-        .box-rumus { background-color: #f8f9fa; border: 1px dashed #6c757d; border-radius: 8px; padding: 15px; margin-top: 15px;}
+        body { background-color: #f0f2f5; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff; transition: transform 0.2s; }
+        .card-custom:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,.1); }
+        .badge-tipe { font-size: 0.8rem; padding: 6px 12px; border-radius: 20px; }
+        .math-box { background: #f8f9fa; border-left: 4px solid #0d6efd; padding: 15px; border-radius: 6px; font-family: 'Courier New', Courier, monospace; font-weight: bold; }
+        .form-label { font-weight: bold; color: #34495e; font-size: 0.85rem; margin-bottom: 0.3rem;}
+        .nav-tabs .nav-link { font-weight: bold; color: #6c757d; }
+        .nav-tabs .nav-link.active { color: #6f42c1; border-bottom: 3px solid #6f42c1; }
     </style>
 </head>
 <body>
     <div id="navbar-container"></div>
     <div id="sidebar-container"></div>
 
-    <div class="container-fluid px-4" style="max-width: 1100px;">
-        <div class="bg-white p-4 mb-4 card-custom">
-            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4 flex-wrap gap-3">
-                <div>
-                    <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-book-medical text-primary me-2"></i> Kamus Profil Indikator Mutu</h4>
-                    <p class="text-muted mb-0">Referensi lengkap definisi operasional, formula, dan standar pengukuran mutu rumah sakit.</p>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-secondary fw-bold shadow-sm" onclick="cetakProfil(null)">
-                        <i class="fas fa-print me-1"></i> Cetak Semua Kamus
-                    </button>
-                    <div id="adminControls" class="d-none">
-                        <button class="btn btn-primary fw-bold shadow-sm" onclick="bukaModalForm(null)">
-                            <i class="fas fa-plus me-1"></i> Tambah Profil Baru
-                        </button>
-                    </div>
+    <div class="container-fluid px-4" style="max-width: 1300px;">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-book-medical text-primary me-2"></i> Kamus Profil Indikator</h3>
+                <p class="text-muted mb-0">Ensiklopedia definisi operasional, rumus, metodologi, dan target mutu RS.</p>
+            </div>
+            <button class="btn btn-primary fw-bold shadow-sm px-4 rounded-pill d-none" id="btnTambahIndikator" onclick="bukaModalTambah()">
+                <i class="fas fa-plus-circle me-2"></i> Tambah Profil Baru
+            </button>
+        </div>
+
+        <div class="row mb-4 g-3">
+            <div class="col-md-8">
+                <div class="input-group input-group-lg shadow-sm">
+                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-primary"></i></span>
+                    <input type="text" class="form-control border-start-0" id="searchIndikator" placeholder="Cari ID, Judul, atau Dimensi Mutu..." onkeyup="filterKamus()">
                 </div>
             </div>
-
-            <div class="mb-4">
-                <div class="input-group shadow-sm">
-                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-                    <input type="text" class="form-control border-start-0 ps-0" id="searchInput" placeholder="Cari nama indikator atau kata kunci definisi..." onkeyup="filterKamus()">
-                </div>
-            </div>
-
-            <div id="loadingMessage" class="alert alert-info text-center fw-bold shadow-sm"><i class="fas fa-spinner fa-spin me-2"></i> Mengambil data kamus indikator...</div>
-            <div class="accordion shadow-sm" id="accordionKamus"></div>
-            <div id="noDataMessage" class="alert alert-warning text-center mt-3 fw-bold" style="display: none;">
-                <i class="fas fa-exclamation-circle me-2"></i> Belum ada profil indikator yang ditambahkan ke kamus.
+            <div class="col-md-4">
+                <select class="form-select form-select-lg shadow-sm fw-bold text-secondary" id="filterKategori" onchange="filterKamus()">
+                    <option value="">-- Semua Kategori --</option>
+                    <option value="INM">Indikator Nasional Mutu (INM)</option>
+                    <option value="IMP-RS">Indikator Mutu Prioritas RS (IMP-RS)</option>
+                    <option value="IMP-Unit">Indikator Mutu Prioritas Unit (IMP-Unit)</option>
+                </select>
             </div>
         </div>
+
+        <div id="loadingMessage" class="text-center py-5">
+            <i class="fas fa-circle-notch fa-spin fa-3x text-primary mb-3"></i>
+            <h6 class="text-muted">Membuka lembaran kamus dari Supabase...</h6>
+        </div>
+
+        <div class="row g-4 d-none" id="wadahKamus"></div>
+
     </div>
 
-    <div class="modal fade" id="modalFormProfil" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title fw-bold" id="modalTitle"><i class="fas fa-edit me-2"></i> Form Kamus Indikator</h5>
+    <!-- MODAL FORM INDIKATOR KOMPREHENSIF -->
+    <div class="modal fade" id="modalIndikator" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white p-3">
+                    <h5 class="modal-title fw-bold" id="modalTitle"><i class="fas fa-edit me-2 text-warning"></i> Form Profil Indikator</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body bg-light">
-                    <form id="formProfil">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="fw-bold mb-1">ID Form / Kode Kriteria <span class="text-danger">*</span></label>
-                                <select class="form-select fw-bold text-primary border-primary" id="inp_ID_Form" required>
-                                    <option value="">-- Pilih ID Form dari Sistem --</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="fw-bold mb-1">Kategori Indikator <span class="text-danger">*</span></label>
-                                <select class="form-select fw-bold text-dark" id="inp_Kategori_Indikator" onchange="toggleUnitPelaksana()">
-                                    <option value="Indikator Mutu Nasional">Indikator Mutu Nasional</option>
-                                    <option value="IMP-RS">IMP-RS</option>
-                                    <option value="IMP-Unit">IMP-Unit</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="fw-bold mb-1">Arah Target Pencapaian <span class="text-danger">*</span></label>
-                                <select class="form-select fw-bold text-dark" id="inp_Arah_Target">
-                                    <option value="Positif">Positif (Semakin Tinggi Semakin Baik)</option>
-                                    <option value="Negatif">Negatif (Semakin Rendah Semakin Baik)</option>
-                                </select>
-                            </div>
+                <div class="modal-body bg-light p-0">
+                    <form id="formIndikator">
+                        <input type="hidden" id="mode_form">
+                        
+                        <!-- TAB NAVIGATION -->
+                        <ul class="nav nav-tabs bg-white px-4 pt-3 sticky-top shadow-sm" id="profilTabs" role="tablist" style="z-index: 10;">
+                            <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-dasar" type="button" role="tab">1. Profil Dasar</button></li>
+                            <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pengukuran" type="button" role="tab">2. Pengukuran & Target</button></li>
+                            <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-metodologi" type="button" role="tab">3. Metodologi Data</button></li>
+                            <li class="nav-item" role="presentation"><button class="nav-link text-danger" data-bs-toggle="tab" data-bs-target="#tab-builder" type="button" role="tab"><i class="fas fa-cogs me-1"></i> 4. Builder Engine</button></li>
+                        </ul>
+
+                        <div class="tab-content p-4" id="profilTabsContent">
                             
-                            <div class="col-md-12" id="container_Unit_Pelaksana" style="display: none;">
-                                <label class="fw-bold mb-1 text-primary">Unit Pelaksana (Khusus IMP-Unit) <span class="text-danger">*</span></label>
-                                <select class="form-select fw-bold border-primary text-dark" id="inp_Unit_Pelaksana">
-                                    <option value="">-- Pilih Unit Pelaksana --</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-12" id="container_Unit_Pelaksana_Multi" style="display: none;">
-                                <label class="fw-bold mb-1 text-success"><i class="fas fa-hospital-user me-1"></i> Unit Pelaksana (Khusus IMP-RS) <small class="text-muted fw-normal ms-2">Bisa centang lebih dari satu unit</small></label>
-                                <div class="box-dimensi d-flex flex-wrap gap-4" id="wadahCheckboxUnit"></div>
-                            </div>
-
-                            <div class="col-md-12">
-                                <label class="fw-bold mb-1 text-dark">Judul Indikator / Sub-Indikator Mutu <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control fw-bold border-dark text-dark" id="inp_Judul_Indikator" placeholder="Contoh: Kepatuhan Identifikasi Pasien atau Insidensi Phlebitis ICU" required>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="fw-bold mb-1 text-dark">Satuan <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control fw-bold" id="inp_Satuan" placeholder="Contoh: % , Per mil, Menit, atau Orang" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="fw-bold mb-1 text-dark">Target Sasaran <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control fw-bold" id="inp_Target" placeholder="Contoh: 85 , 100, atau 0" required>
-                            </div>
-
-                            <div class="col-md-12">
-                                <label class="fw-bold mb-1">Dasar Pemikiran</label>
-                                <textarea class="form-control" id="inp_Dasar_Pemikiran" rows="2"></textarea>
-                            </div>
-                            
-                            <div class="col-md-12">
-                                <label class="fw-bold mb-1 text-primary"><i class="fas fa-tasks me-1"></i> Dimensi Mutu (Bisa Pilih > 1)</label>
-                                <div class="box-dimensi d-flex flex-wrap gap-4">
-                                    <div class="form-check"><input class="form-check-input chk-dimensi" type="checkbox" value="Aman" id="d_aman"><label class="form-check-label fw-semibold" for="d_aman">Aman</label></div>
-                                    <div class="form-check"><input class="form-check-input chk-dimensi" type="checkbox" value="Berorientasi pada Pasien" id="d_pasien"><label class="form-check-label fw-semibold" for="d_pasien">Berorientasi pada Pasien</label></div>
-                                    <div class="form-check"><input class="form-check-input chk-dimensi" type="checkbox" value="Efektif" id="d_efektif"><label class="form-check-label fw-semibold" for="d_efektif">Efektif</label></div>
-                                    <div class="form-check"><input class="form-check-input chk-dimensi" type="checkbox" value="Efisien" id="d_efisien"><label class="form-check-label fw-semibold" for="d_efisien">Efisien</label></div>
-                                    <div class="form-check"><input class="form-check-input chk-dimensi" type="checkbox" value="Adil" id="d_adil"><label class="form-check-label fw-semibold" for="d_adil">Adil</label></div>
-                                    <div class="form-check"><input class="form-check-input chk-dimensi" type="checkbox" value="Tepat Waktu" id="d_waktu"><label class="form-check-label fw-semibold" for="d_waktu">Tepat Waktu</label></div>
-                                    <div class="form-check"><input class="form-check-input chk-dimensi" type="checkbox" value="Terintegrasi" id="d_integrasi"><label class="form-check-label fw-semibold" for="d_integrasi">Terintegrasi</label></div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-12">
-                                <label class="fw-bold mb-1">Jenis Indikator <span class="text-danger">*</span></label>
-                                <select class="form-select fw-bold text-dark" id="inp_Jenis_Indikator">
-                                    <option value="input">input</option>
-                                    <option value="proses">proses</option>
-                                    <option value="output">output</option>
-                                    <option value="outcome">outcome</option>
-                                    <option value="proses dan output">proses dan output</option>
-                                </select>
-                            </div>
-                            <div class="col-md-12">
-                                <label class="fw-bold mb-1">Tujuan</label>
-                                <textarea class="form-control" id="inp_Tujuan" rows="2"></textarea>
-                            </div>
-                            <div class="col-md-12">
-                                <label class="fw-bold mb-1">Definisi Operasional</label>
-                                <textarea class="form-control" id="inp_Definisi_Operasional" rows="3"></textarea>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="fw-bold mb-1 text-success">Kriteria Inklusi</label>
-                                <textarea class="form-control" id="inp_Kriteria_Inklusi" rows="2"></textarea>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="fw-bold mb-1 text-danger">Kriteria Eksklusi</label>
-                                <textarea class="form-control" id="inp_Kriteria_Eksklusi" rows="2"></textarea>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="fw-bold mb-1 text-primary">Deskripsi Numerator (Pembilang)</label>
-                                <textarea class="form-control border-primary" id="inp_Numerator" rows="2"></textarea>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="fw-bold mb-1 text-primary">Deskripsi Denominator (Penyebut)</label>
-                                <textarea class="form-control border-primary" id="inp_Denominator" rows="2"></textarea>
-                            </div>
-                            <div class="col-md-12">
-                                <label class="fw-bold mb-1">Formula Perhitungan (Narasi)</label>
-                                <input type="text" class="form-control fw-bold" id="inp_Formula" placeholder="Contoh: (Numerator / Denominator) x 100%">
-                            </div>
-
-                            <div class="col-md-12 mt-4" id="visual_builder_container">
-                                <div class="card border-primary shadow-sm">
-                                    <div class="card-header bg-primary text-white fw-bold">
-                                        <i class="fas fa-magic me-2"></i> Pembuat Rumus Otomatis (Visual Builder)
+                            <!-- TAB 1: PROFIL DASAR -->
+                            <div class="tab-pane fade show active" id="tab-dasar" role="tabpanel">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">ID Form <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fw-bold text-danger" id="inp_id_indikator" placeholder="Contoh: INM_1" required>
                                     </div>
-                                    <div class="card-body bg-light">
-                                        <div class="row g-3 mb-3 border-bottom pb-3">
-                                            <div class="col-md-6">
-                                                <label class="fw-bold text-dark mb-1"><i class="fas fa-calculator me-1"></i> Metode Kalkulasi</label>
-                                                <select class="form-select border-dark" id="sel_metode_kalkulasi" onchange="toggleBuilderMode()">
-                                                    <option value="COUNT">Hitung Frekuensi / Jumlah Baris (COUNTIFS)</option>
-                                                    <option value="SUM">Jumlahkan Angka di Kolom (SUMIFS)</option>
-                                                    <option value="MANUAL">Input Manual / Rekap Buku (Tanpa Rumus)</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-6" id="box_format_waktu">
-                                                <label class="fw-bold text-dark mb-1"><i class="fas fa-calendar-alt me-1"></i> Format Kolom Waktu</label>
-                                                <select class="form-select border-dark" id="sel_format_waktu">
-                                                    <option value="DATE">Tanggal Lengkap (DD/MM/YYYY)</option>
-                                                    <option value="MONTH_TEXT">Nama Bulan Teks (Januari, Februari...)</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        
-                                        <div id="builder_steps">
-                                            <div class="row g-3">
-                                                <div class="col-md-12">
-                                                    <label class="fw-bold text-primary mb-1">1. Di kolom mana letak Tanggal / Bulan Pelayanan?</label>
-                                                    <select class="form-select border-primary dropdown-kolom" id="sel_kolom_tanggal">
-                                                        <option value="">-- Pilih ID Form di atas dulu --</option>
-                                                    </select>
-                                                </div>
-
-                                                <div class="col-md-12 mt-4">
-                                                    <div class="d-flex justify-content-between align-items-end mb-1">
-                                                        <label class="fw-bold text-success mb-0" id="lbl_numerator">2. Syarat Numerator (Target yang tercapai)</label>
-                                                        <button type="button" class="btn btn-sm btn-outline-success fw-bold" onclick="tambahSyaratOR('num')" id="btn_add_or_num"><i class="fas fa-plus me-1"></i> Syarat ATAU (OR)</button>
-                                                    </div>
-                                                    
-                                                    <div id="wadah_syarat_num">
-                                                        <div class="input-group mb-2">
-                                                            <span class="input-group-text bg-white">Kolom:</span>
-                                                            <select class="form-select dropdown-kolom id-num-kolom" id="sel_num_kolom"></select>
-                                                            <select class="form-select id-num-op" id="sel_num_op" style="max-width: 130px;">
-                                                                <option value="=">Sama (=)</option>
-                                                                <option value="<>">Beda (!=)</option>
-                                                                <option value=">">Lebih (>)</option>
-                                                                <option value="<">Kurang (<)</option>
-                                                            </select>
-                                                            <input type="text" class="form-control id-num-val" id="val_num_syarat" placeholder="Nilai (Misal: Ya)">
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <div class="col-md-12 mt-3">
-                                                    <div class="d-flex justify-content-between align-items-end mb-1">
-                                                        <label class="fw-bold text-danger mb-0" id="lbl_denominator">3. Syarat Denominator (Total Sampel)</label>
-                                                        <button type="button" class="btn btn-sm btn-outline-danger fw-bold d-none" onclick="tambahSyaratOR('den')" id="btn_add_or_den"><i class="fas fa-plus me-1"></i> Syarat ATAU (OR)</button>
-                                                    </div>
-                                                    <select class="form-select mb-2" id="tipe_denominator" onchange="toggleDenomCustom()">
-                                                        <option value="ALL">Hitung Semua Baris Pasien di Bulan Tersebut (Tanpa Syarat)</option>
-                                                        <option value="CUSTOM">Ada Syarat Khusus (Eksklusi tertentu)</option>
-                                                    </select>
-                                                    
-                                                    <div id="wadah_syarat_den" class="d-none">
-                                                        <div class="input-group mb-2">
-                                                            <span class="input-group-text bg-white">Kolom:</span>
-                                                            <select class="form-select dropdown-kolom id-den-kolom" id="sel_den_kolom"></select>
-                                                            <select class="form-select id-den-op" id="sel_den_op" style="max-width: 130px;">
-                                                                <option value="=">Sama (=)</option>
-                                                                <option value="<>">Beda (!=)</option>
-                                                            </select>
-                                                            <input type="text" class="form-control id-den-val" id="val_den_syarat" placeholder="Nilai (Misal: Memenuhi Syarat)">
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div id="manual_msg" class="alert alert-info mt-2 d-none">
-                                            <i class="fas fa-info-circle me-2"></i> Mode Input Manual dipilih. Sistem akan mengosongkan rumus Numerator & Denominator agar petugas dapat mengetik angka secara manual di Dashboard.
-                                        </div>
-
-                                        <div class="col-md-12 text-end mt-3 border-top pt-3">
-                                            <button type="button" class="btn btn-warning fw-bold px-4" onclick="rakitRumusVisual()">
-                                                <i class="fas fa-cogs me-2"></i> Rakit Rumus Otomatis
-                                            </button>
-                                        </div>
+                                    <div class="col-md-9">
+                                        <label class="form-label">Judul Indikator <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fw-bold text-primary" id="inp_judul_indikator" placeholder="Judul lengkap indikator..." required>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Kategori Indikator <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="inp_kategori_indikator" required>
+                                            <option value="INM">INM (Nasional)</option>
+                                            <option value="IMP-RS">IMP-RS (Prioritas RS)</option>
+                                            <option value="IMP-Unit">IMP-Unit (Prioritas Unit)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label">Unit Pelaksana (Penanggung Jawab) <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="inp_unit_pelaksana" required>
+                                            <option value="">-- Sedang memuat unit... --</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Dimensi Mutu</label>
+                                        <input type="text" class="form-control" id="inp_dimensi_mutu" placeholder="Efektivitas, Keselamatan, dll.">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Tujuan</label>
+                                        <input type="text" class="form-control" id="inp_tujuan" placeholder="Mengapa ini diukur?">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Dasar Pemikiran</label>
+                                    <textarea class="form-control" id="inp_dasar_pemikiran" rows="2" placeholder="Regulasi atau literatur yang mendasari..."></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Jenis Indikator (Bisa lebih dari 1)</label>
+                                    <div class="d-flex gap-3 bg-white p-2 border rounded">
+                                        <div class="form-check"><input class="form-check-input chk-jenis" type="checkbox" value="Input" id="j1"><label class="form-check-label" for="j1">Input</label></div>
+                                        <div class="form-check"><input class="form-check-input chk-jenis" type="checkbox" value="Proses" id="j2"><label class="form-check-label" for="j2">Proses</label></div>
+                                        <div class="form-check"><input class="form-check-input chk-jenis" type="checkbox" value="Output" id="j3"><label class="form-check-label" for="j3">Output</label></div>
+                                        <div class="form-check"><input class="form-check-input chk-jenis" type="checkbox" value="Outcome" id="j4"><label class="form-check-label" for="j4">Outcome</label></div>
                                     </div>
                                 </div>
                             </div>
 
-                            <div class="col-md-12 mt-3" id="advanced_mode_container">
-                                <details>
-                                    <summary class="text-muted" style="cursor:pointer; font-size:0.85rem;"><i class="fas fa-code me-1"></i> Lihat / Edit Kode Rumus Mentah (Mode Advanced)</summary>
-                                    <div class="box-rumus border-secondary mt-2 p-3 bg-light rounded">
-                                        <div class="row g-2">
-                                            <div class="col-md-12">
-                                                <label class="fw-bold mb-1" style="font-size:0.8rem;">Template Numerator</label>
-                                                <textarea class="form-control" id="inp_Template_Numerator" rows="3" style="font-family: monospace; font-size:0.75rem;"></textarea>
-                                            </div>
-                                            <div class="col-md-12">
-                                                <label class="fw-bold mb-1" style="font-size:0.8rem;">Template Denominator</label>
-                                                <textarea class="form-control" id="inp_Template_Denominator" rows="3" style="font-family: monospace; font-size:0.75rem;"></textarea>
-                                            </div>
-                                            <div class="col-md-12">
-                                                <label class="fw-bold mb-1" style="font-size:0.8rem;">Template Pencapaian</label>
-                                                <input type="text" class="form-control" id="inp_Template_Pencapaian" style="font-family: monospace; font-size:0.75rem;">
-                                            </div>
-                                        </div>
+                            <!-- TAB 2: PENGUKURAN & TARGET -->
+                            <div class="tab-pane fade" id="tab-pengukuran" role="tabpanel">
+                                <div class="mb-3">
+                                    <label class="form-label">Definisi Operasional</label>
+                                    <textarea class="form-control" id="inp_definisi_operasional" rows="3" placeholder="Penjelasan detail indikator..."></textarea>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-success">Kriteria Inklusi</label>
+                                        <textarea class="form-control border-success" id="inp_kriteria_inklusi" rows="2"></textarea>
                                     </div>
-                                </details>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-danger">Kriteria Eksklusi</label>
+                                        <textarea class="form-control border-danger" id="inp_kriteria_eksklusi" rows="2"></textarea>
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3 border-top pt-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-primary">Numerator (Pembilang)</label>
+                                        <textarea class="form-control border-primary" id="inp_num_teks" rows="2"></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-warning text-darken">Denominator (Penyebut)</label>
+                                        <textarea class="form-control border-warning" id="inp_den_teks" rows="2"></textarea>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Formula / Rumus Kalkulasi</label>
+                                    <input type="text" class="form-control font-monospace" id="inp_rumus_kalkulasi" placeholder="(Numerator / Denominator) x 100%">
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Satuan Ukur</label>
+                                        <select class="form-select" id="inp_satuan">
+                                            <option value="%">Persen (%)</option>
+                                            <option value="‰">Permil (‰)</option>
+                                            <option value="Menit">Menit</option>
+                                            <option value="Jam">Jam</option>
+                                            <option value="Hari">Hari</option>
+                                            <option value="">Tidak ada satuan (Angka Mutlak)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Nominal Target <span class="text-danger">*</span></label>
+                                        <input type="number" step="0.01" class="form-control fw-bold" id="inp_target" required>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Arah Target</label>
+                                        <select class="form-select" id="inp_arah_target">
+                                            <option value="≥ (Makin besar makin baik)">≥ (Makin besar makin baik)</option>
+                                            <option value="≤ (Makin kecil makin baik)">≤ (Makin kecil makin baik)</option>
+                                            <option value="= (Sama Dengan)">= (Sama Dengan)</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
-                            
-                            <div class="col-md-12">
-                                <label class="fw-bold mb-1">Cara Penilaian</label>
-                                <textarea class="form-control" id="inp_Cara_Penilaian" rows="3" placeholder="Deskripsi tata cara penilaian..."></textarea>
+
+                            <!-- TAB 3: METODOLOGI DATA -->
+                            <div class="tab-pane fade" id="tab-metodologi" role="tabpanel">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Cara Penilaian / Pengukuran</label>
+                                        <input type="text" class="form-control" id="inp_cara_penilaian" placeholder="Misal: Concurrent / Retrospektif">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Metode Pengumpulan Data</label>
+                                        <input type="text" class="form-control" id="inp_metode_pengumpulan" placeholder="Misal: Observasi, Rekam Medis">
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Sumber Data</label>
+                                        <input type="text" class="form-control" id="inp_sumber_data" placeholder="Misal: SIMRS, Form Manual">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Instrumen Pengambilan Data</label>
+                                        <input type="text" class="form-control" id="inp_instrumen_pengambilan" placeholder="Misal: Kuesioner, Ceklist">
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Besar Sampel</label>
+                                        <input type="text" class="form-control" id="inp_besar_sampel" placeholder="Misal: Total Populasi / Rumus Slovin">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Cara Pengambilan Sampel</label>
+                                        <input type="text" class="form-control" id="inp_cara_pengambilan_sampel" placeholder="Misal: Purposive Sampling, Random">
+                                    </div>
+                                </div>
+                                <div class="row g-3 mb-3 border-top pt-3">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Periode Pengumpulan Data</label>
+                                        <select class="form-select" id="inp_periode_pengumpulan">
+                                            <option value="Harian">Harian</option><option value="Bulanan" selected>Bulanan</option>
+                                            <option value="Triwulan">Triwulan</option><option value="Semester">Semester</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Periode Analisis Data</label>
+                                        <select class="form-select" id="inp_periode_analisis">
+                                            <option value="Bulanan">Bulanan</option><option value="Triwulan" selected>Triwulan</option>
+                                            <option value="Semester">Semester</option><option value="Tahunan">Tahunan</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Periode Pelaporan Data</label>
+                                        <select class="form-select" id="inp_periode_pelaporan">
+                                            <option value="Bulanan">Bulanan</option><option value="Triwulan" selected>Triwulan</option>
+                                            <option value="Semester">Semester</option><option value="Tahunan">Tahunan</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Penyajian Data</label>
+                                    <input type="text" class="form-control" id="inp_penyajian_data" placeholder="Misal: Run Chart, Bar Chart">
+                                </div>
                             </div>
-                            <div class="col-md-6"><label class="fw-bold mb-1">Metode Pengumpulan Data</label><input type="text" class="form-control" id="inp_Metode_Pengumpulan_Data"></div>
-                            <div class="col-md-6"><label class="fw-bold mb-1">Sumber Data</label><input type="text" class="form-control" id="inp_Sumber_Data"></div>
-                            <div class="col-md-6"><label class="fw-bold mb-1">Instrumen Pengambilan Data</label><input type="text" class="form-control" id="inp_Instrumen_Pengambilan_Data"></div>
-                            <div class="col-md-6"><label class="fw-bold mb-1">Besar Sampel</label><input type="text" class="form-control" id="inp_Besar_Sampel"></div>
-                            <div class="col-md-12"><label class="fw-bold mb-1">Cara Pengambilan Sampel</label><input type="text" class="form-control" id="inp_Cara_Pengambilan_Sampel"></div>
-                            <div class="col-md-4">
-                                <label class="fw-bold mb-1">Periode Pengumpulan Data</label>
-                                <select class="form-select text-dark" id="inp_Periode_Pengumpulan_Data">
-                                    <option value="harian">harian</option><option value="bulanan">bulanan</option><option value="triwulan">triwulan</option>
-                                </select>
+
+                            <!-- TAB 4: BUILDER ENGINE (SISTEM) -->
+                            <div class="tab-pane fade" id="tab-builder" role="tabpanel">
+                                <div class="alert alert-danger" style="font-size: 0.85rem;">
+                                    <i class="fas fa-exclamation-triangle me-2"></i> <b>Area Kritis:</b> Konfigurasi di bawah ini digunakan oleh sistem Form Builder untuk merakit rumus kalkulasi secara otomatis (Visual Builder).
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label text-dark">Kolom Kriteria (Variabel Penentu)</label>
+                                    <input type="text" class="form-control border-secondary" id="inp_kolom_kriteria" placeholder="Contoh: Kepatuhan Jam Visite">
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label text-primary">Template Numerator (Logic)</label>
+                                        <textarea class="form-control border-primary" id="inp_template_numerator" rows="3" placeholder="Contoh: countIf(Kepatuhan Jam Visite, 'Ya')"></textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label text-warning text-darken">Template Denominator (Logic)</label>
+                                        <textarea class="form-control border-warning" id="inp_template_denominator" rows="3" placeholder="Contoh: countAll()"></textarea>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-4">
-                                <label class="fw-bold mb-1">Periode Pelaporan Data</label>
-                                <select class="form-select text-dark" id="inp_Periode_Pelaporan_Data">
-                                    <option value="harian">harian</option><option value="bulanan">bulanan</option><option value="triwulan">triwulan</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="fw-bold mb-1">Periode Analisis Data</label>
-                                <select class="form-select text-dark" id="inp_Periode_Analisis_Data">
-                                    <option value="harian">harian</option><option value="bulanan">bulanan</option><option value="triwulan">triwulan</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6"><label class="fw-bold mb-1">Penyajian Data</label><input type="text" class="form-control" id="inp_Penyajian_Data"></div>
-                            <div class="col-md-6"><label class="fw-bold mb-1">Penanggung Jawab</label><input type="text" class="form-control" id="inp_Penanggung_Jawab"></div>
+
+                        </div> <!-- End Tab Content -->
+
+                        <div class="bg-white border-top p-3 d-flex justify-content-end rounded-bottom">
+                            <button type="button" class="btn btn-secondary me-2 px-4" data-bs-dismiss="modal">Batal</button>
+                            <button type="button" class="btn fw-bold text-white px-5 shadow-sm" style="background-color: #6f42c1;" id="btnSimpan" onclick="simpanIndikator()">
+                                <i class="fas fa-save me-2"></i> Simpan Profil Indikator
+                            </button>
                         </div>
                     </form>
                 </div>
-                <div class="modal-footer bg-white border-top">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                    <button type="button" class="btn btn-primary fw-bold" id="btnSimpan" onclick="simpanProfil()">
-                        <i class="fas fa-save me-1"></i> Simpan ke Database
-                    </button>
-                </div>
             </div>
         </div>
     </div>
 
+    <!-- 1. WAJIB: Library Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Skrip Utama -->
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        const role = sessionMutu.role || "";
-        const userUnit = sessionMutu.unit || "GUEST";
-        
-        let rawKamusData = [];
-        let currentEditingJudul = ""; 
+        const isAdmin = (sessionMutu.role === "Komite Mutu");
+        let listIndikator = [];
 
         document.addEventListener("DOMContentLoaded", function () {
-            if (role === "Komite Mutu") {
-                document.getElementById('adminControls').classList.remove('d-none');
-            } else {
-                let vbCont = document.getElementById('visual_builder_container');
-                let advCont = document.getElementById('advanced_mode_container');
-                if(vbCont) vbCont.style.display = 'none';
-                if(advCont) advCont.style.display = 'none';
+            if (!supabaseClient) { Swal.fire('Error', 'Supabase belum dikonfigurasi', 'error'); return; }
+            
+            if (isAdmin) {
+                document.getElementById('btnTambahIndikator').classList.remove('d-none');
             }
-
-            fetch(scriptURL + "?action=get_panel_setup")
-            .then(res => res.json())
-            .then(res => {
-                if(res.status === 'success') {
-                    const selUnit = document.getElementById('inp_Unit_Pelaksana');
-                    const wadahMulti = document.getElementById('wadahCheckboxUnit');
-                    
-                    res.listUnit.map(u => u.unit).sort().forEach((unit, idx) => {
-                        selUnit.add(new Option(unit, unit));
-                        
-                        let safeUnit = unit.replace(/'/g, "&#39;").replace(/"/g, "&quot;");
-                        let htmlCb = "";
-                        htmlCb += "<div class='form-check'>";
-                        htmlCb += "<input class='form-check-input chk-unit-multi' type='checkbox' value='" + safeUnit + "' id='chk_unit_" + idx + "'>";
-                        htmlCb += "<label class='form-check-label fw-semibold' for='chk_unit_" + idx + "'>" + safeUnit + "</label>";
-                        htmlCb += "</div>";
-                        
-                        wadahMulti.innerHTML += htmlCb;
-                    });
-                }
-            });
-
-            muatDataKamus();
+            
+            loadUnitDropdown();
+            loadKamus();
         });
 
-        function muatDataKamus() {
-            if (role !== "Komite Mutu") {
-                fetch(scriptURL + "?action=get_menu&unit=" + encodeURIComponent(userUnit))
-                .then(res => res.json())
-                .then(resMenu => {
-                    let allowedForms = resMenu.menu || [];
-                    ambilDanFilterKamus(allowedForms);
-                })
-                .catch(err => {
-                    document.getElementById('loadingMessage').innerHTML = "<i class='fas fa-exclamation-triangle text-danger me-2'></i> Gagal memeriksa hak akses unit.";
-                });
-            } else {
-                ambilDanFilterKamus(null);
-            }
-        }
-
-        function ambilDanFilterKamus(allowedForms) {
-            fetch(scriptURL + "?action=get_profil_indikator")
-                .then(res => res.json())
-                .then(result => {
-                    document.getElementById('loadingMessage').style.display = 'none';
-                    if (result.status === 'success') {
-                        let dataKamus = result.data;
-
-                        if (allowedForms !== null) {
-                            dataKamus = dataKamus.filter(row => {
-                                let idForm = row['ID_Form'] || row['ID Form'] || row['Kolom_Kriteria'] || "";
-                                return allowedForms.includes(idForm);
-                            });
-                        }
-
-                        const bobotKategori = { "Indikator Mutu Nasional": 1, "IMP-RS": 2, "IMP-Unit": 3 };
-                        dataKamus.sort((a, b) => {
-                            let katA = String(a['Kategori Indikator'] || "Lainnya").trim();
-                            let katB = String(b['Kategori Indikator'] || "Lainnya").trim();
-                            let skorA = bobotKategori[katA] || 99; let skorB = bobotKategori[katB] || 99;
-                            return skorA - skorB;
-                        });
-
-                        rawKamusData = dataKamus;
-                        
-                        const selectEl = document.getElementById('inp_ID_Form');
-                        selectEl.innerHTML = "<option value=''>-- Pilih ID Form dari Sistem --</option>";
-                        if (result.mapping) {
-                            for (const idForm of Object.keys(result.mapping)) {
-                                let safeId = idForm.replace(/\s+/g, '_'); 
-                                selectEl.innerHTML += "<option value='" + safeId + "'>" + safeId + "</option>";
-                            }
-                        }
-                        renderAccordion(rawKamusData);
-                    } else {
-                        Swal.fire('Gagal!', "Tidak dapat memuat kamus.", 'error');
-                    }
-                }).catch(err => { document.getElementById('loadingMessage').innerHTML = "<i class='fas fa-wifi text-danger me-2'></i> Gagal menyambung ke database."; });
-        }
-
-        function renderAccordion(data) {
-            const container = document.getElementById('accordionKamus');
-            container.innerHTML = '';
-
-            if (data.length === 0) { document.getElementById('noDataMessage').style.display = 'block'; return; }
-
-            const fields = [
-                { label: "ID Form / Kode", key: "ID_Form" },
-                { label: "Unit Pelaksana", key: "Unit Pelaksana" },
-                { label: "Kategori Indikator", key: "Kategori Indikator" },
-                { label: "Satuan", key: "Satuan" },
-                { label: "Target Sasaran", key: "Target" },
-                { label: "Arah Target", key: "Arah Target" },
-                { label: "Dasar Pemikiran", key: "Dasar Pemikiran" },
-                { label: "Dimensi Mutu", key: "Dimensi Mutu" },
-                { label: "Tujuan", key: "Tujuan" },
-                { label: "Definisi Operasional", key: "Definisi Operasional" },
-                { label: "Jenis Indikator", key: "Jenis Indikator" },
-                { label: "Deskripsi Numerator", key: "Numerator" },
-                { label: "Deskripsi Denominator", key: "Denominator" },
-                { label: "Kriteria Inklusi", key: "Kriteria Inklusi" },
-                { label: "Kriteria Eksklusi", key: "Kriteria Eksklusi" },
-                { label: "Formula Perhitungan", key: "Formula" },
-                { label: "Cara Penilaian", key: "Cara Penilaian" },
-                { label: "Metode Pengumpulan Data", key: "Metode Pengumpulan Data" },
-                { label: "Sumber Data", key: "Sumber Data" },
-                { label: "Instrumen Pengambilan Data", key: "Instrumen Pengambilan Data" },
-                { label: "Besar Sampel", key: "Besar Sampel" },
-                { label: "Cara Pengambilan Sampel", key: "Cara Pengambilan Sampel" },
-                { label: "Periode Pengumpulan Data", key: "Periode Pengumpulan Data" },
-                { label: "Periode Pelaporan Data", key: "Periode Pelaporan Data" },
-                { label: "Periode Analisis Data", key: "Periode Analisis Data" },
-                { label: "Penyajian Data", key: "Penyajian Data" },
-                { label: "Penanggung Jawab", key: "Penanggung Jawab" }
-            ];
-            
-            if (role === "Komite Mutu") {
-                fields.push({ label: "Template Numerator (ROBOT)", key: "Template_Numerator" });
-                fields.push({ label: "Template Denominator (ROBOT)", key: "Template_Denominator" });
-                fields.push({ label: "Template Pencapaian (ROBOT)", key: "Template_Pencapaian" });
-            }
-
-            data.forEach((row, index) => {
-                let idForm = String(row['ID_Form'] || row['ID Form'] || ("Unknown_" + index));
-                let judulIndikator = String(row['Judul Indikator'] || row['Kolom_Kriteria'] || "-");
-                let kategori = String(row['Kategori Indikator'] || "-");
-                let jenis = String(row['Jenis Indikator'] || "-");
-                
-                let unit = String(row['Unit Pelaksana'] || "");
-                
-                let arrUnit = unit.split(',');
-                let unitText = unit;
-                if (arrUnit.length > 3) {
-                    unitText = arrUnit[0] + ", " + arrUnit[1] + " ... (+" + (arrUnit.length - 2) + " unit)";
+        // Load unit untuk Tab 1
+        async function loadUnitDropdown() {
+            try {
+                const { data } = await supabaseClient.from('master_unit').select('nama_unit').order('nama_unit');
+                const sel = document.getElementById('inp_unit_pelaksana');
+                if (data) {
+                    sel.innerHTML = '<option value="Semua Unit (Hospital Wide)">Semua Unit (Hospital Wide)</option>';
+                    data.forEach(u => sel.add(new Option(u.nama_unit, u.nama_unit)));
                 }
-                let unitBadge = unit ? ("<span class='badge bg-secondary ms-1'><i class='fas fa-hospital me-1'></i>" + unitText + "</span>") : "";
+            } catch(e) { console.error('Gagal memuat unit:', e); }
+        }
 
-                let btnCetakSatu = "<button class='btn btn-sm btn-outline-secondary ms-2' onclick='cetakProfil(" + index + "); event.stopPropagation();' title='Cetak Kamus Ini'><i class='fas fa-print'></i> Cetak DO</button>";
-                let btnEdit = (role === "Komite Mutu") ? ("<button class='btn btn-sm btn-outline-primary ms-2' onclick='bukaModalForm(" + index + "); event.stopPropagation();'><i class='fas fa-edit'></i> Edit DO</button>") : "";
-
-                let tbodyHtml = '';
-                fields.forEach(f => {
-                    let val = String(row[f.key] || "-");
-                    if (f.key === "Arah Target") {
-                        let badgeColor = val === "Negatif" ? "bg-danger" : "bg-success";
-                        val = "<span class='badge " + badgeColor + "'>" + val + "</span>";
-                    }
-                    if (f.key.includes("Template")) {
-                        val = val !== "-" ? ("<code class='text-primary bg-light px-2 py-1 rounded d-inline-block'>" + val + "</code>") : "<span class='text-muted fst-italic'>Kosong (Input Manual)</span>";
-                    }
-                    tbodyHtml += "<tr><th style='background:#f8f9fa;'>" + f.label + "</th><td>" + val + "</td></tr>";
-                });
-
-                let colorBadge = "bg-secondary";
-                if(kategori.trim() === "Indikator Mutu Nasional") colorBadge = "bg-primary";
-                else if(kategori.trim() === "IMP-RS") colorBadge = "bg-success";
-
-                let htmlContent = "";
-                htmlContent += "<div class='accordion-item mb-2 border rounded overflow-hidden kamus-item'>";
-                htmlContent += "<h2 class='accordion-header' id='heading" + index + "'>";
-                htmlContent += "<button class='accordion-button collapsed d-flex justify-content-between align-items-center' type='button' data-bs-toggle='collapse' data-bs-target='#collapse" + index + "'>";
-                htmlContent += "<span><i class='fas fa-file-medical text-info me-2'></i><b>" + judulIndikator.toUpperCase() + "</b> <span class='badge " + colorBadge + " ms-2'>" + kategori + "</span> <span class='badge bg-dark ms-1'>" + jenis + "</span>" + unitBadge + "</span>";
-                htmlContent += "<div class='d-flex align-items-center'>";
-                htmlContent += btnCetakSatu + " " + btnEdit;
-                htmlContent += "</div>";
-                htmlContent += "</button>";
-                htmlContent += "</h2>";
-                htmlContent += "<div id='collapse" + index + "' class='accordion-collapse collapse' data-bs-parent='#accordionKamus'>";
-                htmlContent += "<div class='accordion-body bg-white p-3'>";
-                htmlContent += "<div class='table-responsive'>";
-                htmlContent += "<table class='table table-bordered table-profil mb-0 bg-white'>";
-                htmlContent += "<tbody>" + tbodyHtml + "</tbody>";
-                htmlContent += "</table>";
-                htmlContent += "</div>";
-                htmlContent += "</div>";
-                htmlContent += "</div>";
-                htmlContent += "</div>";
+        // READ
+        async function loadKamus() {
+            document.getElementById('loadingMessage').classList.remove('d-none');
+            document.getElementById('wadahKamus').classList.add('d-none');
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('master_indikator')
+                    .select('*')
+                    .order('id_indikator', { ascending: true });
                 
-                container.innerHTML += htmlContent;
+                if (error) throw error;
+                
+                listIndikator = data;
+                renderKamus(listIndikator);
+                document.getElementById('wadahKamus').classList.remove('d-none');
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal!', 'Tidak dapat memuat kamus indikator dari Supabase', 'error');
+            } finally {
+                document.getElementById('loadingMessage').classList.add('d-none');
+            }
+        }
+
+        function renderKamus(data) {
+            const wadah = document.getElementById('wadahKamus'); 
+            wadah.innerHTML = '';
+            
+            if(data.length === 0) {
+                wadah.innerHTML = '<div class="col-12 text-center py-5 text-muted"><i class="fas fa-folder-open fa-3x mb-3"></i><h5>Kamus masih kosong.</h5></div>';
+                return;
+            }
+
+            data.forEach((item) => {
+                let btnAksi = '';
+                if (isAdmin) {
+                    btnAksi = `
+                        <div class="mt-3 pt-3 border-top text-end">
+                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 me-1" onclick="bukaModalEdit('${item.id_indikator}')"><i class="fas fa-pen me-1"></i> Detail / Edit</button>
+                            <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="hapusIndikator('${item.id_indikator}')"><i class="fas fa-trash me-1"></i> Hapus</button>
+                        </div>
+                    `;
+                }
+
+                let badgeColor = "bg-primary";
+                if(item.kategori_indikator === "IMP-Unit") badgeColor = "bg-success";
+                if(item.kategori_indikator === "IMP-RS") badgeColor = "bg-warning text-dark";
+                if(item.kategori_indikator === "INM") badgeColor = "bg-danger";
+                
+                let satuanTxt = item.satuan ? ` ${item.satuan}` : '';
+
+                wadah.innerHTML += `
+                    <div class="col-md-6 col-lg-4 item-indikator" data-kategori="${item.kategori_indikator || ''}">
+                        <div class="card-custom p-4 h-100 d-flex flex-column border-top border-4 border-primary">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge ${badgeColor} badge-tipe">${item.kategori_indikator || 'UMUM'}</span>
+                                <code class="text-danger fw-bold fs-6">${item.id_indikator}</code>
+                            </div>
+                            <h5 class="fw-bold text-dark mt-2 search-target" style="line-height: 1.4;">${item.judul_indikator}</h5>
+                            <p class="text-muted mb-3 search-target" style="font-size:0.85rem;"><i class="fas fa-hospital me-1"></i> Pelaksana: ${item.unit_pelaksana || 'Semua Unit'}</p>
+                            
+                            <div class="math-box mb-3 flex-grow-1">
+                                <div class="text-center text-success border-bottom border-success pb-1 mb-1" style="font-size:0.85rem;" title="${item.num_teks || ''}">Numerator</div>
+                                <div class="text-center text-warning text-darken" style="font-size:0.85rem;" title="${item.den_teks || ''}">Denominator</div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                                <span class="text-muted" style="font-size:0.85rem;">Target Capaian:</span>
+                                <span class="fw-bold fs-5 text-primary">${item.target != null ? item.target : '-'}${satuanTxt}</span>
+                            </div>
+                            ${btnAksi}
+                        </div>
+                    </div>`;
             });
         }
 
         function filterKamus() {
-            let input = document.getElementById('searchInput').value.toLowerCase();
-            let items = document.querySelectorAll('.kamus-item');
-            items.forEach(item => {
-                let text = item.innerText.toLowerCase();
-                item.style.display = text.includes(input) ? '' : 'none';
+            let inputSearch = document.getElementById('searchIndikator').value.toLowerCase();
+            let inputKat = document.getElementById('filterKategori').value;
+            
+            document.querySelectorAll('.item-indikator').forEach(card => { 
+                let textMatch = card.innerText.toLowerCase().includes(inputSearch);
+                let katMatch = inputKat === "" || card.getAttribute('data-kategori') === inputKat;
+                card.style.display = (textMatch && katMatch) ? '' : 'none'; 
             });
         }
 
-        window.cetakProfil = function(index) {
-            let dataToPrint = [];
-            
-            if (index === null) {
-                dataToPrint = rawKamusData; 
-            } else {
-                dataToPrint = [rawKamusData[index]]; 
-            }
-
-            if (dataToPrint.length === 0) {
-                Swal.fire('Info', 'Tidak ada data untuk dicetak.', 'info');
-                return;
-            }
-
-            let printWindow = window.open('', '_blank');
-            
-            let htmlContent = "";
-            htmlContent += "<!DOCTYPE html>\n<html>\n<head>\n<title>Cetak Kamus Indikator Mutu</title>\n<style>\n";
-            htmlContent += "body { font-family: 'Arial', sans-serif; font-size: 12px; line-height: 1.5; color: #000; margin: 20px; }\n";
-            htmlContent += ".kop { text-align: center; border-bottom: 3px solid #000; padding-bottom: 10px; margin-bottom: 20px; }\n";
-            htmlContent += ".kop h2 { margin: 0; font-size: 16px; text-transform: uppercase; font-weight: bold;}\n";
-            htmlContent += ".kop p { margin: 0; font-size: 12px; }\n";
-            htmlContent += ".kategori-title { font-size: 16px; font-weight: bold; background-color: #2c3e50; color: #fff; padding: 10px; margin-top: 30px; text-transform: uppercase; text-align: center; }\n";
-            htmlContent += ".unit-title { font-size: 14px; font-weight: bold; background-color: #6c757d; color: #fff; padding: 8px; margin-top: 20px; text-transform: uppercase; }\n";
-            htmlContent += ".judul-kamus { text-align: center; font-size: 13px; font-weight: bold; margin-top: 20px; margin-bottom: 10px; text-transform: uppercase; background-color: #e9ecef; padding: 8px; border: 1px solid #000;}\n";
-            htmlContent += "table { width: 100%; border-collapse: collapse; margin-bottom: 30px; page-break-inside: auto; }\n";
-            htmlContent += "tr { page-break-inside: auto; page-break-after: auto; } \n";
-            htmlContent += "th, td { border: 1px solid #000; padding: 6px 10px; vertical-align: top; page-break-inside: auto; }\n";
-            htmlContent += "th { width: 30%; text-align: left; background-color: #f8f9fa; font-weight: bold; }\n";
-            htmlContent += "td { width: 70%; white-space: pre-wrap; text-align: justify; }\n";
-            htmlContent += ".page-break-before { page-break-before: always; }\n";
-            htmlContent += "@media print { body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0;} @page { margin: 1cm; size: A4 portrait; } }\n";
-            htmlContent += "</style>\n</head>\n<body>\n";
-            htmlContent += "<div class='kop'>\n<h2>RSUD SARAS ADYATMA</h2>\n<p>Jl. Kebon Agung No.1, Karanglo, Sleman, Yogyakarta</p>\n</div>\n";
-
-            const fields = [
-                { label: "Unit Pelaksana", key: "Unit Pelaksana" },
-                { label: "Kategori Indikator", key: "Kategori Indikator" }, { label: "Satuan", key: "Satuan" },
-                { label: "Target Sasaran", key: "Target" }, { label: "Arah Target", key: "Arah Target" },
-                { label: "Dasar Pemikiran", key: "Dasar Pemikiran" }, { label: "Dimensi Mutu", key: "Dimensi Mutu" },
-                { label: "Tujuan", key: "Tujuan" }, { label: "Definisi Operasional", key: "Definisi Operasional" },
-                { label: "Jenis Indikator", key: "Jenis Indikator" }, { label: "Deskripsi Numerator", key: "Numerator" },
-                { label: "Deskripsi Denominator", key: "Denominator" }, { label: "Kriteria Inklusi", key: "Kriteria Inklusi" },
-                { label: "Kriteria Eksklusi", key: "Kriteria Eksklusi" }, { label: "Formula Perhitungan", key: "Formula" },
-                { label: "Cara Penilaian", key: "Cara Penilaian" }, { label: "Metode Pengumpulan Data", key: "Metode Pengumpulan Data" },
-                { label: "Sumber Data", key: "Sumber Data" }, { label: "Instrumen Pengambilan Data", key: "Instrumen Pengambilan Data" },
-                { label: "Besar Sampel", key: "Besar Sampel" }, { label: "Cara Pengambilan Sampel", key: "Cara Pengambilan Sampel" },
-                { label: "Periode Pengumpulan Data", key: "Periode Pengumpulan Data" }, { label: "Periode Pelaporan Data", key: "Periode Pelaporan Data" },
-                { label: "Periode Analisis Data", key: "Periode Analisis Data" }, { label: "Penyajian Data", key: "Penyajian Data" },
-                { label: "Penanggung Jawab", key: "Penanggung Jawab" }
-            ];
-
-            const renderTabelIndikator = (row, isFirstIndicator) => {
-                let judulIndikator = row['Judul Indikator'] || row['Kolom_Kriteria'] || "PROFIL INDIKATOR MUTU";
-                let breakClass = isFirstIndicator ? "" : " page-break-before"; 
-                
-                let htmlOut = "<div class='judul-kamus" + breakClass + "'>KAMUS PROFIL INDIKATOR: " + judulIndikator + "</div><table><tbody>";
-                fields.forEach(f => {
-                    let val = row[f.key] || "-";
-                    htmlOut += "<tr><th>" + f.label + "</th><td>" + val + "</td></tr>";
-                });
-                htmlOut += "</tbody></table>";
-                return htmlOut;
-            };
-
-            if (index === null) {
-                let inm = [], imprs = [], impUnitGroups = {};
-                
-                dataToPrint.forEach(row => {
-                    let cat = (row['Kategori Indikator'] || "").trim();
-                    if (cat === "Indikator Mutu Nasional") inm.push(row);
-                    else if (cat === "IMP-RS") imprs.push(row);
-                    else {
-                        let unit = row['Unit Pelaksana'] || row['Penanggung Jawab'] || "Unit Lainnya";
-                        unit = unit.toUpperCase(); 
-                        if (!impUnitGroups[unit]) impUnitGroups[unit] = [];
-                        impUnitGroups[unit].push(row);
-                    }
-                });
-
-                if (inm.length > 0) {
-                    htmlContent += "<div class='kategori-title'>A. Indikator Nasional Mutu (INM)</div>";
-                    inm.forEach((row, idx) => { htmlContent += renderTabelIndikator(row, idx === 0); });
-                }
-
-                if (imprs.length > 0) {
-                    let pbClass = inm.length > 0 ? " page-break-before" : "";
-                    htmlContent += "<div class='kategori-title" + pbClass + "'>B. Indikator Mutu Prioritas Rumah Sakit (IMP-RS)</div>";
-                    imprs.forEach((row, idx) => { htmlContent += renderTabelIndikator(row, idx === 0); });
-                }
-
-                let unitKeys = Object.keys(impUnitGroups).sort();
-                if (unitKeys.length > 0) {
-                    let pbClass = (inm.length > 0 || imprs.length > 0) ? " page-break-before" : "";
-                    htmlContent += "<div class='kategori-title" + pbClass + "'>C. Indikator Mutu Prioritas Unit (IMP-Unit)</div>";
-                    
-                    unitKeys.forEach(unit => {
-                        htmlContent += "<div class='unit-title'>UNIT PELAKSANA: " + unit + "</div>";
-                        impUnitGroups[unit].forEach((row, idx) => { 
-                            htmlContent += renderTabelIndikator(row, idx === 0); 
-                        });
-                    });
-                }
-
-            } else {
-                htmlContent += renderTabelIndikator(dataToPrint[0], true);
-            }
-
-            let scriptTagOpen = '<' + 'script' + '>';
-            let scriptTagClose = '<' + '/' + 'script' + '>';
-            let bodyTagClose = '<' + '/' + 'body' + '>';
-            let htmlTagClose = '<' + '/' + 'html' + '>';
-
-            htmlContent += scriptTagOpen + "\n" +
-                "window.onload = function() { \n" +
-                "    setTimeout(function() {\n" +
-                "        window.print(); \n" +
-                "        window.onafterprint = function(){ window.close(); } \n" +
-                "    }, 500);\n" +
-                "};\n" +
-                scriptTagClose + "\n" +
-                bodyTagClose + "\n" +
-                htmlTagClose;
-
-            printWindow.document.open();
-            printWindow.document.write(htmlContent);
-            printWindow.document.close();
-        };
-
-        let formSchemas = {};
-
-        document.addEventListener("DOMContentLoaded", function () {
-            fetch(scriptURL + "?action=get_form_builder_data")
-            .then(res => res.json())
-            .then(res => {
-                if(res.status === 'success') {
-                    res.data.forEach(form => { 
-                        let safeKey = form.id_form.replace(/\s+/g, '_');
-                        formSchemas[safeKey] = form.kolom; 
-                    });
-                }
-            });
-        });
-
-        function getExcelColumn(index) {
-            let letter = '';
-            while (index >= 0) {
-                letter = String.fromCharCode((index % 26) + 65) + letter;
-                index = Math.floor(index / 26) - 1;
-            }
-            return letter;
+        function resetForm() {
+            document.getElementById('formIndikator').reset();
+            document.querySelectorAll('.chk-jenis').forEach(cb => cb.checked = false);
+            // Kembalikan ke tab pertama
+            let firstTab = new bootstrap.Tab(document.querySelector('#profilTabs button[data-bs-target="#tab-dasar"]'));
+            firstTab.show();
         }
 
-        document.getElementById('inp_ID_Form').addEventListener('change', function() {
-            let idForm = this.value;
-            let selects = document.querySelectorAll('.dropdown-kolom');
+        function bukaModalTambah() {
+            resetForm();
+            document.getElementById('mode_form').value = "tambah";
+            document.getElementById('inp_id_indikator').readOnly = false;
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle me-2 text-primary"></i> Tambah Profil Baru';
+            new bootstrap.Modal(document.getElementById('modalIndikator')).show();
+        }
+
+        function bukaModalEdit(idIndikator) {
+            const item = listIndikator.find(u => u.id_indikator === idIndikator); 
+            if(!item) return;
+            resetForm();
             
-            if(!idForm || !formSchemas[idForm]) {
-                selects.forEach(s => s.innerHTML = "<option value=''>-- Pilih ID Form dulu --</option>");
-                return;
-            }
-
-            let cols = formSchemas[idForm];
-            let optionsHtml = "<option value=''>-- Pilih Kolom --</option>";
+            document.getElementById('mode_form').value = "edit";
+            document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit me-2 text-warning"></i> Detail & Edit Profil Indikator';
             
-            cols.forEach((col, idx) => {
-                let letter = getExcelColumn(idx);
-                optionsHtml += "<option value='" + letter + "'>Kolom " + letter + " - " + col.judul + "</option>";
-            });
+            document.getElementById('inp_id_indikator').value = item.id_indikator;
+            document.getElementById('inp_id_indikator').readOnly = true;
             
-            selects.forEach(s => s.innerHTML = optionsHtml);
-        });
-
-        window.toggleUnitPelaksana = function() {
-            try {
-                let catEl = document.getElementById('inp_Kategori_Indikator');
-                if(!catEl) return;
-                
-                let val = catEl.value;
-                let containerSingle = document.getElementById('container_Unit_Pelaksana');
-                let containerMulti = document.getElementById('container_Unit_Pelaksana_Multi');
-                
-                if (val === 'IMP-Unit') {
-                    if(containerSingle) containerSingle.style.display = 'block';
-                    if(containerMulti) containerMulti.style.display = 'none';
-                    document.querySelectorAll('.chk-unit-multi').forEach(c => c.checked = false);
-                } else if (val === 'IMP-RS') {
-                    if(containerSingle) containerSingle.style.display = 'none';
-                    if(containerMulti) containerMulti.style.display = 'block';
-                    let uPel = document.getElementById('inp_Unit_Pelaksana');
-                    if(uPel) uPel.value = ""; 
-                } else {
-                    if(containerSingle) containerSingle.style.display = 'none';
-                    if(containerMulti) containerMulti.style.display = 'none';
-                    let uPel = document.getElementById('inp_Unit_Pelaksana');
-                    if(uPel) uPel.value = ""; 
-                    document.querySelectorAll('.chk-unit-multi').forEach(c => c.checked = false);
-                }
-            } catch(e) {}
-        };
-
-        window.bukaModalForm = function(index) {
-            try {
-                document.getElementById('formProfil').reset();
-                document.getElementById('inp_Unit_Pelaksana').value = ""; 
-                document.querySelectorAll('.chk-dimensi').forEach(c => c.checked = false);
-                document.querySelectorAll('.chk-unit-multi').forEach(c => c.checked = false);
-                let selectId = document.getElementById('inp_ID_Form');
-
-                document.getElementById('sel_metode_kalkulasi').value = "COUNT";
-                window.toggleBuilderMode();
-
-                if (index !== null) {
-                    let data = rawKamusData[index];
-                    document.getElementById('modalTitle').innerHTML = "<i class='fas fa-edit me-2'></i> Edit Profil Indikator";
-                    
-                    let valId = String(data['ID_Form'] || data['ID Form'] || "");
-                    valId = valId.replace(/\s+/g, '_'); 
-                    
-                    selectId.value = valId; selectId.disabled = true; 
-                    document.getElementById('inp_Judul_Indikator').value = data['Judul Indikator'] || "";
-                    currentEditingJudul = String(data['Judul Indikator'] || ""); 
-
-                    let dimensiStr = String(data['Dimensi Mutu'] || "");
-                    if(dimensiStr !== "-" && dimensiStr !== "") {
-                        dimensiStr.split(',').map(s => s.trim()).forEach(val => {
-                            document.querySelectorAll('.chk-dimensi').forEach(chk => {
-                                if(chk.value.toLowerCase() === val.toLowerCase()) chk.checked = true;
-                            });
-                        });
-                    }
-                    
-                    const mapField = (id, key) => { 
-                        let el = document.getElementById(id);
-                        if(el) { el.value = data[key] || ""; } 
-                    };
-                    
-                    mapField('inp_Kategori_Indikator', 'Kategori Indikator'); 
-                    toggleUnitPelaksana(); 
-                    
-                    let unitValue = String(data['Unit Pelaksana'] || "");
-                    if (data['Kategori Indikator'] === 'IMP-Unit') {
-                        document.getElementById('inp_Unit_Pelaksana').value = unitValue;
-                    } else if (data['Kategori Indikator'] === 'IMP-RS') {
-                        let unitArr = unitValue.split(',').map(s => s.trim());
-                        document.querySelectorAll('.chk-unit-multi').forEach(chk => {
-                            chk.checked = unitArr.includes(chk.value);
-                        });
-                    }
-                    
-                    mapField('inp_Arah_Target', 'Arah Target');
-                    mapField('inp_Satuan', 'Satuan'); mapField('inp_Target', 'Target'); mapField('inp_Dasar_Pemikiran', 'Dasar Pemikiran');
-                    mapField('inp_Jenis_Indikator', 'Jenis Indikator'); mapField('inp_Tujuan', 'Tujuan'); mapField('inp_Definisi_Operasional', 'Definisi Operasional');
-                    mapField('inp_Numerator', 'Numerator'); mapField('inp_Denominator', 'Denominator'); mapField('inp_Kriteria_Inklusi', 'Kriteria Inklusi');
-                    mapField('inp_Kriteria_Eksklusi', 'Kriteria Eksklusi'); mapField('inp_Formula', 'Formula'); mapField('inp_Cara_Penilaian', 'Cara Penilaian');
-                    mapField('inp_Metode_Pengumpulan_Data', 'Metode Pengumpulan Data'); mapField('inp_Sumber_Data', 'Sumber Data');
-                    mapField('inp_Instrumen_Pengambilan_Data', 'Instrumen Pengambilan Data'); mapField('inp_Besar_Sampel', 'Besar Sampel');
-                    mapField('inp_Cara_Pengambilan_Sampel', 'Cara Pengambilan Sampel'); mapField('inp_Periode_Pengumpulan_Data', 'Periode Pengumpulan Data');
-                    mapField('inp_Periode_Pelaporan_Data', 'Periode Pelaporan Data'); mapField('inp_Periode_Analisis_Data', 'Periode Analisis Data');
-                    mapField('inp_Penyajian_Data', 'Penyajian Data'); mapField('inp_Penanggung_Jawab', 'Penanggung Jawab');
-                    
-                    mapField('inp_Template_Numerator', 'Template_Numerator');
-                    mapField('inp_Template_Denominator', 'Template_Denominator');
-                    mapField('inp_Template_Pencapaian', 'Template_Pencapaian');
-
-                    setTimeout(() => { selectId.dispatchEvent(new Event('change')); }, 100);
-
-                } else {
-                    document.getElementById('modalTitle').innerHTML = "<i class='fas fa-plus me-2'></i> Tambah Profil Baru";
-                    selectId.disabled = false; currentEditingJudul = "";
-                    document.getElementById('inp_Kategori_Indikator').value = "Indikator Mutu Nasional"; 
-                    toggleUnitPelaksana(); 
-                    document.getElementById('inp_Arah_Target').value = "Positif"; 
-                    document.getElementById('inp_Jenis_Indikator').value = "proses"; document.getElementById('inp_Periode_Pengumpulan_Data').value = "bulanan";
-                    document.getElementById('inp_Periode_Pelaporan_Data').value = "bulanan"; document.getElementById('inp_Periode_Analisis_Data').value = "bulanan";
-                    
-                    document.getElementById('inp_Template_Numerator').value = "";
-                    document.getElementById('inp_Template_Denominator').value = "";
-                    document.getElementById('inp_Template_Pencapaian').value = "";
-                    
-                    setTimeout(() => { selectId.dispatchEvent(new Event('change')); }, 100);
-                }
-
-                let modalEl = document.getElementById('modalFormProfil');
-                let modalObj = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                modalObj.show();
-            } catch(e) {
-                console.error("Error Form: ", e);
-                Swal.fire('Error', 'Terjadi kesalahan sistem saat membuka form. Periksa konsol.', 'error');
-            }
-        };
-
-        window.simpanProfil = function() {
-            let idFormRaw = document.getElementById('inp_ID_Form').value.trim();
-            let idForm = idFormRaw.replace(/\s+/g, '_'); 
+            // Tab 1
+            document.getElementById('inp_judul_indikator').value = item.judul_indikator || '';
+            document.getElementById('inp_kategori_indikator').value = item.kategori_indikator || 'INM';
+            document.getElementById('inp_unit_pelaksana').value = item.unit_pelaksana || 'Semua Unit (Hospital Wide)';
+            document.getElementById('inp_dimensi_mutu').value = item.dimensi_mutu || '';
+            document.getElementById('inp_tujuan').value = item.tujuan || '';
+            document.getElementById('inp_dasar_pemikiran').value = item.dasar_pemikiran || '';
             
-            if(!idForm) { Swal.fire('Peringatan', 'Silakan tentukan pilihan ID Form!', 'warning'); return; }
-            let judulIndikatorBaru = document.getElementById('inp_Judul_Indikator').value.trim();
-            if(!judulIndikatorBaru) { Swal.fire('Peringatan', 'Judul Indikator tidak boleh kosong!', 'warning'); return; }
+            let jenis = item.jenis_indikator || '';
+            document.querySelectorAll('.chk-jenis').forEach(cb => { cb.checked = jenis.includes(cb.value); });
 
-            let checkedDimensi = [];
-            document.querySelectorAll('.chk-dimensi:checked').forEach(chk => { checkedDimensi.push(chk.value); });
-            let dimensiMutuStr = checkedDimensi.length > 0 ? checkedDimensi.join(', ') : "-";
+            // Tab 2
+            document.getElementById('inp_definisi_operasional').value = item.definisi_operasional || '';
+            document.getElementById('inp_kriteria_inklusi').value = item.kriteria_inklusi || '';
+            document.getElementById('inp_kriteria_eksklusi').value = item.kriteria_eksklusi || '';
+            document.getElementById('inp_num_teks').value = item.num_teks || '';
+            document.getElementById('inp_den_teks').value = item.den_teks || '';
+            document.getElementById('inp_rumus_kalkulasi').value = item.rumus_kalkulasi || '';
+            document.getElementById('inp_satuan').value = item.satuan || '';
+            document.getElementById('inp_target').value = item.target || '';
+            document.getElementById('inp_arah_target').value = item.arah_target || '≥ (Makin besar makin baik)';
 
-            let valKategori = document.getElementById('inp_Kategori_Indikator').value;
-            let unitFinal = "";
+            // Tab 3
+            document.getElementById('inp_cara_penilaian').value = item.cara_penilaian || '';
+            document.getElementById('inp_metode_pengumpulan').value = item.metode_pengumpulan || '';
+            document.getElementById('inp_sumber_data').value = item.sumber_data || '';
+            document.getElementById('inp_instrumen_pengambilan').value = item.instrumen_pengambilan || '';
+            document.getElementById('inp_besar_sampel').value = item.besar_sampel || '';
+            document.getElementById('inp_cara_pengambilan_sampel').value = item.cara_pengambilan_sampel || '';
+            document.getElementById('inp_periode_pengumpulan').value = item.periode_pengumpulan || 'Bulanan';
+            document.getElementById('inp_periode_analisis').value = item.periode_analisis || 'Triwulan';
+            document.getElementById('inp_periode_pelaporan').value = item.periode_pelaporan || 'Triwulan';
+            document.getElementById('inp_penyajian_data').value = item.penyajian_data || '';
+
+            // Tab 4
+            document.getElementById('inp_kolom_kriteria').value = item.kolom_kriteria || '';
+            document.getElementById('inp_template_numerator').value = item.template_numerator || '';
+            document.getElementById('inp_template_denominator').value = item.template_denominator || '';
             
-            if (valKategori === "IMP-Unit") {
-                unitFinal = document.getElementById('inp_Unit_Pelaksana').value.trim();
-            } else if (valKategori === "IMP-RS") {
-                let checkedUnits = [];
-                document.querySelectorAll('.chk-unit-multi:checked').forEach(chk => { checkedUnits.push(chk.value); });
-                unitFinal = checkedUnits.length > 0 ? checkedUnits.join(', ') : "";
-            }
+            new bootstrap.Modal(document.getElementById('modalIndikator')).show();
+        }
 
-            let btn = document.getElementById('btnSimpan');
-            btn.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i> Menyimpan..."; btn.disabled = true;
+        window.simpanIndikator = async function() {
+            const mode = document.getElementById('mode_form').value;
+            const idIndikator = document.getElementById('inp_id_indikator').value.trim();
+            const judul = document.getElementById('inp_judul_indikator').value.trim();
+            const target = document.getElementById('inp_target').value;
 
-            let tNum = document.getElementById('inp_Template_Numerator').value.trim();
-            let tDen = document.getElementById('inp_Template_Denominator').value.trim();
-            let tCap = document.getElementById('inp_Template_Pencapaian').value.trim();
+            if (!idIndikator || !judul || !target) { Swal.fire('Oops', 'ID Form, Judul, dan Target Wajib diisi!', 'warning'); return; }
 
-            if (tNum.startsWith("=")) tNum = "'" + tNum;
-            if (tDen.startsWith("=")) tDen = "'" + tDen;
-            if (tCap.startsWith("=")) tCap = "'" + tCap;
+            // Gabungkan checkbox jenis indikator
+            let arrJenis = [];
+            document.querySelectorAll('.chk-jenis:checked').forEach(cb => arrJenis.push(cb.value));
+
+            const btn = document.getElementById('btnSimpan'); 
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
 
             const payloadData = {
-                "ID_Form": idForm,
-                "Unit Pelaksana": unitFinal, 
-                "Judul Indikator": judulIndikatorBaru, 
-                "Kategori Indikator": valKategori,
-                "Arah Target": document.getElementById('inp_Arah_Target').value,
-                "Satuan": document.getElementById('inp_Satuan').value, 
-                "Target": document.getElementById('inp_Target').value, 
-                "Dasar Pemikiran": document.getElementById('inp_Dasar_Pemikiran').value,
-                "Dimensi Mutu": dimensiMutuStr,
-                "Tujuan": document.getElementById('inp_Tujuan').value,
-                "Definisi Operasional": document.getElementById('inp_Definisi_Operasional').value,
-                "Jenis Indikator": document.getElementById('inp_Jenis_Indikator').value,
-                "Numerator": document.getElementById('inp_Numerator').value,
-                "Denominator": document.getElementById('inp_Denominator').value,
-                "Kriteria Inklusi": document.getElementById('inp_Kriteria_Inklusi').value,
-                "Kriteria Eksklusi": document.getElementById('inp_Kriteria_Eksklusi').value,
-                "Formula": document.getElementById('inp_Formula').value,
-                "Cara Penilaian": document.getElementById('inp_Cara_Penilaian').value,
-                "Metode Pengumpulan Data": document.getElementById('inp_Metode_Pengumpulan_Data').value,
-                "Sumber Data": document.getElementById('inp_Sumber_Data').value,
-                "Instrumen Pengambilan Data": document.getElementById('inp_Instrumen_Pengambilan_Data').value,
-                "Besar Sampel": document.getElementById('inp_Besar_Sampel').value,
-                "Cara Pengambilan Sampel": document.getElementById('inp_Cara_Pengambilan_Sampel').value,
-                "Periode Pengumpulan Data": document.getElementById('inp_Periode_Pengumpulan_Data').value,
-                "Periode Pelaporan Data": document.getElementById('inp_Periode_Pelaporan_Data').value,
-                "Periode Analisis Data": document.getElementById('inp_Periode_Analisis_Data').value,
-                "Penyajian Data": document.getElementById('inp_Penyajian_Data').value,
-                "Penanggung Jawab": document.getElementById('inp_Penanggung_Jawab').value,
+                id_indikator: idIndikator,
+                judul_indikator: judul,
+                kategori_indikator: document.getElementById('inp_kategori_indikator').value,
+                unit_pelaksana: document.getElementById('inp_unit_pelaksana').value,
+                dimensi_mutu: document.getElementById('inp_dimensi_mutu').value,
+                tujuan: document.getElementById('inp_tujuan').value,
+                dasar_pemikiran: document.getElementById('inp_dasar_pemikiran').value,
+                jenis_indikator: arrJenis.join(', '),
                 
-                "Template_Numerator": tNum,
-                "Template_Denominator": tDen,
-                "Template_Pencapaian": tCap
+                definisi_operasional: document.getElementById('inp_definisi_operasional').value,
+                kriteria_inklusi: document.getElementById('inp_kriteria_inklusi').value,
+                kriteria_eksklusi: document.getElementById('inp_kriteria_eksklusi').value,
+                num_teks: document.getElementById('inp_num_teks').value,
+                den_teks: document.getElementById('inp_den_teks').value,
+                rumus_kalkulasi: document.getElementById('inp_rumus_kalkulasi').value,
+                satuan: document.getElementById('inp_satuan').value,
+                target: parseFloat(target),
+                arah_target: document.getElementById('inp_arah_target').value,
+
+                cara_penilaian: document.getElementById('inp_cara_penilaian').value,
+                metode_pengumpulan: document.getElementById('inp_metode_pengumpulan').value,
+                sumber_data: document.getElementById('inp_sumber_data').value,
+                instrumen_pengambilan: document.getElementById('inp_instrumen_pengambilan').value,
+                besar_sampel: document.getElementById('inp_besar_sampel').value,
+                cara_pengambilan_sampel: document.getElementById('inp_cara_pengambilan_sampel').value,
+                periode_pengumpulan: document.getElementById('inp_periode_pengumpulan').value,
+                periode_analisis: document.getElementById('inp_periode_analisis').value,
+                periode_pelaporan: document.getElementById('inp_periode_pelaporan').value,
+                penyajian_data: document.getElementById('inp_penyajian_data').value,
+
+                kolom_kriteria: document.getElementById('inp_kolom_kriteria').value,
+                template_numerator: document.getElementById('inp_template_numerator').value,
+                template_denominator: document.getElementById('inp_template_denominator').value
             };
 
-            fetch(scriptURL, {
-                method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({ action: 'save_profil_indikator', role: role, old_judul_indikator: currentEditingJudul, data: payloadData })
-            })
-            .then(res => res.json())
-            .then(res => {
-                if (res.status === 'success') {
-                    Swal.fire({ title: 'Berhasil!', text: 'Kamus profil indikator diperbarui.', icon: 'success', timer: 1500, showConfirmButton: false })
-                    .then(() => { localStorage.removeItem("KAMUS_" + idForm); location.reload(); });
-                } else {
-                    Swal.fire('Gagal!', res.message, 'error'); resetBtn();
-                }
-            }).catch(err => { Swal.fire('Error', 'Gagal menyambung ke server.', 'error'); resetBtn(); });
-
-            function resetBtn() { btn.innerHTML = "<i class='fas fa-save me-1'></i> Simpan ke Database"; btn.disabled = false; }
-        };
-
-        window.toggleBuilderMode = function() {
             try {
-                let selMetode = document.getElementById('sel_metode_kalkulasi');
-                if(!selMetode) return;
-                
-                let metode = selMetode.value;
-                let stepDiv = document.getElementById('builder_steps');
-                let manualDiv = document.getElementById('manual_msg');
-                let boxWaktu = document.getElementById('box_format_waktu');
-                
-                let numOps = document.querySelectorAll('.id-num-op, .id-num-val');
-                let denOps = document.querySelectorAll('.id-den-op, .id-den-val');
-                let orBtns = document.querySelectorAll('#btn_add_or_num, #btn_add_or_den');
-                let tipeDenom = document.getElementById('tipe_denominator');
-                let wadahDen = document.getElementById('wadah_syarat_den');
-
-                if (metode === "MANUAL") {
-                    if(stepDiv) stepDiv.classList.add('d-none');
-                    if(boxWaktu) boxWaktu.classList.add('d-none');
-                    if(manualDiv) manualDiv.classList.remove('d-none');
-                } else if (metode === "SUM") {
-                    if(stepDiv) stepDiv.classList.remove('d-none');
-                    if(boxWaktu) boxWaktu.classList.remove('d-none');
-                    if(manualDiv) manualDiv.classList.add('d-none');
-                    
-                    document.getElementById('lbl_numerator').innerHTML = "2. Pilih Kolom Angka untuk Numerator";
-                    document.getElementById('lbl_denominator').innerHTML = "3. Pilih Kolom Angka untuk Denominator";
-                    
-                    numOps.forEach(el => el.classList.add('d-none'));
-                    denOps.forEach(el => el.classList.add('d-none'));
-                    orBtns.forEach(el => el.classList.add('d-none'));
-                    if(tipeDenom) tipeDenom.classList.add('d-none');
-                    
-                    if(wadahDen) wadahDen.classList.remove('d-none'); 
-                    
-                    document.querySelectorAll('.baris-or-num, .baris-or-den').forEach(el => el.remove());
+                if (mode === "edit") {
+                    const { error } = await supabaseClient.from('master_indikator').update(payloadData).eq('id_indikator', idIndikator);
+                    if (error) throw error;
                 } else {
-                    if(stepDiv) stepDiv.classList.remove('d-none');
-                    if(boxWaktu) boxWaktu.classList.remove('d-none');
-                    if(manualDiv) manualDiv.classList.add('d-none');
+                    const { data: existing } = await supabaseClient.from('master_indikator').select('id_indikator').eq('id_indikator', idIndikator).maybeSingle();
+                    if (existing) { Swal.fire('Oops', 'ID Form tersebut sudah digunakan!', 'warning'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Profil Indikator'; return; }
                     
-                    document.getElementById('lbl_numerator').innerHTML = "2. Syarat Numerator (Target yang tercapai)";
-                    document.getElementById('lbl_denominator').innerHTML = "3. Syarat Denominator (Total Sampel)";
-                    
-                    numOps.forEach(el => el.classList.remove('d-none'));
-                    denOps.forEach(el => el.classList.remove('d-none'));
-                    orBtns.forEach(el => el.classList.remove('d-none'));
-                    if(tipeDenom) tipeDenom.classList.remove('d-none');
-                    
-                    toggleDenomCustom(); 
-                }
-            } catch(e) {}
-        };
-
-        window.tambahSyaratOR = function(tipe) {
-            let wadah = document.getElementById('wadah_syarat_' + tipe);
-            let barisBanyak = wadah.querySelectorAll('.input-group').length;
-            
-            if (barisBanyak >= 2) {
-                Swal.fire('Batas Maksimal', 'Visual Builder membatasi maksimal 2 kondisi ATAU (OR) demi menjaga kestabilan rumus.', 'info');
-                return;
-            }
-
-            let opsiKolom = wadah.querySelector('.dropdown-kolom').innerHTML;
-            let idPrefix = 'id-' + tipe;
-            let divBaru = document.createElement('div');
-            divBaru.className = "input-group mb-2 baris-or-" + tipe;
-            
-            let htmlStr = "";
-            htmlStr += "<span class='input-group-text bg-white text-muted fw-bold'>ATAU</span>";
-            htmlStr += "<select class='form-select dropdown-kolom id-" + idPrefix + "-kolom'>" + opsiKolom + "</select>";
-            htmlStr += "<select class='form-select id-" + idPrefix + "-op' style='max-width: 130px;'>";
-            htmlStr += "<option value='='>Sama (=)</option>";
-            htmlStr += "<option value='<>'>Beda (!=)</option>";
-            htmlStr += "<option value='>'>Lebih (>)</option>";
-            htmlStr += "<option value='<'>Kurang (<)</option>";
-            htmlStr += "</select>";
-            htmlStr += "<input type='text' class='form-control id-" + idPrefix + "-val' placeholder='Nilai...'>";
-            htmlStr += "<button class='btn btn-outline-secondary' type='button' onclick='this.parentElement.remove()'><i class='fas fa-trash'></i></button>";
-            
-            divBaru.innerHTML = htmlStr;
-            wadah.appendChild(divBaru);
-        };
-
-        window.toggleDenomCustom = function() {
-            let val = document.getElementById('tipe_denominator').value;
-            let box = document.getElementById('wadah_syarat_den');
-            let btnOr = document.getElementById('btn_add_or_den');
-            let metode = document.getElementById('sel_metode_kalkulasi').value;
-
-            if(val === 'CUSTOM' || metode === "SUM") { 
-                box.classList.remove('d-none'); 
-                if (metode !== "SUM" && btnOr) btnOr.classList.remove('d-none');
-            } else { 
-                box.classList.add('d-none'); 
-                if (btnOr) btnOr.classList.add('d-none');
-            }
-        };
-
-        window.rakitRumusVisual = function() {
-            let metode = document.getElementById('sel_metode_kalkulasi').value;
-            let satuan = document.getElementById('inp_Satuan').value || "";
-            
-            let rumusCapai = "";
-            if(satuan.includes("%") || satuan.toLowerCase().includes("persen")) { rumusCapai = "=IFERROR((J{{ROW}}/K{{ROW}})*100; 0)"; } 
-            else if (satuan.includes("‰") || satuan.toLowerCase().includes("permil")) { rumusCapai = "=IFERROR((J{{ROW}}/K{{ROW}})*1000; 0)"; } 
-            else { rumusCapai = "=IFERROR((J{{ROW}}/K{{ROW}}); 0)"; }
-
-            if (metode === "MANUAL") {
-                document.getElementById('inp_Template_Numerator').value = "";
-                document.getElementById('inp_Template_Denominator').value = "";
-                document.getElementById('inp_Template_Pencapaian').value = rumusCapai;
-                Swal.fire({ title: 'Diset Manual!', text: 'Sistem akan mengosongkan Numerator & Denominator untuk diisi manual.', icon: 'success', timer: 2000, showConfirmButton: false });
-                return;
-            }
-
-            let formatWaktu = document.getElementById('sel_format_waktu').value;
-            let colTgl = document.getElementById('sel_kolom_tanggal').value; 
-            
-            if(!colTgl) { Swal.fire('Oops!', 'Pilih kolom Tanggal / Bulan terlebih dahulu!', 'warning'); return; }
-
-            let blokTanggal = "";
-            if (formatWaktu === "DATE") {
-                blokTanggal = "\">=\"&DATE({{TAHUN}}; MATCH($C{{ROW}}; {\"Januari\"\\\"Februari\"\\\"Maret\"\\\"April\"\\\"Mei\"\\\"Juni\"\\\"Juli\"\\\"Agustus\"\\\"September\"\\\"Oktober\"\\\"November\"\\\"Desember\"}; 0); 1); '{{NAMA_SHEET}}'!$" + colTgl + "$2:$" + colTgl + "; \"<=\"&EOMONTH(DATE({{TAHUN}}; MATCH($C{{ROW}}; {\"Januari\"\\\"Februari\"\\\"Maret\"\\\"April\"\\\"Mei\"\\\"Juni\"\\\"Juli\"\\\"Agustus\"\\\"September\"\\\"Oktober\"\\\"November\"\\\"Desember\"}; 0); 1); 0)";
-            } else {
-                blokTanggal = "$C{{ROW}}";
-            }
-
-            let rumusNum = ""; let rumusDen = "";
-
-            if (metode === "SUM") {
-                let cN = document.getElementById('sel_num_kolom').value;
-                let cD = document.getElementById('sel_den_kolom').value;
-                if(!cN || !cD) { Swal.fire('Oops!', 'Pilih kolom untuk dijumlahkan', 'warning'); return; }
-                
-                rumusNum = "=SUMIFS('{{NAMA_SHEET}}'!$" + cN + "$2:$" + cN + "; '{{NAMA_SHEET}}'!$" + colTgl + "$2:$" + colTgl + "; " + blokTanggal + ")";
-                rumusDen = "=SUMIFS('{{NAMA_SHEET}}'!$" + cD + "$2:$" + cD + "; '{{NAMA_SHEET}}'!$" + colTgl + "$2:$" + colTgl + "; " + blokTanggal + ")";
-            } else {
-                const extractSyarat = (tipe) => {
-                    let hasil = [];
-                    let w = document.getElementById('wadah_syarat_' + tipe);
-                    let k = w.querySelectorAll('.id-' + tipe + '-kolom');
-                    let o = w.querySelectorAll('.id-' + tipe + '-op');
-                    let v = w.querySelectorAll('.id-' + tipe + '-val');
-                    
-                    for(let i=0; i < k.length; i++) {
-                        if (k[i].value && v[i].value) {
-                            let valStr = String(v[i].value);
-                            let textSyarat = o[i].value === "=" ? "\"" + valStr + "\"" : "\"" + o[i].value + valStr + "\"";
-                            hasil.push("'{{NAMA_SHEET}}'!$" + k[i].value + "$2:$" + k[i].value + "; " + textSyarat);
-                        }
-                    }
-                    return hasil;
-                };
-
-                let listSyaratNum = extractSyarat('num');
-                if (listSyaratNum.length === 0) { Swal.fire('Oops!', 'Syarat Numerator belum lengkap.', 'warning'); return; }
-                
-                if (listSyaratNum.length === 1) {
-                    rumusNum = "=COUNTIFS('{{NAMA_SHEET}}'!$" + colTgl + "$2:$" + colTgl + "; " + blokTanggal + "; " + listSyaratNum[0] + ")";
-                } else if (listSyaratNum.length === 2) {
-                    rumusNum = "=COUNTIFS('{{NAMA_SHEET}}'!$" + colTgl + "$2:$" + colTgl + "; " + blokTanggal + "; " + listSyaratNum[0] + ") + COUNTIFS('{{NAMA_SHEET}}'!$" + colTgl + "$2:$" + colTgl + "; " + blokTanggal + "; " + listSyaratNum[1] + ") - COUNTIFS('{{NAMA_SHEET}}'!$" + colTgl + "$2:$" + colTgl + "; " + blokTanggal + "; " + listSyaratNum[0] + "; " + listSyaratNum[1] + ")";
+                    const { error } = await supabaseClient.from('master_indikator').insert([payloadData]);
+                    if (error) throw error;
                 }
 
-                let tipeDen = document.getElementById('tipe_denominator').value;
-                if (tipeDen === "ALL") {
-                    rumusDen = "=COUNTIFS('{{NAMA_SHEET}}'!$" + colTgl + "$2:$" + colTgl + "; " + blokTanggal + ")";
-                } else {
-                    let listSyaratDen = extractSyarat('den');
-                    if (listSyaratDen.length === 0) { Swal.fire('Oops!', 'Syarat khusus Denominator belum lengkap.', 'warning'); return; }
-                    
-                    if (listSyaratDen.length === 1) {
-                        rumusDen = "=COUNTIFS('{{NAMA_SHEET}}'!$" + colTgl + "$2:$" + colTgl + "; " + blokTanggal + "; " + listSyaratDen[0] + ")";
-                    } else if (listSyaratDen.length === 2) {
-                        rumusDen = "=COUNTIFS('{{NAMA_SHEET}}'!$" + colTgl + "$2:$" + colTgl + "; " + blokTanggal + "; " + listSyaratDen[0] + ") + COUNTIFS('{{NAMA_SHEET}}'!$" + colTgl + "$2:$" + colTgl + "; " + blokTanggal + "; " + listSyaratDen[1] + ") - COUNTIFS('{{NAMA_SHEET}}'!$" + colTgl + "$2:$" + colTgl + "; " + blokTanggal + "; " + listSyaratDen[0] + "; " + listSyaratDen[1] + ")";
+                Swal.fire({ title: 'Berhasil!', text: 'Profil indikator tersimpan.', icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { 
+                    bootstrap.Modal.getInstance(document.getElementById('modalIndikator')).hide(); 
+                    loadKamus(); 
+                });
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal!', 'Terjadi kesalahan saat menyimpan ke Supabase.', 'error');
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Profil Indikator';
+            }
+        };
+
+        window.hapusIndikator = function(idIndikator) {
+            Swal.fire({
+                title: 'Hapus Permanen?',
+                html: `Hapus profil <b>${idIndikator}</b>?<br><small class="text-danger">Seluruh relasi ke indikator ini bisa terpengaruh!</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const { error } = await supabaseClient.from('master_indikator').delete().eq('id_indikator', idIndikator);
+                        if (error) throw error;
+                        
+                        Swal.fire('Terhapus!', `Indikator ${idIndikator} telah dihapus.`, 'success');
+                        loadKamus();
+                    } catch (err) {
+                        console.error(err);
+                        Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus data.', 'error');
                     }
                 }
-            }
-
-            document.getElementById('inp_Template_Numerator').value = rumusNum;
-            document.getElementById('inp_Template_Denominator').value = rumusDen;
-            document.getElementById('inp_Template_Pencapaian').value = rumusCapai;
-
-            Swal.fire({ title: 'Tersusun!', text: 'Rumus multikondisi berhasil dirakit ke dalam Template.', icon: 'success', timer: 2000, showConfirmButton: false });
+            });
         };
     </script>
 </body>
