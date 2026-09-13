@@ -86,13 +86,17 @@
                             <!-- TAB 1: PROFIL DASAR -->
                             <div class="tab-pane fade show active" id="tab-dasar" role="tabpanel">
                                 <div class="row g-3 mb-3">
-                                    <div class="col-md-3">
-                                        <label class="form-label">ID Form <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fw-bold text-danger" id="inp_id_indikator" placeholder="Contoh: INM_1" required>
+                                    <div class="col-md-4">
+                                        <label class="form-label text-primary"><i class="fas fa-link me-1"></i> Hubungkan ID Form <span class="text-danger">*</span></label>
+                                        <!-- PERUBAHAN: Input Teks diubah menjadi Dropdown -->
+                                        <select class="form-select fw-bold text-primary border-primary" id="inp_id_indikator" required>
+                                            <option value="">-- Memuat Data Form Builder... --</option>
+                                        </select>
+                                        <small class="text-muted" style="font-size: 0.75rem;">Pilih form yang sudah dirakit di Menu Form Builder.</small>
                                     </div>
-                                    <div class="col-md-9">
-                                        <label class="form-label">Judul Indikator <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fw-bold text-primary" id="inp_judul_indikator" placeholder="Judul lengkap indikator..." required>
+                                    <div class="col-md-8">
+                                        <label class="form-label">Judul Indikator / Panduan <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control fw-bold text-dark" id="inp_judul_indikator" placeholder="Judul lengkap indikator..." required>
                                     </div>
                                 </div>
                                 <div class="row g-3 mb-3">
@@ -257,7 +261,7 @@
                             <!-- TAB 4: BUILDER ENGINE (SISTEM) -->
                             <div class="tab-pane fade" id="tab-builder" role="tabpanel">
                                 <div class="alert alert-danger" style="font-size: 0.85rem;">
-                                    <i class="fas fa-exclamation-triangle me-2"></i> <b>Area Kritis:</b> Konfigurasi di bawah ini digunakan oleh sistem Form Builder untuk merakit rumus kalkulasi secara otomatis (Visual Builder).
+                                    <i class="fas fa-exclamation-triangle me-2"></i> <b>Area Kritis:</b> Konfigurasi di bawah ini digunakan untuk merakit Dashboard Kalkulasi Otomatis.
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label text-dark">Kolom Kriteria (Variabel Penentu)</label>
@@ -311,6 +315,7 @@
             }
             
             loadUnitDropdown();
+            loadFormBuilderDropdown(); // Panggil fungsi tarik Form Builder
             loadKamus();
         });
 
@@ -324,6 +329,18 @@
                     data.forEach(u => sel.add(new Option(u.nama_unit, u.nama_unit)));
                 }
             } catch(e) { console.error('Gagal memuat unit:', e); }
+        }
+
+        // Load ID Form dari setup_formulir ke Dropdown ID
+        async function loadFormBuilderDropdown() {
+            try {
+                const { data } = await supabaseClient.from('setup_formulir').select('id_form').order('id_form');
+                const sel = document.getElementById('inp_id_indikator');
+                if (data) {
+                    sel.innerHTML = '<option value="">-- Pilih Form Builder ID --</option>';
+                    data.forEach(f => sel.add(new Option(f.id_form, f.id_form)));
+                }
+            } catch(e) { console.error('Gagal memuat form builder:', e); }
         }
 
         // READ
@@ -382,7 +399,7 @@
                         <div class="card-custom p-4 h-100 d-flex flex-column border-top border-4 border-primary">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <span class="badge ${badgeColor} badge-tipe">${item.kategori_indikator || 'UMUM'}</span>
-                                <code class="text-danger fw-bold fs-6">${item.id_indikator}</code>
+                                <code class="text-danger fw-bold fs-6"><i class="fas fa-link me-1"></i>${item.id_indikator}</code>
                             </div>
                             <h5 class="fw-bold text-dark mt-2 search-target" style="line-height: 1.4;">${item.judul_indikator}</h5>
                             <p class="text-muted mb-3 search-target" style="font-size:0.85rem;"><i class="fas fa-hospital me-1"></i> Pelaksana: ${item.unit_pelaksana || 'Semua Unit'}</p>
@@ -424,7 +441,10 @@
         function bukaModalTambah() {
             resetForm();
             document.getElementById('mode_form').value = "tambah";
-            document.getElementById('inp_id_indikator').readOnly = false;
+            
+            // Buka gembok dropdown ID Form
+            document.getElementById('inp_id_indikator').disabled = false;
+            
             document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle me-2 text-primary"></i> Tambah Profil Baru';
             new bootstrap.Modal(document.getElementById('modalIndikator')).show();
         }
@@ -437,8 +457,15 @@
             document.getElementById('mode_form').value = "edit";
             document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit me-2 text-warning"></i> Detail & Edit Profil Indikator';
             
-            document.getElementById('inp_id_indikator').value = item.id_indikator;
-            document.getElementById('inp_id_indikator').readOnly = true;
+            // Jika ID form tersebut sudah dihapus dari Form Builder, tambahkan opsi virtual agar tidak error
+            let selForm = document.getElementById('inp_id_indikator');
+            if (!Array.from(selForm.options).some(opt => opt.value === item.id_indikator)) {
+                selForm.add(new Option(item.id_indikator + " (Cetak Form Telah Dihapus)", item.id_indikator));
+            }
+
+            // Kunci Dropdown ID agar tidak diubah (karena dia Primary Key dan sudah terhubung)
+            selForm.value = item.id_indikator;
+            selForm.disabled = true;
             
             // Tab 1
             document.getElementById('inp_judul_indikator').value = item.judul_indikator || '';
@@ -539,7 +566,7 @@
                     if (error) throw error;
                 } else {
                     const { data: existing } = await supabaseClient.from('master_indikator').select('id_indikator').eq('id_indikator', idIndikator).maybeSingle();
-                    if (existing) { Swal.fire('Oops', 'ID Form tersebut sudah digunakan!', 'warning'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Profil Indikator'; return; }
+                    if (existing) { Swal.fire('Oops', 'Buku Panduan untuk ID Form ini sudah ada!', 'warning'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Profil Indikator'; return; }
                     
                     const { error } = await supabaseClient.from('master_indikator').insert([payloadData]);
                     if (error) throw error;
@@ -561,7 +588,7 @@
         window.hapusIndikator = function(idIndikator) {
             Swal.fire({
                 title: 'Hapus Permanen?',
-                html: `Hapus profil <b>${idIndikator}</b>?<br><small class="text-danger">Seluruh relasi ke indikator ini bisa terpengaruh!</small>`,
+                html: `Hapus profil panduan <b>${idIndikator}</b>?<br><small class="text-danger">Catatan: Ini HANYA menghapus buku panduannya, formulir di Form Builder tetap aman.</small>`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',

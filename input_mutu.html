@@ -3,738 +3,537 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Input Laporan Mutu</title>
+    <title>Input Data Mutu - SIM PMKP</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.4/moment.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/hyperformula/dist/hyperformula.full.min.js"></script>
+    
+    <!-- LIBRARY JSPREADSHEET (LINK RESMI & STABIL) -->
+    <script src="https://bossanova.uk/jspreadsheet/v4/jexcel.js"></script>
+    <script src="https://jsuites.net/v4/jsuites.js"></script>
+    <link rel="stylesheet" href="https://bossanova.uk/jspreadsheet/v4/jexcel.css" type="text/css" />
+    <link rel="stylesheet" href="https://jsuites.net/v4/jsuites.css" type="text/css" />
 
     <style>
-    body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
-    .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.04); border-radius: 12px; border-top: 4px solid #0dcaf0; background: #fff;}
-    
-    .btn-dokumen { 
-        display: block; padding: 10px 15px; background-color: #f8f9fa; color: #198754; border: 1px solid #dee2e6; 
-        border-radius: 6px; text-decoration: none; font-weight: 600; transition: 0.2s; margin-bottom: 10px;
-    }
-    .btn-dokumen:hover { background-color: #198754; color: #fff; border-color: #198754; }
-    
-    .month-tab-btn { border-radius: 20px; transition: 0.2s; background-color: #fff; border: 1px solid #dee2e6; cursor: pointer;}
-    .month-tab-btn:hover { background-color: #e9ecef; }
-    .month-tab-btn.active { background-color: #0dcaf0 !important; color: #fff !important; border-color: #0dcaf0 !important; box-shadow: 0 2px 4px rgba(13,202,240,0.3);}
-
-    .handsontable { font-family: 'Segoe UI', Tahoma, sans-serif !important; font-size: 13px !important; color: #495057 !important; box-shadow: none !important;}
-    .handsontableInput { color: #2c3e50 !important; background-color: #ffffff !important; font-size: 13px !important; box-shadow: 0 0 0 2px #0dcaf0 !important; padding: 4px !important; }
-    
-    .handsontable th, .handsontable th .colHeader { 
-        background-color: #f8f9fa !important; color: #2c3e50 !important; font-weight: bold !important; 
-        border-color: #dee2e6 !important; text-align: center; vertical-align: middle !important; 
-        padding: 8px 30px 8px 8px !important; font-size: 12px !important; line-height: 1.4 !important;      
-        white-space: normal !important; word-wrap: normal !important; overflow-wrap: normal !important; word-break: normal !important;
-    }
-    
-    .handsontable thead th { border-bottom: 2px solid #0dcaf0 !important; }
-    .handsontable td { border-color: #e9ecef !important; vertical-align: middle !important; padding: 6px 10px !important; white-space: normal !important; word-wrap: break-word !important; }
-    .handsontable .wtBorder.current, .handsontable .wtBorder.area { background-color: #0dcaf0 !important; }
-    .handsontable td.area { background-color: rgba(13, 202, 240, 0.08) !important; }
-    
-    .nav-tabs .nav-link.active { border-top: 3px solid #0dcaf0; font-weight: bold; color: #2c3e50; background-color: #fff; border-bottom: none;}
-    .nav-tabs .nav-link { color: #6c757d; font-size: 0.9rem; border: none; margin-right: 5px; }
-    .nav-tabs { border-bottom: 2px solid #dee2e6; }
-
-    #spreadsheet { height: calc(100vh - 350px) !important; min-height: 350px !important; overflow: hidden !important; width: 100%; border: 1px solid #dee2e6; border-radius: 8px;}
-    .table-profil th { background-color: #f8f9fa; width: 35%; font-weight: 600; color: #495057;}
-    .table-profil td { color: #212529; white-space: pre-wrap; }
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 15px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff;}
+        .form-label-custom { font-weight: 600; color: #34495e; font-size: 0.85rem; margin-bottom: 0.3rem;}
+        
+        .dynamic-input-row { background: #fdfdfe; border: 1px solid #e9ecef; border-left: 4px solid #6f42c1; border-radius: 8px; padding: 20px; margin-bottom: 20px; transition: 0.3s;}
+        .dynamic-input-row:hover { box-shadow: 0 5px 15px rgba(0,0,0,.08); }
+        
+        .table-custom th { background-color: #2c3e50; color: white; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; border: none; padding: 12px; white-space: nowrap;}
+        .table-custom td { vertical-align: middle; font-size: 0.9rem; border-bottom: 1px solid #f1f3f5; padding: 12px; white-space: nowrap;}
+        
+        .input-formula { background-color: #e8f5e9 !important; border-color: #81c784 !important; color: #2e7d32 !important; font-weight: bold;}
+        .jexcel { width: 100%; font-size: 0.9rem;}
+        .jexcel > thead > tr > td { background-color: #f8f9fa; font-weight: bold; color: #2c3e50;}
     </style>
 </head>
 <body>
     <div id="navbar-container"></div>
     <div id="sidebar-container"></div>
 
-    <div class="container-fluid px-4">
-        <ul class="nav nav-tabs mb-3" id="formTabs"></ul>
-        <div class="bg-white p-4 mb-4 card-custom">
-            
-            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4 flex-wrap gap-2">
-                <div>
-                    <h4 class="mb-1 text-dark fw-bold" id="judulForm"><i class="fas fa-edit text-info me-2"></i> Input Data Observasi Mutu</h4>
-                    <div class="d-flex align-items-center mt-1">
-                        <p class="text-muted mb-0 fw-bold text-uppercase" id="subJudulForm">Memuat formulir...</p>
-                        <button class="btn btn-sm btn-outline-secondary rounded-pill ms-3 shadow-sm d-none" id="btnSmartContext" onclick="bukaSmartContext()">
-                            <i class="fas fa-book-medical text-primary me-1"></i> Baca Kamus Indikator
-                        </button>
+    <div class="container-fluid px-4" style="max-width: 1400px;">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-edit text-primary me-2"></i> Formulir Pelaporan Mutu</h3>
+                <p class="text-muted mb-0">Halaman input capaian indikator mutu harian/bulanan unit kerja.</p>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- PANEL KIRI: FILTER & FORM INPUT -->
+            <div class="col-lg-5">
+                <div class="card-custom p-4 mb-4 border-top border-4 border-primary">
+                    <h6 class="fw-bold mb-3 border-bottom pb-2"><i class="fas fa-filter text-primary me-2"></i> 1. Parameter Pelaporan</h6>
+                    
+                    <div class="mb-3">
+                        <label class="form-label-custom">Unit Kerja</label>
+                        <select class="form-select fw-bold text-primary" id="sel_unit" onchange="loadIndikatorUnit()"></select>
+                    </div>
+                    
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label-custom">Bulan</label>
+                            <select class="form-select" id="sel_bulan" onchange="loadDataTabel()">
+                                <option value="1">Januari</option><option value="2">Februari</option>
+                                <option value="3">Maret</option><option value="4">April</option>
+                                <option value="5">Mei</option><option value="6">Juni</option>
+                                <option value="7">Juli</option><option value="8">Agustus</option>
+                                <option value="9">September</option><option value="10">Oktober</option>
+                                <option value="11">November</option><option value="12">Desember</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label-custom">Tahun</label>
+                            <input type="number" class="form-control" id="sel_tahun" onchange="loadDataTabel()">
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label-custom">Pilih Formulir Indikator <span class="text-danger">*</span></label>
+                        <select class="form-select border-primary fw-bold" id="sel_indikator" onchange="bangunFormDinamis()">
+                            <option value="">-- Pilih Indikator --</option>
+                        </select>
                     </div>
                 </div>
-                <div class="text-md-end">
-                    <span class="badge bg-secondary fs-6 mb-2 d-block" id="badgeUnit"><i class="fas fa-hospital me-1"></i> Unit...</span>
-                    <button class="btn btn-outline-primary btn-sm fw-bold shadow-sm" onclick="scrollToEmptyRow()" id="btnScrollDown" style="display:none;">
-                        <i class="fas fa-arrow-down me-1"></i> Langsung ke Baris Kosong
-                    </button>
+
+                <div class="card-custom p-4 border-top border-4 border-success d-none" id="panelInputDinamis">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                        <h6 class="fw-bold mb-0"><i class="fas fa-keyboard text-success me-2"></i> 2. Input Data Transaksi</h6>
+                    </div>
+                    
+                    <!-- TOGGLE MODE INPUT -->
+                    <div class="btn-group w-100 mb-4 shadow-sm" role="group">
+                        <input type="radio" class="btn-check" name="modeInput" id="modeForm" autocomplete="off" checked onchange="toggleModeInput()">
+                        <label class="btn btn-outline-primary fw-bold" for="modeForm"><i class="fas fa-list me-1"></i> Form Tunggal</label>
+
+                        <input type="radio" class="btn-check" name="modeInput" id="modeExcel" autocomplete="off" onchange="toggleModeInput()">
+                        <label class="btn btn-outline-success fw-bold" for="modeExcel"><i class="fas fa-table me-1"></i> Tabel Excel (Copy-Paste)</label>
+                    </div>
+
+                    <!-- AREA FORM TUNGGAL -->
+                    <form id="formDinamisContainer">
+                        <div id="wadahInputDinamis" class="dynamic-input-row row g-3"></div>
+                        <div class="d-grid mt-4">
+                            <button type="button" class="btn btn-primary fw-bold py-2 shadow" id="btnSimpanDataForm" onclick="simpanDataTransaksi('form')">
+                                <i class="fas fa-save me-2"></i> Simpan Satu Baris
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- AREA TABEL EXCEL -->
+                    <div id="excelContainer" class="d-none">
+                        <div class="alert alert-success p-2" style="font-size: 0.8rem;">
+                            <i class="fas fa-info-circle me-1"></i> Anda bisa <b>Copy (Ctrl+C)</b> dari Excel SIMRS dan <b>Paste (Ctrl+V)</b> ke tabel di bawah ini.
+                        </div>
+                        <div id="spreadsheetWadah" class="w-100 overflow-hidden border rounded mb-3 bg-white"></div>
+                        <div class="d-grid mt-2">
+                            <button type="button" class="btn btn-success fw-bold py-2 shadow" id="btnSimpanDataExcel" onclick="simpanDataTransaksi('excel')">
+                                <i class="fas fa-layer-group me-2"></i> Simpan Semua Baris (Bulk)
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="alert alert-warning border-warning shadow-sm d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
-                <div>
-                    <h6 class="fw-bold mb-1"><i class="fas fa-info-circle me-2"></i> Informasi Migrasi Sistem</h6>
-                    <p class="mb-0 text-dark" style="font-size: 0.85rem;">Input data mutu saat ini dialihkan sepenuhnya ke dalam sistem terpadu. Jika Anda membutuhkan data dari format Spreadsheet lama untuk disalin (Copy-Paste) kemari, silakan akses arsip lama Anda melalui tombol di samping.</p>
-                </div>
-                <button class="btn btn-warning fw-bold text-dark shadow-sm" style="min-width: 160px;" data-bs-toggle="modal" data-bs-target="#modalLinkLama">
-                    <i class="fas fa-archive me-1"></i> Buka Arsip Lama
-                </button>
-            </div>
+            <!-- PANEL KANAN: TABEL DATA YANG SUDAH DIINPUT -->
+            <div class="col-lg-7">
+                <div class="card-custom p-4 h-100">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                        <h6 class="fw-bold mb-0"><i class="fas fa-database text-secondary me-2"></i> Arsip Data Terinput <span id="lbl_bulan_tahun" class="text-primary"></span></h6>
+                        <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="loadDataTabel()"><i class="fas fa-sync-alt"></i> Refresh</button>
+                    </div>
 
-            <div id="loadingMessage" class="alert alert-info text-center fw-bold shadow-sm"><i class="fas fa-spinner fa-spin me-2"></i> Sinkronisasi database...</div>
-            
-            <div id="spreadsheetContainer" style="display: none;">
-                <div id="monthFilterContainer" style="display:none;" class="mb-3 p-3 bg-light rounded border">
-                    <label class="fw-bold text-secondary mb-2 d-block"><i class="fas fa-calendar-check me-1"></i> Pilih Bulan Entri Data:</label>
-                    <ul class="nav nav-pills gap-2" id="monthTabsList"></ul>
-                </div>
+                    <div id="loadingTabel" class="text-center py-5 d-none">
+                        <i class="fas fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+                        <p class="text-muted">Menarik data dari Supabase...</p>
+                    </div>
 
-                <div id="spreadsheet" class="mb-4 hot"></div>
-                
-                <div class="d-flex justify-content-between bg-light p-3 border rounded align-items-center mt-3 flex-wrap gap-3">
-                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Data berstatus <strong class="text-danger">"Final"</strong> telah dikunci permanen.<br>Gunakan <strong class="text-primary">"Simpan Draft"</strong> jika masih ingin mengedit atau menambah data.</small>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-primary fw-bold px-4 shadow-sm" onclick="simpanDataMentah(false)" id="btnSimpanDraft"><i class="fas fa-save me-2"></i> Simpan Draft</button>
-                        <button class="btn btn-success fw-bold px-4 shadow-sm" onclick="simpanDataMentah(true)" id="btnSimpanPermanen"><i class="fas fa-lock me-2"></i> Simpan Permanen</button>
+                    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                        <table class="table table-hover table-custom" id="tabelTransaksi">
+                            <thead id="theadTransaksi" class="sticky-top"></thead>
+                            <tbody id="tbodyTransaksi">
+                                <tr><td colspan="100%" class="text-center py-5 text-muted"><i class="fas fa-hand-point-left fa-2x mb-3"></i><br>Pilih Unit dan Indikator di sebelah kiri terlebih dahulu.</td></tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
-    <div class="modal fade" id="modalLinkLama" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header bg-warning text-dark border-0">
-                    <h5 class="modal-title fw-bold"><i class="fas fa-archive me-2"></i> Arsip Google Sheets Lama (Read-Only)</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body bg-light p-4">
-                    <p class="text-muted mb-4 text-center">Silakan temukan dan klik unit Anda di bawah ini untuk membuka arsip file Excel lama di tab baru. Anda dapat menyalin data (Copy) dari sana dan menempelkannya (Paste) langsung ke dalam tabel input sistem baru.</p>
-                    <div class="row g-2">
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1iDYOZCQkVJDWAA0eS_xf0ajaEh7g3YDavSnv8AKV2_g/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Admin Umum & Kepegawaian</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1jeFgSmyj34zJtg4bUzU_zNdgshCnrF7th_cLdyom7Vo/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Ambulans</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1iTFXQrB1YVd7Ud5EpgNhYIHS3Gp9mOVZfdvsvQY2ziA/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Bangsal</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1LhkpUAaRB8pePHOpI8J1fwUTDLc9icT5WMd0lB65BSE/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> PPI</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1DJwoJaLm7FdWOlQKniKs6v6gLxY2sJdk471rlgr4Ca8/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> CSSD </a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1vSu7CPTbAXubykThI45QVyXvYxY4sUCDLLDbAhquiXM/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Elektromedis</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1qh-F0iYaYXMOwUi0RyhbFtZrbe_pbx-e2kfgiH-UY18/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Farmasi</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1-5cdXLTY27w0ueHyMNuw-Vtb0WOrY92MyifMw9MdwL8/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Gizi</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1F71x9ENHb3pTmVUwAt7gHN86TD_Q-vScnzQH2VEA8I4/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> IPSRS</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1Ar4-BVcu3qQcuVihveiO4lTwTMsOlPzwL-HVa9tPk5c/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Kamar Jenazah</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1tWY-cMIOXYEelgRVsIe70cDWvaB-Qj83acdRT7uuCmM/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Kamar Operasi</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1leBAx2OKWeGuAuuXk71pY0P5kQvnAXkBXx_xwA3zV_I/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Kasir</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1tDK_PdXocvtDL-pXOeT3iPk5KPOxA7qmXSPwzAV2Dws/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Keamanan</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1lf_M34wzzkM3fW8pLoUqmwQmOnwRPXTV_ujODL-Xe5Y/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Kesehatan Lingkungan</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1hH7Wis7uO250OPZahKaHTyBlb8yDilWMfBoZEPfmGQo/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Keuangan dan Aset</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1jNCSeLUdvOqW3LxXL4XEBphVAPSQOXIYFWyUU6jsGTc/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Laboratorium</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1Et0PiGl_ZIsgjSnjaV6RHQSA_v-u4Um8Xpg4pAa_VhM/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Pengadaan Barang & Jasa</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1qUCIR487biOKVp_nrzh5jq0ctW4WiYUSUMZk0T8NfWc/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Penjaminan & Verifikasi</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1j7Jwqo-iuG1SSSuttQF7qL4R31GvUnbE-pVjFKrsUjc/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Perinatologi</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1yLJFEdw_iLGB0Dn80vJqcah_xpK8_H8FC_dpm3By64I/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Promosi Kesehatan</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1jDQ0Q985VIGx7FDm9tee-l2_4fvQ5o4GwJBNlOpMEJM/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Radiologi</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1cXuMOnD7Q7VtORqymqYvpYQDoxWHVLAdr3NEi9TVdHk/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Rawat jalan</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1uGizTpl7_ZhGbriBLMXIwTyJHj3J8d_kLus2eiS31Q8/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Rekam Medis</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1OI0LkEQum2gR4OugPEnORZfrF2z-ICydjdoshUYmIxE/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> Ruang Intensif</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1DlRZFhUgLD8yo4zIdAbOcXl6MNGOk5U-VH908YsfWpw/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> UGD</a></div>
-                        <div class="col-12 col-md-6 col-lg-4 col-xl-3"><a href="https://docs.google.com/spreadsheets/d/1AC5tlIHy44chAvLeBHxtvYBmuPQf0s9_V7Lp2IKpBlc/edit?usp=drive_link" target="_blank" class="btn-dokumen"><i class="fas fa-file-excel"></i> VK</a></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="modal fade" id="modalSmartContext" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header bg-dark text-white">
-                    <h5 class="modal-title fw-bold"><i class="fas fa-book-medical me-2"></i> Referensi Kamus Indikator</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-4 bg-white" id="modalSmartContextBody">
-                    <div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i><p class="mt-2 text-muted">Mencari referensi...</p></div>
-                </div>
-            </div>
-        </div>
-    </div>
 
+    <!-- 1. WAJIB: Library Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
-        const scriptURL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
+        const session = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        const isAdmin = (session.role === "Komite Mutu");
         
-        let hot = null; 
-        let activeFormType = new URLSearchParams(window.location.search).get('form');
-        if (!activeFormType) { window.location.href = "index.html"; }
-        
-        const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        const userUnit = sessionMutu.unit || "GUEST";
+        let cetakBiruAktif = []; 
+        let daftarUnitMaster = []; 
+        let jexcelInstance = null; 
 
-        let isDailyForm = false;
-        let dateColumnIndex = -1;
-        let activeMonthFilter = new Date().getMonth() + 1;
-        
-        const DATE_HEADERS = ['tanggal', 'tanggal pasien pulang', 'tanggal pengajuan klaim', 'jadwal distribusi', 'tanggal pengambilan linen', 'tanggal penyerahan berkas ke verifikator'];
+        // --- FUNGSI PEMBANTU RUMUS UNTUK FORM TUNGGAL ---
+        window.EXCEL_ROUND = function(num, dec) { return Number(Math.round(num + 'e' + dec) + 'e-' + dec); };
+        window.EXCEL_IF = function(cond, t, f) { return cond ? t : f; };
+        // ------------------------------------------------
 
-        const colToLetter = (index) => {
+        document.addEventListener("DOMContentLoaded", async function () {
+            if (!supabaseClient) { Swal.fire('Error', 'Supabase belum dikonfigurasi', 'error'); return; }
+            const date = new Date();
+            document.getElementById('sel_bulan').value = date.getMonth() + 1;
+            document.getElementById('sel_tahun').value = date.getFullYear();
+            await inisialisasiAkses();
+        });
+
+        async function inisialisasiAkses() {
+            try {
+                const { data } = await supabaseClient.from('master_unit').select('*').order('nama_unit');
+                if (data) daftarUnitMaster = data;
+
+                const selUnit = document.getElementById('sel_unit');
+                selUnit.innerHTML = '';
+
+                if (isAdmin) {
+                    selUnit.add(new Option("== Pilih Unit ==", ""));
+                    daftarUnitMaster.forEach(u => selUnit.add(new Option(u.nama_unit, u.nama_unit)));
+                } else {
+                    selUnit.add(new Option(session.unit, session.unit));
+                    selUnit.disabled = true; 
+                    loadIndikatorUnit(); 
+                }
+            } catch (err) { console.error(err); }
+        }
+
+        function loadIndikatorUnit() {
+            const namaUnit = document.getElementById('sel_unit').value;
+            const selIndikator = document.getElementById('sel_indikator');
+            selIndikator.innerHTML = '<option value="">-- Pilih Indikator --</option>';
+
+            if (!namaUnit) return;
+            const unitData = daftarUnitMaster.find(u => u.nama_unit === namaUnit);
+            
+            if (unitData && unitData.daftar_form) {
+                let forms = unitData.daftar_form.split(',').map(s => s.trim());
+                forms.forEach(f => { selIndikator.add(new Option(`Form: ${f}`, f)); });
+            }
+            
+            document.getElementById('panelInputDinamis').classList.add('d-none');
+        }
+
+        function toggleModeInput() {
+            const isExcel = document.getElementById('modeExcel').checked;
+            document.getElementById('formDinamisContainer').style.display = isExcel ? 'none' : 'block';
+            document.getElementById('excelContainer').style.display = isExcel ? 'block' : 'none';
+            
+            // Re-render spreadsheet agar lebarnya pas
+            if(isExcel && jexcelInstance && typeof window.dispatchEvent === 'function') {
+                setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+            }
+        }
+
+        async function bangunFormDinamis() {
+            const idForm = document.getElementById('sel_indikator').value;
+            const panel = document.getElementById('panelInputDinamis');
+            
+            if (!idForm) { panel.classList.add('d-none'); return; }
+
+            document.getElementById('wadahInputDinamis').innerHTML = '<div class="text-center w-100"><i class="fas fa-spinner fa-spin"></i> Merakit...</div>';
+            panel.classList.remove('d-none');
+
+            try {
+                const { data, error } = await supabaseClient.from('setup_formulir').select('kolom').eq('id_form', idForm).single();
+                if (error) throw error;
+
+                cetakBiruAktif = data.kolom; 
+                
+                // 1. Gambar Form Tunggal
+                renderFormTunggal();
+                
+                // 2. Gambar Tabel Excel (Dibungkus try-catch agar jika error library, form tunggal tetap bisa dipakai)
+                try {
+                    renderExcelTabel();
+                } catch(eExcel) {
+                    console.error("Gagal meload Excel engine:", eExcel);
+                    document.getElementById('spreadsheetWadah').innerHTML = '<div class="alert alert-danger p-2">Plugin Tabel Excel gagal dimuat. Gunakan Form Tunggal.</div>';
+                }
+
+                // 3. Load Arsip
+                loadDataTabel();
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('wadahInputDinamis').innerHTML = '<div class="alert alert-danger w-100">Gagal memuat form. Hubungi Administrator.</div>';
+            }
+        }
+
+        // ==========================================
+        // 1. RENDERER: FORM TUNGGAL & KALKULATOR JS
+        // ==========================================
+        function renderFormTunggal() {
+            const wadahForm = document.getElementById('wadahInputDinamis');
+            wadahForm.innerHTML = '';
+            
+            let headHTML = '<tr><th class="text-center" width="5%"><i class="fas fa-trash"></i></th>';
+
+            cetakBiruAktif.forEach((field, index) => {
+                let colClass = "col-md-12";
+                if (field.tipe === "number" || field.tipe === "time" || field.tipe === "readonly") colClass = "col-md-6";
+                else if (field.tipe === "date" || field.tipe === "dropdown") colClass = "col-md-6";
+
+                let inputHTML = '';
+                let idInput = `inp_dinamis_${index}`;
+                let triggerCalc = `onkeyup="kalkulasiOtomatis()" onchange="kalkulasiOtomatis()"`;
+
+                if (field.tipe === 'dropdown') {
+                    let opts = field.opsi ? field.opsi.split(',').map(s => `<option value="${s.trim()}">${s.trim()}</option>`).join('') : '';
+                    inputHTML = `<select class="form-select input-data-transaksi" id="${idInput}" data-index="${index}" ${triggerCalc}><option value="">-- Pilih --</option>${opts}</select>`;
+                } 
+                else if (field.tipe === 'checkbox') {
+                    inputHTML = `
+                        <div class="form-check fs-5 mt-1 border rounded p-2 bg-white">
+                            <input class="form-check-input input-data-transaksi ms-1" type="checkbox" id="${idInput}" data-index="${index}" value="Ya" ${triggerCalc}>
+                            <label class="form-check-label text-secondary ms-2" for="${idInput}" style="font-size:0.9rem;">Tandai jika "Ya" / "Sesuai"</label>
+                        </div>`;
+                }
+                else if (field.tipe === 'readonly') {
+                    inputHTML = `<input type="text" class="form-control input-formula input-data-transaksi" id="${idInput}" data-index="${index}" data-formula="${field.formula || ''}" placeholder="Otomatis" readonly>`;
+                } 
+                else {
+                    let inputType = field.tipe === 'calendar' ? 'date' : field.tipe;
+                    inputHTML = `<input type="${inputType}" class="form-control input-data-transaksi" id="${idInput}" data-index="${index}" ${triggerCalc}>`;
+                }
+
+                wadahForm.innerHTML += `
+                    <div class="${colClass}">
+                        <label class="form-label-custom">${field.judul}</label>
+                        ${inputHTML}
+                    </div>
+                `;
+                headHTML += `<th>${field.judul}</th>`;
+            });
+
+            headHTML += '</tr>';
+            document.getElementById('theadTransaksi').innerHTML = headHTML;
+        }
+
+        window.kalkulasiOtomatis = function() {
+            document.querySelectorAll('.input-formula').forEach(el => {
+                let formulaStr = el.getAttribute('data-formula');
+                if(!formulaStr) return;
+
+                let parsed = formulaStr.replace(/\[(\d+)\]/g, function(match, p1) {
+                    let sumber = document.getElementById(`inp_dinamis_${p1}`);
+                    if(!sumber) return 0;
+                    
+                    let val = (sumber.type === 'checkbox') ? (sumber.checked ? 'Ya' : 'Tidak') : sumber.value;
+                    if(!val) return 0;
+
+                    if (/^(\d{1,2}):(\d{2})$/.test(val)) {
+                        let p = val.split(':'); return (parseInt(p[0]) * 60 + parseInt(p[1])) / 1440;
+                    }
+                    
+                    let num = parseFloat(val);
+                    return isNaN(num) ? `"${val}"` : num;
+                });
+
+                parsed = parsed.replace(/ROUND\(/ig, "EXCEL_ROUND(")
+                               .replace(/IF\(/ig, "EXCEL_IF(")
+                               .replace(/(?<![><=!])=(?!=)/g, "==="); 
+
+                try { 
+                    let hasil = eval(parsed); 
+                    el.value = (isNaN(hasil) || hasil === Infinity) ? 0 : Math.round(hasil * 100) / 100;
+                } catch(e) { /* Abaikan error typing berjalan */ }
+            });
+        }
+
+        // ==========================================
+        // 2. RENDERER: JSPREADSHEET (EXCEL MODE)
+        // ==========================================
+        function renderExcelTabel() {
+            const container = document.getElementById('spreadsheetWadah');
+            container.innerHTML = '';
+            if(jexcelInstance) jexcelInstance.destroy();
+
+            let columns = cetakBiruAktif.map(field => {
+                let col = { title: field.judul, width: field.lebar || 150 };
+                
+                if (field.tipe === 'number') col.type = 'numeric';
+                else if (field.tipe === 'dropdown') { col.type = 'dropdown'; col.source = field.opsi.split(',').map(s=>s.trim()); }
+                else if (field.tipe === 'date' || field.tipe === 'calendar') col.type = 'calendar';
+                else if (field.tipe === 'checkbox') col.type = 'checkbox';
+                else col.type = 'text';
+
+                // Kolom dengan rumus dikunci
+                if (field.tipe === 'readonly' || field.formula) {
+                    col.type = 'text';
+                    col.readOnly = true;
+                }
+                return col;
+            });
+
+            // Suntikkan rumus Excel ke baris kosong
+            let initData = [];
+            for (let r = 1; r <= 15; r++) { 
+                let rowData = [];
+                cetakBiruAktif.forEach((field) => {
+                    if (field.formula) {
+                        let xlFormula = "=" + field.formula.replace(/\[(\d+)\]/g, function(match, colIndex) {
+                            return colIndexToLetter(parseInt(colIndex)) + r;
+                        });
+                        rowData.push(xlFormula);
+                    } else {
+                        rowData.push('');
+                    }
+                });
+                initData.push(rowData);
+            }
+
+            // Fungsi Jspreadsheet / Jexcel kompatibilitas
+            const excelEngine = typeof jspreadsheet !== 'undefined' ? jspreadsheet : (typeof jexcel !== 'undefined' ? jexcel : null);
+            
+            if(excelEngine) {
+                jexcelInstance = excelEngine(container, {
+                    data: initData,
+                    columns: columns,
+                    allowInsertRow: true,
+                    allowInsertColumn: false,
+                    wordWrap: true,
+                    contextMenu: function() { return false; } 
+                });
+            } else {
+                throw new Error("Library Jspreadsheet tidak terdeteksi");
+            }
+        }
+
+        function colIndexToLetter(index) {
             let letter = '';
             while (index >= 0) {
                 letter = String.fromCharCode((index % 26) + 65) + letter;
                 index = Math.floor(index / 26) - 1;
             }
             return letter;
-        };
-
-        // ALAT TRANSLASI TANGGAL INDONESIA KE MESIN
-        const parseIndoDate = (dateStr) => {
-            if (!dateStr) return moment.invalid();
-            if (typeof dateStr.getMonth === 'function') return moment(dateStr);
-            let s = String(dateStr).toLowerCase().trim();
-            const indoMonths = {'januari':'01', 'februari':'02', 'maret':'03', 'april':'04', 'mei':'05', 'juni':'06', 'juli':'07', 'agustus':'08', 'september':'09', 'oktober':'10', 'november':'11', 'desember':'12'};
-            for (let id in indoMonths) {
-                if (s.includes(id)) {
-                    let replaced = s.replace(id, indoMonths[id]);
-                    return moment(replaced, ["D MM YYYY", "DD MM YYYY", "D/MM/YYYY", "DD/MM/YYYY", "DD-MM-YYYY"]);
-                }
-            }
-            return moment(dateStr, ["DD/MM/YYYY", "YYYY-MM-DD", "DD-MM-YYYY", "YYYY/MM/DD", "D/M/YY", "D/M/YYYY", moment.ISO_8601], false);
-        };
-
-        // ALAT TRANSLASI WAKTU 24 JAM
-        const parseTime24 = (timeStr) => {
-            if (!timeStr) return null;
-            let s = String(timeStr).trim();
-            
-            // Format aneh dari Google Sheets (e.g. 1899-12-30T09:48:00.000Z)
-            if (s.includes('T') && s.includes('Z')) {
-                let m = moment(s);
-                if (m.isValid()) return m.format('HH:mm:ss');
-            }
-            
-            s = s.replace(/\./g, ':');
-            if (/^\d{1,2}:\d{2}$/.test(s)) s += ":00"; // Paksa tambah detik
-            
-            let m = moment(s, ["HH:mm:ss", "H:mm:ss", "HH:mm", "H:mm", "hh:mm:ss A", "h:mm:ss a", "hh:mm A", "h:mm a", "hh:mmA", "h:mma"], true);
-            if (!m.isValid()) m = moment(s, ["HH:mm:ss", "H:mm:ss", "hh:mm:ss A", "h:mm:ss a", "hh:mm A", "h:mm a"]);
-            
-            return m.isValid() ? m.format('HH:mm:ss') : s;
-        };
-
-        let judulIndikatorAktif = "";
-
-        document.addEventListener("DOMContentLoaded", function () {
-            document.getElementById('badgeUnit').innerHTML = `<i class="fas fa-hospital me-1"></i> ${userUnit}`;
-            
-            judulIndikatorAktif = activeFormType.replace(/_/g, ' ');
-            document.getElementById('subJudulForm').innerText = `FORMULIR: ${judulIndikatorAktif}`;
-            document.getElementById('btnSmartContext').classList.remove('d-none');
-
-            fetch(`${scriptURL}?unit=${encodeURIComponent(userUnit)}&formType=${encodeURIComponent(activeFormType)}`)
-                .then(res => res.json())
-                .then(result => {
-                    document.getElementById('loadingMessage').style.display = 'none';
-                    if (result.status === 'success') {
-                        
-                        let tabsHtml = '';
-                        result.menu.forEach(form => {
-                            let isActive = (form === activeFormType) ? 'active' : '';
-                            tabsHtml += `<li class="nav-item"><a class="nav-link ${isActive}" href="input_mutu.html?form=${form}"><i class="fas ${isActive ? 'fa-folder-open text-info' : 'fa-folder'} me-1"></i> ${form.replace(/_/g, ' ')}</a></li>`;
-                        });
-                        document.getElementById('formTabs').innerHTML = tabsHtml;
-
-                        dateColumnIndex = result.columns.findIndex(c => DATE_HEADERS.includes(c.title.toLowerCase().trim()));
-                        if (dateColumnIndex !== -1) {
-                            isDailyForm = true;
-                            renderMonthTabsUI();
-                        }
-
-                        let timeColIndices = [];
-                        result.columns.forEach((col, idx) => {
-                            let t = (col.type || '').toString().toLowerCase().trim();
-                            if (t === 'time' || t === 'waktu' || t === 'jam' || t === 'durasi_hm' || t === 'durasi_hms' || t === 'durasi_ms') {
-                                timeColIndices.push({ index: idx, type: t });
-                            }
-                        });
-
-                        const applyFormulasToRow = (rowArray, rowIndex, columnsDef) => {
-                            columnsDef.forEach((col, colIndex) => {
-                                if (col.formula && col.formula.trim() !== "") {
-                                    let excelFormula = col.formula
-                                        .replace(/\[(\d+):(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (rowIndex + 1) + ":" + colToLetter(parseInt(e)) + (rowIndex + 1))
-                                        .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (rowIndex + 1));
-                                    rowArray[colIndex] = excelFormula.startsWith('=') ? excelFormula : "=" + excelFormula;
-                                }
-                            });
-                        };
-
-                        result.data.forEach((row, rowIndex) => { 
-                            applyFormulasToRow(row, rowIndex, result.columns); 
-                            
-                            // SANITASI WAKTU 24 JAM
-                            timeColIndices.forEach(colInfo => {
-                                let val = row[colInfo.index];
-                                if (val && !String(val).startsWith('=')) {
-                                    let parsed = parseTime24(val);
-                                    if (colInfo.type === 'durasi_hm' || colInfo.type === 'durasi_ms') {
-                                        row[colInfo.index] = parsed ? parsed.substring(0, 5) : val; // HH:mm
-                                    } else {
-                                        row[colInfo.index] = parsed || val; // HH:mm:ss
-                                    }
-                                }
-                            });
-                        });
-
-                        let hotColumns = result.columns.map(c => {
-                            let rawType = (c.type || 'text').toString().toLowerCase().trim();
-                            let config = { type: 'text', readOnly: c.readOnly || false, wordWrap: true }; 
-                            
-                            if (rawType === 'dropdown') {
-                                config.type = 'dropdown'; config.source = c.source;
-                            } else if (rawType === 'checkbox') {
-                                config.type = 'checkbox'; config.checkedTemplate = 'Ya'; config.uncheckedTemplate = 'Tidak'; config.className = 'htCenter htMiddle';
-                            } else if (rawType === 'calendar' || rawType === 'date') {
-                                config.type = 'date'; config.dateFormat = 'DD/MM/YYYY'; 
-                            } else if (rawType === 'durasi_hm' || rawType === 'durasi_ms') {
-                                config.type = 'text'; config.validator = /^[0-9]+:[0-5][0-9]$/;
-                            } else if (rawType === 'durasi_hms') {
-                                config.type = 'text'; config.validator = /^[0-9]+:[0-5][0-9]:[0-5][0-9]$/;
-                            } else if (rawType === 'time' || rawType === 'waktu' || rawType === 'jam') {
-                                config.type = 'time'; 
-                                config.timeFormat = 'HH:mm:ss';
-                                config.correctFormat = true;
-                            }
-                            return config;
-                        });
-
-                        document.getElementById('spreadsheetContainer').style.display = 'block';
-                        document.getElementById('btnScrollDown').style.display = 'inline-block'; 
-                        
-                        let exactWidths = result.columns.map(c => c.width ? parseInt(c.width) : 150);
-
-                        const container = document.getElementById('spreadsheet');
-                        hot = new Handsontable(container, {
-                            data: result.data,
-                            colHeaders: result.columns.map(c => c.title),
-                            columns: hotColumns,
-                            colWidths: exactWidths,
-                            rowHeaders: true, 
-                            width: '100%', 
-                            height: '100%', 
-                            
-                            stretchH: 'none', 
-                            
-                            renderAllRows: false, viewportRowRenderingOffset: 100, minSpareRows: 3,
-                            contextMenu: true, formulas: { engine: HyperFormula }, licenseKey: 'non-commercial-and-evaluation', 
-                            
-                            filters: false, 
-                            dropdownMenu: false, 
-                            columnSorting: false, 
-                            hiddenRows: true, 
-                            
-                            autoColumnSize: false, 
-                            manualColumnResize: true, 
-                            wordWrap: true, 
-
-                            afterPaste: function(data, coords) {
-                                const hotInstance = this;
-                                setTimeout(() => {
-                                    let updates = [];
-                                    const rowCount = hotInstance.countRows();
-                                    for (let r = 0; r < rowCount; r++) {
-                                        result.columns.forEach((col, c) => {
-                                            if (col.formula && col.formula.trim() !== "") {
-                                                let val = hotInstance.getDataAtCell(r, c);
-                                                if (val === null || val === "" || (typeof val === 'string' && !val.startsWith('='))) {
-                                                     let excelFormula = col.formula
-                                                        .replace(/\[(\d+):(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (r + 1) + ":" + colToLetter(parseInt(e)) + (r + 1))
-                                                        .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (r + 1));
-                                                     updates.push([r, c, "=" + excelFormula]);
-                                                }
-                                            }
-                                        });
-                                    }
-                                    if (updates.length > 0) hotInstance.setDataAtCell(updates, 'autoFormulaSweep'); 
-                                }, 200); 
-                            },
-
-                            afterCreateRow: function(index, amount, source) {
-                                if (source === 'loadData' || source === 'auto' || source === 'CopyPaste.paste') return;
-                                let updates = [];
-                                for (let i = 0; i < amount; i++) {
-                                    let rowIndex = index + i;
-                                    result.columns.forEach((col, colIndex) => {
-                                        if (col.formula && col.formula.trim() !== "") {
-                                            let excelFormula = col.formula
-                                                .replace(/\[(\d+):(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (rowIndex + 1) + ":" + colToLetter(parseInt(e)) + (rowIndex + 1))
-                                                .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (rowIndex + 1));
-                                            updates.push([rowIndex, colIndex, "=" + excelFormula]);
-                                        }
-                                    });
-                                }
-                                if(updates.length > 0) setTimeout(() => { this.setDataAtCell(updates, 'autoFormula'); }, 100); 
-                            },
-
-                            cells: function(row, col) {
-                                var cellProperties = {};
-                                cellProperties.renderer = function(instance, td, r, c, prop, value, cellProps) {
-                                    var cellType = cellProps.type || 'text';
-                                    var colDef = result.columns[c];
-                                    var cType = (colDef.type || '').toString().toLowerCase().trim();
-                                    
-                                    // PENCEGAH TAMPILAN AM/PM VISUAL
-                                    if (value && typeof value === 'string' && (cType === 'time' || cType === 'waktu' || cType === 'jam' || cType === 'durasi_hm' || cType === 'durasi_ms' || cType === 'durasi_hms')) {
-                                        if (value.toLowerCase().includes('am') || value.toLowerCase().includes('pm')) {
-                                            value = parseTime24(value);
-                                            if (cType === 'durasi_hm' || cType === 'durasi_ms') value = value.substring(0, 5);
-                                        }
-                                    }
-
-                                    var baseRenderer = Handsontable.renderers.getRenderer(cellType);
-                                    var args = Array.prototype.slice.call(arguments);
-                                    args[5] = value; 
-                                    baseRenderer.apply(this, args);
-                                    
-                                    let statusColIndex = instance.getSettings().columns.length - 1;
-                                    let status = instance.getDataAtCell(r, statusColIndex);
-                                    td.style.fontStyle = 'normal'; td.style.fontWeight = 'normal';
-
-                                    if (status === 'Final') { 
-                                        td.style.backgroundColor = '#e9ecef'; td.style.color = '#adb5bd'; td.style.fontStyle = 'italic'; 
-                                    } else if (cellProps.readOnly) { 
-                                        td.style.backgroundColor = '#f1f3f5'; td.style.color = '#0dcaf0'; td.style.fontWeight = 'bold'; 
-                                    } else { 
-                                        td.style.backgroundColor = '#ffffff'; td.style.color = '#2c3e50'; 
-                                    }
-
-                                    if (cellType !== 'checkbox') {
-                                        if (!isNaN(value) && value !== "" && value !== null) td.style.textAlign = 'right'; 
-                                        else td.style.textAlign = 'left'; 
-                                    }
-                                    if (value === '#DIV/0!' || value === '#VALUE!' || value === '#CYCLE!') td.innerHTML = '<span style="color:#dee2e6">-</span>'; 
-                                };
-                                return cellProperties;
-                            },
-
-                            beforeChange: function (changes, source) {
-                                if (!changes) return;
-                                let statusColIndex = this.getSettings().columns.length - 1;
-                                let isBlocked = false;
-
-                                changes.forEach(change => {
-                                    let row = change[0]; let col = change[1];
-                                    let oldVal = change[2]; let newVal = change[3];
-                                    let status = this.getDataAtCell(row, statusColIndex);
-                                    let colSettings = this.getSettings().columns[col];
-                                    let colDef = result.columns[col];
-                                    
-                                    if (status === 'Final' && col !== statusColIndex) {
-                                        change[3] = oldVal; isBlocked = true; return;
-                                    }
-
-                                    if (colSettings.type === 'checkbox' && newVal !== null && newVal !== undefined) {
-                                        let strVal = newVal.toString().trim().toLowerCase();
-                                        if (['true', '1', 'yes', 'y', 'benar'].includes(strVal)) change[3] = 'Ya';
-                                        else if (['false', '0', 'no', 'n', 'salah', ''].includes(strVal)) change[3] = 'Tidak';
-                                    }    
-
-                                    if (newVal && typeof newVal === 'string' && newVal.trim() !== "") {
-                                        let colType = (colSettings.type || colDef.type || '').toString().toLowerCase().trim();
-                                        
-                                        if (colType === 'time' || colType === 'waktu' || colType === 'jam') {
-                                            let parsed = parseTime24(newVal);
-                                            if (parsed) change[3] = parsed;
-                                        }
-                                        else if (colType === 'durasi_hm' || colType === 'durasi_hms' || colType === 'durasi_ms') {
-                                            let parsed = parseTime24(newVal);
-                                            if (parsed) change[3] = (colType === 'durasi_hm' || colType === 'durasi_ms') ? parsed.substring(0, 5) : parsed;
-                                        }
-                                        else if (colSettings.type === 'date' || colDef.type === 'date' || colDef.type === 'calendar') {
-                                            let tebakan = parseIndoDate(newVal);
-                                            if (tebakan.isValid()) change[3] = tebakan.format('DD/MM/YYYY'); 
-                                        }
-                                    }
-
-                                    if (colSettings && colSettings.readOnly && (source === 'CopyPaste.paste' || source === 'Autofill.fill')) {
-                                        if (colDef && colDef.formula && colDef.formula.trim() !== "") {
-                                            let excelFormula = colDef.formula
-                                                .replace(/\[(\d+):(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (row + 1) + ":" + colToLetter(parseInt(e)) + (row + 1))
-                                                .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (row + 1));
-                                            change[3] = "=" + excelFormula;
-                                        }
-                                    }
-                                });
-
-                                if(isBlocked) Swal.fire({ icon: 'error', title: 'Ditolak!', text: 'Baris ini telah berstatus Final dan tidak dapat diubah.', timer: 2000, showConfirmButton: false });
-                            }
-                        });
-
-                        window.applyMonthFilter = function(monthNum) {
-                            if (!hot || !isDailyForm || dateColumnIndex === -1) return;
-                            activeMonthFilter = monthNum;
-                            document.querySelectorAll('.month-tab-btn').forEach(btn => btn.classList.remove('active'));
-                            document.getElementById('tabBulan_' + monthNum).classList.add('active');
-
-                            const rowCount = hot.countRows();
-                            const rowsToHide = [];
-                            const monthNames = ["januari", "februari", "maret", "april", "mei", "juni", "juli", "agustus", "september", "oktober", "november", "desember"];
-                            const currentMonthName = monthNames[monthNum - 1];
-
-                            for(let r = 0; r < rowCount; r++) {
-                                if(hot.isEmptyRow(r)) continue;
-                                let dateVal = hot.getDataAtCell(r, dateColumnIndex);
-                                
-                                if(dateVal) {
-                                    let parsedDate = parseIndoDate(dateVal);
-                                    if (parsedDate.isValid()) {
-                                        if ((parsedDate.month() + 1) !== monthNum) {
-                                            rowsToHide.push(r);
-                                        }
-                                    } else {
-                                        // PENCEGAH TANGGAL INDONESIA YANG LOLOS DARI MESIN
-                                        if (!String(dateVal).toLowerCase().includes(currentMonthName)) {
-                                            rowsToHide.push(r);
-                                        }
-                                    }
-                                }
-                            }
-                            
-                            const plugin = hot.getPlugin('hiddenRows');
-                            if (plugin) {
-                                plugin.showRows(Array.from({length: rowCount}, (_, i) => i));
-                                if (rowsToHide.length > 0) {
-                                    plugin.hideRows(rowsToHide);
-                                }
-                                hot.render();
-                            }
-                        };
-
-                        if (isDailyForm) applyMonthFilter(activeMonthFilter);
-
-                    } else { 
-                        document.getElementById('loadingMessage').innerHTML = `<i class="fas fa-lock me-2"></i> ${result.message}`; 
-                    }
-                });
-        });
-
-        window.bukaSmartContext = function() {
-            let modalEl = document.getElementById('modalSmartContext');
-            let modalInstance = new bootstrap.Modal(modalEl);
-            modalInstance.show();
-
-            const modalBody = document.getElementById('modalSmartContextBody');
-            const cacheKey = "KAMUS_" + activeFormType;
-            const cachedData = localStorage.getItem(cacheKey);
-
-            if (cachedData) {
-                let data = JSON.parse(cachedData);
-                document.getElementById('subJudulForm').innerText = `FORMULIR: ${(data['Judul Indikator'] || judulIndikatorAktif).toUpperCase()}`;
-                renderKamusKeModal(data, modalBody);
-            } else {
-                fetch(`${scriptURL}?action=get_profil_indikator`)
-                .then(res => res.json())
-                .then(result => {
-                    if (result.status === 'success') {
-                        let indikatorDitemukan = result.data.find(row => (row['ID_Form'] || "").trim() === activeFormType);
-                        if (indikatorDitemukan) {
-                            localStorage.setItem(cacheKey, JSON.stringify(indikatorDitemukan));
-                            let judulAsli = indikatorDitemukan['Judul Indikator'] || judulIndikatorAktif;
-                            document.getElementById('subJudulForm').innerText = `FORMULIR: ${judulAsli.toUpperCase()}`;
-                            renderKamusKeModal(indikatorDitemukan, modalBody);
-                        } else {
-                            modalBody.innerHTML = `<div class="alert alert-warning text-center"><i class="fas fa-exclamation-triangle mb-2 fa-2x"></i><br>Profil untuk form <b>${activeFormType}</b> belum ditambahkan di Database Kamus.</div>`;
-                        }
-                    } else { modalBody.innerHTML = `<div class="alert alert-danger text-center">Gagal menghubungi server database kamus.</div>`; }
-                })
-                .catch(err => { modalBody.innerHTML = `<div class="alert alert-danger text-center">Koneksi internet bermasalah.</div>`; });
-            }
-        };
-
-        function renderKamusKeModal(dataKamus, containerElement) {
-            let judul = dataKamus['Judul Indikator'] || judulIndikatorAktif;
-            let kategori = dataKamus['Kategori Indikator'] || dataKamus['Jenis Indikator'] || "-";
-
-            const fields = [
-                { label: "Definisi Operasional", keys: ["Definisi Operasional"] }, { label: "Kriteria Inklusi", keys: ["Kriteria Inklusi"] },
-                { label: "Kriteria Eksklusi", keys: ["Kriteria Eksklusi"] }, { label: "Numerator (Pembilang)", keys: ["Numerator (Pembilang)", "Numerator"] },
-                { label: "Denominator (Penyebut)", keys: ["Denominator (Penyebut)", "Denominator"] }, { label: "Formula", keys: ["Formula"] },
-                { label: "Cara Penilaian", keys: ["Cara Penilaian"] }, { label: "Metode Pengumpulan Data", keys: ["Metode Pengumpulan Data"] },
-                { label: "Sumber Data", keys: ["Sumber Data"] }, { label: "Instrumen Pengambilan Data", keys: ["Instrumen Pengambilan Data"] },
-                { label: "Besar Sampel", keys: ["Besar Sampel"] }, { label: "Cara Pengambilan Sampel", keys: ["Cara Pengambilan Sampel"] },
-                { label: "Periode Pengumpulan Data", keys: ["Periode Pengumpulan Data"] }, { label: "Periode Pelaporan Data", keys: ["Periode Pelaporan Data"] },
-                { label: "Periode Analisis Data", keys: ["Periode Analisis Data"] }, { label: "Penyajian Data", keys: ["Penyajian Data"] },
-                { label: "Penanggung Jawab", keys: ["Penanggung Jawab"] }
-            ];
-
-            let tbodyHtml = `<tr><th style="width:35%; background:#f8f9fa;">Kategori Indikator</th><td style="font-weight:bold; color:#0dcaf0;">${kategori}</td></tr>`;
-            fields.forEach(f => {
-                let val = "-";
-                for(let key of f.keys) { if (dataKamus[key]) { val = dataKamus[key]; break; } }
-                tbodyHtml += `<tr><th style="background:#f8f9fa;">${f.label}</th><td style="white-space: pre-wrap;">${val}</td></tr>`;
-            });
-
-            containerElement.innerHTML = `
-                <h5 class="fw-bold text-center mb-3 text-uppercase">${judul}</h5>
-                <p class="text-center text-muted mb-4" style="font-size:0.85rem;">Menampilkan ringkasan elemen pengukuran.</p>
-                <div class="table-responsive"><table class="table table-bordered table-profil mb-0"><tbody>${tbodyHtml}</tbody></table></div>
-            `;
         }
 
-        function renderMonthTabsUI() {
-            const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
-            let html = '';
-            months.forEach((m, idx) => {
-                let monthNum = idx + 1;
-                html += `<li class="nav-item"><span class="nav-link month-tab-btn px-3 py-1 fw-bold text-secondary" id="tabBulan_${monthNum}" onclick="applyMonthFilter(${monthNum})">${m}</span></li>`;
-            });
-            document.getElementById('monthTabsList').innerHTML = html;
-            document.getElementById('monthFilterContainer').style.display = 'block';
+        // ==========================================
+        // 3. PROSES SIMPAN (TUNGGAL ATAU MASSAL)
+        // ==========================================
+        window.simpanDataTransaksi = async function(mode) {
+            const unitKerja = document.getElementById('sel_unit').value;
+            const bulan = parseInt(document.getElementById('sel_bulan').value);
+            const tahun = parseInt(document.getElementById('sel_tahun').value);
+            const idIndikator = document.getElementById('sel_indikator').value;
+
+            if(!unitKerja || !idIndikator) { Swal.fire('Peringatan', 'Lengkapi parameter unit.', 'warning'); return; }
+
+            const btnId = mode === 'excel' ? 'btnSimpanDataExcel' : 'btnSimpanDataForm';
+            const btn = document.getElementById(btnId);
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
+
+            let payloadList = [];
+
+            if (mode === 'form') {
+                let dataArray = [];
+                document.querySelectorAll('.input-data-transaksi').forEach(el => {
+                    let val = el.type === 'checkbox' ? (el.checked ? 'Ya' : 'Tidak') : el.value;
+                    dataArray[el.getAttribute('data-index')] = val;
+                });
+                
+                payloadList.push({
+                    unit_kerja: unitKerja, id_indikator: idIndikator, bulan: bulan, tahun: tahun, 
+                    petugas_input: session.nama_lengkap, data_input: dataArray
+                });
+            } 
+            else if (mode === 'excel') {
+                if(!jexcelInstance) {
+                    Swal.fire('Error', 'Tabel Excel tidak aktif.', 'error');
+                    btn.disabled = false; btn.innerHTML = '<i class="fas fa-layer-group me-2"></i> Simpan Semua Baris';
+                    return;
+                }
+
+                let excelData = jexcelInstance.getData();
+                
+                excelData.forEach(row => {
+                    let isRowEmpty = true;
+                    row.forEach((cell, idx) => {
+                        if (!cetakBiruAktif[idx].formula && cell !== '' && cell !== null && cell !== false) {
+                            isRowEmpty = false;
+                        }
+                    });
+
+                    if (!isRowEmpty) {
+                        let cleanRow = row.map((cell, idx) => {
+                            if (cetakBiruAktif[idx].tipe === 'checkbox') return cell ? 'Ya' : 'Tidak';
+                            return cell;
+                        });
+
+                        payloadList.push({
+                            unit_kerja: unitKerja, id_indikator: idIndikator, bulan: bulan, tahun: tahun, 
+                            petugas_input: session.nama_lengkap, data_input: cleanRow
+                        });
+                    }
+                });
+
+                if (payloadList.length === 0) {
+                    Swal.fire('Tabel Kosong', 'Tidak ada baris data yang diisi.', 'info');
+                    btn.disabled = false; btn.innerHTML = '<i class="fas fa-layer-group me-2"></i> Simpan Semua Baris';
+                    return;
+                }
+            }
+
+            try {
+                const { error } = await supabaseClient.from('data_mutu_harian').insert(payloadList);
+                if (error) throw error;
+
+                if (mode === 'form') { document.getElementById('formDinamisContainer').reset(); kalkulasiOtomatis(); }
+                else { renderExcelTabel(); } 
+
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: payloadList.length + ' Data tersimpan', showConfirmButton: false, timer: 2000 });
+                loadDataTabel();
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal!', 'Terjadi kesalahan jaringan saat menyimpan.', 'error');
+            } finally {
+                if(mode === 'form') btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Satu Baris';
+                else btn.innerHTML = '<i class="fas fa-layer-group me-2"></i> Simpan Semua Baris';
+                btn.disabled = false;
+            }
+        };
+
+        // ==========================================
+        // 4. READ & DELETE ARSIP
+        // ==========================================
+        async function loadDataTabel() {
+            const unitKerja = document.getElementById('sel_unit').value;
+            const bulan = document.getElementById('sel_bulan').value;
+            const tahun = document.getElementById('sel_tahun').value;
+            const idIndikator = document.getElementById('sel_indikator').value;
+            const tbody = document.getElementById('tbodyTransaksi');
+
+            if(!unitKerja || !idIndikator) return;
+            document.getElementById('lbl_bulan_tahun').innerText = `- Bulan ${bulan}/${tahun}`;
+            document.getElementById('loadingTabel').classList.remove('d-none');
+            tbody.innerHTML = '';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('data_mutu_harian').select('id, data_input, created_at')
+                    .eq('unit_kerja', unitKerja).eq('id_indikator', idIndikator)
+                    .eq('bulan', bulan).eq('tahun', tahun)
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                if(data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="100%" class="text-center py-4 text-muted">Belum ada data di bulan ini.</td></tr>';
+                } else {
+                    data.forEach(row => {
+                        let htmlBaris = `<tr><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="hapusDataTransaksi('${row.id}')"><i class="fas fa-times"></i></button></td>`;
+                        if(Array.isArray(row.data_input)) { row.data_input.forEach(val => { htmlBaris += `<td>${val || '-'}</td>`; }); }
+                        htmlBaris += '</tr>'; tbody.innerHTML += htmlBaris;
+                    });
+                }
+            } catch (err) { tbody.innerHTML = '<tr><td colspan="100%" class="text-center py-4 text-danger">Gagal menarik data.</td></tr>'; } 
+            finally { document.getElementById('loadingTabel').classList.add('d-none'); }
         }
 
-        window.simpanDataMentah = function(isFinal) {
-            if (!hot) return;
-
-            let barisTidakLengkap = [];
-            let rowCount = hot.countRows();
-            let indexKolomStatus = hot.getSettings().columns.length - 1; 
-            let pluginHidden = hot.getPlugin('hiddenRows');
-
-            for (let i = 0; i < rowCount; i++) {
-                if (pluginHidden && pluginHidden.isHidden(i)) continue;
-
-                let rowData = hot.getDataAtRow(i);
-                let isRowEmpty = true;
-                
-                for (let j = 0; j < rowData.length; j++) {
-                    let isReadOnly = hot.getSettings().columns[j].readOnly;
-                    if (!isReadOnly && j !== indexKolomStatus && rowData[j] !== null && rowData[j] !== "") {
-                        isRowEmpty = false;
-                        break;
-                    }
+        window.hapusDataTransaksi = function(idTransaksi) {
+            Swal.fire({ title: 'Hapus Data?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Ya, Hapus' })
+            .then(async (result) => {
+                if (result.isConfirmed) {
+                    await supabaseClient.from('data_mutu_harian').delete().eq('id', idTransaksi);
+                    loadDataTabel();
                 }
-                
-                if (!isRowEmpty) {
-                    if (dateColumnIndex !== -1) {
-                        let nilaiTanggal = rowData[dateColumnIndex];
-                        if (nilaiTanggal === null || nilaiTanggal === "" || nilaiTanggal === undefined) {
-                            barisTidakLengkap.push(i + 1);
-                        }
-                    }
-                }
-            }
-
-            if (barisTidakLengkap.length > 0) {
-                Swal.fire({
-                    title: 'Tanggal Belum Diisi!',
-                    html: `Ada data yang diinput tapi <b>Kolom Tanggal</b>-nya masih kosong pada Baris ke-<b>${barisTidakLengkap.join(', ')}</b>.<br><br>Mohon lengkapi tanggalnya terlebih dahulu.`,
-                    icon: 'warning',
-                    confirmButtonColor: '#0dcaf0',
-                    confirmButtonText: '<i class="fas fa-edit me-1"></i> Baik, Saya Lengkapi'
-                });
-                return; 
-            }
-
-            if (isFinal) {
-                let bulanAktifText = isDailyForm ? document.getElementById('tabBulan_' + activeMonthFilter).innerText : "Tabel Ini";
-                let htmlPesan = isDailyForm 
-                    ? `Anda akan mengunci seluruh data pada bulan <strong class='text-danger'>${bulanAktifText}</strong>.<br><br>Data yang berstatus Final tidak dapat diubah lagi.`
-                    : `Anda akan mengunci seluruh data di tabel ini secara permanen.<br><br>Data yang berstatus Final tidak dapat diubah lagi.`;
-
-                Swal.fire({
-                    title: 'Kunci Data Permanen?', html: htmlPesan, icon: 'warning', showCancelButton: true,
-                    confirmButtonColor: '#dc3545', cancelButtonColor: '#6c757d', confirmButtonText: 'Ya, Kunci Permanen!', cancelButtonText: 'Batal'
-                }).then((result) => { if (result.isConfirmed) eksekusiSimpan(true); });
-            } else {
-                eksekusiSimpan(false);
-            }
-        };
-
-        function eksekusiSimpan(isFinal) {
-            const btnDraft = document.getElementById('btnSimpanDraft'); const btnFinal = document.getElementById('btnSimpanPermanen');
-            const targetBtn = isFinal ? btnFinal : btnDraft;
-
-            btnDraft.disabled = true; btnFinal.disabled = true;
-            targetBtn.innerHTML = `<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...`;
-
-            let rawData = hot.getData(); 
-            const columnsConfig = hot.getSettings().columns; 
-            const statusColIndex = rawData[0].length - 1; 
-            let dataKosong = true;
-
-            const dataToSave = rawData.filter((row, rIndex) => {
-                let hasValidInput = false;
-                for (let i = 0; i < row.length; i++) {
-                    let isStatusCol = (i === row.length - 1);  
-                    let isReadOnly = columnsConfig[i].readOnly; 
-                    let cellValue = row[i];
-                    if (!isReadOnly && !isStatusCol && cellValue !== null && cellValue !== "") { hasValidInput = true; break; }
-                }
-                
-                if (hasValidInput) {
-                    dataKosong = false;
-                    if (isFinal) {
-                        let lockThisRow = false;
-                        if (isDailyForm && dateColumnIndex !== -1) {
-                            let dateVal = row[dateColumnIndex];
-                            if (dateVal) {
-                                let parsedDate = parseIndoDate(dateVal);
-                                if (parsedDate.isValid() && (parsedDate.month() + 1) === activeMonthFilter) {
-                                    lockThisRow = true;
-                                }
-                            }
-                        } else {
-                            lockThisRow = true; 
-                        }
-
-                        if (lockThisRow && row[statusColIndex] !== 'Final') row[statusColIndex] = 'Final';
-                    }
-                    return true;
-                }
-                return false;
             });
-
-            if (dataKosong) {
-                Swal.fire({ icon: 'warning', title: 'Data Kosong', text: 'Tidak ada data observasi yang valid untuk disimpan.' });
-                resetButtons(); return;
-            }
-
-            const headers = hot.getColHeader(); 
-            fetch(scriptURL, { 
-                method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-                body: JSON.stringify({ action: 'save_raw_data', formType: activeFormType, unit: userUnit, data: [headers, ...dataToSave] }) 
-            })
-            .then(res => res.json())
-            .then(res => {
-                if(res.status === 'success') { 
-                    Swal.fire({ title: 'Berhasil!', text: isFinal ? 'Data berhasil dikunci secara permanen.' : 'Draft data berhasil disimpan.', icon: 'success', timer: 1500, showConfirmButton: false })
-                    .then(() => { window.location.reload(); });
-                } else { 
-                    Swal.fire('Gagal!', res.message, 'error'); resetButtons();
-                }
-            })
-            .catch(err => { Swal.fire('Error Jaringan', 'Gagal menyambung ke server.', 'error'); resetButtons(); });
-
-            function resetButtons() {
-                btnDraft.innerHTML = `<i class="fas fa-save me-2"></i> Simpan Draft`; btnFinal.innerHTML = `<i class="fas fa-lock me-2"></i> Simpan Permanen`;
-                btnDraft.disabled = false; btnFinal.disabled = false;
-            }
-        };
-        
-        window.scrollToEmptyRow = function() {
-            if (!hot) return;
-            const rowCount = hot.countRows(); let targetRow = rowCount - 1;
-            for (let r = 0; r < rowCount; r++) { if (hot.isEmptyRow(r)) { targetRow = r; break; } }
-            hot.selectCell(targetRow, 0); hot.scrollViewportTo(targetRow, 0);
-        };
+        }
     </script>
 </body>
 </html>
