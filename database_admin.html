@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Admin & Tutup Tahun - SIM PMKP</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- LIBRARY EXCEL (SheetJS) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+    <style>
+        body { background-color: #f0f2f5; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 15px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff;}
+        .zone-red { border: 2px dashed #dc3545; background-color: #fff5f5; }
+        .loader-ai { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4" style="max-width: 1000px;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-server text-primary me-2"></i> Pusat Kontrol Database</h3>
+                <p class="text-muted mb-0">Manajemen pencadangan data (Backup) dan pembersihan akhir tahun (Purge).</p>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- PANEL BACKUP MANUAL (EXCEL) -->
+            <div class="col-md-6">
+                <div class="card-custom p-4 h-100 border-top border-4 border-success">
+                    <h5 class="fw-bold text-success mb-3"><i class="fas fa-file-excel me-2"></i> Ekspor Data Raw (Excel)</h5>
+                    <p class="text-muted" style="font-size: 0.9rem;">Unduh seluruh data mentah transaksi harian dari Supabase ke komputer Anda dalam format Microsoft Excel (.xlsx) yang rapi.</p>
+                    
+                    <div class="mb-3 mt-4">
+                        <label class="fw-bold mb-1">Pilih Tabel Database</label>
+                        <select id="export_table" class="form-select border-success fw-bold text-success">
+                            <option value="data_mutu_harian">Data Mutu Harian (N & D)</option>
+                            <option value="data_insiden">Data Insiden Keselamatan (IKP)</option>
+                            <option value="data_risiko">Data Register Risiko</option>
+                            <option value="data_pdsa">Data Proyek PDSA</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn btn-success w-100 fw-bold py-2 shadow-sm" onclick="exportDataExcel()">
+                        <i class="fas fa-file-excel me-2"></i> Download Backup MS Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- PANEL ZONA MERAH (TUTUP TAHUN & PURGE) -->
+            <div class="col-md-6">
+                <div class="card-custom p-4 h-100 zone-red">
+                    <h5 class="fw-bold text-danger mb-3"><i class="fas fa-radiation me-2"></i> Zona Berbahaya: Tutup Tahun</h5>
+                    <p class="text-muted" style="font-size: 0.85rem; text-align: justify;">
+                        Sistem akan <b>menghitung ulang seluruh capaian matang</b> di tahun yang dipilih, membekukannya (Freeze) ke tabel Arsip, lalu <b>MENGHAPUS PERMANEN</b> data mentah dari server agar kapasitas Supabase lega.
+                    </p>
+                    
+                    <div class="mb-3 mt-4">
+                        <label class="fw-bold mb-1 text-danger">Pilih Tahun Untuk Dihapus (Purge)</label>
+                        <select id="purge_tahun" class="form-select border-danger fw-bold text-danger">
+                            <!-- Diisi via JS -->
+                        </select>
+                    </div>
+                    
+                    <button class="btn btn-danger w-100 fw-bold py-2 shadow-sm" id="btnPurge" onclick="eksekusiTutupTahun()">
+                        <i class="fas fa-skull-crossbones me-2"></i> Eksekusi Tutup Tahun (Purge Data)
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- TERMINAL LOG -->
+        <div class="bg-dark p-3 rounded mt-4 shadow" id="terminalBox" style="display: none;">
+            <h6 class="text-white fw-bold mb-2"><i class="fas fa-terminal text-warning me-2"></i> Proses Engine Berjalan:</h6>
+            <div id="terminalLog" class="text-success font-monospace" style="font-size: 0.85rem; height: 180px; overflow-y: auto;"></div>
+        </div>
+
+    </div>
+
+    <!-- LIBRARY & SCRIPT -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        if (sessionMutu.role !== 'Komite Mutu') {
+            Swal.fire('Akses Ditolak', 'Halaman ini khusus Administrator Komite Mutu.', 'error').then(() => window.location.href = 'index.html');
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            if (!supabaseClient) return;
+            const currentYear = new Date().getFullYear();
+            const selTahun = document.getElementById('purge_tahun');
+            selTahun.add(new Option(`Tahun Lalu (${currentYear - 1})`, currentYear - 1));
+            selTahun.add(new Option(`Tahun Ini (${currentYear}) - TIDAK DISARANKAN`, currentYear));
+            selTahun.add(new Option(`Dua Tahun Lalu (${currentYear - 2})`, currentYear - 2));
+        });
+
+        function logTerminal(pesan) {
+            const term = document.getElementById('terminalLog');
+            const time = new Date().toLocaleTimeString('id-ID');
+            term.innerHTML += "[" + time + "] > " + pesan + "<br>";
+            term.scrollTop = term.scrollHeight;
+        }
+
+        // ==========================================
+        // 1. FITUR EXPORT EXCEL BACKUP (.xlsx)
+        // ==========================================
+        window.exportDataExcel = async function() {
+            const tabel = document.getElementById('export_table').value;
+            Swal.fire({ title: 'Menyiapkan Excel', text: 'Mengekstrak & Merapikan data dari Supabase...', icon: 'info', showConfirmButton: false });
+            
+            try {
+                // Menarik data tanpa batas baris (unlimited)
+                const { data, error } = await supabaseClient.from(tabel).select('*');
+                if (error) throw error;
+                if (!data || data.length === 0) { Swal.fire('Kosong', 'Tidak ada data di tabel ini.', 'info'); return; }
+
+                // Jika data mengandung JSONB/Array (seperti di data_mutu_harian), kita ratakan (flatten) agar mudah dibaca di Excel
+                let formattedData = data.map(item => {
+                    let newItem = { ...item };
+                    if(newItem.data_input && Array.isArray(newItem.data_input)) {
+                        newItem.data_input.forEach((val, idx) => {
+                            newItem[`Kolom_Form_${idx+1}`] = val;
+                        });
+                        delete newItem.data_input; // Hapus array aslinya
+                    }
+                    if(newItem.plan_data && typeof newItem.plan_data === 'object') {
+                        newItem.analisis_masalah = newItem.plan_data.masalah || '';
+                        delete newItem.plan_data;
+                    }
+                    return newItem;
+                });
+
+                // Membuat Workbook Excel Menggunakan SheetJS
+                const worksheet = XLSX.utils.json_to_sheet(formattedData);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Data_Backup");
+
+                // Merapikan lebar kolom otomatis
+                const colWidths = Object.keys(formattedData[0]).map(key => ({ wch: Math.max(key.length, 15) }));
+                worksheet['!cols'] = colWidths;
+
+                // Mengunduh File
+                XLSX.writeFile(workbook, `Backup_${tabel}_${new Date().toISOString().slice(0,10)}.xlsx`);
+                Swal.close();
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal', 'Terjadi kesalahan saat mengunduh Excel.', 'error');
+            }
+        };
+
+        // ==========================================
+        // 2. FITUR EKSEKUSI TUTUP TAHUN & PURGE
+        // ==========================================
+        window.eksekusiTutupTahun = async function() {
+            const tahun = parseInt(document.getElementById('purge_tahun').value);
+            
+            Swal.fire({
+                title: 'PERINGATAN KERAS!',
+                html: `Anda akan melakukan Proses Tutup Tahun untuk <b>${tahun}</b>.<br><br>Sistem akan merekam angka matang lalu <b>MENGHAPUS PERMANEN</b> seluruh data mentah di tabel data_mutu_harian.<br><br>Pastikan Anda sudah men-download Backup Excel terlebih dahulu! Lanjutkan?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'SAYA YAKIN, EKSEKUSI!',
+                cancelButtonText: 'Batalkan'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    jalankanEnginePurge(tahun);
+                }
+            });
+        };
+
+        async function jalankanEnginePurge(tahun) {
+            const btn = document.getElementById('btnPurge');
+            btn.disabled = true; btn.innerHTML = '<div class="loader-ai me-2"></div> Memproses...';
+            document.getElementById('terminalBox').style.display = 'block';
+            document.getElementById('terminalLog').innerHTML = '';
+
+            try {
+                logTerminal(`=== MEMULAI SIKLUS TUTUP TAHUN ${tahun} ===`);
+                
+                logTerminal("1. Memuat Master Kamus Indikator...");
+                const resInd = await supabaseClient.from('master_indikator').select('*');
+                const masterIndikator = resInd.data || [];
+                
+                logTerminal("2. Memuat Struktur Parameter Engine (Formulir)...");
+                const resForm = await supabaseClient.from('setup_formulir').select('*');
+                const setupForm = resForm.data || [];
+
+                logTerminal(`3. Menarik seluruh raw data transaksi tahun ${tahun}...`);
+                const resMutu = await supabaseClient.from('data_mutu_harian').select('*').eq('tahun', tahun);
+                const rawDataMutu = resMutu.data || [];
+
+                if (rawDataMutu.length === 0) {
+                    logTerminal("Peringatan: Tidak ditemukan data mentah apapun di tahun ini.");
+                    throw new Error("Tidak ada data untuk diproses/dihapus.");
+                }
+
+                logTerminal(`Total data mentah ditarik: ${rawDataMutu.length} baris.`);
+
+                logTerminal("4. Mesin Agregator berjalan: Merekapitulasi angka Capaian, Numerator, Denominator per bulan...");
+                let dataArsip = [];
+
+                masterIndikator.forEach(profil => {
+                    let idForm = profil.id_form;
+                    let dataTransaksiFormIni = rawDataMutu.filter(d => d.id_indikator === idForm);
+                    if (dataTransaksiFormIni.length === 0) return;
+
+                    let sf = setupForm.find(f => f.id_form === idForm);
+                    if(!sf) return;
+
+                    let idxNum = -1, idxDen = -1, idxKepatuhan = -1, idxCapaian = -1;
+                    sf.kolom.forEach((k, idx) => {
+                        let j = k.judul.toLowerCase();
+                        if (j === 'numerator' || j === 'n' || j.includes('numer')) idxNum = idx;
+                        else if (j === 'denominator' || j === 'd' || j.includes('denom')) idxDen = idx;
+                        else if (j.includes('kepatuhan') || j.includes('sesuai') || j.includes('patuh')) idxKepatuhan = idx;
+                        else if (j.includes('capaian') || j.includes('hasil') || j.includes('waktu')) idxCapaian = idx;
+                    });
+
+                    let isPercentage = (profil.satuan || "").includes('%');
+                    let target = parseFloat(profil.target) || 0;
+                    let arah = (profil.arah_target || "Positif").toLowerCase();
+
+                    for (let bulan = 1; bulan <= 12; bulan++) {
+                        let dataBulanIni = dataTransaksiFormIni.filter(d => d.bulan === bulan);
+                        if (dataBulanIni.length === 0) continue;
+
+                        let valNum = 0; let valDen = 0; let sumC = 0; let countC = 0;
+
+                        dataBulanIni.forEach(trans => {
+                            let d = trans.data_input;
+                            if (idxNum !== -1 && idxDen !== -1) {
+                                valNum += parseFloat(d[idxNum]) || 0;
+                                valDen += parseFloat(d[idxDen]) || 0;
+                            } else if (idxKepatuhan !== -1) {
+                                valDen += 1;
+                                let val = (d[idxKepatuhan]||"").toString().toLowerCase();
+                                if(val.includes('ya') || val === '1') valNum += 1;
+                            } else {
+                                valDen += 1;
+                                if (idxCapaian !== -1) { sumC += parseFloat(d[idxCapaian]) || 0; countC += 1; }
+                            }
+                        });
+
+                        let avgCapai = 0;
+                        if(valDen > 0) { avgCapai = valNum / valDen; if(isPercentage) avgCapai *= 100; } 
+                        else if(countC > 0) { avgCapai = sumC / countC; }
+                        
+                        avgCapai = Math.round(avgCapai * 100) / 100;
+
+                        let isTercapai = false;
+                        if (arah.includes("kecil") || arah.includes("negatif")) { isTercapai = avgCapai <= target; } 
+                        else { isTercapai = avgCapai >= target; }
+
+                        dataArsip.push({
+                            tahun: tahun,
+                            bulan: bulan,
+                            id_indikator: profil.id_indikator,
+                            judul_indikator: profil.judul_indikator,
+                            kategori_indikator: profil.kategori_indikator,
+                            unit_pelaksana: profil.unit_pelaksana,
+                            numerator: valNum,
+                            denominator: valDen,
+                            capaian: avgCapai,
+                            target: target,
+                            satuan: profil.satuan,
+                            is_tercapai: isTercapai
+                        });
+                    }
+                });
+
+                logTerminal(`Selesai di-compile. Ditemukan ${dataArsip.length} ringkasan bulan yang siap dibekukan.`);
+
+                logTerminal("5. Memasukkan (Freeze) data ringkasan ke tabel arsip_capaian_mutu di Supabase...");
+                if (dataArsip.length > 0) {
+                    const { error: errInsert } = await supabaseClient.from('arsip_capaian_mutu').insert(dataArsip);
+                    if (errInsert) throw errInsert;
+                }
+
+                logTerminal("6. PROSES PURGE DIMULAI. Menghapus data mentah dari data_mutu_harian...");
+                const { error: errPurge } = await supabaseClient.from('data_mutu_harian').delete().eq('tahun', tahun);
+                if (errPurge) throw errPurge;
+
+                logTerminal("=== SIKLUS TUTUP TAHUN SELESAI DENGAN SUKSES ===");
+                Swal.fire('Tutup Tahun Selesai!', `Seluruh data tahun ${tahun} telah dibekukan dan raw data berhasil dibersihkan dari server.`, 'success');
+
+            } catch (err) {
+                console.error(err);
+                logTerminal("❌ ERROR FATAL: " + (err.message || 'Gagal memproses tutup tahun.'));
+                Swal.fire('Proses Terhenti', 'Terjadi kesalahan sistem. Cek terminal log untuk detail.', 'error');
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-skull-crossbones me-2"></i> Eksekusi Tutup Tahun (Purge Data)';
+            }
+        }
+    </script>
+</body>
+</html>

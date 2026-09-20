@@ -11,13 +11,30 @@
     
     <style>
         body { background-color: #f0f2f5; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        
+        /* CARD ENSIKLOPEDIA */
         .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff; transition: transform 0.2s; }
         .card-custom:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,.1); }
         .badge-tipe { font-size: 0.8rem; padding: 6px 12px; border-radius: 20px; }
+        .badge-arsip { font-size: 0.8rem; padding: 6px 12px; border-radius: 20px; background-color: #6c757d; color: white; margin-left: 5px;}
         .math-box { background: #f8f9fa; border-left: 4px solid #0d6efd; padding: 15px; border-radius: 6px; font-family: 'Courier New', Courier, monospace; font-weight: bold; }
+        
+        /* MODAL BUILDER */
         .form-label { font-weight: bold; color: #34495e; font-size: 0.85rem; margin-bottom: 0.3rem;}
         .nav-tabs .nav-link { font-weight: bold; color: #6c757d; }
         .nav-tabs .nav-link.active { color: #6f42c1; border-bottom: 3px solid #6f42c1; }
+        
+        .builder-box { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px; margin-bottom: 15px; }
+        .builder-box-header { font-weight: bold; margin-bottom: 10px; font-size: 0.9rem; text-transform: uppercase; }
+        
+        /* STATE ARSIP */
+        .card-arsip { opacity: 0.65; background-color: #f8f9fa; border-top: 4px solid #6c757d !important; }
+        .card-arsip:hover { opacity: 1; }
+
+        /* DETAIL TABLE STYLE */
+        .table-detail td { padding: 8px 12px; border-bottom: 1px dashed #e9ecef; }
+        .table-detail tr:last-child td { border-bottom: none; }
+        .table-detail td:first-child { width: 30%; color: #6c757d; font-weight: 500; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -28,7 +45,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
                 <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-book-medical text-primary me-2"></i> Kamus Profil Indikator</h3>
-                <p class="text-muted mb-0">Ensiklopedia definisi operasional, rumus, metodologi, dan target mutu RS.</p>
+                <p class="text-muted mb-0">Ensiklopedia digital definisi operasional, target mutu RS, dan metodologi.</p>
             </div>
             <button class="btn btn-primary fw-bold shadow-sm px-4 rounded-pill d-none" id="btnTambahIndikator" onclick="bukaModalTambah()">
                 <i class="fas fa-plus-circle me-2"></i> Tambah Profil Baru
@@ -45,23 +62,40 @@
             <div class="col-md-4">
                 <select class="form-select form-select-lg shadow-sm fw-bold text-secondary" id="filterKategori" onchange="filterKamus()">
                     <option value="">-- Semua Kategori --</option>
-                    <option value="INM">Indikator Nasional Mutu (INM)</option>
-                    <option value="IMP-RS">Indikator Mutu Prioritas RS (IMP-RS)</option>
-                    <option value="IMP-Unit">Indikator Mutu Prioritas Unit (IMP-Unit)</option>
+                    <option value="Indikator Mutu Nasional">Indikator Nasional Mutu (INM)</option>
+                    <option value="Indikator Mutu Prioritas RS">Indikator Mutu Prioritas RS (IMP-RS)</option>
+                    <option value="Indikator Mutu Prioritas Unit">Indikator Mutu Prioritas Unit (IMP-Unit)</option>
                 </select>
             </div>
         </div>
 
         <div id="loadingMessage" class="text-center py-5">
             <i class="fas fa-circle-notch fa-spin fa-3x text-primary mb-3"></i>
-            <h6 class="text-muted">Membuka lembaran kamus dari Supabase...</h6>
+            <h6 class="text-muted">Membuka lembaran kamus dari database...</h6>
         </div>
 
         <div class="row g-4 d-none" id="wadahKamus"></div>
-
     </div>
 
-    <!-- MODAL FORM INDIKATOR KOMPREHENSIF -->
+    <!-- MODAL LIHAT DETAIL (READ-ONLY UNTUK SEMUA USER) -->
+    <div class="modal fade" id="modalDetailIndikator" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header text-white" style="background: linear-gradient(135deg, #198754 0%, #146c43 100%);">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-info-circle me-2 text-warning"></i> Detail Profil Indikator</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-light p-4" id="detailBody">
+                    <!-- Konten Detail Dirender via JS -->
+                </div>
+                <div class="modal-footer bg-white border-top p-3">
+                    <button type="button" class="btn btn-secondary px-5 rounded-pill fw-bold" data-bs-dismiss="modal">Tutup Detail</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL FORM EDIT PROFIL & VISUAL BUILDER (HANYA ADMIN) -->
     <div class="modal fade" id="modalIndikator" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg">
@@ -72,44 +106,41 @@
                 <div class="modal-body bg-light p-0">
                     <form id="formIndikator">
                         <input type="hidden" id="mode_form">
+                        <input type="hidden" id="inp_id_indikator_uuid"> 
                         
-                        <!-- TAB NAVIGATION -->
                         <ul class="nav nav-tabs bg-white px-4 pt-3 sticky-top shadow-sm" id="profilTabs" role="tablist" style="z-index: 10;">
-                            <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-dasar" type="button" role="tab">1. Profil Dasar</button></li>
-                            <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pengukuran" type="button" role="tab">2. Pengukuran & Target</button></li>
-                            <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-metodologi" type="button" role="tab">3. Metodologi Data</button></li>
-                            <li class="nav-item" role="presentation"><button class="nav-link text-danger" data-bs-toggle="tab" data-bs-target="#tab-builder" type="button" role="tab"><i class="fas fa-cogs me-1"></i> 4. Builder Engine</button></li>
+                            <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-dasar" type="button" role="tab">1. Profil Dasar</button></li>
+                            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-pengukuran" type="button" role="tab">2. Pengukuran & Target</button></li>
+                            <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-metodologi" type="button" role="tab">3. Metodologi Data</button></li>
+                            <li class="nav-item"><button class="nav-link text-danger" data-bs-toggle="tab" data-bs-target="#tab-builder" type="button" role="tab"><i class="fas fa-cogs me-1"></i> 4. Builder Engine</button></li>
                         </ul>
 
                         <div class="tab-content p-4" id="profilTabsContent">
-                            
                             <!-- TAB 1: PROFIL DASAR -->
                             <div class="tab-pane fade show active" id="tab-dasar" role="tabpanel">
                                 <div class="row g-3 mb-3">
                                     <div class="col-md-4">
                                         <label class="form-label text-primary"><i class="fas fa-link me-1"></i> Hubungkan ID Form <span class="text-danger">*</span></label>
-                                        <!-- PERUBAHAN: Input Teks diubah menjadi Dropdown -->
-                                        <select class="form-select fw-bold text-primary border-primary" id="inp_id_indikator" required>
+                                        <select class="form-select fw-bold text-primary border-primary" id="inp_id_form" required onchange="renderVisualBuilder()">
                                             <option value="">-- Memuat Data Form Builder... --</option>
                                         </select>
-                                        <small class="text-muted" style="font-size: 0.75rem;">Pilih form yang sudah dirakit di Menu Form Builder.</small>
                                     </div>
                                     <div class="col-md-8">
                                         <label class="form-label">Judul Indikator / Panduan <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control fw-bold text-dark" id="inp_judul_indikator" placeholder="Judul lengkap indikator..." required>
+                                        <input type="text" class="form-control fw-bold text-dark" id="inp_judul_indikator" required>
                                     </div>
                                 </div>
                                 <div class="row g-3 mb-3">
                                     <div class="col-md-4">
                                         <label class="form-label">Kategori Indikator <span class="text-danger">*</span></label>
                                         <select class="form-select" id="inp_kategori_indikator" required>
-                                            <option value="INM">INM (Nasional)</option>
-                                            <option value="IMP-RS">IMP-RS (Prioritas RS)</option>
-                                            <option value="IMP-Unit">IMP-Unit (Prioritas Unit)</option>
+                                            <option value="Indikator Mutu Nasional">INM (Nasional)</option>
+                                            <option value="Indikator Mutu Prioritas RS">IMP-RS (Prioritas RS)</option>
+                                            <option value="Indikator Mutu Prioritas Unit">IMP-Unit (Prioritas Unit)</option>
                                         </select>
                                     </div>
                                     <div class="col-md-8">
-                                        <label class="form-label">Unit Pelaksana (Penanggung Jawab) <span class="text-danger">*</span></label>
+                                        <label class="form-label">Unit Pelaksana <span class="text-danger">*</span></label>
                                         <select class="form-select" id="inp_unit_pelaksana" required>
                                             <option value="">-- Sedang memuat unit... --</option>
                                         </select>
@@ -118,16 +149,16 @@
                                 <div class="row g-3 mb-3">
                                     <div class="col-md-6">
                                         <label class="form-label">Dimensi Mutu</label>
-                                        <input type="text" class="form-control" id="inp_dimensi_mutu" placeholder="Efektivitas, Keselamatan, dll.">
+                                        <input type="text" class="form-control" id="inp_dimensi_mutu">
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Tujuan</label>
-                                        <input type="text" class="form-control" id="inp_tujuan" placeholder="Mengapa ini diukur?">
+                                        <input type="text" class="form-control" id="inp_tujuan">
                                     </div>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Dasar Pemikiran</label>
-                                    <textarea class="form-control" id="inp_dasar_pemikiran" rows="2" placeholder="Regulasi atau literatur yang mendasari..."></textarea>
+                                    <textarea class="form-control" id="inp_dasar_pemikiran" rows="2"></textarea>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label">Jenis Indikator (Bisa lebih dari 1)</label>
@@ -142,144 +173,95 @@
 
                             <!-- TAB 2: PENGUKURAN & TARGET -->
                             <div class="tab-pane fade" id="tab-pengukuran" role="tabpanel">
-                                <div class="mb-3">
-                                    <label class="form-label">Definisi Operasional</label>
-                                    <textarea class="form-control" id="inp_definisi_operasional" rows="3" placeholder="Penjelasan detail indikator..."></textarea>
-                                </div>
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label text-success">Kriteria Inklusi</label>
-                                        <textarea class="form-control border-success" id="inp_kriteria_inklusi" rows="2"></textarea>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label text-danger">Kriteria Eksklusi</label>
-                                        <textarea class="form-control border-danger" id="inp_kriteria_eksklusi" rows="2"></textarea>
-                                    </div>
-                                </div>
-                                <div class="row g-3 mb-3 border-top pt-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label text-primary">Numerator (Pembilang)</label>
-                                        <textarea class="form-control border-primary" id="inp_num_teks" rows="2"></textarea>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label text-warning text-darken">Denominator (Penyebut)</label>
-                                        <textarea class="form-control border-warning" id="inp_den_teks" rows="2"></textarea>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Formula / Rumus Kalkulasi</label>
-                                    <input type="text" class="form-control font-monospace" id="inp_rumus_kalkulasi" placeholder="(Numerator / Denominator) x 100%">
-                                </div>
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Satuan Ukur</label>
-                                        <select class="form-select" id="inp_satuan">
-                                            <option value="%">Persen (%)</option>
-                                            <option value="‰">Permil (‰)</option>
-                                            <option value="Menit">Menit</option>
-                                            <option value="Jam">Jam</option>
-                                            <option value="Hari">Hari</option>
-                                            <option value="">Tidak ada satuan (Angka Mutlak)</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Nominal Target <span class="text-danger">*</span></label>
-                                        <input type="number" step="0.01" class="form-control fw-bold" id="inp_target" required>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Arah Target</label>
-                                        <select class="form-select" id="inp_arah_target">
-                                            <option value="≥ (Makin besar makin baik)">≥ (Makin besar makin baik)</option>
-                                            <option value="≤ (Makin kecil makin baik)">≤ (Makin kecil makin baik)</option>
-                                            <option value="= (Sama Dengan)">= (Sama Dengan)</option>
-                                        </select>
-                                    </div>
-                                </div>
+                                <div class="mb-3"><label class="form-label">Definisi Operasional</label><textarea class="form-control" id="inp_definisi_operasional" rows="3"></textarea></div>
+                                <div class="row g-3 mb-3"><div class="col-md-6"><label class="form-label text-success">Kriteria Inklusi</label><textarea class="form-control border-success" id="inp_kriteria_inklusi" rows="2"></textarea></div><div class="col-md-6"><label class="form-label text-danger">Kriteria Eksklusi</label><textarea class="form-control border-danger" id="inp_kriteria_eksklusi" rows="2"></textarea></div></div>
+                                <div class="row g-3 mb-3 border-top pt-3"><div class="col-md-6"><label class="form-label text-primary">Numerator (Pembilang)</label><textarea class="form-control border-primary" id="inp_num_teks" rows="2"></textarea></div><div class="col-md-6"><label class="form-label text-warning text-darken">Denominator (Penyebut)</label><textarea class="form-control border-warning" id="inp_den_teks" rows="2"></textarea></div></div>
+                                <div class="mb-3"><label class="form-label">Formula / Rumus Kalkulasi</label><input type="text" class="form-control font-monospace" id="inp_rumus_kalkulasi"></div>
+                                <div class="row g-3"><div class="col-md-4"><label class="form-label">Satuan Ukur</label><input type="text" class="form-control" id="inp_satuan"></div><div class="col-md-4"><label class="form-label">Nominal Target <span class="text-danger">*</span></label><input type="number" step="0.01" class="form-control fw-bold" id="inp_target" required></div><div class="col-md-4"><label class="form-label">Arah Target</label><select class="form-select" id="inp_arah_target"><option value="Positif">Positif (Makin besar makin baik)</option><option value="Negatif">Negatif (Makin kecil makin baik)</option></select></div></div>
                             </div>
 
-                            <!-- TAB 3: METODOLOGI DATA -->
+                            <!-- TAB 3: METODOLOGI -->
                             <div class="tab-pane fade" id="tab-metodologi" role="tabpanel">
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Cara Penilaian / Pengukuran</label>
-                                        <input type="text" class="form-control" id="inp_cara_penilaian" placeholder="Misal: Concurrent / Retrospektif">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Metode Pengumpulan Data</label>
-                                        <input type="text" class="form-control" id="inp_metode_pengumpulan" placeholder="Misal: Observasi, Rekam Medis">
-                                    </div>
-                                </div>
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Sumber Data</label>
-                                        <input type="text" class="form-control" id="inp_sumber_data" placeholder="Misal: SIMRS, Form Manual">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Instrumen Pengambilan Data</label>
-                                        <input type="text" class="form-control" id="inp_instrumen_pengambilan" placeholder="Misal: Kuesioner, Ceklist">
-                                    </div>
-                                </div>
-                                <div class="row g-3 mb-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Besar Sampel</label>
-                                        <input type="text" class="form-control" id="inp_besar_sampel" placeholder="Misal: Total Populasi / Rumus Slovin">
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Cara Pengambilan Sampel</label>
-                                        <input type="text" class="form-control" id="inp_cara_pengambilan_sampel" placeholder="Misal: Purposive Sampling, Random">
-                                    </div>
-                                </div>
-                                <div class="row g-3 mb-3 border-top pt-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label">Periode Pengumpulan Data</label>
-                                        <select class="form-select" id="inp_periode_pengumpulan">
-                                            <option value="Harian">Harian</option><option value="Bulanan" selected>Bulanan</option>
-                                            <option value="Triwulan">Triwulan</option><option value="Semester">Semester</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Periode Analisis Data</label>
-                                        <select class="form-select" id="inp_periode_analisis">
-                                            <option value="Bulanan">Bulanan</option><option value="Triwulan" selected>Triwulan</option>
-                                            <option value="Semester">Semester</option><option value="Tahunan">Tahunan</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Periode Pelaporan Data</label>
-                                        <select class="form-select" id="inp_periode_pelaporan">
-                                            <option value="Bulanan">Bulanan</option><option value="Triwulan" selected>Triwulan</option>
-                                            <option value="Semester">Semester</option><option value="Tahunan">Tahunan</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Penyajian Data</label>
-                                    <input type="text" class="form-control" id="inp_penyajian_data" placeholder="Misal: Run Chart, Bar Chart">
-                                </div>
+                                <div class="row g-3 mb-3"><div class="col-md-6"><label class="form-label">Cara Penilaian / Pengukuran</label><input type="text" class="form-control" id="inp_cara_penilaian"></div><div class="col-md-6"><label class="form-label">Metode Pengumpulan Data</label><input type="text" class="form-control" id="inp_metode_pengumpulan"></div></div>
+                                <div class="row g-3 mb-3"><div class="col-md-6"><label class="form-label">Sumber Data</label><input type="text" class="form-control" id="inp_sumber_data"></div><div class="col-md-6"><label class="form-label">Instrumen Pengambilan Data</label><input type="text" class="form-control" id="inp_instrumen_pengambilan"></div></div>
+                                <div class="row g-3 mb-3"><div class="col-md-6"><label class="form-label">Besar Sampel</label><input type="text" class="form-control" id="inp_besar_sampel"></div><div class="col-md-6"><label class="form-label">Cara Pengambilan Sampel</label><input type="text" class="form-control" id="inp_cara_pengambilan_sampel"></div></div>
+                                <div class="row g-3 mb-3 border-top pt-3"><div class="col-md-4"><label class="form-label">Periode Pengumpulan</label><input type="text" class="form-control" id="inp_periode_pengumpulan"></div><div class="col-md-4"><label class="form-label">Periode Analisis</label><input type="text" class="form-control" id="inp_periode_analisis"></div><div class="col-md-4"><label class="form-label">Periode Pelaporan</label><input type="text" class="form-control" id="inp_periode_pelaporan"></div></div>
+                                <div class="mb-3"><label class="form-label">Penyajian Data</label><input type="text" class="form-control" id="inp_penyajian_data"></div>
                             </div>
 
-                            <!-- TAB 4: BUILDER ENGINE (SISTEM) -->
+                            <!-- TAB 4: VISUAL BUILDER RUMUS ENGINE -->
                             <div class="tab-pane fade" id="tab-builder" role="tabpanel">
-                                <div class="alert alert-danger" style="font-size: 0.85rem;">
-                                    <i class="fas fa-exclamation-triangle me-2"></i> <b>Area Kritis:</b> Konfigurasi di bawah ini digunakan untuk merakit Dashboard Kalkulasi Otomatis.
+                                <div class="alert alert-info border-0 shadow-sm" style="font-size: 0.85rem;">
+                                    <i class="fas fa-magic me-2"></i> <b>Visual Engine:</b> Atur logika hitung untuk Dashboard Laporan Mutu. Sistem akan menyimpan logika ini dalam format JSON terstruktur (anti-error).
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label text-dark">Kolom Kriteria (Variabel Penentu)</label>
-                                    <input type="text" class="form-control border-secondary" id="inp_kolom_kriteria" placeholder="Contoh: Kepatuhan Jam Visite">
+                                
+                                <div id="builderWarning" class="alert alert-warning d-none" style="font-size: 0.85rem;">
+                                    <i class="fas fa-exclamation-circle me-1"></i> Silakan pilih <b>ID Form</b> di Tab Profil Dasar terlebih dahulu.
                                 </div>
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label text-primary">Template Numerator (Logic)</label>
-                                        <textarea class="form-control border-primary" id="inp_template_numerator" rows="3" placeholder="Contoh: countIf(Kepatuhan Jam Visite, 'Ya')"></textarea>
+                                
+                                <div id="builderInterface">
+                                    <div class="builder-box border-primary">
+                                        <div class="builder-box-header text-primary"><i class="fas fa-calculator me-2"></i> Pengaturan Numerator</div>
+                                        <div class="row g-2 align-items-end">
+                                            <div class="col-md-3">
+                                                <label class="form-label text-muted" style="font-size:0.75rem;">Metode Agregasi</label>
+                                                <select class="form-select border-primary" id="b_num_tipe" onchange="toggleBuilderFields('num')">
+                                                    <option value="COUNTALL">Hitung Semua Baris (Count)</option>
+                                                    <option value="COUNTIF" selected>Hitung Bersyarat (CountIf)</option>
+                                                    <option value="SUM">Jumlahkan (Sum)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4 b-num-col">
+                                                <label class="form-label text-muted" style="font-size:0.75rem;">Pilih Kolom Form</label>
+                                                <select class="form-select" id="b_num_kolom"></select>
+                                            </div>
+                                            <div class="col-md-2 b-num-op">
+                                                <label class="form-label text-muted" style="font-size:0.75rem;">Operator</label>
+                                                <select class="form-select text-center" id="b_num_op">
+                                                    <option value="==">Sama Dengan</option>
+                                                    <option value="!=">Tidak Sama</option>
+                                                    <option value="includes">Mengandung</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3 b-num-val">
+                                                <label class="form-label text-muted" style="font-size:0.75rem;">Nilai Kriteria</label>
+                                                <input type="text" class="form-control" id="b_num_nilai" placeholder="Contoh: Ya / Sesuai">
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label text-warning text-darken">Template Denominator (Logic)</label>
-                                        <textarea class="form-control border-warning" id="inp_template_denominator" rows="3" placeholder="Contoh: countAll()"></textarea>
+
+                                    <div class="builder-box border-warning">
+                                        <div class="builder-box-header text-warning text-darken"><i class="fas fa-users me-2"></i> Pengaturan Denominator</div>
+                                        <div class="row g-2 align-items-end">
+                                            <div class="col-md-3">
+                                                <label class="form-label text-muted" style="font-size:0.75rem;">Metode Agregasi</label>
+                                                <select class="form-select border-warning" id="b_den_tipe" onchange="toggleBuilderFields('den')">
+                                                    <option value="COUNTALL" selected>Hitung Semua Baris (Count)</option>
+                                                    <option value="COUNTIF">Hitung Bersyarat (CountIf)</option>
+                                                    <option value="SUM">Jumlahkan (Sum)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4 b-den-col d-none">
+                                                <label class="form-label text-muted" style="font-size:0.75rem;">Pilih Kolom Form</label>
+                                                <select class="form-select" id="b_den_kolom"></select>
+                                            </div>
+                                            <div class="col-md-2 b-den-op d-none">
+                                                <label class="form-label text-muted" style="font-size:0.75rem;">Operator</label>
+                                                <select class="form-select text-center" id="b_den_op">
+                                                    <option value="==">Sama Dengan</option>
+                                                    <option value="!=">Tidak Sama</option>
+                                                    <option value="includes">Mengandung</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3 b-den-val d-none">
+                                                <label class="form-label text-muted" style="font-size:0.75rem;">Nilai Kriteria</label>
+                                                <input type="text" class="form-control" id="b_den_nilai">
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-
-                        </div> <!-- End Tab Content -->
+                        </div>
 
                         <div class="bg-white border-top p-3 d-flex justify-content-end rounded-bottom">
                             <button type="button" class="btn btn-secondary me-2 px-4" data-bs-dismiss="modal">Batal</button>
@@ -293,10 +275,8 @@
         </div>
     </div>
 
-    <!-- 1. WAJIB: Library Supabase -->
+    <!-- LIBRARY & SCRIPT UTAMA -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- Skrip Utama -->
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
@@ -305,21 +285,19 @@
     <script>
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
         const isAdmin = (sessionMutu.role === "Komite Mutu");
+        
         let listIndikator = [];
+        let listFormulirMaster = []; 
 
-        document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", async function () {
             if (!supabaseClient) { Swal.fire('Error', 'Supabase belum dikonfigurasi', 'error'); return; }
+            if (isAdmin) document.getElementById('btnTambahIndikator').classList.remove('d-none');
             
-            if (isAdmin) {
-                document.getElementById('btnTambahIndikator').classList.remove('d-none');
-            }
-            
-            loadUnitDropdown();
-            loadFormBuilderDropdown(); // Panggil fungsi tarik Form Builder
+            await loadUnitDropdown();
+            await loadFormBuilderDropdown(); 
             loadKamus();
         });
 
-        // Load unit untuk Tab 1
         async function loadUnitDropdown() {
             try {
                 const { data } = await supabaseClient.from('master_unit').select('nama_unit').order('nama_unit');
@@ -328,42 +306,35 @@
                     sel.innerHTML = '<option value="Semua Unit (Hospital Wide)">Semua Unit (Hospital Wide)</option>';
                     data.forEach(u => sel.add(new Option(u.nama_unit, u.nama_unit)));
                 }
-            } catch(e) { console.error('Gagal memuat unit:', e); }
+            } catch(e) {}
         }
 
-        // Load ID Form dari setup_formulir ke Dropdown ID
         async function loadFormBuilderDropdown() {
             try {
-                const { data } = await supabaseClient.from('setup_formulir').select('id_form').order('id_form');
-                const sel = document.getElementById('inp_id_indikator');
+                const { data } = await supabaseClient.from('setup_formulir').select('id_form, kolom').order('id_form');
+                const sel = document.getElementById('inp_id_form');
                 if (data) {
+                    listFormulirMaster = data;
                     sel.innerHTML = '<option value="">-- Pilih Form Builder ID --</option>';
                     data.forEach(f => sel.add(new Option(f.id_form, f.id_form)));
                 }
-            } catch(e) { console.error('Gagal memuat form builder:', e); }
+            } catch(e) {}
         }
 
-        // READ
         async function loadKamus() {
             document.getElementById('loadingMessage').classList.remove('d-none');
             document.getElementById('wadahKamus').classList.add('d-none');
-            
             try {
-                const { data, error } = await supabaseClient
-                    .from('master_indikator')
-                    .select('*')
-                    .order('id_indikator', { ascending: true });
-                
+                const { data, error } = await supabaseClient.from('master_indikator').select('*').order('judul_indikator', { ascending: true });
                 if (error) throw error;
-                
                 listIndikator = data;
                 renderKamus(listIndikator);
                 document.getElementById('wadahKamus').classList.remove('d-none');
             } catch (err) {
                 console.error(err);
-                Swal.fire('Gagal!', 'Tidak dapat memuat kamus indikator dari Supabase', 'error');
-            } finally {
-                document.getElementById('loadingMessage').classList.add('d-none');
+                Swal.fire('Gagal!', 'Tidak dapat memuat kamus dari Supabase', 'error');
+            } finally { 
+                document.getElementById('loadingMessage').classList.add('d-none'); 
             }
         }
 
@@ -372,48 +343,82 @@
             wadah.innerHTML = '';
             
             if(data.length === 0) {
-                wadah.innerHTML = '<div class="col-12 text-center py-5 text-muted"><i class="fas fa-folder-open fa-3x mb-3"></i><h5>Kamus masih kosong.</h5></div>';
+                wadah.innerHTML = '<div class="col-12 text-center py-5 text-muted"><h5>Kamus masih kosong.</h5></div>';
                 return;
             }
 
             data.forEach((item) => {
-                let btnAksi = '';
+                let isAktif = item.status_aktif !== false; 
+                let arsipBadge = !isAktif ? `<span class="badge badge-arsip"><i class="fas fa-archive"></i> Arsip</span>` : "";
+                let cardClass = !isAktif ? "card-arsip" : "border-top border-4 border-primary";
+                
+                let btnArsipIcon = isAktif ? "fa-archive" : "fa-box-open";
+                let btnArsipColor = isAktif ? "btn-outline-warning text-dark" : "btn-outline-success";
+                let btnArsipTitle = isAktif ? "Arsipkan Indikator" : "Aktifkan Kembali";
+                let judulAman = item.judul_indikator ? item.judul_indikator.replace(/'/g, "\\'") : "Indikator";
+
+                let btnDetailUmum = `
+                    <button class="btn btn-outline-info w-100 fw-bold mb-2 rounded-pill" onclick="bukaModalDetail('${item.id_indikator}')">
+                        <i class="fas fa-search-plus me-1"></i> Lihat Detail Profil
+                    </button>
+                `;
+
+                let btnAksiAdmin = '';
                 if (isAdmin) {
-                    btnAksi = `
-                        <div class="mt-3 pt-3 border-top text-end">
-                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 me-1" onclick="bukaModalEdit('${item.id_indikator}')"><i class="fas fa-pen me-1"></i> Detail / Edit</button>
-                            <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="hapusIndikator('${item.id_indikator}')"><i class="fas fa-trash me-1"></i> Hapus</button>
+                    btnAksiAdmin = `
+                        <div class="d-flex justify-content-between gap-2 mt-2">
+                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3 flex-grow-1" onclick="bukaModalEdit('${item.id_indikator}')" title="Edit Profil & Rumus">
+                                <i class="fas fa-pen"></i> Edit Profil
+                            </button>
+                            <button class="btn btn-sm ${btnArsipColor} rounded-pill px-3 shadow-sm" onclick="toggleStatus('${item.id_indikator}', ${isAktif}, '${judulAman}')" title="${btnArsipTitle}">
+                                <i class="fas ${btnArsipIcon}"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="hapusIndikator('${item.id_indikator}', '${judulAman}')" title="Hapus Permanen">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </div>
                     `;
                 }
 
+                // PERBAIKAN LOGIKA WARNA BADGE (Berdasarkan Kategori yang tepat)
                 let badgeColor = "bg-primary";
-                if(item.kategori_indikator === "IMP-Unit") badgeColor = "bg-success";
-                if(item.kategori_indikator === "IMP-RS") badgeColor = "bg-warning text-dark";
-                if(item.kategori_indikator === "INM") badgeColor = "bg-danger";
+                let strKat = (item.kategori_indikator || '').toLowerCase();
                 
-                let satuanTxt = item.satuan ? ` ${item.satuan}` : '';
+                if (strKat.includes("nasional") || strKat.includes("inm")) {
+                    badgeColor = "bg-danger"; // Merah untuk INM
+                } else if (strKat.includes("unit")) {
+                    badgeColor = "bg-success"; // Hijau untuk IMP-Unit
+                } else if (strKat.includes("rs") || strKat.includes("prioritas")) {
+                    badgeColor = "bg-warning text-dark"; // Kuning untuk IMP-RS
+                }
 
                 wadah.innerHTML += `
                     <div class="col-md-6 col-lg-4 item-indikator" data-kategori="${item.kategori_indikator || ''}">
-                        <div class="card-custom p-4 h-100 d-flex flex-column border-top border-4 border-primary">
+                        <div class="card-custom p-4 h-100 d-flex flex-column ${cardClass}">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <span class="badge ${badgeColor} badge-tipe">${item.kategori_indikator || 'UMUM'}</span>
-                                <code class="text-danger fw-bold fs-6"><i class="fas fa-link me-1"></i>${item.id_indikator}</code>
+                                <div>
+                                    <span class="badge ${badgeColor} badge-tipe">${item.kategori_indikator || 'UMUM'}</span>
+                                    ${arsipBadge}
+                                </div>
+                                <code class="text-danger fw-bold fs-6" title="ID Tabel Form"><i class="fas fa-link me-1"></i>${item.id_form}</code>
                             </div>
                             <h5 class="fw-bold text-dark mt-2 search-target" style="line-height: 1.4;">${item.judul_indikator}</h5>
-                            <p class="text-muted mb-3 search-target" style="font-size:0.85rem;"><i class="fas fa-hospital me-1"></i> Pelaksana: ${item.unit_pelaksana || 'Semua Unit'}</p>
+                            <p class="text-muted mb-3 search-target" style="font-size:0.85rem;"><i class="fas fa-hospital me-1"></i> Unit: ${item.unit_pelaksana || 'Semua Unit'}</p>
                             
                             <div class="math-box mb-3 flex-grow-1">
-                                <div class="text-center text-success border-bottom border-success pb-1 mb-1" style="font-size:0.85rem;" title="${item.num_teks || ''}">Numerator</div>
-                                <div class="text-center text-warning text-darken" style="font-size:0.85rem;" title="${item.den_teks || ''}">Denominator</div>
+                                <div class="text-center text-success border-bottom border-success pb-1 mb-1" style="font-size:0.85rem;" title="${item.num_teks || ''}">Numerator (N)</div>
+                                <div class="text-center text-warning text-darken" style="font-size:0.85rem;" title="${item.den_teks || ''}">Denominator (D)</div>
                             </div>
                             
-                            <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded">
+                            <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded mb-3">
                                 <span class="text-muted" style="font-size:0.85rem;">Target Capaian:</span>
-                                <span class="fw-bold fs-5 text-primary">${item.target != null ? item.target : '-'}${satuanTxt}</span>
+                                <span class="fw-bold fs-5 text-primary">${item.target != null ? item.target : '-'} ${item.satuan || ''}</span>
                             </div>
-                            ${btnAksi}
+                            
+                            <div class="mt-auto pt-2 border-top">
+                                ${btnDetailUmum}
+                                ${btnAksiAdmin}
+                            </div>
                         </div>
                     </div>`;
             });
@@ -421,64 +426,263 @@
 
         function filterKamus() {
             let inputSearch = document.getElementById('searchIndikator').value.toLowerCase();
-            let inputKat = document.getElementById('filterKategori').value;
-            
+            let inputKat = document.getElementById('filterKategori').value.toLowerCase();
             document.querySelectorAll('.item-indikator').forEach(card => { 
                 let textMatch = card.innerText.toLowerCase().includes(inputSearch);
-                let katMatch = inputKat === "" || card.getAttribute('data-kategori') === inputKat;
+                let attrKat = (card.getAttribute('data-kategori') || "").toLowerCase();
+                let katMatch = inputKat === "" || attrKat.includes(inputKat);
                 card.style.display = (textMatch && katMatch) ? '' : 'none'; 
             });
         }
 
+        window.bukaModalDetail = function(idIndikator) {
+            const item = listIndikator.find(u => u.id_indikator === idIndikator); 
+            if(!item) return;
+
+            let badgeColor = "bg-primary";
+            let strKat = (item.kategori_indikator || '').toLowerCase();
+            
+            if (strKat.includes("nasional") || strKat.includes("inm")) {
+                badgeColor = "bg-danger";
+            } else if (strKat.includes("unit")) {
+                badgeColor = "bg-success";
+            } else if (strKat.includes("rs") || strKat.includes("prioritas")) {
+                badgeColor = "bg-warning text-dark";
+            }
+
+            let jenisArr = item.jenis_indikator ? item.jenis_indikator.split(',').map(s => `<span class="badge bg-secondary me-1">${s.trim()}</span>`).join('') : '-';
+
+            const htmlContent = `
+                <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                    <h4 class="fw-bold text-dark mb-0">${item.judul_indikator}</h4>
+                    <span class="badge ${badgeColor} fs-6 px-3 py-2">${item.kategori_indikator || '-'}</span>
+                </div>
+                
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm mb-4">
+                            <div class="card-header bg-white fw-bold text-primary border-bottom-0 pt-3 pb-0">
+                                <i class="fas fa-file-alt me-2"></i> 1. Profil Dasar
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-borderless table-detail mb-0">
+                                    <tr><td>ID Form Database</td><td><code class="text-danger">${item.id_form}</code></td></tr>
+                                    <tr><td>Unit Pengukur</td><td class="fw-bold">${item.unit_pelaksana || '-'}</td></tr>
+                                    <tr><td>Dimensi Mutu</td><td>${item.dimensi_mutu || '-'}</td></tr>
+                                    <tr><td>Tujuan</td><td>${item.tujuan || '-'}</td></tr>
+                                    <tr><td>Dasar Pemikiran</td><td>${item.dasar_pemikiran || '-'}</td></tr>
+                                    <tr><td>Jenis Indikator</td><td>${jenisArr}</td></tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white fw-bold text-info text-darken border-bottom-0 pt-3 pb-0">
+                                <i class="fas fa-microscope me-2"></i> 3. Metodologi Data
+                            </div>
+                            <div class="card-body">
+                                <table class="table table-borderless table-detail mb-0">
+                                    <tr><td>Cara Penilaian</td><td>${item.cara_penilaian || '-'}</td></tr>
+                                    <tr><td>Metode Pengumpulan</td><td>${item.metode_pengumpulan || '-'}</td></tr>
+                                    <tr><td>Sumber Data</td><td>${item.sumber_data || '-'}</td></tr>
+                                    <tr><td>Instrumen</td><td>${item.instrumen_pengambilan || '-'}</td></tr>
+                                    <tr><td>Besar Sampel</td><td>${item.besar_sampel || '-'}</td></tr>
+                                    <tr><td>Cara Sampling</td><td>${item.cara_pengambilan_sampel || '-'}</td></tr>
+                                    <tr><td>Periode Kumpul</td><td>${item.periode_pengumpulan || '-'}</td></tr>
+                                    <tr><td>Periode Analisis</td><td>${item.periode_analisis || '-'}</td></tr>
+                                    <tr><td>Penyajian Data</td><td>${item.penyajian_data || '-'}</td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-header bg-white fw-bold text-success border-bottom-0 pt-3 pb-0">
+                                <i class="fas fa-balance-scale me-2"></i> 2. Pengukuran & Target
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3 p-3 bg-light rounded border-start border-4 border-success">
+                                    <span class="d-block text-muted fw-bold mb-1" style="font-size:0.85rem;">Definisi Operasional:</span>
+                                    <p class="mb-0 text-dark" style="font-size:0.95rem; text-align:justify;">${item.definisi_operasional || '-'}</p>
+                                </div>
+                                
+                                <div class="row mb-3 g-2">
+                                    <div class="col-md-6">
+                                        <div class="p-2 border rounded border-success h-100">
+                                            <span class="d-block text-success fw-bold" style="font-size:0.8rem;">Kriteria Inklusi:</span>
+                                            <span style="font-size:0.9rem;">${item.kriteria_inklusi || '-'}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="p-2 border rounded border-danger h-100">
+                                            <span class="d-block text-danger fw-bold" style="font-size:0.8rem;">Kriteria Eksklusi:</span>
+                                            <span style="font-size:0.9rem;">${item.kriteria_eksklusi || '-'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="math-box mb-3">
+                                    <div class="text-center text-success border-bottom border-success pb-2 mb-2"><b>Numerator (N):</b><br><span class="text-dark fw-normal">${item.num_teks || '-'}</span></div>
+                                    <div class="text-center text-warning text-darken"><b>Denominator (D):</b><br><span class="text-dark fw-normal">${item.den_teks || '-'}</span></div>
+                                </div>
+
+                                <table class="table table-borderless table-detail mb-0 bg-light rounded">
+                                    <tr><td>Formula</td><td class="font-monospace fw-bold text-primary">${item.rumus_kalkulasi || '-'}</td></tr>
+                                    <tr><td>Target Capaian</td><td><span class="badge bg-danger fs-6">${item.target || '-'} ${item.satuan || ''}</span> <small class="text-muted ms-2">(${item.arah_target || 'Positif'})</small></td></tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('detailBody').innerHTML = htmlContent;
+            new bootstrap.Modal(document.getElementById('modalDetailIndikator')).show();
+        };
+
+        window.toggleStatus = function(idIndikator, currentStatus, judul) {
+            let actionText = currentStatus ? "Mengarsipkan" : "Mengaktifkan kembali";
+            Swal.fire({
+                title: `Konfirmasi Tindakan?`,
+                html: `Anda akan <b>${actionText}</b> indikator:<br><br><span class="text-primary fw-bold">${judul}</span>`,
+                icon: 'question', showCancelButton: true, confirmButtonColor: currentStatus ? '#f59f00' : '#198754',
+                confirmButtonText: currentStatus ? 'Ya, Arsipkan!' : 'Ya, Aktifkan!'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const { error } = await supabaseClient.from('master_indikator').update({ status_aktif: !currentStatus }).eq('id_indikator', idIndikator);
+                        if (error) throw error;
+                        Swal.fire({title:'Berhasil!', text:`Status indikator diubah.`, icon:'success', timer:1500, showConfirmButton:false});
+                        loadKamus(); 
+                    } catch (err) { Swal.fire('Gagal', 'Terjadi kesalahan.', 'error'); }
+                }
+            });
+        };
+
         function resetForm() {
             document.getElementById('formIndikator').reset();
             document.querySelectorAll('.chk-jenis').forEach(cb => cb.checked = false);
-            // Kembalikan ke tab pertama
             let firstTab = new bootstrap.Tab(document.querySelector('#profilTabs button[data-bs-target="#tab-dasar"]'));
             firstTab.show();
+            
+            document.getElementById('b_num_tipe').value = "COUNTIF";
+            document.getElementById('b_den_tipe').value = "COUNTALL";
+            toggleBuilderFields('num'); toggleBuilderFields('den');
         }
 
-        function bukaModalTambah() {
+        window.renderVisualBuilder = function() {
+            const idForm = document.getElementById('inp_id_form').value;
+            const uiDiv = document.getElementById('builderInterface');
+            const warnDiv = document.getElementById('builderWarning');
+            const selNum = document.getElementById('b_num_kolom');
+            const selDen = document.getElementById('b_den_kolom');
+            
+            if(!idForm) { uiDiv.style.display = 'none'; warnDiv.classList.remove('d-none'); return; }
+            
+            uiDiv.style.display = 'block'; warnDiv.classList.add('d-none');
+            selNum.innerHTML = ''; selDen.innerHTML = '';
+
+            let targetForm = listFormulirMaster.find(f => f.id_form === idForm);
+            if(targetForm && targetForm.kolom) {
+                targetForm.kolom.forEach((k, idx) => {
+                    selNum.add(new Option(`[${idx}] ${k.judul}`, idx));
+                    selDen.add(new Option(`[${idx}] ${k.judul}`, idx));
+                });
+            } else {
+                selNum.add(new Option("Form tidak memiliki kolom", ""));
+                selDen.add(new Option("Form tidak memiliki kolom", ""));
+            }
+        };
+
+        window.toggleBuilderFields = function(jenis) {
+            const tipe = document.getElementById(`b_${jenis}_tipe`).value;
+            const col = document.querySelectorAll(`.b-${jenis}-col`);
+            const op = document.querySelectorAll(`.b-${jenis}-op`);
+            const val = document.querySelectorAll(`.b-${jenis}-val`);
+
+            if(tipe === "COUNTALL") {
+                col.forEach(el => el.classList.add('d-none'));
+                op.forEach(el => el.classList.add('d-none'));
+                val.forEach(el => el.classList.add('d-none'));
+            } else if(tipe === "SUM") {
+                col.forEach(el => el.classList.remove('d-none'));
+                op.forEach(el => el.classList.add('d-none'));
+                val.forEach(el => el.classList.add('d-none'));
+            } else {
+                col.forEach(el => el.classList.remove('d-none'));
+                op.forEach(el => el.classList.remove('d-none'));
+                val.forEach(el => el.classList.remove('d-none'));
+            }
+        };
+
+        function extractVisualJSON(jenis) {
+            const tipe = document.getElementById(`b_${jenis}_tipe`).value;
+            if(tipe === "COUNTALL") return JSON.stringify({ tipe: "COUNTALL" });
+            else if(tipe === "SUM") return JSON.stringify({ tipe: "SUM", target_kolom: document.getElementById(`b_${jenis}_kolom`).value });
+            else {
+                return JSON.stringify({
+                    tipe: "COUNTIF", target_kolom: document.getElementById(`b_${jenis}_kolom`).value,
+                    operator: document.getElementById(`b_${jenis}_op`).value,
+                    nilai_kriteria: document.getElementById(`b_${jenis}_nilai`).value
+                });
+            }
+        }
+
+        function injectVisualJSON(jenis, jsonString) {
+            try {
+                let obj = JSON.parse(jsonString);
+                document.getElementById(`b_${jenis}_tipe`).value = obj.tipe || "COUNTALL";
+                toggleBuilderFields(jenis);
+                
+                if(obj.tipe === "SUM") {
+                    document.getElementById(`b_${jenis}_kolom`).value = obj.target_kolom;
+                } else if(obj.tipe === "COUNTIF") {
+                    document.getElementById(`b_${jenis}_kolom`).value = obj.target_kolom;
+                    document.getElementById(`b_${jenis}_op`).value = obj.operator;
+                    document.getElementById(`b_${jenis}_nilai`).value = obj.nilai_kriteria;
+                }
+            } catch(e) {}
+        }
+
+        window.bukaModalTambah = function() {
             resetForm();
             document.getElementById('mode_form').value = "tambah";
-            
-            // Buka gembok dropdown ID Form
-            document.getElementById('inp_id_indikator').disabled = false;
-            
+            document.getElementById('inp_id_indikator_uuid').value = ""; 
             document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle me-2 text-primary"></i> Tambah Profil Baru';
+            renderVisualBuilder();
             new bootstrap.Modal(document.getElementById('modalIndikator')).show();
-        }
+        };
 
-        function bukaModalEdit(idIndikator) {
-            const item = listIndikator.find(u => u.id_indikator === idIndikator); 
+        window.bukaModalEdit = function(idUUID) {
+            const item = listIndikator.find(u => u.id_indikator === idUUID); 
             if(!item) return;
             resetForm();
             
             document.getElementById('mode_form').value = "edit";
             document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit me-2 text-warning"></i> Detail & Edit Profil Indikator';
+            document.getElementById('inp_id_indikator_uuid').value = item.id_indikator;
             
-            // Jika ID form tersebut sudah dihapus dari Form Builder, tambahkan opsi virtual agar tidak error
-            let selForm = document.getElementById('inp_id_indikator');
-            if (!Array.from(selForm.options).some(opt => opt.value === item.id_indikator)) {
-                selForm.add(new Option(item.id_indikator + " (Cetak Form Telah Dihapus)", item.id_indikator));
-            }
+            let selForm = document.getElementById('inp_id_form');
+            if (!Array.from(selForm.options).some(opt => opt.value === item.id_form)) { selForm.add(new Option(item.id_form + " (Form hilang)", item.id_form)); }
+            selForm.value = item.id_form;
+            
+            renderVisualBuilder();
 
-            // Kunci Dropdown ID agar tidak diubah (karena dia Primary Key dan sudah terhubung)
-            selForm.value = item.id_indikator;
-            selForm.disabled = true;
-            
-            // Tab 1
             document.getElementById('inp_judul_indikator').value = item.judul_indikator || '';
-            document.getElementById('inp_kategori_indikator').value = item.kategori_indikator || 'INM';
+            let selKat = document.getElementById('inp_kategori_indikator');
+            let dbKat = (item.kategori_indikator || '').toLowerCase();
+            if (dbKat.includes('nasional') || dbKat.includes('inm')) selKat.value = "Indikator Mutu Nasional";
+            else if (dbKat.includes('rs') || dbKat.includes('prioritas rs')) selKat.value = "Indikator Mutu Prioritas RS";
+            else if (dbKat.includes('unit')) selKat.value = "Indikator Mutu Prioritas Unit";
+
             document.getElementById('inp_unit_pelaksana').value = item.unit_pelaksana || 'Semua Unit (Hospital Wide)';
             document.getElementById('inp_dimensi_mutu').value = item.dimensi_mutu || '';
             document.getElementById('inp_tujuan').value = item.tujuan || '';
             document.getElementById('inp_dasar_pemikiran').value = item.dasar_pemikiran || '';
-            
-            let jenis = item.jenis_indikator || '';
-            document.querySelectorAll('.chk-jenis').forEach(cb => { cb.checked = jenis.includes(cb.value); });
+            let jenis = (item.jenis_indikator || '').toLowerCase();
+            document.querySelectorAll('.chk-jenis').forEach(cb => { cb.checked = jenis.includes(cb.value.toLowerCase()); });
 
-            // Tab 2
             document.getElementById('inp_definisi_operasional').value = item.definisi_operasional || '';
             document.getElementById('inp_kriteria_inklusi').value = item.kriteria_inklusi || '';
             document.getElementById('inp_kriteria_eksklusi').value = item.kriteria_eksklusi || '';
@@ -487,45 +691,45 @@
             document.getElementById('inp_rumus_kalkulasi').value = item.rumus_kalkulasi || '';
             document.getElementById('inp_satuan').value = item.satuan || '';
             document.getElementById('inp_target').value = item.target || '';
-            document.getElementById('inp_arah_target').value = item.arah_target || '≥ (Makin besar makin baik)';
+            document.getElementById('inp_arah_target').value = (item.arah_target || '').includes('Positif') ? 'Positif' : 'Negatif';
 
-            // Tab 3
             document.getElementById('inp_cara_penilaian').value = item.cara_penilaian || '';
             document.getElementById('inp_metode_pengumpulan').value = item.metode_pengumpulan || '';
             document.getElementById('inp_sumber_data').value = item.sumber_data || '';
             document.getElementById('inp_instrumen_pengambilan').value = item.instrumen_pengambilan || '';
             document.getElementById('inp_besar_sampel').value = item.besar_sampel || '';
             document.getElementById('inp_cara_pengambilan_sampel').value = item.cara_pengambilan_sampel || '';
-            document.getElementById('inp_periode_pengumpulan').value = item.periode_pengumpulan || 'Bulanan';
+            document.getElementById('inp_periode_pengumpulan').value = item.periode_pengumpulan || 'Harian';
             document.getElementById('inp_periode_analisis').value = item.periode_analisis || 'Triwulan';
-            document.getElementById('inp_periode_pelaporan').value = item.periode_pelaporan || 'Triwulan';
+            document.getElementById('inp_periode_pelaporan').value = item.periode_pelaporan || 'Bulanan';
             document.getElementById('inp_penyajian_data').value = item.penyajian_data || '';
 
-            // Tab 4
-            document.getElementById('inp_kolom_kriteria').value = item.kolom_kriteria || '';
-            document.getElementById('inp_template_numerator').value = item.template_numerator || '';
-            document.getElementById('inp_template_denominator').value = item.template_denominator || '';
+            if(item.template_numerator) injectVisualJSON('num', item.template_numerator);
+            if(item.template_denominator) injectVisualJSON('den', item.template_denominator);
             
             new bootstrap.Modal(document.getElementById('modalIndikator')).show();
-        }
+        };
 
         window.simpanIndikator = async function() {
             const mode = document.getElementById('mode_form').value;
-            const idIndikator = document.getElementById('inp_id_indikator').value.trim();
+            const uuid = document.getElementById('inp_id_indikator_uuid').value; 
+            const idForm = document.getElementById('inp_id_form').value.trim();
             const judul = document.getElementById('inp_judul_indikator').value.trim();
             const target = document.getElementById('inp_target').value;
 
-            if (!idIndikator || !judul || !target) { Swal.fire('Oops', 'ID Form, Judul, dan Target Wajib diisi!', 'warning'); return; }
+            if (!idForm || !judul || !target) { Swal.fire('Oops', 'ID Form, Judul, dan Target Wajib diisi!', 'warning'); return; }
 
-            // Gabungkan checkbox jenis indikator
             let arrJenis = [];
             document.querySelectorAll('.chk-jenis:checked').forEach(cb => arrJenis.push(cb.value));
 
             const btn = document.getElementById('btnSimpan'); 
             btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
 
+            let strJSONNum = extractVisualJSON('num');
+            let strJSONDen = extractVisualJSON('den');
+
             const payloadData = {
-                id_indikator: idIndikator,
+                id_form: idForm, 
                 judul_indikator: judul,
                 kategori_indikator: document.getElementById('inp_kategori_indikator').value,
                 unit_pelaksana: document.getElementById('inp_unit_pelaksana').value,
@@ -533,7 +737,6 @@
                 tujuan: document.getElementById('inp_tujuan').value,
                 dasar_pemikiran: document.getElementById('inp_dasar_pemikiran').value,
                 jenis_indikator: arrJenis.join(', '),
-                
                 definisi_operasional: document.getElementById('inp_definisi_operasional').value,
                 kriteria_inklusi: document.getElementById('inp_kriteria_inklusi').value,
                 kriteria_eksklusi: document.getElementById('inp_kriteria_eksklusi').value,
@@ -543,7 +746,6 @@
                 satuan: document.getElementById('inp_satuan').value,
                 target: parseFloat(target),
                 arah_target: document.getElementById('inp_arah_target').value,
-
                 cara_penilaian: document.getElementById('inp_cara_penilaian').value,
                 metode_pengumpulan: document.getElementById('inp_metode_pengumpulan').value,
                 sumber_data: document.getElementById('inp_sumber_data').value,
@@ -554,20 +756,15 @@
                 periode_analisis: document.getElementById('inp_periode_analisis').value,
                 periode_pelaporan: document.getElementById('inp_periode_pelaporan').value,
                 penyajian_data: document.getElementById('inp_penyajian_data').value,
-
-                kolom_kriteria: document.getElementById('inp_kolom_kriteria').value,
-                template_numerator: document.getElementById('inp_template_numerator').value,
-                template_denominator: document.getElementById('inp_template_denominator').value
+                template_numerator: strJSONNum,
+                template_denominator: strJSONDen
             };
 
             try {
                 if (mode === "edit") {
-                    const { error } = await supabaseClient.from('master_indikator').update(payloadData).eq('id_indikator', idIndikator);
+                    const { error } = await supabaseClient.from('master_indikator').update(payloadData).eq('id_indikator', uuid);
                     if (error) throw error;
                 } else {
-                    const { data: existing } = await supabaseClient.from('master_indikator').select('id_indikator').eq('id_indikator', idIndikator).maybeSingle();
-                    if (existing) { Swal.fire('Oops', 'Buku Panduan untuk ID Form ini sudah ada!', 'warning'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Profil Indikator'; return; }
-                    
                     const { error } = await supabaseClient.from('master_indikator').insert([payloadData]);
                     if (error) throw error;
                 }
@@ -585,10 +782,10 @@
             }
         };
 
-        window.hapusIndikator = function(idIndikator) {
+        window.hapusIndikator = function(uuid, namaJudul) {
             Swal.fire({
                 title: 'Hapus Permanen?',
-                html: `Hapus profil panduan <b>${idIndikator}</b>?<br><small class="text-danger">Catatan: Ini HANYA menghapus buku panduannya, formulir di Form Builder tetap aman.</small>`,
+                html: `Hapus profil panduan <b>${namaJudul}</b>?`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',
@@ -598,15 +795,11 @@
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     try {
-                        const { error } = await supabaseClient.from('master_indikator').delete().eq('id_indikator', idIndikator);
+                        const { error } = await supabaseClient.from('master_indikator').delete().eq('id_indikator', uuid);
                         if (error) throw error;
-                        
-                        Swal.fire('Terhapus!', `Indikator ${idIndikator} telah dihapus.`, 'success');
+                        Swal.fire('Terhapus!', `Indikator telah dihapus.`, 'success');
                         loadKamus();
-                    } catch (err) {
-                        console.error(err);
-                        Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus data.', 'error');
-                    }
+                    } catch (err) { Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus data.', 'error'); }
                 }
             });
         };

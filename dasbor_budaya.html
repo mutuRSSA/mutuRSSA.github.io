@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dasbor Budaya Keselamatan</title>
+    <title>Dasbor Budaya Keselamatan - SIM PMKP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Tambahkan SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
@@ -35,19 +34,13 @@
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
             @page { margin: 1cm; size: landscape; }
         }
-
-        /* Warna Navbar & Sidebar */
-        .bg-custom-dark { background-color: #2c3e50; } 
-        .sidebar-link { color: #333; text-decoration: none; transition: 0.2s; }
-        .sidebar-link:hover { background-color: #f1f8ff; }
-        .sidebar-link.active { font-weight: bold; background-color: #e9ecef; border-left: 4px solid #6f42c1; color: #6f42c1; }
     </style>
 </head>
 <body>
     <div id="navbar-container"></div>
     <div id="sidebar-container"></div>
 
-    <div class="container-fluid px-4">
+    <div class="container-fluid px-4" style="max-width: 1400px;">
         <div class="bg-white p-4 mb-4 card-custom d-print-none">
             <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-3">
                 <div>
@@ -76,10 +69,13 @@
                     </select>
                 </div>
                 <div class="col-md-3 mb-3 mb-md-0">
-                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;">Mulai Tanggal:</label>
-                    <input type="date" id="filterStartDate" class="form-control border-info text-dark">
+                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;">Tahun Survei:</label>
+                    <select id="filterTahun" class="form-select border-info fw-bold text-dark">
+                        <!-- Populated by JS -->
+                    </select>
                 </div>
-                <div class="col-md-3 mb-3 mb-md-0">
+                <div class="col-md-3 mb-3 mb-md-0 d-none">
+                    <!-- Disembunyikan karena Filter Tahun sudah cukup merepresentasikan budaya -->
                     <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;">Sampai Tanggal:</label>
                     <input type="date" id="filterEndDate" class="form-control border-info text-dark">
                 </div>
@@ -92,7 +88,7 @@
         </div>
 
         <div id="loadingMessage" class="alert alert-info text-center shadow-sm fw-bold">
-            <i class="fas fa-spinner fa-spin me-2"></i> Memuat data survei dari server...
+            <i class="fas fa-spinner fa-spin me-2"></i> Memuat data survei dari Supabase...
         </div>
 
         <div id="dashboardContent" style="display: none;">
@@ -149,6 +145,7 @@
         </div>
     </div>
 
+    <!-- MODAL LOG RESPONDEN -->
     <div class="modal fade" id="modalResponden" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
             <div class="modal-content">
@@ -174,18 +171,15 @@
         </div>
     </div>
 
-    <!-- Script Pusat Konfigurasi & Autentikasi -->
+    <!-- LIBRARY -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        // MENGGUNAKAN VARIABEL GLOBAL DARI config.js
-        const scriptURL = API_CONFIG.SURVEY;
-
         const pertanyaanPositif = ["A1", "A2", "A3", "A4", "A6", "A9", "A11", "A13", "A15", "A18", "B1", "B2", "C1", "C2", "C3", "C4", "C5", "D1", "D2", "D3", "F1", "F4", "F8", "F10"];
         const pertanyaanNegatif = ["A5", "A7", "A8", "A10", "A12", "A14", "A16", "A17", "B3", "B4", "C6", "F2", "F3", "F5", "F6", "F7", "F9", "F11"];
 
@@ -219,63 +213,65 @@
         let filteredData = [];
         let chartInstances = []; 
 
-        document.addEventListener("DOMContentLoaded", function () {
-            fetch(scriptURL)
-                .then(res => res.json())
-                .then(result => {
-                    if (result.status === 'success' && result.data.length > 0) {
-                        rawData = result.data;
-                        document.getElementById('loadingMessage').style.display = 'none';
-                        document.getElementById('dashboardContent').style.display = 'block';
-                        
-                        populateUnitDropdown();
-                        updateDashboard();
-                    } else {
-                        throw new Error("Belum ada data");
-                    }
-                })
-                .catch(err => {
-                    document.getElementById('loadingMessage').classList.replace('alert-info', 'alert-warning');
-                    document.getElementById('loadingMessage').innerHTML = '<i class="fas fa-info-circle me-2"></i> Belum ada data responden atau gagal terhubung ke server.';
-                });
+        document.addEventListener("DOMContentLoaded", async function () {
+            if (!supabaseClient) return;
+
+            try {
+                // Tarik Semua Data Survey (Dibatasi 2000 row terakhir agar ringan)
+                const { data, error } = await supabaseClient.from('data_survey_budaya')
+                    .select('*')
+                    .order('timestamp', { ascending: false })
+                    .limit(2000);
+
+                if (error) throw error;
+                
+                rawData = data || [];
+
+                if (rawData.length > 0) {
+                    document.getElementById('loadingMessage').style.display = 'none';
+                    document.getElementById('dashboardContent').style.display = 'block';
+                    
+                    populateFilterDropdown();
+                    updateDashboard();
+                } else {
+                    throw new Error("Belum ada data");
+                }
+            } catch (err) {
+                document.getElementById('loadingMessage').classList.replace('alert-info', 'alert-warning');
+                document.getElementById('loadingMessage').innerHTML = '<i class="fas fa-info-circle me-2"></i> Belum ada responden survei atau gagal terhubung ke server.';
+            }
         });
 
-        function populateUnitDropdown() {
+        function populateFilterDropdown() {
+            // Dropdown Unit
             const unitSelect = document.getElementById('filterUnit');
-            const units = [...new Set(rawData.map(item => item['unit_kerja']))].filter(Boolean).sort();
+            const units = [...new Set(rawData.map(item => item.unit_kerja))].filter(Boolean).sort();
             units.forEach(unit => { unitSelect.appendChild(new Option(unit, unit)); });
+
+            // Dropdown Tahun
+            const tahunSelect = document.getElementById('filterTahun');
+            const tahuns = [...new Set(rawData.map(item => new Date(item.timestamp).getFullYear().toString() ))].sort().reverse();
+            tahuns.forEach(thn => { tahunSelect.appendChild(new Option(thn, thn)); });
+            
+            // Tambahkan opsi Semua Tahun
+            tahunSelect.appendChild(new Option("Semua Tahun", "ALL"));
         }
 
         window.updateDashboard = function() {
             const selectedUnit = document.getElementById('filterUnit').value;
-            const startDateStr = document.getElementById('filterStartDate').value;
-            const endDateStr = document.getElementById('filterEndDate').value;
+            const selectedTahun = document.getElementById('filterTahun').value;
             
-            const startDate = startDateStr ? new Date(startDateStr) : null;
-            const endDate = endDateStr ? new Date(endDateStr) : null;
-
-            if (endDate) endDate.setHours(23, 59, 59, 999);
-
             filteredData = rawData.filter(row => {
-                let isUnitMatch = (selectedUnit === 'SEMUA') || (row['unit_kerja'] === selectedUnit);
-                let isDateMatch = true;
-
-                if (row['Timestamp']) {
-                    let rowDate = new Date(row['Timestamp']);
-                    if (startDate) isDateMatch = isDateMatch && (rowDate >= startDate);
-                    if (endDate) isDateMatch = isDateMatch && (rowDate <= endDate);
-                }
-                return isUnitMatch && isDateMatch;
+                let isUnitMatch = (selectedUnit === 'SEMUA') || (row.unit_kerja === selectedUnit);
+                let isTahunMatch = (selectedTahun === 'ALL') || (new Date(row.timestamp).getFullYear().toString() === selectedTahun);
+                return isUnitMatch && isTahunMatch;
             });
 
             let titleText = selectedUnit === 'SEMUA' ? "RATA-RATA SELURUH UNIT" : "UNIT " + selectedUnit.toUpperCase();
             document.getElementById('printUnitTitle').innerText = titleText;
             document.getElementById('modalUnitTitle').innerText = selectedUnit === 'SEMUA' ? "Seluruh Unit" : selectedUnit;
             
-            let dateText = "Semua Waktu";
-            if(startDateStr && endDateStr) dateText = `Periode: ${startDateStr} s.d ${endDateStr}`;
-            else if(startDateStr) dateText = `Mulai dari: ${startDateStr}`;
-            else if(endDateStr) dateText = `Sampai dengan: ${endDateStr}`;
+            let dateText = selectedTahun === 'ALL' ? "Semua Periode Tahun" : `Periode Tahun ${selectedTahun}`;
             document.getElementById('printDateTitle').innerText = dateText;
 
             document.getElementById('totalResponden').innerText = filteredData.length + " Orang";
@@ -302,8 +298,11 @@
             semuaPertanyaan.forEach(soal => {
                 let responPositifCount = 0;
                 let totalResponValid = 0;
+                
                 dataToProcess.forEach(row => {
-                    let nilai = parseInt(row[soal]);
+                    let jwbn = row.jawaban_survey || {};
+                    let nilai = parseInt(jwbn[soal]); // Tarik jawaban dari JSONB
+                    
                     if (!isNaN(nilai) && nilai >= 1 && nilai <= 5) {
                         totalResponValid++;
                         if (pertanyaanPositif.includes(soal) && (nilai === 4 || nilai === 5)) responPositifCount++;
@@ -417,18 +416,17 @@
                             borderColor: sortedData.map(val => val >= 75 ? '#198754' : (val >= 50 ? '#ffc107' : '#dc3545')),
                             borderWidth: 1, 
                             borderRadius: 4,
-                            order: 2 // Bar ada di belakang
+                            order: 2 
                         },
-                        // INOVASI: GARIS TARGET 75% NASIONAL
                         {
                             type: 'line',
                             label: 'Target Minimal (75%)',
                             data: Array(sortedData.length).fill(75),
                             borderColor: '#3c8dbc',
                             borderWidth: 2,
-                            borderDash: [5, 5], // Garis putus-putus
+                            borderDash: [5, 5], 
                             pointRadius: 0,
-                            order: 1 // Garis ada di depan bar
+                            order: 1 
                         }
                     ]
                 },
@@ -454,7 +452,8 @@
             pertanyaanDistribusi.forEach((pertanyaan) => {
                 let frekuensi = {};
                 dataToProcess.forEach(row => {
-                    let jawaban = row[pertanyaan.id];
+                    let jwbn = row.jawaban_survey || {};
+                    let jawaban = jwbn[pertanyaan.id];
                     if (jawaban && jawaban.trim() !== "") frekuensi[jawaban] = (frekuensi[jawaban] || 0) + 1;
                 });
 
@@ -496,8 +495,8 @@
                         labels: labels,
                         datasets: [{
                             data: dataCounts,
-                            backgroundColor: pertanyaan.type === 'pie' ? colorPalette : 'rgba(52, 152, 219, 0.7)',
-                            borderColor: pertanyaan.type === 'pie' ? '#fff' : '#2980b9', borderWidth: 1
+                            backgroundColor: pertanyaan.type === 'pie' ? colorPalette : 'rgba(111, 66, 193, 0.7)',
+                            borderColor: pertanyaan.type === 'pie' ? '#fff' : '#6f42c1', borderWidth: 1
                         }]
                     },
                     options: {
@@ -532,20 +531,20 @@
                 return;
             }
             dataToProcess.forEach((row, index) => {
-                let waktuSubmit = row['Timestamp'] ? new Date(row['Timestamp']).toLocaleString('id-ID', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '-';
+                let waktuSubmit = row.timestamp ? new Date(row.timestamp).toLocaleString('id-ID', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '-';
                 tbody.innerHTML += `
                     <tr>
                         <td class="text-center">${index + 1}</td>
                         <td>${waktuSubmit}</td>
-                        <td><span class="badge bg-secondary">${row['unit_kerja'] || '-'}</span></td>
-                        <td>${row['profesi'] || '-'}</td>
+                        <td><span class="badge bg-secondary">${row.unit_kerja || '-'}</span></td>
+                        <td>${row.profesi || '-'}</td>
                     </tr>
                 `;
             });
         }
 
         // ==========================================================
-        // FUNGSI CERDAS: EXPORT KE MS WORD (DOC) 
+        // EXPORT KE MS WORD
         // ==========================================================
         window.exportKeWord = function() {
             if (filteredData.length === 0) { 
@@ -553,10 +552,7 @@
                 return; 
             }
 
-            // 1. Clone seluruh kontainer dashboard
             const content = document.getElementById('dashboardContent').cloneNode(true);
-
-            // 2. Ubah semua Canvas (Grafik) menjadi Tag Image
             const originalCanvases = document.querySelectorAll('#dashboardContent canvas');
             const clonedCanvases = content.querySelectorAll('canvas');
             
@@ -564,23 +560,20 @@
                 const img = document.createElement('img');
                 img.src = originalCanvases[index].toDataURL("image/png");
                 img.style.width = '100%'; 
-                img.style.maxWidth = '400px'; // Ukuran proporsional untuk MS Word
+                img.style.maxWidth = '500px'; 
                 img.style.display = 'block';
                 img.style.margin = '0 auto 15px auto';
                 canvas.parentNode.replaceChild(img, canvas);
             });
 
-            // 3. Buat judul laporan yang dinamis
             const unitName = document.getElementById('filterUnit').value === "SEMUA" ? "SELURUH UNIT" : "UNIT " + document.getElementById('filterUnit').value.toUpperCase();
             const judulHTML = "<h2 style='text-align:center;'>ANALISIS BUDAYA KESELAMATAN PASIEN</h2><h3 style='text-align:center;'>" + unitName + "</h3><hr>";
 
-            // 4. Susun struktur HTML/XML khusus MS Word (Disamarkan agar tidak error)
             const h1 = "<ht" + "ml xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><he" + "ad><meta charset='utf-8'><st" + "yle>";
             const cssWord = "body { font-family: 'Segoe UI', Arial, sans-serif; color: #333; } h2, h3, h5, h6 { text-align: center; color: #2c3e50; margin-bottom:10px; } table { border-collapse: collapse; width: 100%; margin-bottom: 20px; font-size: 10pt; } th, td { border: 1px solid #000; padding: 6px; } th { background-color: #f2f2f2; font-weight: bold; text-align: center; } .text-center { text-align: center; } .fw-bold { font-weight: bold; } .card { border: 1px solid #ccc; padding: 15px; margin-bottom: 15px; } .badge { font-weight: bold; padding: 3px 6px; border: 1px solid #333; } .row { display: block; width: 100%; } .col-md-6, .col-lg-5, .col-lg-7, .col-md-4, .col-md-8 { width: 100%; display: block; margin-bottom: 20px; } ul { list-style-type: none; padding-left: 0; } li { margin-bottom: 5px; } .d-none, .d-print-none { display: none !important; }";
             const h3 = "</st" + "yle></he" + "ad><bo" + "dy>";
             const f1 = "</bo" + "dy></ht" + "ml>";
                 
-            // 5. Gabungkan dan Eksekusi Unduhan
             const blob = new Blob(['\ufeff', h1 + cssWord + h3 + judulHTML + content.innerHTML + f1], { type: 'application/msword' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob); 

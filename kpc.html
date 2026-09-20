@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Formulir KPC - SIM PMKP</title>
-    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -12,11 +11,7 @@
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
         .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.04); border-radius: 12px; border-top: 4px solid #ffc107; background: #fff;}
-        
-        .kpc-banner { 
-            background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%); 
-            color: #664d03; border-radius: 8px; padding: 20px; margin-bottom: 25px; border: 1px solid #ffecb5; 
-        }
+        .kpc-banner { background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%); color: #664d03; border-radius: 8px; padding: 20px; margin-bottom: 25px; border: 1px solid #ffecb5; }
     </style>
 </head>
 <body>
@@ -26,11 +21,11 @@
     <div class="container-fluid px-4" style="max-width: 900px;">
         <div class="bg-white p-4 mb-4 card-custom">
             
-            <div class="kpc-banner d-flex align-items-center gap-3 flex-wrap">
+            <div class="kpc-banner d-flex align-items-center gap-3 flex-wrap shadow-sm">
                 <i class="fas fa-exclamation-triangle fa-3x text-warning d-none d-sm-block"></i>
                 <div>
                     <h4 class="fw-bold mb-1"><i class="fas fa-exclamation-triangle text-warning me-2 d-inline d-sm-none"></i> Formulir Pelaporan KPC</h4>
-                    <p class="mb-0" style="font-size:0.9rem;">Kondisi Potensial Cedera (KPC) adalah kondisi yang berpotensi menimbulkan harm/cedera pada pasien, namun <b>belum terjadi insiden</b>. Laporkan segera untuk memicu langkah pencegahan!</p>
+                    <p class="mb-0" style="font-size:0.9rem;">Kondisi Potensial Cedera (KPC) adalah kondisi yang berpotensi menimbulkan harm/cedera, namun <b>belum memakan korban</b>. Laporkan untuk memicu pencegahan!</p>
                 </div>
             </div>
 
@@ -38,7 +33,9 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="fw-bold mb-1 text-secondary">Lokasi / Unit Penemuan <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control border-secondary" id="inp_lokasi" required placeholder="Contoh: Selasar IGD, Ruang Tunggu Farmasi...">
+                        <select class="form-select border-secondary fw-bold" id="inp_lokasi" required>
+                            <option value="">-- Memuat Unit... --</option>
+                        </select>
                     </div>
                     <div class="col-md-6">
                         <label class="fw-bold mb-1 text-secondary">Waktu Ditemukan KPC <span class="text-danger">*</span></label>
@@ -46,94 +43,99 @@
                     </div>
 
                     <div class="col-12 mt-4">
-                        <label class="fw-bold mb-1 text-dark">Deskripsi Kondisi Potensial Cedera (KPC) <span class="text-danger">*</span></label>
-                        <textarea class="form-control border-dark" id="inp_deskripsi" rows="3" required placeholder="Jelaskan secara detail kondisi fisik/sistem berbahaya yang Anda temukan..."></textarea>
+                        <label class="fw-bold mb-1 text-dark">Deskripsi Kondisi KPC (Bahaya apa yang mengancam?) <span class="text-danger">*</span></label>
+                        <textarea class="form-control border-dark" id="inp_deskripsi" rows="3" required placeholder="Contoh: Ada kabel terkelupas menjuntai di lantai dekat genangan air..."></textarea>
                     </div>
 
-                    <div class="col-12 mt-3">
-                        <label class="fw-bold mb-1 text-secondary"><i class="fas fa-camera me-1"></i> Bukti Foto Kondisi KPC <small class="text-muted fw-normal">(Opsional, Maks 2MB)</small></label>
-                        <input type="file" class="form-control" id="inp_foto" accept="image/*" onchange="previewImage(event)">
+                    <!-- FITUR UPLOAD FOTO -->
+                    <div class="col-12 mt-3 p-3 bg-light border border-warning rounded">
+                        <label class="fw-bold mb-1 text-secondary"><i class="fas fa-camera text-warning me-1"></i> Bukti Foto Kondisi KPC <small class="text-muted fw-normal">(Opsional, Maks 2MB)</small></label>
+                        <input type="file" class="form-control bg-white" id="inp_foto" accept="image/*" onchange="previewImage(event)">
                         
-                        <div class="mt-3 text-center d-none bg-light p-2 border rounded" id="previewContainer">
+                        <div class="mt-3 text-center d-none" id="previewContainer">
                             <img id="imgPreview" src="" class="img-thumbnail shadow-sm" style="max-height: 250px; object-fit: contain;">
-                            <button type="button" class="btn btn-sm btn-outline-danger mt-2 d-block mx-auto fw-bold" onclick="hapusFoto()"><i class="fas fa-trash me-1"></i> Hapus Lampiran Foto</button>
+                            <button type="button" class="btn btn-sm btn-outline-danger mt-2 d-block mx-auto fw-bold" onclick="hapusFoto()"><i class="fas fa-trash me-1"></i> Hapus Foto</button>
                         </div>
                     </div>
 
                     <div class="col-12 mt-3">
-                        <label class="fw-bold mb-1 text-dark">Tindakan yang Telah Dilakukan (Seketika) <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="inp_tindakan_segera" rows="2" required placeholder="Apa yang langsung Anda amankan atau lakukan saat itu juga?"></textarea>
+                        <label class="fw-bold mb-1 text-dark">Tindakan Pengamanan Seketika <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="inp_tindakan_segera" rows="2" required placeholder="Apa yang Anda lakukan saat itu juga? (Misal: Memasang papan awas lantai licin)"></textarea>
                     </div>
 
-                    <div class="col-12 mt-4 p-3 bg-light border rounded">
-                        <h6 class="fw-bold text-primary mb-3"><i class="fas fa-lightbulb me-2"></i> Saran Rencana Perbaikan <small class="text-muted fw-normal ms-2">(Opsional, namun akan diteruskan ke Papan Kerja)</small></h6>
+                    <div class="col-12 mt-4 p-4 bg-light border rounded">
+                        <h6 class="fw-bold text-primary mb-3"><i class="fas fa-lightbulb me-2"></i> Saran Tindak Lanjut Jangka Panjang <small class="text-muted fw-normal ms-2">(Rencana Perbaikan)</small></h6>
                         
                         <div class="row g-3">
                             <div class="col-12">
-                                <label class="fw-bold mb-1" style="font-size: 0.9rem;">Tindakan Pencegahan Lanjutan (Usulan)</label>
-                                <textarea class="form-control border-primary" id="inp_tindakan_lanjutan" rows="2" placeholder="Saran perbaikan sistem atau fasilitas agar kondisi ini benar-benar tuntas..."></textarea>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="fw-bold mb-1" style="font-size: 0.9rem;">Penanggung Jawab (PIC)</label>
-                                <input type="text" class="form-control" id="inp_pic" placeholder="Nama / Jabatan Pelaksana">
+                                <label class="fw-bold mb-1" style="font-size: 0.9rem;">Tindakan Pencegahan Lanjutan</label>
+                                <textarea class="form-control border-primary" id="inp_tindakan_lanjutan" rows="2" placeholder="Saran agar hal ini dituntaskan secara permanen..."></textarea>
                             </div>
                             <div class="col-md-6">
-                                <label class="fw-bold mb-1" style="font-size: 0.9rem;">Target Tanggal (Tenggat)</label>
+                                <label class="fw-bold mb-1" style="font-size: 0.9rem;">Penanggung Jawab (Bagian Terkait)</label>
+                                <input type="text" class="form-control" id="inp_pic" placeholder="Misal: Bagian IPSRS">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="fw-bold mb-1" style="font-size: 0.9rem;">Target Selesai</label>
                                 <input type="date" class="form-control" id="inp_tenggat">
                             </div>
                         </div>
                     </div>
 
-                    <hr class="mt-4 mb-2 text-muted">
-
-                    <div class="col-md-6">
-                        <label class="fw-bold mb-1 text-secondary">Nama Pelapor <small class="text-muted fw-normal">(Opsional)</small></label>
-                        <input type="text" class="form-control" id="inp_pelapor" placeholder="Boleh dikosongkan (Anonim) jika ragu">
+                    <div class="col-md-6 mt-4 border-top pt-3">
+                        <div class="form-check form-switch fs-6">
+                            <input class="form-check-input" type="checkbox" id="chk_anonim">
+                            <label class="form-check-label text-muted fw-bold" for="chk_anonim">Kirim sebagai Anonim</label>
+                        </div>
                     </div>
                 </div>
 
-                <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
-                    <button type="button" class="btn btn-light border fw-bold" onclick="resetForm()"><i class="fas fa-undo me-1"></i> Reset</button>
-                    <button type="submit" class="btn btn-warning fw-bold text-dark shadow-sm" id="btnSubmit">
+                <div class="mt-4 pt-3 d-flex justify-content-end gap-2">
+                    <button type="submit" class="btn btn-warning fw-bold text-dark shadow-sm px-5" id="btnSubmit">
                         <i class="fas fa-paper-plane me-2"></i> Kirim Laporan KPC
                     </button>
                 </div>
             </form>
-
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
         let base64LampiranFoto = ""; 
         let namaFileFoto = "";
 
-        document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", async function () {
+            if (!supabaseClient) return;
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             document.getElementById('inp_waktu').value = now.toISOString().slice(0, 16);
-
-            const sessionStr = localStorage.getItem("sessionMutu");
-            if (sessionStr) {
-                const userData = JSON.parse(sessionStr);
-                document.getElementById('inp_pelapor').value = userData.username;
-            }
+            await loadUnitDropdown();
         });
 
-        function previewImage(event) {
+        async function loadUnitDropdown() {
+            try {
+                const { data } = await supabaseClient.from('master_unit').select('nama_unit').order('nama_unit');
+                const sel = document.getElementById('inp_lokasi');
+                if (data) {
+                    sel.innerHTML = '<option value="">-- Pilih Lokasi Ditemukan --</option>';
+                    data.forEach(u => sel.add(new Option(u.nama_unit, u.nama_unit)));
+                }
+            } catch(e) {}
+        }
+
+        window.previewImage = function(event) {
             const file = event.target.files[0];
             if (file) {
-                if(file.size > 2097152) {
-                    Swal.fire('Ukuran Terlalu Besar!', 'Batas maksimal ukuran foto adalah 2 MB agar server tidak menolak kiriman. Silakan kompres atau pilih foto lain.', 'warning');
-                    hapusFoto();
-                    return;
+                if(file.size > 2097152) { 
+                    Swal.fire('Ukuran Terlalu Besar!', 'Batas maksimal foto adalah 2 MB.', 'warning');
+                    hapusFoto(); return;
                 }
-
                 namaFileFoto = "KPC_" + new Date().getTime() + "_" + file.name;
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -143,89 +145,116 @@
                 }
                 reader.readAsDataURL(file);
             }
-        }
+        };
 
-        function hapusFoto() {
+        window.hapusFoto = function() {
             document.getElementById('inp_foto').value = "";
-            base64LampiranFoto = "";
-            namaFileFoto = "";
+            base64LampiranFoto = ""; namaFileFoto = "";
             document.getElementById('previewContainer').classList.add('d-none');
             document.getElementById('imgPreview').src = "";
-        }
+        };
 
-        function resetForm() {
-            document.getElementById('formKPC').reset();
-            hapusFoto();
-        }
-
-        document.getElementById('formKPC').addEventListener('submit', function(e) {
+        document.getElementById('formKPC').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             const btn = document.getElementById('btnSubmit');
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Mengirim...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Mengunggah...';
             btn.disabled = true;
 
-            // Menggunakan kamus mapping dari backend Anda
-            const payloadData = {
-                "tgl_waktu": document.getElementById('inp_waktu').value,
-                "lokasi": document.getElementById('inp_lokasi').value.trim(),
-                "deskripsi": document.getElementById('inp_deskripsi').value.trim(),
-                "tindakan": document.getElementById('inp_tindakan_segera').value.trim(),
-                "nama_pelapor": document.getElementById('inp_pelapor').value.trim() || "Anonim",
+            const isAnonim = document.getElementById('chk_anonim').checked;
+            const pelapor = isAnonim ? "Anonim" : (sessionMutu.nama_lengkap || "Tanpa Nama");
+            let linkFotoDrive = "";
+
+            // TAHAP 1: Unggah Foto ke Google Drive
+            if (base64LampiranFoto !== "") {
+                btn.innerHTML = '<i class="fas fa-cloud-upload-alt me-2"></i> Mengamankan Foto ke Server...';
                 
-                // Variabel khusus jika ingin mengunggah foto ke Google Drive
-                "fileData": base64LampiranFoto,
-                "fileName": namaFileFoto,
+                let arr = base64LampiranFoto.split(',');
+                let mime = arr[0].match(/:(.*?);/)[1];
+                let murniBase64 = arr[1];
 
-                // Rencana Tindakan (CAPA) yang diusulkan pelapor
-                "tindakan_akan_dilakukan": document.getElementById('inp_tindakan_lanjutan').value.trim(),
-                "pj_tindakan": document.getElementById('inp_pic').value.trim(),
-                "tgl_tindakan": document.getElementById('inp_tenggat').value,
-                "Status KPC": "Open" 
-            };
+                try {
+                    // MASUKKAN URL APP SCRIPT DRIVE ANDA DI SINI
+                    const URL_UPLOAD_FOTO = "https://script.google.com/macros/s/AKfycbxucBrDjbgUvEEgAU-EC5Inf99BzcubMh1qTpdXMfBBD70KhzCJkVFICoXZ7hPMn_CjTg/exec"; 
 
-            // Jika session ada, tarik data unit pelapor
-            const sessionStr = localStorage.getItem("sessionMutu");
-            if (sessionStr) {
-                const userData = JSON.parse(sessionStr);
-                payloadData["unit_pelapor"] = userData.unit;
-            } else {
-                payloadData["unit_pelapor"] = "Tidak Diketahui";
+                    let resUpload = await fetch(URL_UPLOAD_FOTO, {
+                        method: 'POST',
+                        redirect: 'follow', // PENTING: Memaksa browser mengikuti balasan link dari Google
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify({
+                            action: 'upload_foto',
+                            fileName: namaFileFoto,
+                            mimeType: mime,
+                            fileData: murniBase64
+                        })
+                    });
+                    
+                    // Baca respon sebagai teks mentah terlebih dahulu untuk mengatasi error parsing
+                    let resText = await resUpload.text();
+                    
+                    try {
+                        let resJson = JSON.parse(resText);
+                        if (resJson.status === 'success') {
+                            linkFotoDrive = resJson.file_url;
+                        } else {
+                            console.warn("Gagal unggah foto:", resJson.message);
+                        }
+                    } catch (e) {
+                        console.error("Gagal membaca balasan Google:", resText);
+                        Swal.fire({
+                            toast: true, position: 'top-end', icon: 'warning', 
+                            title: 'Foto tersimpan, tapi gagal menangkap link. Cek akses AppScript!', showConfirmButton: false, timer: 4000
+                        });
+                    }
+                } catch(err) {
+                    console.warn("Jaringan error saat unggah foto:", err);
+                }
             }
 
-            const payload = {
-                action: 'create',
-                data: payloadData
+            // TAHAP 2: Simpan Data Laporan ke Supabase
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan ke Database...';
+
+            const detailJSON = {
+                tindakan_lanjutan: document.getElementById('inp_tindakan_lanjutan').value.trim(),
+                pj_tindakan: document.getElementById('inp_pic').value.trim(),
+                target_tgl_selesai: document.getElementById('inp_tenggat').value,
+                foto_bukti: linkFotoDrive // Link dimasukkan ke JSONB
             };
 
-            fetch(API_CONFIG.KPC, {
-                method: 'POST',
-                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(res => {
-                if (res.status === 'success') {
-                    Swal.fire({
-                        title: 'Terkirim!',
-                        text: 'Laporan KPC berhasil dikirim ke Komite Mutu.',
-                        icon: 'success',
-                        confirmButtonColor: '#ffc107',
-                        confirmButtonText: 'Tutup'
-                    }).then(() => {
-                        window.location.reload();
-                    });
-                } else {
-                    Swal.fire('Gagal!', res.message, 'error');
-                    resetBtn();
-                }
-            })
-            .catch(err => {
-                Swal.fire('Koneksi Terputus', 'Gagal menyambung ke server database.', 'error');
-                resetBtn();
-            });
+            const payloadData = {
+                jenis_insiden: "KPC", 
+                waktu_insiden: document.getElementById('inp_waktu').value,
+                unit_pelapor: sessionMutu.unit || "Tidak Diketahui",
+                lokasi_kejadian: document.getElementById('inp_lokasi').value,
+                nama_pasien: "-", 
+                no_rm: "-",
+                kronologi: document.getElementById('inp_deskripsi').value.trim(),
+                tindakan_segera: document.getElementById('inp_tindakan_segera').value.trim(),
+                pelaksana_tindakan: "Pelapor (Penemu KPC)",
+                skor_dampak: 0, 
+                skor_probabilitas: 0,
+                grading_risiko: "Biru", 
+                nama_pelapor: pelapor,
+                detail_spesifik: detailJSON
+            };
 
-            function resetBtn() {
+            try {
+                const { error } = await supabaseClient.from('data_insiden').insert([payloadData]);
+                if (error) throw error;
+
+                Swal.fire({
+                    title: 'Laporan KPC Terkirim!',
+                    text: 'Terima kasih atas kepekaan Anda. Laporan beserta bukti foto (jika ada) telah berhasil diamankan ke dalam sistem.',
+                    icon: 'success',
+                    allowOutsideClick: false
+                }).then(() => {
+                    document.getElementById('formKPC').reset();
+                    hapusFoto();
+                });
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal!', 'Terjadi kesalahan jaringan saat menyimpan database.', 'error');
+            } finally {
                 btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Kirim Laporan KPC';
                 btn.disabled = false;
             }

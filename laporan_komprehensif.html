@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Report Generator - SIM PMKP</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 15px rgba(0,0,0,.05); border-radius: 12px; border-top: 4px solid #d35400; background: #fff;}
+        .ai-banner { background: linear-gradient(135deg, #d35400 0%, #e67e22 100%); color: white; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        .step-box { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; height: 100%; }
+        .loader-ai { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4" style="max-width: 1000px;">
+        <div class="bg-white p-4 mb-4 card-custom">
+            
+            <div class="ai-banner d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <h4 class="fw-bold mb-1"><i class="fas fa-robot text-warning me-2"></i> Agentic AI Report Generator</h4>
+                    <p class="mb-0 text-white-50" style="font-size:0.9rem;">Penyusunan otomatis Laporan Terintegrasi PMKP (Mutu Terpadu PDSA, Insiden, Risiko & FMEA, Budaya) menggunakan Qwen AI via Groq.</p>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4 justify-content-center">
+                <div class="col-md-6">
+                    <div class="step-box border-primary">
+                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">1. Parameter Laporan</h6>
+                        <label class="form-label text-secondary fw-bold" style="font-size: 0.85rem;">Pilih Tahun</label>
+                        <select id="filterTahun" class="form-select border-primary mb-3 fw-bold"></select>
+                        
+                        <label class="form-label text-secondary fw-bold" style="font-size: 0.85rem;">Periode Laporan</label>
+                        <select id="filterPeriode" class="form-select border-primary fw-bold" onchange="updateDetailPeriode()">
+                            <option value="triwulan">Laporan Triwulan</option>
+                            <option value="semester">Laporan Semester</option>
+                            <option value="tahunan">Laporan Tahunan</option>
+                        </select>
+                        <select id="filterDetailPeriode" class="form-select border-primary fw-bold mt-2"></select>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="step-box border-success text-center d-flex flex-column justify-content-center">
+                        <h6 class="fw-bold text-success border-bottom pb-2 mb-3">2. Eksekusi Engine Terpadu</h6>
+                        <p class="text-muted" style="font-size: 0.85rem;">Sistem akan mengkompilasi data (Hybrid Live/Archive) dan merender puluhan grafik otomatis untuk dokumen Word.</p>
+                        <button class="btn btn-success fw-bold py-3 shadow mt-auto" id="btnGenerate" onclick="jalankanProsesIntegrasi()">
+                            <i class="fas fa-magic me-2"></i> Ekstrak & Buat Laporan MS Word
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-dark p-3 rounded" id="terminalBox" style="display: none;">
+                <h6 class="text-white fw-bold mb-2"><i class="fas fa-terminal text-success me-2"></i> Status Sistem:</h6>
+                <div id="terminalLog" class="text-success font-monospace" style="font-size: 0.85rem; height: 150px; overflow-y: auto;">
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- WADAH RENDER GRAFIK TERSEMBUNYI (PENTING UNTUK WORD) -->
+    <div id="hiddenChartContainer" style="position: absolute; top: -9999px; left: -9999px; width: 600px; height: 400px;">
+        <canvas id="chartMutu" width="600" height="400"></canvas>
+        <canvas id="chartInsiden" width="600" height="400"></canvas>
+        <canvas id="chartIndividual" width="600" height="300"></canvas>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        if (sessionMutu.role !== 'Komite Mutu') {
+            Swal.fire('Akses Ditolak', 'Halaman ini khusus untuk Pimpinan Komite Mutu.', 'error').then(() => window.location.href = 'index.html');
+        }
+
+        const MASTER_API_KEY = typeof API_CONFIG !== 'undefined' ? API_CONFIG.GROQ_API_KEY : "";
+
+        let masterIndikator = []; let setupForm = [];
+        let rawDataMutu = []; let hasilAgregasi = []; 
+        let rawDataInsiden = []; let rawDataRisiko = []; let rawDataPdsa = []; let rawDataFmea = []; let rawDataBudaya = [];
+        
+        let rawDataArsip = []; // WADAH BARU UNTUK GUDANG ARSIP
+
+        let statDataMutu = { total: 0, tercapai: 0, gagal: 0, avgInm: 0 };
+        let statDataInsiden = { total: 0, merah: 0, kuning: 0, hijau: 0, biru: 0 };
+
+        const kamusWaktu = {
+            'triwulan': { '1': ['Januari', 'Februari', 'Maret'], '2': ['April', 'Mei', 'Juni'], '3': ['Juli', 'Agustus', 'September'], '4': ['Oktober', 'November', 'Desember'] },
+            'semester': { '1': ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni'], '2': ['Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] },
+            'tahunan': { '1': ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] }
+        };
+        const intToBulanStr = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+        document.addEventListener("DOMContentLoaded", async function () {
+            if (!supabaseClient) return;
+            const currentYear = new Date().getFullYear();
+            const filterTahun = document.getElementById('filterTahun');
+            // Ditambahkan tahun-tahun sebelumnya agar bisa mengecek arsip
+            for(let i = currentYear - 2; i <= currentYear; i++) {
+                filterTahun.add(new Option(i, i));
+            }
+            filterTahun.value = currentYear;
+            updateDetailPeriode();
+        });
+
+        window.updateDetailPeriode = function() {
+            const tipe = document.getElementById('filterPeriode').value;
+            const selDetail = document.getElementById('filterDetailPeriode');
+            selDetail.innerHTML = '';
+            
+            if (tipe === 'triwulan') {
+                selDetail.add(new Option('Triwulan 1 (Jan-Mar)', '1')); selDetail.add(new Option('Triwulan 2 (Apr-Jun)', '2'));
+                selDetail.add(new Option('Triwulan 3 (Jul-Sep)', '3')); selDetail.add(new Option('Triwulan 4 (Okt-Des)', '4'));
+            } else if (tipe === 'semester') {
+                selDetail.add(new Option('Semester 1 (Jan-Jun)', '1')); selDetail.add(new Option('Semester 2 (Jul-Des)', '2'));
+            } else {
+                selDetail.add(new Option('Satu Tahun Penuh', '1'));
+                selDetail.style.display = 'none';
+            }
+            if(tipe !== 'tahunan') selDetail.style.display = 'block';
+        };
+
+        function logTerminal(pesan) {
+            const term = document.getElementById('terminalLog');
+            const time = new Date().toLocaleTimeString('id-ID');
+            term.innerHTML += "[" + time + "] > " + pesan + "<br>";
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function eksekusiRumusEngine(template, rows, colsConfig) {
+            if (!template) return 0;
+            let t = template.toString().trim();
+            if (t.startsWith('{') && t.endsWith('}')) {
+                try {
+                    let rule = JSON.parse(t);
+                    let colIdx = parseInt(rule.target_kolom);
+                    if (rule.tipe === "COUNTALL") return rows.length;
+                    if (rule.tipe === "SUM") return rows.reduce((acc, r) => acc + (parseFloat(r.data_input[colIdx]) || 0), 0);
+                    if (rule.tipe === "COUNTIF") {
+                        let kr = (rule.nilai_kriteria || "").toString().toLowerCase().trim();
+                        let op = rule.operator || "==";
+                        return rows.filter(r => {
+                            let val = (r.data_input[colIdx] !== null && r.data_input[colIdx] !== undefined) ? r.data_input[colIdx].toString().toLowerCase().trim() : "";
+                            if (op === "==") return val === kr;
+                            if (op === "!=") return val !== kr;
+                            if (op === "includes") return val.includes(kr);
+                            return false;
+                        }).length;
+                    }
+                } catch(e) {}
+            }
+            return 0; // Legacy string parsing dihapus demi performa karena JSON sudah paten
+        }
+
+        window.jalankanProsesIntegrasi = async function() {
+            if (!MASTER_API_KEY) { Swal.fire('API Key Hilang', 'Parameter GROQ_API_KEY belum diisi.', 'error'); return; }
+
+            const btn = document.getElementById('btnGenerate');
+            btn.disabled = true; btn.innerHTML = '<div class="loader-ai me-2"></div> Sistem Sedang Bekerja...';
+            document.getElementById('terminalBox').style.display = 'block';
+            document.getElementById('terminalLog').innerHTML = '';
+
+            const tahun = parseInt(document.getElementById('filterTahun').value);
+            const tipePeriode = document.getElementById('filterPeriode').value;
+            const detailPeriode = document.getElementById('filterDetailPeriode').value;
+            const listBulanTeks = kamusWaktu[tipePeriode][detailPeriode];
+            const listBulanAngka = listBulanTeks.map(b => intToBulanStr.indexOf(b) + 1);
+
+            let judulPeriodeRaw = tipePeriode === "tahunan" ? "TAHUNAN TAHUN " + tahun : tipePeriode.toUpperCase() + " " + detailPeriode + " TAHUN " + tahun;
+
+            try {
+                logTerminal("Memulai koneksi ke Supabase Database...");
+
+                logTerminal("Mengekstrak data Indikator Mutu (Status Aktif)...");
+                const resInd = await supabaseClient.from('master_indikator').select('*').neq('status_aktif', false); 
+                masterIndikator = resInd.data || [];
+                const resForm = await supabaseClient.from('setup_formulir').select('*'); 
+                setupForm = resForm.data || [];
+
+                // ==============================================================
+                // HYBRID DATA ROUTING (ARSIP VS LIVE)
+                // ==============================================================
+                logTerminal("Mengecek Gudang Arsip (Capaian Beku)...");
+                const resArsip = await supabaseClient.from('arsip_capaian_mutu').select('*').eq('tahun', tahun).in('bulan', listBulanAngka);
+                rawDataArsip = resArsip.data || [];
+                
+                logTerminal("Mengekstrak Data Mentah Harian (Live)...");
+                const resMutu = await supabaseClient.from('data_mutu_harian').select('*').eq('tahun', tahun).in('bulan', listBulanAngka);
+                rawDataMutu = resMutu.data || [];
+
+                logTerminal("Mengeksekusi Agregator Hybrid...");
+                kalkulasiCapaianKuantitatif(tahun, listBulanTeks, listBulanAngka);
+
+                logTerminal("Mengekstrak data Insiden Keselamatan Pasien (IKP)...");
+                let startDate = new Date(tahun, listBulanAngka[0] - 1, 1).toISOString();
+                let endDate = new Date(tahun, listBulanAngka[listBulanAngka.length - 1] + 1, 0, 23, 59, 59).toISOString();
+                const resInsiden = await supabaseClient.from('data_insiden').select('*').gte('waktu_insiden', startDate).lte('waktu_insiden', endDate);
+                rawDataInsiden = resInsiden.data || [];
+                kalkulasiStatistikInsiden();
+
+                logTerminal("Mengekstrak jejak rekam PDSA...");
+                const resPdsa = await supabaseClient.from('data_pdsa').select('*');
+                if(resPdsa.data) rawDataPdsa = resPdsa.data.filter(row => row.periode_analisis && row.periode_analisis.includes(tahun.toString()));
+                else rawDataPdsa = [];
+
+                logTerminal("Mengekstrak data Risiko Korporat & FMEA...");
+                const resRisiko = await supabaseClient.from('data_risiko').select('*').eq('tahun', tahun).eq('is_profil_rs', true);
+                rawDataRisiko = resRisiko.data || [];
+                
+                const resFmea = await supabaseClient.from('data_fmea').select('*').like('tanggal_dibuat', `%${tahun}%`);
+                rawDataFmea = resFmea.data || [];
+
+                logTerminal("Mengekstrak data Survei Budaya Keselamatan Pasien...");
+                const resBudaya = await supabaseClient.from('data_budaya_keselamatan').select('*').eq('tahun', tahun);
+                rawDataBudaya = resBudaya.data || [];
+
+                logTerminal("Mem-build puluhan grafik statistik indikator (Base64)...");
+                await generateChartsBase64(listBulanTeks);
+
+                logTerminal("Merumuskan Prompt Khusus untuk Qwen AI...");
+                let narasiAI = await callGroqAPI(MASTER_API_KEY, judulPeriodeRaw, listBulanTeks);
+
+                logTerminal("Menyusun struktur dokumen MS Word (Tata Naskah Dinas)...");
+                buildWordDocument(judulPeriodeRaw, narasiAI, listBulanTeks);
+
+                logTerminal("✅ BERHASIL! Dokumen sedang diunduh...");
+                Swal.fire('Selesai!', 'Laporan Terintegrasi berhasil dibuat dan diekspor ke MS Word.', 'success');
+
+            } catch (err) {
+                console.error(err);
+                logTerminal("❌ ERROR: " + (err.message || 'Terjadi kesalahan sistem'));
+                Swal.fire('Gagal', 'Proses pembuatan laporan gagal. Periksa koneksi atau API Key.', 'error');
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-magic me-2"></i> Ekstrak & Buat Laporan MS Word';
+            }
+        };
+
+        // ==============================================
+        // AGREGASI HYBRID (CERDAS MEMBACA ARSIP/LIVE)
+        // ==============================================
+        function kalkulasiCapaianKuantitatif(tahun, namaBulanArr, listBulanAngka) {
+            hasilAgregasi = [];
+            statDataMutu = { total: 0, tercapai: 0, gagal: 0, avgInm: 0 };
+            let sumInm = 0, countInm = 0;
+
+            masterIndikator.forEach(profil => {
+                let idForm = profil.id_form;
+                let idIndikatorAsli = profil.id_indikator;
+                
+                let kat = (profil.kategori_indikator || "").toLowerCase();
+                let jenis = "IMP-Unit"; 
+                if (kat.includes("nasional") || kat.includes("inm")) jenis = "INM";
+                else if (kat.includes("prioritas") && (kat.includes("rs") || kat.includes("rumah sakit"))) jenis = "IMP-RS";
+
+                let sf = setupForm.find(f => f.id_form === idForm);
+                if(!sf) return;
+
+                let dataTransaksiFormIni = rawDataMutu.filter(d => d.id_indikator === idForm);
+                
+                let tempBulanData = {};
+                dataTransaksiFormIni.forEach(trans => {
+                    let blnStr = intToBulanStr[trans.bulan - 1];
+                    let unitRow = (jenis === 'INM' || jenis === 'IMP-RS') ? "RS_ALL" : trans.unit_kerja;
+                    if(!tempBulanData[unitRow]) tempBulanData[unitRow] = {};
+                    if(!tempBulanData[unitRow][blnStr]) tempBulanData[unitRow][blnStr] = [];
+                    tempBulanData[unitRow][blnStr].push(trans);
+                });
+
+                let unitsToProcess = Object.keys(tempBulanData);
+                
+                // Tambahkan Unit dari Arsip jika ada tapi tidak ada di data Live
+                let arsipIndikatorIni = rawDataArsip.filter(a => a.id_indikator === idIndikatorAsli);
+                arsipIndikatorIni.forEach(a => {
+                    let uArsip = (jenis === 'INM' || jenis === 'IMP-RS') ? "RS_ALL" : a.unit_pelaksana;
+                    if(!unitsToProcess.includes(uArsip)) unitsToProcess.push(uArsip);
+                });
+
+                if(unitsToProcess.length === 0) {
+                    unitsToProcess = [(jenis === 'INM' || jenis === 'IMP-RS') ? "RS_ALL" : "Unit Belum Lapor"];
+                    tempBulanData[unitsToProcess[0]] = {};
+                }
+
+                let tmplNum = (profil.template_numerator || "").toString().trim();
+                let tmplDen = (profil.template_denominator || "").toString().trim();
+                let isEngine = (tmplNum.startsWith('{') || tmplDen.startsWith('{'));
+
+                unitsToProcess.forEach(unt => {
+                    let blnData = {};
+                    namaBulanArr.forEach((b, idxArr) => {
+                        let blnAngka = listBulanAngka[idxArr];
+                        blnData[b] = { num: 0, den: 0, val: null, isArsip: false };
+
+                        // 1. CEK GUDANG ARSIP DULU
+                        let targetUnitPencarian = (unt === "RS_ALL") ? profil.unit_pelaksana : unt;
+                        let adaArsip = arsipIndikatorIni.find(a => a.bulan === blnAngka && (a.unit_pelaksana === targetUnitPencarian || unt === "RS_ALL"));
+                        
+                        if (adaArsip) {
+                            blnData[b].val = adaArsip.capaian;
+                            blnData[b].isArsip = true;
+                        } 
+                        // 2. JIKA TIDAK ADA DI ARSIP, JALANKAN MESIN LIVE
+                        else if (tempBulanData[unt] && tempBulanData[unt][b]) {
+                            let rows = tempBulanData[unt][b];
+                            if(isEngine) {
+                                blnData[b].num += eksekusiRumusEngine(tmplNum, rows, sf.kolom);
+                                blnData[b].den += eksekusiRumusEngine(tmplDen, rows, sf.kolom);
+                            } 
+                        }
+                    });
+
+                    let isPercentage = (profil.satuan || "").includes('%');
+                    let validBulanCount = 0; let sumCapaianBulan = 0;
+
+                    namaBulanArr.forEach(b => {
+                        // Jika bukan data arsip, kalkulasi num/den
+                        if (!blnData[b].isArsip) {
+                            let N = blnData[b].num; let D = blnData[b].den; let finalCapai = null;
+                            if(D > 0) { finalCapai = N / D; if(isPercentage) finalCapai *= 100; } 
+                            if(finalCapai !== null) blnData[b].val = Math.round(finalCapai * 100) / 100;
+                        }
+
+                        if(blnData[b].val !== null) {
+                            sumCapaianBulan += blnData[b].val;
+                            validBulanCount++;
+                        }
+                    });
+
+                    let avgCapai = validBulanCount > 0 ? (sumCapaianBulan / validBulanCount) : 0;
+                    avgCapai = Math.round(avgCapai * 100) / 100;
+                    let target = parseFloat(profil.target) || 0;
+                    
+                    let arah = (profil.arah_target || "Positif").toLowerCase();
+                    let isTercapai = false;
+                    if (arah.includes("kecil") || arah.includes("negatif") || arah.includes("≤")) { isTercapai = avgCapai <= target; } 
+                    else { isTercapai = avgCapai >= target; }
+
+                    statDataMutu.total++;
+                    if(isTercapai) statDataMutu.tercapai++; else statDataMutu.gagal++;
+
+                    if(jenis === 'INM') { sumInm += avgCapai; countInm++; }
+
+                    hasilAgregasi.push({
+                        id_indikator: idIndikatorAsli,
+                        judul: profil.judul_indikator,
+                        kategori_jenis: jenis,
+                        unit: unt,
+                        satuan: profil.satuan || '',
+                        target: target,
+                        capaian_bulan: blnData,
+                        rata_rata: avgCapai,
+                        isTercapai: isTercapai,
+                        chartBase64: ""
+                    });
+                });
+            });
+
+            if(countInm > 0) statDataMutu.avgInm = (sumInm/countInm).toFixed(1);
+        }
+
+        function kalkulasiStatistikInsiden() {
+            statDataInsiden = { total: rawDataInsiden.length, merah: 0, kuning: 0, hijau: 0, biru: 0 };
+            rawDataInsiden.forEach(row => {
+                if(row.grading_risiko === 'Merah') statDataInsiden.merah++;
+                else if(row.grading_risiko === 'Kuning') statDataInsiden.kuning++;
+                else if(row.grading_risiko === 'Hijau') statDataInsiden.hijau++;
+                else statDataInsiden.biru++;
+            });
+        }
+
+        async function generateChartsBase64(namaBulanArr) {
+            // Chart Ringkasan
+            const ctxMutu = document.getElementById('chartMutu').getContext('2d');
+            new Chart(ctxMutu, {
+                type: 'pie', data: { labels: ['Tercapai', 'Tidak Tercapai'], datasets: [{ data: [statDataMutu.tercapai, statDataMutu.gagal], backgroundColor: ['#198754', '#dc3545'] }] },
+                options: { animation: false, plugins: { legend: { labels: { font: { size: 14 } } } } } 
+            });
+
+            const ctxIn = document.getElementById('chartInsiden').getContext('2d');
+            new Chart(ctxIn, {
+                type: 'bar', data: { labels: ['Ekstrem', 'Tinggi', 'Sedang', 'Rendah'], datasets: [{ label: 'Jumlah Insiden', data: [statDataInsiden.merah, statDataInsiden.kuning, statDataInsiden.hijau, statDataInsiden.biru], backgroundColor: ['#dc3545', '#fd7e14', '#198754', '#0dcaf0'] }] },
+                options: { animation: false, scales: { y: { beginAtZero: true } } }
+            });
+
+            await new Promise(r => setTimeout(r, 300));
+            imgChartMutu = document.getElementById('chartMutu').toDataURL("image/png");
+            imgChartInsiden = document.getElementById('chartInsiden').toDataURL("image/png");
+
+            // Chart Per Indikator Mutu
+            const canvasInd = document.getElementById('chartIndividual');
+            const ctxInd = canvasInd.getContext('2d');
+            let chartTemp = null;
+
+            for(let i=0; i<hasilAgregasi.length; i++) {
+                let item = hasilAgregasi[i];
+                let dataCap = namaBulanArr.map(b => item.capaian_bulan[b].val !== null ? item.capaian_bulan[b].val : 0);
+                let dataTgt = namaBulanArr.map(b => item.target);
+                
+                if(chartTemp) chartTemp.destroy();
+                
+                chartTemp = new Chart(ctxInd, {
+                    type: 'line',
+                    data: {
+                        labels: namaBulanArr,
+                        datasets: [
+                            { label: 'Target', data: dataTgt, borderColor: '#dc3545', borderDash: [5, 5], fill: false, tension: 0, pointRadius: 0 },
+                            { label: 'Capaian', data: dataCap, borderColor: '#0dcaf0', backgroundColor: 'rgba(13, 202, 240, 0.1)', fill: true, tension: 0.3, pointRadius: 5 }
+                        ]
+                    },
+                    options: { 
+                        animation: false, 
+                        plugins: { title: { display: true, text: item.judul, font: { size: 14 } }, legend: { position: 'bottom' } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+                await new Promise(r => setTimeout(r, 100)); // Beri waktu render
+                hasilAgregasi[i].chartBase64 = canvasInd.toDataURL("image/png");
+            }
+            if(chartTemp) chartTemp.destroy();
+        }
+
+        // ==============================================
+        // AI PROMPT & GROQ (QWEN)
+        // ==============================================
+        async function callGroqAPI(apiKey, periodeTxt, listBulanTeks) {
+            const apiUrl = "https://api.groq.com/openai/v1/chat/completions";
+
+            let budayaTxt = rawDataBudaya.length > 0 ? `Terdapat hasil survei budaya keselamatan pasien pada periode ini dengan total ${rawDataBudaya.length} responden.` : `Tidak ada survei budaya keselamatan pasien yang dilakukan pada periode ini.`;
+
+            const promptText = `Anda adalah seorang Direktur Peningkatan Mutu Rumah Sakit yang sangat profesional.
+Tugas Anda adalah menulis Bab "ANALISIS TERINTEGRASI DAN TINDAK LANJUT" untuk Laporan Komite Mutu periode ${periodeTxt} dalam bahasa Indonesia yang sangat formal, terstruktur, dan elegan sesuai standar akreditasi KARS/JCI.
+
+Berikut adalah ringkasan data riil periode ini:
+1. DATA MUTU: Total indikator dipantau: ${statDataMutu.total}. Tercapai: ${statDataMutu.tercapai}, Gagal: ${statDataMutu.gagal}. Rata-rata capaian INM adalah ${statDataMutu.avgInm}%. Sebagian besar indikator gagal telah dilakukan perbaikan (PDSA).
+2. DATA INSIDEN (IKP): Terjadi total ${statDataInsiden.total} insiden. Ekstrem/Merah: ${statDataInsiden.merah}, Tinggi/Kuning: ${statDataInsiden.kuning}, Sedang/Hijau: ${statDataInsiden.hijau}, Rendah/Biru: ${statDataInsiden.biru}.
+3. DATA RISIKO & FMEA: Terdapat ${rawDataRisiko.length} risiko prioritas di Profil RS, dan ${rawDataFmea.length} proyek redesain FMEA sedang berjalan.
+4. BUDAYA KESELAMATAN: ${budayaTxt}
+
+TUGAS ANDA:
+Buatkan output teks HANYA dalam format HTML (gunakan tag <p>, <ul>, <li>, <b> langsung, tanpa <html> atau <body>) yang mencakup:
+1. Bahas korelasi antara capaian mutu (terutama keberhasilan PDSA) dengan tren insiden keselamatan pasien (jenis/grading).
+2. Hubungkan analisis tersebut dengan Manajemen Risiko (FMEA) dan Budaya Keselamatan Pasien di rumah sakit.
+3. Berikan 3 poin "Rekomendasi Strategis Direktur" (menggunakan bullet points) untuk triwulan berikutnya.
+
+Aturan ketat: DILARANG menggunakan kalimat pembuka murahan seperti 'Berdasarkan data di atas'. Langsung gunakan gaya bahasa laporan eksekutif.`;
+
+            const requestBody = {
+                model: "qwen-2.5-32b", // Diubah ke qwen 2.5 agar lebih cerdas
+                messages: [{ role: "user", content: promptText }],
+                temperature: 0.3
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: "POST", 
+                    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey }, 
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) throw new Error("Gagal terhubung ke API AI Groq.");
+                
+                const data = await response.json();
+                if (data.choices && data.choices[0].message.content) {
+                    return data.choices[0].message.content.replace(/```html/g, "").replace(/```/g, "");
+                } else throw new Error("Format respons AI tidak dikenali.");
+            } catch (err) { throw new Error(err.message); }
+        }
+
+        // ==============================================
+        // MERAKIT MS WORD DOCUMENT SUPER LENGKAP
+        // ==============================================
+        function buildWordDocument(periodeTxt, htmlAnalisisAI, listBulan) {
+            
+            const h1 = "<ht" + "ml xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><he" + "ad><meta charset='utf-8'><st" + "yle>";
+            
+            const cssWord = "@page { size: 21cm 29.7cm; margin: 2.5cm; } " +
+                "body { font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.5; color: #000; } " +
+                "h1, h2, h3, h4 { text-align: center; font-weight: bold; margin-bottom: 10pt; line-height: 1.2; } " +
+                "p { text-align: justify; margin-bottom: 10pt; } " +
+                "table { border-collapse: collapse; width: 100%; margin-bottom: 15pt; font-size: 10pt; } " +
+                "th, td { border: 1px solid #000; padding: 4pt; vertical-align: middle; } " +
+                "th { background-color: #f2f2f2; font-weight: bold; text-align: center; } " +
+                ".cover-page { text-align: center; padding-top: 50pt; } " +
+                ".signature-box { width: 100%; border: none; margin-top: 50pt; } " +
+                ".signature-box td { border: none; text-align: center; } " +
+                ".pdsa-row td { background-color: #fafafa; font-style: italic; font-size: 9pt; color: #333; padding-left: 15pt; border-top: none;}";
+                
+            const h3 = "</st" + "yle></he" + "ad><bo" + "dy>";
+            const msWordPageBreak = "<br clear='all' style='mso-special-character:line-break;page-break-before:always' />";
+
+            const coverPage = "<div class='cover-page'>" +
+                "<h2>PEMERINTAH KABUPATEN BANTUL<br>DINAS KESEHATAN<br>RUMAH SAKIT UMUM DAERAH SARAS ADYATMA</h2><br><br><br>" +
+                "<img src='https://upload.wikimedia.org/wikipedia/commons/a/a5/Bantul_Coat_of_Arms.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original' alt='Logo Bantul' width='160' height='210'><br><br><br>" +
+                "<h1>LAPORAN TERINTEGRASI PENINGKATAN MUTU DAN KESELAMATAN PASIEN (PMKP)</h1>" +
+                "<h2>" + periodeTxt + "</h2></div>";
+
+            const dateStr = new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
+            
+            const bab1 = "<h3 style='text-align: center;'>KATA PENGANTAR</h3>" +
+                "<p>Puji syukur kami panjatkan kehadirat Tuhan Yang Maha Esa, dimana Komite Mutu dan Keselamatan Pasien telah menyelesaikan penyusunan Laporan Terintegrasi PMKP " + periodeTxt + " di Rumah Sakit Umum Daerah Saras Adyatma.</p>" +
+                "<p>Laporan terintegrasi ini disusun untuk mewujudkan segala upaya peningkatan mutu dan keselamatan pasien secara berkelanjutan guna memberikan pelayanan yang berkualitas kepada pasien selama menjalani perawatan.</p>" +
+                "<p style='text-align: right;'>Bantul, " + dateStr + "<br>Komite Mutu dan Keselamatan Pasien</p>" +
+                msWordPageBreak + 
+                "<h3 style='text-align: center;'>BAB I<br>PENDAHULUAN</h3>" +
+                "<p>Pembangunan kesehatan di bidang pelayanan seperti rumah sakit bertujuan untuk meningkatkan mutu, cakupan dan efisiensi pelaksanaan pelayanan kesehatan yang meliputi kegiatan perencanaan, pelaksanaan, pengawasan, pengendalian dan penilaian. Semakin meningkatnya tingkat pendidikan, sosial dan ekonomi masyarakat, menuntut pelayanan yang lebih baik, lebih ramah dan lebih bermutu.</p>" +
+                "<p>Rumah Sakit Umum Daerah (RSUD) Saras Adyatma Kabupaten Bantul menyelenggarakan tata kelola mutu yang dipandu oleh Komite Mutu dan Keselamatan Pasien untuk meningkatkan keselamatan pasien dan mempertahankan standar pelayanan. Laporan ini merupakan bentuk tanggung jawab institusi yang mencakup evaluasi Mutu, Insiden Keselamatan Pasien, Manajemen Risiko, dan Budaya Keselamatan.</p>";
+
+            // ================== GENERATE TABEL MUTU ==================
+            let thBulan = listBulan.map(b => `<th>${b}</th>`).join('');
+            
+            const buildBlokMutu = (jenisStr, judulBlok) => {
+                let items = hasilAgregasi.filter(h => h.kategori_jenis === jenisStr);
+                if(items.length === 0) return ""; 
+
+                let html = `<h4>${judulBlok}</h4>`;
+                html += `<table><thead><tr><th width="5%">No</th><th width="35%">Judul Indikator</th><th width="10%">Target</th>${thBulan}<th width="10%">Rata-rata</th></tr></thead><tbody>`;
+                items.forEach((item, idx) => {
+                    let tdBulans = listBulan.map(b => `<td style="text-align:center;">${item.capaian_bulan[b].val !== null ? item.capaian_bulan[b].val : '-'}</td>`).join('');
+                    let cl = item.isTercapai ? "color: green;" : "color: red; font-weight: bold;";
+                    html += `<tr><td style="text-align:center;">${idx+1}</td><td>${item.judul}</td><td style="text-align:center;">${item.target} ${item.satuan}</td>${tdBulans}<td style="text-align:center; ${cl}">${item.rata_rata} ${item.satuan}</td></tr>`;
+                });
+                html += `</tbody></table>`;
+
+                html += `<p><b>Grafik Tren & Tindak Lanjut (PDSA):</b></p>`;
+                items.forEach((item, idx) => {
+                    html += `<h5>${idx+1}. ${item.judul}</h5>`;
+                    html += `<div style="text-align:center; margin-bottom: 10pt;"><img src="${item.chartBase64}" width="400" height="200"></div>`;
+                    
+                    let pdsaMatch = rawDataPdsa.find(p => p.id_indikator === item.id_indikator);
+                    if(pdsaMatch) { 
+                        let masalah = pdsaMatch.plan_data ? pdsaMatch.plan_data.masalah : "-";
+                        let rencana = pdsaMatch.plan_data && pdsaMatch.plan_data.action[0] ? pdsaMatch.plan_data.action[0].act : "-";
+                        html += `<table><thead><tr><th width="50%">Analisa Akar Masalah</th><th width="50%">Rencana Tindak Lanjut</th></tr></thead><tbody><tr><td>${masalah}</td><td>${rencana}</td></tr></tbody></table>`;
+                    }
+                });
+                return html;
+            };
+
+            const tabelINM = buildBlokMutu("INM", "A. Capaian Indikator Nasional Mutu (INM)");
+            const tabelIMPRS = buildBlokMutu("IMP-RS", "B. Capaian Indikator Mutu Prioritas RS (IMP-RS)");
+
+            // LOGIKA KHUSUS IMP-UNIT (DIPISAH PER UNIT)
+            let impUnitHtml = "";
+            let impUnitItems = hasilAgregasi.filter(h => h.kategori_jenis === 'IMP-Unit');
+            if(impUnitItems.length > 0) {
+                impUnitHtml += `<br clear='all' style='mso-special-character:line-break;page-break-before:always' />`;
+                impUnitHtml += `<h3 style='text-align: center;'>C. CAPAIAN INDIKATOR MUTU PRIORITAS UNIT (IMP-UNIT)</h3>`;
+                
+                let unitsObj = {};
+                impUnitItems.forEach(i => {
+                    if(!unitsObj[i.unit]) unitsObj[i.unit] = [];
+                    unitsObj[i.unit].push(i);
+                });
+
+                for(let uName in unitsObj) {
+                    impUnitHtml += `<h4>Unit: ${uName}</h4>`;
+                    let items = unitsObj[uName];
+                    
+                    impUnitHtml += `<table><thead><tr><th width="5%">No</th><th width="35%">Judul Indikator</th><th width="10%">Target</th>${thBulan}<th width="10%">Rata-rata</th></tr></thead><tbody>`;
+                    items.forEach((item, idx) => {
+                        let tdBulans = listBulan.map(b => `<td style="text-align:center;">${item.capaian_bulan[b].val !== null ? item.capaian_bulan[b].val : '-'}</td>`).join('');
+                        let cl = item.isTercapai ? "color: green;" : "color: red; font-weight: bold;";
+                        impUnitHtml += `<tr><td style="text-align:center;">${idx+1}</td><td>${item.judul}</td><td style="text-align:center;">${item.target} ${item.satuan}</td>${tdBulans}<td style="text-align:center; ${cl}">${item.rata_rata} ${item.satuan}</td></tr>`;
+                    });
+                    impUnitHtml += `</tbody></table>`;
+
+                    items.forEach((item, idx) => {
+                        impUnitHtml += `<h5>${idx+1}. ${item.judul}</h5>`;
+                        impUnitHtml += `<div style="text-align:center; margin-bottom: 10pt;"><img src="${item.chartBase64}" width="400" height="200"></div>`;
+                        
+                        let pdsaMatch = rawDataPdsa.find(p => p.id_indikator === item.id_indikator && p.unit_kerja === item.unit);
+                        if(!pdsaMatch) pdsaMatch = rawDataPdsa.find(p => p.id_indikator === item.id_indikator); // fallback
+
+                        if(pdsaMatch) {
+                            let masalah = pdsaMatch.plan_data ? pdsaMatch.plan_data.masalah : "-";
+                            let rencana = pdsaMatch.plan_data && pdsaMatch.plan_data.action[0] ? pdsaMatch.plan_data.action[0].act : "-";
+                            impUnitHtml += `<table><thead><tr><th width="50%">Analisa Akar Masalah</th><th width="50%">Rencana Tindak Lanjut</th></tr></thead><tbody><tr><td>${masalah}</td><td>${rencana}</td></tr></tbody></table>`;
+                        }
+                    });
+                }
+            }
+
+            const bab2 = msWordPageBreak + 
+                "<h3 style='text-align: center;'>BAB II<br>CAPAIAN INDIKATOR MUTU & PERBAIKAN (PDSA)</h3>" +
+                "<p>Pemantauan indikator mutu diukur melalui sistem agregasi data harian. Berikut adalah rekapitulasi data capaian mutu pada " + periodeTxt + ":</p>" +
+                "<ul><li>Total Indikator Dipantau: <b>" + statDataMutu.total + " Indikator</b></li><li>Memenuhi Target: <b>" + statDataMutu.tercapai + " Indikator</b></li><li>Tidak Memenuhi Target: <b>" + statDataMutu.gagal + " Indikator</b></li></ul>" +
+                "<div style='text-align:center; margin-bottom: 20pt;'><img src='" + imgChartMutu + "' width='350' height='230'></div>" +
+                tabelINM + tabelIMPRS + impUnitHtml;
+
+            // ================== GENERATE TABEL INSIDEN ==================
+            let tabelInsidenHtml = "";
+            if(rawDataInsiden.length === 0) {
+                tabelInsidenHtml = "<tr><td colspan='5' style='text-align:center;'>Nihil Laporan Insiden.</td></tr>";
+            } else {
+                rawDataInsiden.forEach((r, i) => {
+                    let tgl = new Date(r.waktu_insiden).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}) + " " + r.waktu_insiden.split('T')[1].substring(0,5);
+                    tabelInsidenHtml += `<tr><td style="text-align:center;">${i+1}</td><td>${tgl}</td><td>${r.insiden}</td><td style="text-align:center; font-weight:bold;">${r.grading_risiko}</td><td>${r.unit_terkait}</td></tr>`;
+                });
+            }
+
+            const bab3 = msWordPageBreak + 
+                "<h3 style='text-align: center;'>BAB III<br>KESELAMATAN PASIEN</h3>" +
+                "<p>Selama periode " + periodeTxt + ", dilaporkan terdapat total <b>" + statDataInsiden.total + "</b> Insiden Keselamatan Pasien (IKP/KPC) yang masuk ke Komite Mutu. Berdasarkan hasil grading risiko awal, sebarannya adalah sebagai berikut:</p>" +
+                "<div style='text-align:center; margin-bottom: 20pt;'><img src='" + imgChartInsiden + "' width='450' height='300'></div>" +
+                "<h4>Overview Insiden Keselamatan Pasien Terlapor</h4>" +
+                "<table><thead><tr><th width='5%'>No</th><th width='15%'>Waktu Insiden</th><th width='40%'>Judul Insiden / Kronologi Singkat</th><th width='15%'>Grading</th><th width='25%'>Unit Terkait</th></tr></thead><tbody>" + tabelInsidenHtml + "</tbody></table>";
+
+            // ================== GENERATE TABEL RISIKO & FMEA ==================
+            let tabelRisikoLengkapHtml = "";
+            if(rawDataRisiko.length === 0) tabelRisikoLengkapHtml = "<tr><td colspan='5' style='text-align:center;'>Belum ada Profil Risiko Korporat.</td></tr>";
+            else {
+                rawDataRisiko.forEach((r, i) => {
+                    tabelRisikoLengkapHtml += `<tr><td style="text-align:center;">${i+1}</td><td>${r.kategori_risiko || '-'}</td><td>${r.risiko_teridentifikasi}</td><td style="text-align:center;">${r.skor_akhir}</td><td>${r.status_penanganan || 'Belum Ditangani'}</td></tr>`;
+                });
+            }
+
+            let tabelFmeaHtml = "";
+            if(rawDataFmea.length === 0) tabelFmeaHtml = "<tr><td colspan='4' style='text-align:center;'>Tidak ada Proyek FMEA yang berjalan pada periode ini.</td></tr>";
+            else {
+                rawDataFmea.forEach((f, i) => {
+                    tabelFmeaHtml += `<tr><td style="text-align:center;">${i+1}</td><td>${f.nama_proses}</td><td>${f.ketua_tim || '-'}</td><td style="text-align:center; font-weight:bold;">${f.status_proyek || 'Aktif'}</td></tr>`;
+                });
+            }
+
+            const bab4_risiko = msWordPageBreak + 
+                "<h3 style='text-align: center;'>BAB IV<br>MANAJEMEN RISIKO KORPORAT & FMEA</h3>" +
+                "<h4>Daftar Profil Risiko Rumah Sakit</h4>" +
+                "<p>Pemantauan terhadap risiko tingkat rumah sakit yang telah ditetapkan pada periode ini beserta status penanganannya:</p>" +
+                "<table><thead><tr><th width='5%'>No</th><th width='25%'>Kategori</th><th width='40%'>Risiko Teridentifikasi</th><th width='10%'>Skor Akhir</th><th width='20%'>Status Pantau</th></tr></thead><tbody>" + tabelRisikoLengkapHtml + "</tbody></table>" +
+                "<h4>Progres Analisis FMEA (Failure Mode and Effects Analysis)</h4>" +
+                "<p>Terhadap proses layanan yang berisiko sangat tinggi (Ekstrem), rumah sakit membentuk tim redesain proses layanan klinis (FMEA) sebagai bentuk mitigasi proaktif:</p>" +
+                "<table><thead><tr><th width='5%'>No</th><th width='45%'>Nama Proses Yang Dianalisis</th><th width='30%'>Ketua Tim</th><th width='20%'>Status Proyek</th></tr></thead><tbody>" + tabelFmeaHtml + "</tbody></table>";
+
+            // ================== BAB V & VI ==================
+            const bab5_ai = msWordPageBreak + 
+                "<h3 style='text-align: center;'>BAB V<br>ANALISIS TERINTEGRASI DAN TINDAK LANJUT</h3>" +
+                "<p><i>Catatan: Narasi pembahasan strategis di bawah ini dirumuskan berdasarkan agregasi data kuantitatif menggunakan Teknologi AI.</i></p>" +
+                "<div style='border: 1px solid #000; padding: 10pt; background-color: #fcfcfc;'>" + htmlAnalisisAI + "</div>";
+
+            const bab6_feedback = msWordPageBreak + 
+                "<h3 style='text-align: center;'>BAB VI<br>EVALUASI DAN UMPAN BALIK DIREKTUR</h3>" +
+                "<p>Sesuai dengan pedoman tata kelola mutu rumah sakit, Direktur diwajibkan memberikan umpan balik secara tertulis terhadap laporan kinerja PMKP yang telah disampaikan.</p>" +
+                "<table style='margin-top: 20pt;'><thead><tr><th>Umpan Balik / Arahan Direktur Rumah Sakit</th></tr></thead><tbody><tr><td style='height: 250px; vertical-align: top;'><br><br><br><br></td></tr></tbody></table>" +
+                "<table class='signature-box'><tr><td width='50%'>Ketua Komite Mutu dan Keselamatan Pasien<br><br><br><br><br><b>( dr. _________________________ )</b><br>NIP. </td><td width='50%'>Mengetahui & Menyetujui,<br>Direktur RSUD Saras Adyatma<br><br><br><br><br><b>( dr. _________________________ )</b><br>NIP. </td></tr></table>";
+
+            const f1 = "</bo" + "dy></ht" + "ml>";
+                
+            const blob = new Blob(['\ufeff', h1 + cssWord + h3 + coverPage + bab1 + bab2 + bab3 + bab4_risiko + bab5_ai + bab6_feedback + f1], { type: 'application/msword' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob); 
+            link.download = "Laporan_PMKP_Terintegrasi_" + periodeTxt.replace(/ /g, "_") + ".doc";
+            link.click();
+        }
+
+    </script>
+</body>
+</html>

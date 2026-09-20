@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruang Kerja PDSA - SIM PMKP</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 15px rgba(0,0,0,.05); border-radius: 12px; border-top: 4px solid #0dcaf0; background: #fff;}
+        .form-label { font-weight: 600; color: #34495e; margin-top: 10px; margin-bottom: 5px; font-size: 0.9rem;}
+        
+        .pdsa-banner { background: linear-gradient(135deg, #0dcaf0 0%, #0bacce 100%); color: white; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
+        
+        /* Navigasi Siklus PDSA */
+        .nav-pills .nav-link { font-weight: bold; color: #6c757d; border-radius: 50px; margin-right: 5px; border: 1px solid #dee2e6; transition: 0.3s; }
+        .nav-pills .nav-link.active { background-color: #0dcaf0; color: white; border-color: #0dcaf0; box-shadow: 0 4px 8px rgba(13, 202, 240, 0.3); }
+        .nav-pills .nav-link i { margin-right: 6px; }
+
+        .phase-container { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 25px; margin-top: 20px;}
+        .table-action th { background-color: #e9ecef; text-align: center; }
+        
+        @media print {
+            body { background-color: #fff !important; padding-top: 0 !important; }
+            #navbar-container, #sidebar-container, .d-print-none { display: none !important; }
+            .card-custom { border: none !important; box-shadow: none !important; padding: 0 !important; }
+            .phase-container { border: none; padding: 0; background: transparent; display: block !important; opacity: 1 !important;}
+            .tab-pane { display: block !important; opacity: 1 !important; margin-bottom: 30px;}
+            @page { margin: 1cm; size: portrait; }
+        }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4" style="max-width: 1000px;">
+        <div class="bg-white p-4 mb-4 card-custom">
+            
+            <div class="pdsa-banner d-flex justify-content-between align-items-center flex-wrap gap-3 d-print-none">
+                <div>
+                    <h4 class="fw-bold mb-1"><i class="fas fa-sync-alt me-2"></i> Lembar Kerja PDSA (CQI)</h4>
+                    <p class="mb-0 text-white-50" style="font-size:0.9rem;">Siklus Continuous Quality Improvement (Plan-Do-Study-Act)</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-light fw-bold shadow-sm" onclick="window.print()"><i class="fas fa-print me-1"></i> Cetak Dokumen</button>
+                    <button class="btn btn-primary fw-bold shadow-sm" onclick="simpanPDSA()"><i class="fas fa-save me-1"></i> Simpan Progres</button>
+                </div>
+            </div>
+
+            <!-- HEADER IDENTITAS -->
+            <div class="row g-3 mb-4 p-3 bg-light rounded border align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label text-secondary mb-1">Indikator Mutu yang Diperbaiki <span class="text-danger">*</span></label>
+                    <select id="inp_id_indikator" class="form-select fw-bold border-info text-dark" onchange="muatOpsiPareto()" required>
+                        <option value="">-- Memuat Kamus Indikator... --</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label text-secondary mb-1">Bulan & Tahun Kejadian</label>
+                    <input type="text" class="form-control border-info text-dark" id="inp_periode" placeholder="Contoh: Juni 2026" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label text-secondary mb-1">Tim / Pembuat Laporan</label>
+                    <input type="text" class="form-control border-info text-dark" id="inp_tim" placeholder="Nama Ka. Unit / Ketua Tim">
+                </div>
+            </div>
+
+            <!-- TAB NAVIGASI -->
+            <ul class="nav nav-pills d-print-none mb-3 justify-content-center" id="pdsaTabs" role="tablist">
+                <li class="nav-item" role="presentation"><button class="nav-link active px-4" data-bs-toggle="pill" data-bs-target="#tab-plan"><i class="fas fa-clipboard-list"></i> PLAN (Perencanaan)</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link px-4" data-bs-toggle="pill" data-bs-target="#tab-do"><i class="fas fa-tools"></i> DO (Pelaksanaan)</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link px-4" data-bs-toggle="pill" data-bs-target="#tab-study"><i class="fas fa-search-chart"></i> STUDY (Evaluasi)</button></li>
+                <li class="nav-item" role="presentation"><button class="nav-link px-4" data-bs-toggle="pill" data-bs-target="#tab-act"><i class="fas fa-check-double"></i> ACT (Tindak Lanjut)</button></li>
+            </ul>
+
+            <div class="tab-content" id="pdsaTabContent">
+                
+                <!-- ================= FASE 1: PLAN ================= -->
+                <div class="tab-pane fade show active" id="tab-plan" role="tabpanel">
+                    <div class="phase-container" style="border-top: 4px solid #0dcaf0;">
+                        <h5 class="fw-bold text-info text-darken mb-4 border-bottom pb-2">1. PLAN (Perencanaan)</h5>
+                        
+                        <!-- MESIN PARETO -->
+                        <div class="card border-info mb-4 d-print-none shadow-sm">
+                            <div class="card-header bg-info text-white fw-bold"><i class="fas fa-chart-bar me-2"></i> Auto-Pareto Generator (Opsional)</div>
+                            <div class="card-body bg-white">
+                                <p class="text-muted" style="font-size:0.85rem;">Pilih kolom dari formulir transaksi harian yang berisi daftar alasan/hambatan/jenis kegagalan untuk dibuatkan Diagram Pareto otomatis.</p>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-9">
+                                        <select id="pareto_kolom" class="form-select border-info">
+                                            <option value="">-- Pilih Indikator Mutu di atas terlebih dahulu --</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <button type="button" class="btn btn-info w-100 fw-bold text-white" onclick="generatePareto()"><i class="fas fa-magic me-1"></i> Buat Pareto</button>
+                                    </div>
+                                </div>
+                                <div id="paretoContainer" class="mt-4 d-none">
+                                    <div style="height: 350px; position: relative;"><canvas id="canvasPareto"></canvas></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">A. Identifikasi Masalah Utama</label>
+                            <textarea class="form-control" id="plan_masalah" rows="2" placeholder="Apa masalahnya? (Misal: Capaian ketepatan waktu visiste dokter hanya 60%)"></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">B. Analisis Akar Masalah (Root Cause)</label>
+                            <textarea class="form-control" id="plan_akar" rows="4" placeholder="Gunakan tombol 5-Why di bawah untuk membedah akar masalah..."></textarea>
+                            <button type="button" class="btn btn-sm btn-outline-info mt-2 fw-bold d-print-none text-dark" data-bs-toggle="modal" data-bs-target="#modal5Why"><i class="fas fa-question-circle me-1"></i> Gunakan 5-Why Tool</button>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label">C. Tujuan Perbaikan (SMART: Specific, Measurable, Achievable, Relevant, Time-bound)</label>
+                            <textarea class="form-control" id="plan_tujuan" rows="2" placeholder="Contoh: Meningkatkan ketepatan waktu visite menjadi 90% pada bulan Juli 2026."></textarea>
+                        </div>
+
+                        <label class="form-label">D. Rencana Tindakan (Action Plan)</label>
+                        <div class="table-responsive bg-white">
+                            <table class="table table-bordered table-action mb-0">
+                                <thead><tr><th width="50%">Rencana Perbaikan</th><th width="30%">Penanggung Jawab (Siapa)</th><th width="20%">Target Waktu (Kapan)</th></tr></thead>
+                                <tbody>
+                                    <tr>
+                                        <td><textarea class="form-control form-control-sm" id="plan_act_1" rows="2"></textarea></td>
+                                        <td><input type="text" class="form-control form-control-sm" id="plan_pic_1"></td>
+                                        <td><input type="date" class="form-control form-control-sm" id="plan_tgl_1"></td>
+                                    </tr>
+                                    <tr>
+                                        <td><textarea class="form-control form-control-sm" id="plan_act_2" rows="2"></textarea></td>
+                                        <td><input type="text" class="form-control form-control-sm" id="plan_pic_2"></td>
+                                        <td><input type="date" class="form-control form-control-sm" id="plan_tgl_2"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= FASE 2: DO ================= -->
+                <div class="tab-pane fade" id="tab-do" role="tabpanel">
+                    <div class="phase-container" style="border-top: 4px solid #ffc107;">
+                        <h5 class="fw-bold text-warning text-darken mb-4 border-bottom pb-2">2. DO (Pelaksanaan)</h5>
+                        <p class="text-muted" style="font-size:0.9rem;">Bagian ini diisi saat rencana perbaikan di atas sedang atau sudah dijalankan.</p>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">A. Catatan Pelaksanaan (Apa yang sebenarnya terjadi saat rencana dilakukan?)</label>
+                            <textarea class="form-control" id="do_pelaksanaan" rows="4" placeholder="Contoh: Sosialisasi dilakukan pada tgl 10 Juli, namun 2 dokter berhalangan hadir..."></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">B. Hambatan yang Ditemui</label>
+                            <textarea class="form-control" id="do_hambatan" rows="3" placeholder="Sebutkan hal-hal tak terduga yang mengganggu rencana..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= FASE 3: STUDY ================= -->
+                <div class="tab-pane fade" id="tab-study" role="tabpanel">
+                    <div class="phase-container" style="border-top: 4px solid #6f42c1;">
+                        <h5 class="fw-bold text-purple mb-4 border-bottom pb-2" style="color:#6f42c1;">3. STUDY (Evaluasi / Pembelajaran)</h5>
+                        <p class="text-muted" style="font-size:0.9rem;">Bagian ini diisi dengan membandingkan data sebelum perbaikan dengan data setelah perbaikan.</p>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Capaian Data SEBELUM Perbaikan</label>
+                                <input type="text" class="form-control fw-bold text-danger" id="study_data_sebelum" placeholder="Misal: 60%">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Capaian Data SESUDAH Perbaikan</label>
+                                <input type="text" class="form-control fw-bold text-success" id="study_data_sesudah" placeholder="Misal: 85%">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Hasil Analisis Data & Observasi</label>
+                            <textarea class="form-control" id="study_analisis" rows="4" placeholder="Apakah tujuan tercapai? Jika belum, mengapa? Apakah ada peningkatan?"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= FASE 4: ACT ================= -->
+                <div class="tab-pane fade" id="tab-act" role="tabpanel">
+                    <div class="phase-container" style="border-top: 4px solid #198754;">
+                        <h5 class="fw-bold text-success mb-4 border-bottom pb-2">4. ACT (Tindak Lanjut / Standarisasi)</h5>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">A. Keputusan Siklus Ini</label>
+                            <select class="form-select fw-bold border-success" id="act_keputusan">
+                                <option value="">-- Pilih Keputusan Akhir --</option>
+                                <option value="ADOPT">ADOPT (Berhasil - Jadikan Standar/SOP Baru)</option>
+                                <option value="ADAPT">ADAPT (Berhasil Sebagian - Lanjutkan siklus PDSA dengan modifikasi rencana)</option>
+                                <option value="ABANDON">ABANDON (Gagal Total - Hentikan pendekatan ini dan cari cara lain)</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">B. Rencana Tindak Lanjut Standarisasi / Siklus Berikutnya</label>
+                            <textarea class="form-control" id="act_tindak_lanjut" rows="4" placeholder="Jika ADOPT: Sebutkan SOP mana yang akan direvisi. Jika ADAPT: Sebutkan ide baru untuk siklus bulan depan..."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5 WHY -->
+    <div class="modal fade" id="modal5Why" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white fw-bold">
+                    <h5 class="modal-title text-dark"><i class="fas fa-question-circle me-2"></i> Alat Bantu 5-Why</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body bg-light">
+                    <div class="mb-2"><label class="form-label fw-bold text-danger mb-1">Masalah Utama:</label><input type="text" class="form-control form-control-sm" id="why_masalah"></div>
+                    <div class="mb-2"><label class="form-label fw-bold mb-1">1. Mengapa terjadi?</label><input type="text" class="form-control form-control-sm" id="why_1"></div>
+                    <div class="mb-2"><label class="form-label fw-bold mb-1">2. Mengapa [Jawaban 1]?</label><input type="text" class="form-control form-control-sm" id="why_2"></div>
+                    <div class="mb-2"><label class="form-label fw-bold mb-1">3. Mengapa [Jawaban 2]?</label><input type="text" class="form-control form-control-sm" id="why_3"></div>
+                    <div class="mb-2"><label class="form-label fw-bold mb-1">4. Mengapa [Jawaban 3]?</label><input type="text" class="form-control form-control-sm" id="why_4"></div>
+                    <div class="mb-3"><label class="form-label fw-bold mb-1">5. Mengapa [Jawaban 4]? (Root Cause)</label><input type="text" class="form-control form-control-sm" id="why_5"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-info fw-bold text-white w-100" onclick="terapkan5Why()"><i class="fas fa-check me-2"></i> Terapkan ke Tabel Plan</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LIBRARY -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlIdPdsa = urlParams.get('id_pdsa'); 
+        
+        let dbMasterIndikator = [];
+        let dbSetupFormulir = [];
+        let dbDataHarian = [];
+        let paretoChart = null;
+
+        document.addEventListener("DOMContentLoaded", async function () {
+            if (!supabaseClient) return;
+
+            try {
+                // 1. Load Kamus Indikator
+                const resInd = await supabaseClient.from('master_indikator').select('id_form, judul_indikator');
+                dbMasterIndikator = resInd.data || [];
+                const selInd = document.getElementById('inp_id_indikator');
+                selInd.innerHTML = '<option value="">-- Pilih Indikator Mutu --</option>';
+                dbMasterIndikator.forEach(i => selInd.add(new Option(i.judul_indikator, i.id_form)));
+
+                // 2. Load Setup Formulir
+                const resForm = await supabaseClient.from('setup_formulir').select('*');
+                dbSetupFormulir = resForm.data || [];
+
+                // 3. LOGIKA PENANGKAP URL OTOMATIS
+                const autoIdIndikator = urlParams.get('id_indikator');
+                const autoPeriode = urlParams.get('periode');
+
+                if (urlIdPdsa) {
+                    // Mode Edit PDSA yang sudah ada
+                    await loadExistingPDSA(urlIdPdsa);
+                } else {
+                    // Mode Buat Baru
+                    document.getElementById('inp_tim').value = sessionMutu.nama_lengkap || "";
+                    
+                    // Jika dilempar dari Dasbor Mutu, otomatis pilih Indikator & Periode
+                    if(autoIdIndikator) {
+                        selInd.value = autoIdIndikator;
+                        muatOpsiPareto(); // Pancing mesin Pareto agar langsung siap
+                    }
+                    if(autoPeriode) {
+                        document.getElementById('inp_periode').value = autoPeriode;
+                    }
+                }
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Error', 'Gagal memuat database dasar.', 'error');
+            }
+        });
+
+        // ==========================================
+        // MESIN PARETO GENERATOR
+        // ==========================================
+        window.muatOpsiPareto = function() {
+            let idForm = document.getElementById('inp_id_indikator').value;
+            let selPareto = document.getElementById('pareto_kolom');
+            selPareto.innerHTML = '<option value="">-- Pilih Kolom Faktor / Hambatan --</option>';
+            
+            if(!idForm) return;
+
+            let setup = dbSetupFormulir.find(f => f.id_form === idForm);
+            if(setup && setup.kolom) {
+                // Tampilkan hanya kolom yang bertipe dropdown atau teks panjang (biasanya ini isian alasan)
+                setup.kolom.forEach((k, idx) => {
+                    if(k.tipe === 'dropdown' || k.tipe === 'text') {
+                        selPareto.add(new Option(`Kolom: ${k.judul}`, idx));
+                    }
+                });
+            }
+        };
+
+        window.generatePareto = async function() {
+            let idForm = document.getElementById('inp_id_indikator').value;
+            let idxKolom = document.getElementById('pareto_kolom').value;
+            let periode = document.getElementById('inp_periode').value;
+
+            if(!idForm || idxKolom === "") {
+                Swal.fire('Gagal', 'Pilih Indikator dan Kolom yang ingin dianalisis terlebih dahulu.', 'warning'); return;
+            }
+
+            Swal.fire({ title: 'Mengkalkulasi Pareto...', didOpen: () => { Swal.showLoading(); }});
+
+            try {
+                // Tarik data harian khusus form ini. (Asumsi: kita tarik 1000 data terakhir untuk dianalisis)
+                const { data, error } = await supabaseClient.from('data_mutu_harian').select('*').eq('id_indikator', idForm).limit(1000);
+                if (error) throw error;
+                
+                let rawData = data || [];
+                if(rawData.length === 0) {
+                    Swal.fire('Info', 'Tidak ada data input harian untuk indikator ini.', 'info'); return;
+                }
+
+                // Hitung Frekuensi Alasan
+                let frekuensi = {};
+                rawData.forEach(row => {
+                    let nilaiKolom = row.data_input[idxKolom];
+                    // Bersihkan dan abaikan yang kosong atau bernilai "Ya/Tidak"
+                    if(nilaiKolom && nilaiKolom.trim() !== "" && nilaiKolom.toLowerCase() !== "ya" && nilaiKolom.toLowerCase() !== "tidak") {
+                        frekuensi[nilaiKolom] = (frekuensi[nilaiKolom] || 0) + 1;
+                    }
+                });
+
+                let sortedArray = Object.entries(frekuensi).map(([label, count]) => ({label, count})).sort((a,b) => b.count - a.count);
+                
+                if(sortedArray.length === 0) {
+                    Swal.fire('Info', 'Kolom yang dipilih tidak berisi data yang bisa dikelompokkan menjadi Pareto.', 'info'); return;
+                }
+
+                // Kalkulasi Kumulatif Pareto
+                let totalKasus = sortedArray.reduce((sum, item) => sum + item.count, 0);
+                let kumulatif = 0;
+                let arrLabels = []; let arrCount = []; let arrCumPct = [];
+
+                sortedArray.forEach(item => {
+                    kumulatif += item.count;
+                    let pct = (kumulatif / totalKasus) * 100;
+                    
+                    // Batasi nama label jika terlalu panjang
+                    let lbl = item.label.length > 25 ? item.label.substring(0, 25) + "..." : item.label;
+                    
+                    arrLabels.push(lbl);
+                    arrCount.push(item.count);
+                    arrCumPct.push(pct.toFixed(1));
+                });
+
+                // Tampilkan Canvas
+                document.getElementById('paretoContainer').classList.remove('d-none');
+                renderChartPareto(arrLabels, arrCount, arrCumPct);
+                
+                Swal.close();
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Error', 'Gagal memproses data harian.', 'error');
+            }
+        };
+
+        function renderChartPareto(labels, dataCounts, dataCumulative) {
+            const ctx = document.getElementById('canvasPareto').getContext('2d');
+            if(paretoChart) paretoChart.destroy();
+
+            paretoChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            type: 'line',
+                            label: 'Persentase Kumulatif (%)',
+                            data: dataCumulative,
+                            borderColor: '#dc3545',
+                            backgroundColor: '#dc3545',
+                            borderWidth: 2,
+                            yAxisID: 'y1',
+                            markerType: 'circle'
+                        },
+                        {
+                            type: 'bar',
+                            label: 'Jumlah Frekuensi (Kasus)',
+                            data: dataCounts,
+                            backgroundColor: '#0dcaf0',
+                            yAxisID: 'y'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        y: { type: 'linear', display: true, position: 'left', beginAtZero: true, title: {display: true, text: 'Jumlah Kasus'} },
+                        y1: { type: 'linear', display: true, position: 'right', min: 0, max: 100, title: {display: true, text: 'Kumulatif (%)'}, grid: {drawOnChartArea: false} }
+                    },
+                    plugins: { tooltip: { mode: 'index', intersect: false } }
+                }
+            });
+        }
+
+        // ==========================================
+        // HELPER 5 WHY
+        // ==========================================
+        window.terapkan5Why = function() {
+            let m = document.getElementById('why_masalah').value;
+            let w1 = document.getElementById('why_1').value;
+            let w2 = document.getElementById('why_2').value;
+            let w3 = document.getElementById('why_3').value;
+            let w4 = document.getElementById('why_4').value;
+            let w5 = document.getElementById('why_5').value;
+
+            if (!m || !w1) { Swal.fire('Info', 'Isi minimal Masalah dan Why 1', 'info'); return; }
+            let hasil = `MASALAH: ${m}\n1. ${w1}\n2. ${w2}`;
+            if(w3) hasil += `\n3. ${w3}`; if(w4) hasil += `\n4. ${w4}`; if(w5) hasil += `\n5. ${w5} (Akar)`;
+
+            document.getElementById('plan_akar').value = hasil;
+            bootstrap.Modal.getInstance(document.getElementById('modal5Why')).hide();
+        };
+
+        // ==========================================
+        // SIMPAN DATA KE SUPABASE
+        // ==========================================
+        window.simpanPDSA = async function() {
+            let selIndikator = document.getElementById('inp_id_indikator');
+            let idIndikator = selIndikator.value;
+            let namaIndikator = selIndikator.options[selIndikator.selectedIndex].text;
+            let periode = document.getElementById('inp_periode').value.trim();
+
+            if (!idIndikator || !periode) {
+                Swal.fire('Gagal', 'Identitas Indikator dan Periode wajib diisi.', 'warning'); return;
+            }
+
+            // Kemas data per fase
+            let planData = {
+                tim: document.getElementById('inp_tim').value,
+                masalah: document.getElementById('plan_masalah').value,
+                akar: document.getElementById('plan_akar').value,
+                tujuan: document.getElementById('plan_tujuan').value,
+                action: [
+                    { act: document.getElementById('plan_act_1').value, pic: document.getElementById('plan_pic_1').value, tgl: document.getElementById('plan_tgl_1').value },
+                    { act: document.getElementById('plan_act_2').value, pic: document.getElementById('plan_pic_2').value, tgl: document.getElementById('plan_tgl_2').value }
+                ]
+            };
+
+            let doData = {
+                pelaksanaan: document.getElementById('do_pelaksanaan').value,
+                hambatan: document.getElementById('do_hambatan').value
+            };
+
+            let studyData = {
+                data_sebelum: document.getElementById('study_data_sebelum').value,
+                data_sesudah: document.getElementById('study_data_sesudah').value,
+                analisis: document.getElementById('study_analisis').value
+            };
+
+            let actData = {
+                keputusan: document.getElementById('act_keputusan').value,
+                tindak_lanjut: document.getElementById('act_tindak_lanjut').value
+            };
+
+            // Tentukan fase saat ini secara kasar berdasarkan isian terakhir
+            let faseCurrent = 'PLAN';
+            if(document.getElementById('do_pelaksanaan').value) faseCurrent = 'DO';
+            if(document.getElementById('study_analisis').value) faseCurrent = 'STUDY';
+            if(document.getElementById('act_keputusan').value) faseCurrent = 'ACT';
+            if(document.getElementById('act_keputusan').value !== "") faseCurrent = 'SELESAI';
+
+            const payloadData = {
+                unit_kerja: sessionMutu.unit || "Komite Mutu",
+                judul_indikator: namaIndikator,
+                id_indikator: idIndikator,
+                periode_analisis: periode,
+                fase_saat_ini: faseCurrent,
+                plan_data: planData,
+                do_data: doData,
+                study_data: studyData,
+                act_data: actData
+            };
+
+            Swal.fire({ title: 'Menyimpan Siklus PDSA...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+
+            try {
+                if (urlIdPdsa) {
+                    const { error } = await supabaseClient.from('data_pdsa').update(payloadData).eq('id_pdsa', urlIdPdsa);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabaseClient.from('data_pdsa').insert([payloadData]);
+                    if (error) throw error;
+                }
+
+                Swal.fire('Tersimpan!', 'Data siklus perbaikan telah diamankan ke database.', 'success').then(() => {
+                    // Opsional: Bawa kembali ke dashboard PDSA yang akan kita buat nanti
+                    // window.location.href = "daftar_pdsa.html";
+                });
+            } catch(err) {
+                console.error(err);
+                Swal.fire('Error', 'Gagal menyimpan ke Supabase.', 'error');
+            }
+        };
+
+        // FUNGSI MUAT DATA LAMA
+        async function loadExistingPDSA(id) {
+            try {
+                const { data, error } = await supabaseClient.from('data_pdsa').select('*').eq('id_pdsa', id).single();
+                if (error) throw error;
+                
+                document.getElementById('inp_id_indikator').value = data.id_indikator;
+                document.getElementById('inp_periode').value = data.periode_analisis;
+                
+                if(data.plan_data) {
+                    document.getElementById('inp_tim').value = data.plan_data.tim || "";
+                    document.getElementById('plan_masalah').value = data.plan_data.masalah || "";
+                    document.getElementById('plan_akar').value = data.plan_data.akar || "";
+                    document.getElementById('plan_tujuan').value = data.plan_data.tujuan || "";
+                    if(data.plan_data.action[0]) {
+                        document.getElementById('plan_act_1').value = data.plan_data.action[0].act;
+                        document.getElementById('plan_pic_1').value = data.plan_data.action[0].pic;
+                        document.getElementById('plan_tgl_1').value = data.plan_data.action[0].tgl;
+                    }
+                    if(data.plan_data.action[1]) {
+                        document.getElementById('plan_act_2').value = data.plan_data.action[1].act;
+                        document.getElementById('plan_pic_2').value = data.plan_data.action[1].pic;
+                        document.getElementById('plan_tgl_2').value = data.plan_data.action[1].tgl;
+                    }
+                }
+                if(data.do_data) {
+                    document.getElementById('do_pelaksanaan').value = data.do_data.pelaksanaan || "";
+                    document.getElementById('do_hambatan').value = data.do_data.hambatan || "";
+                }
+                if(data.study_data) {
+                    document.getElementById('study_data_sebelum').value = data.study_data.data_sebelum || "";
+                    document.getElementById('study_data_sesudah').value = data.study_data.data_sesudah || "";
+                    document.getElementById('study_analisis').value = data.study_data.analisis || "";
+                }
+                if(data.act_data) {
+                    document.getElementById('act_keputusan').value = data.act_data.keputusan || "";
+                    document.getElementById('act_tindak_lanjut').value = data.act_data.tindak_lanjut || "";
+                }
+
+                muatOpsiPareto();
+
+            } catch(e) {
+                console.error(e);
+            }
+        }
+    </script>
+</body>
+</html>

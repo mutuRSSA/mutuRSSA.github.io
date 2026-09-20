@@ -4,38 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Input Data Mutu - SIM PMKP</title>
-    
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <!-- LIBRARY JSPREADSHEET (LINK RESMI & STABIL) -->
-    <script src="https://bossanova.uk/jspreadsheet/v4/jexcel.js"></script>
-    <script src="https://jsuites.net/v4/jsuites.js"></script>
-    <link rel="stylesheet" href="https://bossanova.uk/jspreadsheet/v4/jexcel.css" type="text/css" />
-    <link rel="stylesheet" href="https://jsuites.net/v4/jsuites.css" type="text/css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+
+    <!-- HANDSONTABLE & HYPERFORMULA -->
+    <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" rel="stylesheet" media="screen">
+    <script src="https://cdn.jsdelivr.net/npm/hyperformula/dist/hyperformula.full.min.js"></script>
 
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
         .card-custom { box-shadow: 0 4px 15px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff;}
         .form-label-custom { font-weight: 600; color: #34495e; font-size: 0.85rem; margin-bottom: 0.3rem;}
-        
+
         .dynamic-input-row { background: #fdfdfe; border: 1px solid #e9ecef; border-left: 4px solid #6f42c1; border-radius: 8px; padding: 20px; margin-bottom: 20px; transition: 0.3s;}
         .dynamic-input-row:hover { box-shadow: 0 5px 15px rgba(0,0,0,.08); }
-        
+
         .table-custom th { background-color: #2c3e50; color: white; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; border: none; padding: 12px; white-space: nowrap;}
         .table-custom td { vertical-align: middle; font-size: 0.9rem; border-bottom: 1px solid #f1f3f5; padding: 12px; white-space: nowrap;}
-        
+
         .input-formula { background-color: #e8f5e9 !important; border-color: #81c784 !important; color: #2e7d32 !important; font-weight: bold;}
-        .jexcel { width: 100%; font-size: 0.9rem;}
-        .jexcel > thead > tr > td { background-color: #f8f9fa; font-weight: bold; color: #2c3e50;}
+
+        #spreadsheet { width: 100%; overflow: hidden; z-index: 1;}
+        .htCenter.htMiddle { vertical-align: middle !important; }
+
+        .handsontable th .colHeader { white-space: normal !important; word-wrap: break-word !important; line-height: 1.4 !important; padding: 8px 4px !important; }
+        .handsontable thead th { height: auto !important; vertical-align: middle !important; }
+        .layout-transition { transition: all 0.4s ease-in-out; }
     </style>
 </head>
 <body>
     <div id="navbar-container"></div>
     <div id="sidebar-container"></div>
 
-    <div class="container-fluid px-4" style="max-width: 1400px;">
+    <div class="container-fluid px-4" style="max-width: 1500px;">
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
                 <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-edit text-primary me-2"></i> Formulir Pelaporan Mutu</h3>
@@ -43,20 +48,19 @@
             </div>
         </div>
 
-        <div class="row g-4">
-            <!-- PANEL KIRI: FILTER & FORM INPUT -->
-            <div class="col-lg-5">
+        <div class="row g-4" id="mainLayoutRow">
+            <!-- PANEL KIRI -->
+            <div class="col-lg-5 layout-transition" id="panelKiri">
                 <div class="card-custom p-4 mb-4 border-top border-4 border-primary">
                     <h6 class="fw-bold mb-3 border-bottom pb-2"><i class="fas fa-filter text-primary me-2"></i> 1. Parameter Pelaporan</h6>
-                    
-                    <div class="mb-3">
-                        <label class="form-label-custom">Unit Kerja</label>
-                        <select class="form-select fw-bold text-primary" id="sel_unit" onchange="loadIndikatorUnit()"></select>
-                    </div>
-                    
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <label class="form-label-custom">Bulan</label>
+
+                    <div class="row g-3">
+                        <div class="col-md-12 col-lg-6">
+                            <label class="form-label-custom">Unit Kerja</label>
+                            <select class="form-select fw-bold text-primary" id="sel_unit" onchange="loadIndikatorUnit()"></select>
+                        </div>
+                        <div class="col-6 col-lg-3">
+                            <label class="form-label-custom">Bulan (Default)</label>
                             <select class="form-select" id="sel_bulan" onchange="loadDataTabel()">
                                 <option value="1">Januari</option><option value="2">Februari</option>
                                 <option value="3">Maret</option><option value="4">April</option>
@@ -66,16 +70,16 @@
                                 <option value="11">November</option><option value="12">Desember</option>
                             </select>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label-custom">Tahun</label>
+                        <div class="col-6 col-lg-3">
+                            <label class="form-label-custom">Tahun (Default)</label>
                             <input type="number" class="form-control" id="sel_tahun" onchange="loadDataTabel()">
                         </div>
                     </div>
 
-                    <div class="mb-2">
+                    <div class="mt-3">
                         <label class="form-label-custom">Pilih Formulir Indikator <span class="text-danger">*</span></label>
                         <select class="form-select border-primary fw-bold" id="sel_indikator" onchange="bangunFormDinamis()">
-                            <option value="">-- Pilih Indikator --</option>
+                            <option value="">-- Pilih Unit Terlebih Dahulu --</option>
                         </select>
                     </div>
                 </div>
@@ -84,17 +88,15 @@
                     <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
                         <h6 class="fw-bold mb-0"><i class="fas fa-keyboard text-success me-2"></i> 2. Input Data Transaksi</h6>
                     </div>
-                    
-                    <!-- TOGGLE MODE INPUT -->
+
                     <div class="btn-group w-100 mb-4 shadow-sm" role="group">
                         <input type="radio" class="btn-check" name="modeInput" id="modeForm" autocomplete="off" checked onchange="toggleModeInput()">
-                        <label class="btn btn-outline-primary fw-bold" for="modeForm"><i class="fas fa-list me-1"></i> Form Tunggal</label>
+                        <label class="btn btn-outline-primary fw-bold" for="modeForm"><i class="fas fa-list me-1"></i> Form Tunggal (HP/Tablet)</label>
 
                         <input type="radio" class="btn-check" name="modeInput" id="modeExcel" autocomplete="off" onchange="toggleModeInput()">
-                        <label class="btn btn-outline-success fw-bold" for="modeExcel"><i class="fas fa-table me-1"></i> Tabel Excel (Copy-Paste)</label>
+                        <label class="btn btn-outline-success fw-bold" for="modeExcel"><i class="fas fa-table me-1"></i> Tabel Excel Massal (Desktop)</label>
                     </div>
 
-                    <!-- AREA FORM TUNGGAL -->
                     <form id="formDinamisContainer">
                         <div id="wadahInputDinamis" class="dynamic-input-row row g-3"></div>
                         <div class="d-grid mt-4">
@@ -104,26 +106,30 @@
                         </div>
                     </form>
 
-                    <!-- AREA TABEL EXCEL -->
                     <div id="excelContainer" class="d-none">
-                        <div class="alert alert-success p-2" style="font-size: 0.8rem;">
-                            <i class="fas fa-info-circle me-1"></i> Anda bisa <b>Copy (Ctrl+C)</b> dari Excel SIMRS dan <b>Paste (Ctrl+V)</b> ke tabel di bawah ini.
+                        <div class="alert alert-success p-2 mb-2 d-flex align-items-center" style="font-size: 0.85rem;">
+                            <i class="fas fa-magic fa-2x me-3"></i> 
+                            <div>
+                                <b>Smart Date Routing Aktif!</b> Paste data dari Excel, sistem otomatis memisahkan data ke bulan & tahun sesuai tanggal transaksi.
+                            </div>
                         </div>
-                        <div id="spreadsheetWadah" class="w-100 overflow-hidden border rounded mb-3 bg-white"></div>
+                        <div id="spreadsheetWadah" class="w-100 border rounded mb-3 bg-white" style="position: relative;">
+                            <div id="spreadsheet" style="height: 500px;"></div>
+                        </div>
                         <div class="d-grid mt-2">
-                            <button type="button" class="btn btn-success fw-bold py-2 shadow" id="btnSimpanDataExcel" onclick="simpanDataTransaksi('excel')">
-                                <i class="fas fa-layer-group me-2"></i> Simpan Semua Baris (Bulk)
+                            <button type="button" class="btn btn-success fw-bold py-3 shadow fs-5" id="btnSimpanDataExcel" onclick="simpanDataTransaksi('excel')">
+                                <i class="fas fa-layer-group me-2"></i> Simpan Semua Baris ke Database
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- PANEL KANAN: TABEL DATA YANG SUDAH DIINPUT -->
-            <div class="col-lg-7">
+            <!-- PANEL KANAN -->
+            <div class="col-lg-7 layout-transition" id="panelKanan">
                 <div class="card-custom p-4 h-100">
                     <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                        <h6 class="fw-bold mb-0"><i class="fas fa-database text-secondary me-2"></i> Arsip Data Terinput <span id="lbl_bulan_tahun" class="text-primary"></span></h6>
+                        <h6 class="fw-bold mb-0"><i class="fas fa-database text-secondary me-2"></i> Arsip Terinput <span id="lbl_bulan_tahun" class="text-primary"></span></h6>
                         <button class="btn btn-sm btn-outline-secondary rounded-pill" onclick="loadDataTabel()"><i class="fas fa-sync-alt"></i> Refresh</button>
                     </div>
 
@@ -145,7 +151,7 @@
         </div>
     </div>
 
-    <!-- 1. WAJIB: Library Supabase -->
+    <!-- Wajib: Library Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="auth.js"></script>
@@ -155,18 +161,43 @@
     <script>
         const session = JSON.parse(localStorage.getItem("sessionMutu")) || {};
         const isAdmin = (session.role === "Komite Mutu");
-        
+
         let cetakBiruAktif = []; 
         let daftarUnitMaster = []; 
-        let jexcelInstance = null; 
+        let hotInstance = null; 
 
-        // --- FUNGSI PEMBANTU RUMUS UNTUK FORM TUNGGAL ---
-        window.EXCEL_ROUND = function(num, dec) { return Number(Math.round(num + 'e' + dec) + 'e-' + dec); };
-        window.EXCEL_IF = function(cond, t, f) { return cond ? t : f; };
-        // ------------------------------------------------
+        const colToLetter = (index) => {
+            let letter = '';
+            while (index >= 0) {
+                letter = String.fromCharCode((index % 26) + 65) + letter;
+                index = Math.floor(index / 26) - 1;
+            }
+            return letter;
+        };
+
+        const parseTime24 = (timeStr) => {
+            if (!timeStr) return null;
+            let s = String(timeStr).trim();
+            s = s.replace(/\./g, ':');
+            if (/^\d{1,2}:\d{2}$/.test(s)) s += ":00"; 
+            let m = moment(s, ["HH:mm:ss", "H:mm:ss", "HH:mm", "H:mm", "hh:mm:ss A", "h:mm:ss a", "hh:mm A", "h:mm a"], true);
+            if (!m.isValid()) m = moment(s, ["HH:mm:ss", "H:mm:ss", "hh:mm:ss A", "h:mm:ss a", "hh:mm A", "h:mm a"]);
+            return m.isValid() ? m.format('HH:mm:ss') : s;
+        };
+
+        const parseIndoDate = (dateStr) => {
+            if (!dateStr) return moment.invalid();
+            let s = String(dateStr).toLowerCase().trim();
+            if (!isNaN(s) && Number(s) > 10000) { return moment('1899-12-30').add(Number(s), 'days'); }
+            const indoMonths = {'januari':'01', 'februari':'02', 'maret':'03', 'april':'04', 'mei':'05', 'juni':'06', 'juli':'07', 'agustus':'08', 'september':'09', 'oktober':'10', 'november':'11', 'desember':'12'};
+            for (let id in indoMonths) {
+                if (s.includes(id)) { return moment(s.replace(id, indoMonths[id]), ["D MM YYYY", "DD MM YYYY", "D/MM/YYYY", "DD/MM/YYYY", "DD-MM-YYYY"]); }
+            }
+            return moment(dateStr, ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD", "DD-MM-YYYY", "YYYY/MM/DD", "D/M/YY", "D/M/YYYY", moment.ISO_8601], false);
+        };
 
         document.addEventListener("DOMContentLoaded", async function () {
-            if (!supabaseClient) { Swal.fire('Error', 'Supabase belum dikonfigurasi', 'error'); return; }
+            if (!supabaseClient) return;
             const date = new Date();
             document.getElementById('sel_bulan').value = date.getMonth() + 1;
             document.getElementById('sel_tahun').value = date.getFullYear();
@@ -175,92 +206,225 @@
 
         async function inisialisasiAkses() {
             try {
-                const { data } = await supabaseClient.from('master_unit').select('*').order('nama_unit');
-                if (data) daftarUnitMaster = data;
-
+                // 1. Tarik Data Master Unit
+                const { data: units } = await supabaseClient.from('master_unit').select('*').order('nama_unit');
+                if (units) daftarUnitMaster = units;
+                
                 const selUnit = document.getElementById('sel_unit');
                 selUnit.innerHTML = '';
-
+                
                 if (isAdmin) {
                     selUnit.add(new Option("== Pilih Unit ==", ""));
                     daftarUnitMaster.forEach(u => selUnit.add(new Option(u.nama_unit, u.nama_unit)));
                 } else {
                     selUnit.add(new Option(session.unit, session.unit));
                     selUnit.disabled = true; 
-                    loadIndikatorUnit(); 
                 }
-            } catch (err) { console.error(err); }
+
+                // 2. Cek Parameter URL Auto-Routing dari Sidebar Menu
+                const urlParams = new URLSearchParams(window.location.search);
+                const formParam = urlParams.get('form');
+
+                if (formParam && isAdmin) {
+                    // Cari form ini milik unit mana (agar dropdown unit otomatis berpindah)
+                    const { data: indData } = await supabaseClient.from('master_indikator').select('unit_pelaksana').eq('id_form', formParam).maybeSingle();
+                    if(indData && indData.unit_pelaksana && indData.unit_pelaksana !== 'Semua Unit (Hospital Wide)') {
+                        selUnit.value = indData.unit_pelaksana;
+                    }
+                }
+
+                // 3. Load Indikator
+                await loadIndikatorUnit(formParam);
+
+            } catch (err) { console.error("Gagal Inisialisasi Akses:", err); }
         }
 
-        function loadIndikatorUnit() {
+        async function loadIndikatorUnit(autoSelectFormId = null) {
             const namaUnit = document.getElementById('sel_unit').value;
             const selIndikator = document.getElementById('sel_indikator');
-            selIndikator.innerHTML = '<option value="">-- Pilih Indikator --</option>';
-
-            if (!namaUnit) return;
-            const unitData = daftarUnitMaster.find(u => u.nama_unit === namaUnit);
             
-            if (unitData && unitData.daftar_form) {
-                let forms = unitData.daftar_form.split(',').map(s => s.trim());
-                forms.forEach(f => { selIndikator.add(new Option(`Form: ${f}`, f)); });
-            }
-            
+            selIndikator.innerHTML = '<option value="">-- Sedang memuat indikator... --</option>';
             document.getElementById('panelInputDinamis').classList.add('d-none');
+            
+            if (!namaUnit) {
+                selIndikator.innerHTML = '<option value="">-- Pilih Unit Terlebih Dahulu --</option>';
+                return;
+            }
+
+            try {
+                // HANYA TARIK INDIKATOR YANG AKTIF (TIDAK DIARSIPKAN) DARI SUPABASE
+                const { data, error } = await supabaseClient.from('master_indikator')
+                    .select('id_form, judul_indikator, unit_pelaksana')
+                    .neq('status_aktif', false) 
+                    .order('judul_indikator', { ascending: true });
+
+                if (error) throw error;
+
+                // Saring berdasarkan hak unit
+                let filteredForms = data;
+                if (namaUnit !== "" && namaUnit !== "Semua Unit (Hospital Wide)") {
+                    filteredForms = data.filter(d => {
+                        let pelaksana = (d.unit_pelaksana || "").toLowerCase();
+                        return pelaksana.includes(namaUnit.toLowerCase()) || pelaksana.includes("semua unit") || pelaksana.includes("hospital");
+                    });
+                }
+
+                selIndikator.innerHTML = '<option value="">-- Pilih Indikator --</option>';
+                filteredForms.forEach(f => { 
+                    selIndikator.add(new Option(f.judul_indikator, f.id_form)); 
+                });
+
+                // Auto Select Form jika ada ID dari URL Param
+                if (autoSelectFormId) {
+                    if (Array.from(selIndikator.options).some(opt => opt.value === autoSelectFormId)) {
+                        selIndikator.value = autoSelectFormId;
+                        bangunFormDinamis();
+                    }
+                }
+            } catch(e) {
+                console.error("Gagal meload indikator unit", e);
+                selIndikator.innerHTML = '<option value="">-- Gagal memuat --</option>';
+            }
         }
 
         function toggleModeInput() {
             const isExcel = document.getElementById('modeExcel').checked;
-            document.getElementById('formDinamisContainer').style.display = isExcel ? 'none' : 'block';
-            document.getElementById('excelContainer').style.display = isExcel ? 'block' : 'none';
-            
-            // Re-render spreadsheet agar lebarnya pas
-            if(isExcel && jexcelInstance && typeof window.dispatchEvent === 'function') {
-                setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+            const panelKiri = document.getElementById('panelKiri');
+            const panelKanan = document.getElementById('panelKanan');
+
+            if (isExcel) {
+                document.getElementById('formDinamisContainer').classList.add('d-none');
+                document.getElementById('excelContainer').classList.remove('d-none');
+                panelKiri.classList.remove('col-lg-5'); panelKiri.classList.add('col-lg-12');
+                panelKanan.classList.remove('col-lg-7'); panelKanan.classList.add('col-lg-12');
+                if(hotInstance) setTimeout(() => { hotInstance.render(); }, 300);
+            } else {
+                document.getElementById('formDinamisContainer').classList.remove('d-none');
+                document.getElementById('excelContainer').classList.add('d-none');
+                panelKiri.classList.remove('col-lg-12'); panelKiri.classList.add('col-lg-5');
+                panelKanan.classList.remove('col-lg-12'); panelKanan.classList.add('col-lg-7');
             }
         }
 
         async function bangunFormDinamis() {
             const idForm = document.getElementById('sel_indikator').value;
             const panel = document.getElementById('panelInputDinamis');
-            
             if (!idForm) { panel.classList.add('d-none'); return; }
-
-            document.getElementById('wadahInputDinamis').innerHTML = '<div class="text-center w-100"><i class="fas fa-spinner fa-spin"></i> Merakit...</div>';
+            
+            document.getElementById('wadahInputDinamis').innerHTML = '<div class="text-center w-100 py-5"><i class="fas fa-spinner fa-spin fa-2x text-primary"></i><br>Merakit Arsitektur Form...</div>';
             panel.classList.remove('d-none');
-
+            
             try {
                 const { data, error } = await supabaseClient.from('setup_formulir').select('kolom').eq('id_form', idForm).single();
                 if (error) throw error;
-
                 cetakBiruAktif = data.kolom; 
-                
-                // 1. Gambar Form Tunggal
-                renderFormTunggal();
-                
-                // 2. Gambar Tabel Excel (Dibungkus try-catch agar jika error library, form tunggal tetap bisa dipakai)
-                try {
-                    renderExcelTabel();
-                } catch(eExcel) {
-                    console.error("Gagal meload Excel engine:", eExcel);
-                    document.getElementById('spreadsheetWadah').innerHTML = '<div class="alert alert-danger p-2">Plugin Tabel Excel gagal dimuat. Gunakan Form Tunggal.</div>';
-                }
-
-                // 3. Load Arsip
-                loadDataTabel();
-
+                renderExcelTabel(); renderFormTunggal(); loadDataTabel();
             } catch (err) {
-                console.error(err);
-                document.getElementById('wadahInputDinamis').innerHTML = '<div class="alert alert-danger w-100">Gagal memuat form. Hubungi Administrator.</div>';
+                document.getElementById('wadahInputDinamis').innerHTML = '<div class="alert alert-danger w-100">Gagal memuat struktur formulir (Form Builder kosong).</div>';
             }
         }
 
-        // ==========================================
-        // 1. RENDERER: FORM TUNGGAL & KALKULATOR JS
-        // ==========================================
+        function renderExcelTabel() {
+            const container = document.getElementById('spreadsheet');
+            container.innerHTML = '';
+            if(hotInstance) { hotInstance.destroy(); }
+
+            let hotColumns = cetakBiruAktif.map(c => {
+                let rawType = (c.tipe || 'text').toString().toLowerCase().trim();
+                let colWidth = c.lebar ? parseInt(c.lebar) : 200; 
+                let config = { type: 'text', readOnly: false, wordWrap: true, width: colWidth }; 
+
+                if (rawType === 'dropdown') { config.type = 'dropdown'; config.source = c.opsi ? c.opsi.split(',').map(s=>s.trim()) : []; } 
+                else if (rawType === 'checkbox') { config.type = 'checkbox'; config.checkedTemplate = 'Ya'; config.uncheckedTemplate = 'Tidak'; config.className = 'htCenter htMiddle'; } 
+                else if (rawType === 'calendar' || rawType === 'date') { config.type = 'date'; config.dateFormat = 'DD/MM/YYYY'; } 
+                else if (rawType === 'time') { config.type = 'time'; config.timeFormat = 'HH:mm:ss'; config.correctFormat = true; } 
+                else if (rawType === 'number') { config.type = 'numeric'; }
+
+                if (rawType === 'readonly' || c.formula) { config.readOnly = true; }
+                return config;
+            });
+
+            let emptyData = Array.from({length: 50}, () => Array(cetakBiruAktif.length).fill(null));
+
+            const applyFormulasToRow = (rowArray, rowIndex) => {
+                cetakBiruAktif.forEach((col, colIndex) => {
+                    if (col.formula && col.formula.trim() !== "") {
+                        let excelFormula = col.formula
+                            .replace(/\[(\d+)\]:\[(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (rowIndex + 1) + ":" + colToLetter(parseInt(e)) + (rowIndex + 1))
+                            .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (rowIndex + 1));
+                        rowArray[colIndex] = "=" + excelFormula;
+                    }
+                });
+            };
+
+            emptyData.forEach((row, idx) => applyFormulasToRow(row, idx));
+
+            hotInstance = new Handsontable(container, {
+                data: emptyData, colHeaders: cetakBiruAktif.map(c => c.judul), columns: hotColumns,
+                rowHeaders: true, width: '100%', height: 500, stretchH: 'all', contextMenu: true, 
+                formulas: { engine: HyperFormula }, licenseKey: 'non-commercial-and-evaluation', 
+                autoColumnSize: false, manualColumnResize: true, 
+
+                beforeChange: function(changes, source) {
+                    if (!changes) return;
+                    changes.forEach(change => {
+                        let colDef = cetakBiruAktif[change[1]];
+                        if(!colDef) return;
+                        let colType = (colDef.tipe || '').toString().toLowerCase().trim();
+                        let newVal = change[3];
+
+                        if ((colType === 'date' || colType === 'calendar') && newVal) {
+                            let parsedDate = parseIndoDate(newVal);
+                            if (parsedDate.isValid()) change[3] = parsedDate.format('DD/MM/YYYY');
+                        }
+                        else if (colType === 'checkbox' && newVal !== null && newVal !== undefined) {
+                            let strVal = newVal.toString().trim().toLowerCase();
+                            if (['true', '1', 'yes', 'y', 'benar', 'ya'].includes(strVal)) change[3] = 'Ya';
+                            else if (['false', '0', 'no', 'n', 'salah', 'tidak', ''].includes(strVal)) change[3] = 'Tidak';
+                        }
+                        else if (colType === 'time' && newVal) {
+                            let parsedTime = parseTime24(newVal);
+                            if (parsedTime) change[3] = parsedTime;
+                        }
+                    });
+                },
+                afterPaste: function(data, coords) {
+                    const hot = this;
+                    setTimeout(() => {
+                        let updates = []; const rowCount = hot.countRows();
+                        for (let r = 0; r < rowCount; r++) {
+                            cetakBiruAktif.forEach((col, c) => {
+                                if (col.formula && col.formula.trim() !== "") {
+                                    let val = hot.getDataAtCell(r, c);
+                                    if (val === null || val === "" || (typeof val === 'string' && !val.startsWith('='))) {
+                                         let excelFormula = col.formula
+                                            .replace(/\[(\d+)\]:\[(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (r + 1) + ":" + colToLetter(parseInt(e)) + (r + 1))
+                                            .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (r + 1));
+                                         updates.push([r, c, "=" + excelFormula]);
+                                    }
+                                }
+                            });
+                        }
+                        if (updates.length > 0) hot.setDataAtCell(updates, 'autoFormulaSweep'); 
+                    }, 200); 
+                },
+                cells: function(row, col) {
+                    var cellProperties = {};
+                    cellProperties.renderer = function(instance, td, r, c, prop, value, cellProps) {
+                        var baseRenderer = Handsontable.renderers.getRenderer(cellProps.type || 'text');
+                        baseRenderer.apply(this, arguments);
+                        if (cellProps.readOnly) { td.style.backgroundColor = '#f1f3f5'; td.style.color = '#0dcaf0'; td.style.fontWeight = 'bold'; } 
+                        else { td.style.backgroundColor = '#ffffff'; td.style.color = '#2c3e50'; }
+                        if (value === '#DIV/0!' || value === '#VALUE!') td.innerHTML = '<span style="color:#dee2e6">-</span>'; 
+                    };
+                    return cellProperties;
+                }
+            });
+        }
+
         function renderFormTunggal() {
             const wadahForm = document.getElementById('wadahInputDinamis');
             wadahForm.innerHTML = '';
-            
             let headHTML = '<tr><th class="text-center" width="5%"><i class="fas fa-trash"></i></th>';
 
             cetakBiruAktif.forEach((field, index) => {
@@ -268,151 +432,63 @@
                 if (field.tipe === "number" || field.tipe === "time" || field.tipe === "readonly") colClass = "col-md-6";
                 else if (field.tipe === "date" || field.tipe === "dropdown") colClass = "col-md-6";
 
-                let inputHTML = '';
-                let idInput = `inp_dinamis_${index}`;
-                let triggerCalc = `onkeyup="kalkulasiOtomatis()" onchange="kalkulasiOtomatis()"`;
+                let inputHTML = ''; let idInput = `inp_dinamis_${index}`;
+                let triggerCalc = `onkeyup="kalkulasiOtomatisDariHOT()" onchange="kalkulasiOtomatisDariHOT()"`;
 
                 if (field.tipe === 'dropdown') {
                     let opts = field.opsi ? field.opsi.split(',').map(s => `<option value="${s.trim()}">${s.trim()}</option>`).join('') : '';
                     inputHTML = `<select class="form-select input-data-transaksi" id="${idInput}" data-index="${index}" ${triggerCalc}><option value="">-- Pilih --</option>${opts}</select>`;
                 } 
                 else if (field.tipe === 'checkbox') {
-                    inputHTML = `
-                        <div class="form-check fs-5 mt-1 border rounded p-2 bg-white">
-                            <input class="form-check-input input-data-transaksi ms-1" type="checkbox" id="${idInput}" data-index="${index}" value="Ya" ${triggerCalc}>
-                            <label class="form-check-label text-secondary ms-2" for="${idInput}" style="font-size:0.9rem;">Tandai jika "Ya" / "Sesuai"</label>
-                        </div>`;
+                    inputHTML = `<div class="form-check fs-5 mt-1 border rounded p-2 bg-white"><input class="form-check-input input-data-transaksi ms-1" type="checkbox" id="${idInput}" data-index="${index}" value="Ya" ${triggerCalc}><label class="form-check-label text-secondary ms-2" for="${idInput}" style="font-size:0.9rem;">Tandai jika "Ya"</label></div>`;
                 }
                 else if (field.tipe === 'readonly') {
-                    inputHTML = `<input type="text" class="form-control input-formula input-data-transaksi" id="${idInput}" data-index="${index}" data-formula="${field.formula || ''}" placeholder="Otomatis" readonly>`;
-                } 
-                else {
+                    inputHTML = `<input type="text" class="form-control input-formula input-data-transaksi" id="${idInput}" data-index="${index}" placeholder="Otomatis" readonly>`;
+                } else {
                     let inputType = field.tipe === 'calendar' ? 'date' : field.tipe;
                     inputHTML = `<input type="${inputType}" class="form-control input-data-transaksi" id="${idInput}" data-index="${index}" ${triggerCalc}>`;
                 }
 
-                wadahForm.innerHTML += `
-                    <div class="${colClass}">
-                        <label class="form-label-custom">${field.judul}</label>
-                        ${inputHTML}
-                    </div>
-                `;
+                wadahForm.innerHTML += `<div class="${colClass}"><label class="form-label-custom">${field.judul}</label>${inputHTML}</div>`;
                 headHTML += `<th>${field.judul}</th>`;
             });
-
-            headHTML += '</tr>';
-            document.getElementById('theadTransaksi').innerHTML = headHTML;
+            headHTML += '</tr>'; document.getElementById('theadTransaksi').innerHTML = headHTML;
         }
 
-        window.kalkulasiOtomatis = function() {
-            document.querySelectorAll('.input-formula').forEach(el => {
-                let formulaStr = el.getAttribute('data-formula');
-                if(!formulaStr) return;
-
-                let parsed = formulaStr.replace(/\[(\d+)\]/g, function(match, p1) {
-                    let sumber = document.getElementById(`inp_dinamis_${p1}`);
-                    if(!sumber) return 0;
-                    
-                    let val = (sumber.type === 'checkbox') ? (sumber.checked ? 'Ya' : 'Tidak') : sumber.value;
-                    if(!val) return 0;
-
-                    if (/^(\d{1,2}):(\d{2})$/.test(val)) {
-                        let p = val.split(':'); return (parseInt(p[0]) * 60 + parseInt(p[1])) / 1440;
-                    }
-                    
-                    let num = parseFloat(val);
-                    return isNaN(num) ? `"${val}"` : num;
-                });
-
-                parsed = parsed.replace(/ROUND\(/ig, "EXCEL_ROUND(")
-                               .replace(/IF\(/ig, "EXCEL_IF(")
-                               .replace(/(?<![><=!])=(?!=)/g, "==="); 
-
-                try { 
-                    let hasil = eval(parsed); 
-                    el.value = (isNaN(hasil) || hasil === Infinity) ? 0 : Math.round(hasil * 100) / 100;
-                } catch(e) { /* Abaikan error typing berjalan */ }
-            });
-        }
-
-        // ==========================================
-        // 2. RENDERER: JSPREADSHEET (EXCEL MODE)
-        // ==========================================
-        function renderExcelTabel() {
-            const container = document.getElementById('spreadsheetWadah');
-            container.innerHTML = '';
-            if(jexcelInstance) jexcelInstance.destroy();
-
-            let columns = cetakBiruAktif.map(field => {
-                let col = { title: field.judul, width: field.lebar || 150 };
-                
-                if (field.tipe === 'number') col.type = 'numeric';
-                else if (field.tipe === 'dropdown') { col.type = 'dropdown'; col.source = field.opsi.split(',').map(s=>s.trim()); }
-                else if (field.tipe === 'date' || field.tipe === 'calendar') col.type = 'calendar';
-                else if (field.tipe === 'checkbox') col.type = 'checkbox';
-                else col.type = 'text';
-
-                // Kolom dengan rumus dikunci
-                if (field.tipe === 'readonly' || field.formula) {
-                    col.type = 'text';
-                    col.readOnly = true;
+        window.kalkulasiOtomatisDariHOT = function() {
+            if(!hotInstance) return;
+            let updates = [];
+            document.querySelectorAll('.input-data-transaksi:not(.input-formula)').forEach(el => {
+                let idx = parseInt(el.getAttribute('data-index'));
+                let val = el.type === 'checkbox' ? (el.checked ? 'Ya' : 'Tidak') : el.value;
+                if (el.type === 'time' && val.length === 5) { val += ":00"; }
+                if (el.type === 'date' && val !== '') {
+                    let m = moment(val); if(m.isValid()) val = m.format('DD/MM/YYYY');
                 }
-                return col;
+                if (cetakBiruAktif[idx].tipe === 'number' && val !== '') { val = parseFloat(val); }
+                updates.push([0, idx, val]); 
             });
 
-            // Suntikkan rumus Excel ke baris kosong
-            let initData = [];
-            for (let r = 1; r <= 15; r++) { 
-                let rowData = [];
-                cetakBiruAktif.forEach((field) => {
-                    if (field.formula) {
-                        let xlFormula = "=" + field.formula.replace(/\[(\d+)\]/g, function(match, colIndex) {
-                            return colIndexToLetter(parseInt(colIndex)) + r;
-                        });
-                        rowData.push(xlFormula);
-                    } else {
-                        rowData.push('');
-                    }
-                });
-                initData.push(rowData);
-            }
+            hotInstance.setDataAtCell(updates, 'silentFormTunggalUpdate');
 
-            // Fungsi Jspreadsheet / Jexcel kompatibilitas
-            const excelEngine = typeof jspreadsheet !== 'undefined' ? jspreadsheet : (typeof jexcel !== 'undefined' ? jexcel : null);
-            
-            if(excelEngine) {
-                jexcelInstance = excelEngine(container, {
-                    data: initData,
-                    columns: columns,
-                    allowInsertRow: true,
-                    allowInsertColumn: false,
-                    wordWrap: true,
-                    contextMenu: function() { return false; } 
+            setTimeout(() => {
+                document.querySelectorAll('.input-formula').forEach(el => {
+                    let idx = parseInt(el.getAttribute('data-index'));
+                    let result = hotInstance.getDataAtCell(0, idx);
+                    if (result === '#DIV/0!' || result === '#VALUE!' || result === null || result === '') { el.value = ''; } 
+                    else if (typeof result === 'number') { el.value = Math.round(result * 100) / 100; } 
+                    else { el.value = result; }
                 });
-            } else {
-                throw new Error("Library Jspreadsheet tidak terdeteksi");
-            }
+            }, 50);
         }
 
-        function colIndexToLetter(index) {
-            let letter = '';
-            while (index >= 0) {
-                letter = String.fromCharCode((index % 26) + 65) + letter;
-                index = Math.floor(index / 26) - 1;
-            }
-            return letter;
-        }
-
-        // ==========================================
-        // 3. PROSES SIMPAN (TUNGGAL ATAU MASSAL)
-        // ==========================================
         window.simpanDataTransaksi = async function(mode) {
             const unitKerja = document.getElementById('sel_unit').value;
-            const bulan = parseInt(document.getElementById('sel_bulan').value);
-            const tahun = parseInt(document.getElementById('sel_tahun').value);
-            const idIndikator = document.getElementById('sel_indikator').value;
+            const defBulan = parseInt(document.getElementById('sel_bulan').value);
+            const defTahun = parseInt(document.getElementById('sel_tahun').value);
+            const idIndikator = document.getElementById('sel_indikator').value; // Mengambil id_form
 
-            if(!unitKerja || !idIndikator) { Swal.fire('Peringatan', 'Lengkapi parameter unit.', 'warning'); return; }
+            if(!unitKerja || !idIndikator) { Swal.fire('Peringatan', 'Lengkapi parameter unit dan indikator.', 'warning'); return; }
 
             const btnId = mode === 'excel' ? 'btnSimpanDataExcel' : 'btnSimpanDataForm';
             const btn = document.getElementById(btnId);
@@ -420,77 +496,89 @@
 
             let payloadList = [];
 
+            let dateIdx = -1; let isMonthDropdown = false;
+            cetakBiruAktif.forEach((c, idx) => {
+                let t = (c.tipe || '').toLowerCase(); let j = (c.judul || '').toLowerCase();
+                if(t === 'date' || t === 'calendar' || j.includes('tanggal')) {
+                    if(dateIdx === -1) { dateIdx = idx; isMonthDropdown = false; }
+                } else if (j.includes('bulan')) {
+                    if(dateIdx === -1) { dateIdx = idx; isMonthDropdown = true; }
+                }
+            });
+
             if (mode === 'form') {
-                let dataArray = [];
-                document.querySelectorAll('.input-data-transaksi').forEach(el => {
-                    let val = el.type === 'checkbox' ? (el.checked ? 'Ya' : 'Tidak') : el.value;
-                    dataArray[el.getAttribute('data-index')] = val;
+                let rowData = hotInstance.getDataAtRow(0);
+                let isRowEmpty = true;
+                rowData.forEach((cell, idx) => { if (!cetakBiruAktif[idx].formula && cell !== null && cell !== "" && cell !== false) isRowEmpty = false; });
+                if(isRowEmpty) { Swal.fire('Kosong', 'Harap isi setidaknya 1 field data.', 'warning'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Satu Baris'; return; }
+
+                let cleanRow = rowData.map((cell, idx) => {
+                    if (cetakBiruAktif[idx].tipe === 'checkbox') return (cell === true || cell === 'Ya') ? 'Ya' : 'Tidak';
+                    if (cell === '#DIV/0!' || cell === '#VALUE!') return null;
+                    return cell;
                 });
-                
-                payloadList.push({
-                    unit_kerja: unitKerja, id_indikator: idIndikator, bulan: bulan, tahun: tahun, 
-                    petugas_input: session.nama_lengkap, data_input: dataArray
-                });
-            } 
-            else if (mode === 'excel') {
-                if(!jexcelInstance) {
-                    Swal.fire('Error', 'Tabel Excel tidak aktif.', 'error');
-                    btn.disabled = false; btn.innerHTML = '<i class="fas fa-layer-group me-2"></i> Simpan Semua Baris';
-                    return;
+
+                let rowBulan = defBulan; let rowTahun = defTahun;
+                if (dateIdx !== -1 && cleanRow[dateIdx]) {
+                    let strVal = cleanRow[dateIdx].toString().toLowerCase();
+                    if(isMonthDropdown) {
+                        const iM = {'januari':1, 'februari':2, 'maret':3, 'april':4, 'mei':5, 'juni':6, 'juli':7, 'agustus':8, 'september':9, 'oktober':10, 'november':11, 'desember':12};
+                        for(let m in iM) { if(strVal.includes(m)) { rowBulan = iM[m]; break; } }
+                    } else {
+                        let parsed = parseIndoDate(strVal);
+                        if (parsed.isValid()) { rowBulan = parsed.month() + 1; rowTahun = parsed.year(); }
+                    }
                 }
 
-                let excelData = jexcelInstance.getData();
-                
-                excelData.forEach(row => {
+                payloadList.push({ unit_kerja: unitKerja, id_indikator: idIndikator, bulan: rowBulan, tahun: rowTahun, petugas_input: session.nama_lengkap, data_input: cleanRow });
+            } 
+            else if (mode === 'excel') {
+                let rawData = hotInstance.getData(); 
+                rawData.forEach(row => {
                     let isRowEmpty = true;
-                    row.forEach((cell, idx) => {
-                        if (!cetakBiruAktif[idx].formula && cell !== '' && cell !== null && cell !== false) {
-                            isRowEmpty = false;
-                        }
-                    });
+                    row.forEach((cell, idx) => { if (!cetakBiruAktif[idx].formula && cell !== null && cell !== "" && cell !== false) isRowEmpty = false; });
 
                     if (!isRowEmpty) {
                         let cleanRow = row.map((cell, idx) => {
-                            if (cetakBiruAktif[idx].tipe === 'checkbox') return cell ? 'Ya' : 'Tidak';
+                            if (cetakBiruAktif[idx].tipe === 'checkbox') return (cell === true || cell === 'Ya') ? 'Ya' : 'Tidak';
+                            if (cell === '#DIV/0!' || cell === '#VALUE!') return null;
                             return cell;
                         });
 
-                        payloadList.push({
-                            unit_kerja: unitKerja, id_indikator: idIndikator, bulan: bulan, tahun: tahun, 
-                            petugas_input: session.nama_lengkap, data_input: cleanRow
-                        });
+                        let rowBulan = defBulan; let rowTahun = defTahun;
+                        if (dateIdx !== -1 && cleanRow[dateIdx]) {
+                            let strVal = cleanRow[dateIdx].toString().toLowerCase();
+                            if(isMonthDropdown) {
+                                const iM = {'januari':1, 'februari':2, 'maret':3, 'april':4, 'mei':5, 'juni':6, 'juli':7, 'agustus':8, 'september':9, 'oktober':10, 'november':11, 'desember':12};
+                                for(let m in iM) { if(strVal.includes(m)) { rowBulan = iM[m]; break; } }
+                            } else {
+                                let parsed = parseIndoDate(strVal);
+                                if (parsed.isValid()) { rowBulan = parsed.month() + 1; rowTahun = parsed.year(); }
+                            }
+                        }
+
+                        payloadList.push({ unit_kerja: unitKerja, id_indikator: idIndikator, bulan: rowBulan, tahun: rowTahun, petugas_input: session.nama_lengkap, data_input: cleanRow });
                     }
                 });
-
-                if (payloadList.length === 0) {
-                    Swal.fire('Tabel Kosong', 'Tidak ada baris data yang diisi.', 'info');
-                    btn.disabled = false; btn.innerHTML = '<i class="fas fa-layer-group me-2"></i> Simpan Semua Baris';
-                    return;
-                }
+                if (payloadList.length === 0) { Swal.fire('Kosong', 'Tabel tidak ada data valid.', 'info'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-layer-group me-2"></i> Simpan Semua Baris ke Database'; return; }
             }
 
             try {
                 const { error } = await supabaseClient.from('data_mutu_harian').insert(payloadList);
                 if (error) throw error;
-
-                if (mode === 'form') { document.getElementById('formDinamisContainer').reset(); kalkulasiOtomatis(); }
-                else { renderExcelTabel(); } 
-
+                if (mode === 'form') { document.getElementById('formDinamisContainer').reset(); renderExcelTabel(); } else { renderExcelTabel(); } 
                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: payloadList.length + ' Data tersimpan', showConfirmButton: false, timer: 2000 });
                 loadDataTabel();
             } catch (err) {
                 console.error(err);
-                Swal.fire('Gagal!', 'Terjadi kesalahan jaringan saat menyimpan.', 'error');
+                Swal.fire('Gagal!', 'Terjadi kesalahan jaringan atau database.', 'error');
             } finally {
                 if(mode === 'form') btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Satu Baris';
-                else btn.innerHTML = '<i class="fas fa-layer-group me-2"></i> Simpan Semua Baris';
+                else btn.innerHTML = '<i class="fas fa-layer-group me-2"></i> Simpan Semua Baris ke Database';
                 btn.disabled = false;
             }
         };
 
-        // ==========================================
-        // 4. READ & DELETE ARSIP
-        // ==========================================
         async function loadDataTabel() {
             const unitKerja = document.getElementById('sel_unit').value;
             const bulan = document.getElementById('sel_bulan').value;
@@ -500,8 +588,7 @@
 
             if(!unitKerja || !idIndikator) return;
             document.getElementById('lbl_bulan_tahun').innerText = `- Bulan ${bulan}/${tahun}`;
-            document.getElementById('loadingTabel').classList.remove('d-none');
-            tbody.innerHTML = '';
+            document.getElementById('loadingTabel').classList.remove('d-none'); tbody.innerHTML = '';
 
             try {
                 const { data, error } = await supabaseClient
@@ -511,13 +598,11 @@
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
-
-                if(data.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="100%" class="text-center py-4 text-muted">Belum ada data di bulan ini.</td></tr>';
-                } else {
+                if(data.length === 0) { tbody.innerHTML = '<tr><td colspan="100%" class="text-center py-4 text-muted">Belum ada data di bulan ini.</td></tr>'; } 
+                else {
                     data.forEach(row => {
                         let htmlBaris = `<tr><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="hapusDataTransaksi('${row.id}')"><i class="fas fa-times"></i></button></td>`;
-                        if(Array.isArray(row.data_input)) { row.data_input.forEach(val => { htmlBaris += `<td>${val || '-'}</td>`; }); }
+                        if(Array.isArray(row.data_input)) { row.data_input.forEach(val => { htmlBaris += `<td>${val !== null ? val : '-'}</td>`; }); }
                         htmlBaris += '</tr>'; tbody.innerHTML += htmlBaris;
                     });
                 }
@@ -528,10 +613,7 @@
         window.hapusDataTransaksi = function(idTransaksi) {
             Swal.fire({ title: 'Hapus Data?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Ya, Hapus' })
             .then(async (result) => {
-                if (result.isConfirmed) {
-                    await supabaseClient.from('data_mutu_harian').delete().eq('id', idTransaksi);
-                    loadDataTabel();
-                }
+                if (result.isConfirmed) { await supabaseClient.from('data_mutu_harian').delete().eq('id', idTransaksi); loadDataTabel(); }
             });
         }
     </script>

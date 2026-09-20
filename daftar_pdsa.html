@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daftar Proyek PDSA - SIM PMKP</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+    body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.04); border-radius: 12px; border-top: 4px solid #0dcaf0; background: #fff;}
+    
+    .pdsa-card {
+        border: 1px solid #e2e8f0; border-radius: 8px; transition: 0.2s; background: #fff; margin-bottom: 15px;
+    }
+    .pdsa-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,.08); border-color: #0dcaf0; }
+    
+    .fase-badge { font-weight: 800; letter-spacing: 1px; padding: 5px 15px; border-radius: 30px; font-size: 0.75rem;}
+    .f-plan { background-color: #e0f7fa; color: #00acc1; border: 1px solid #00acc1; }
+    .f-do { background-color: #fff8e1; color: #ffb300; border: 1px solid #ffb300; }
+    .f-study { background-color: #f3e5f5; color: #8e24aa; border: 1px solid #8e24aa; }
+    .f-act { background-color: #e8f5e9; color: #2e7d32; border: 1px solid #2e7d32; }
+    .f-selesai { background-color: #2e7d32; color: #fff; border: 1px solid #2e7d32; box-shadow: 0 2px 5px rgba(46,125,50,0.3);}
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container px-4" style="max-width: 1200px;">
+        <div class="bg-white p-4 card-custom">
+            
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4 flex-wrap gap-2">
+                <div>
+                    <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-sync-alt text-info me-2"></i> Dasbor Pantau PDSA (CQI)</h4>
+                    <p class="text-muted mb-0">Pemantauan siklus peningkatan mutu pada indikator yang tidak mencapai target standar.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="form_pdsa.html" class="btn btn-info text-white fw-bold shadow-sm">
+                        <i class="fas fa-plus me-1"></i> Buat PDSA Manual
+                    </a>
+                </div>
+            </div>
+
+            <div class="row g-2 mb-4 p-3 bg-light rounded border align-items-center">
+                <div class="col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="fas fa-search"></i></span>
+                        <input type="text" id="cariPdsa" class="form-control border-start-0 fw-bold" placeholder="Cari unit atau nama indikator..." onkeyup="saringPDSA()">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select id="filterFase" class="form-select fw-bold text-secondary" onchange="saringPDSA()">
+                        <option value="SEMUA">-- Semua Fase --</option>
+                        <option value="PLAN">Fase: PLAN</option>
+                        <option value="DO">Fase: DO</option>
+                        <option value="STUDY">Fase: STUDY</option>
+                        <option value="ACT">Fase: ACT</option>
+                        <option value="SELESAI">SELESAI (Final)</option>
+                    </select>
+                </div>
+                <div class="col-md-4 text-md-end text-muted" id="pesanAkses">
+                    <small><i class="fas fa-shield-alt me-1"></i> Memuat hak akses...</small>
+                </div>
+            </div>
+
+            <div id="loadingMessage" class="alert alert-info text-center fw-bold shadow-sm">
+                <i class="fas fa-spinner fa-spin me-2"></i> Menarik rekam jejak siklus CQI dari database...
+            </div>
+
+            <div id="pdsaListContainer" class="row"></div>
+
+        </div>
+    </div>
+
+    <!-- LIBRARY -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        let semuaPDSA = [];
+
+        document.addEventListener("DOMContentLoaded", async function () {
+            if (!supabaseClient) return;
+
+            // Tampilan Khusus Akses
+            let psn = document.getElementById('pesanAkses');
+            if(sessionMutu.role === 'Komite Mutu') {
+                psn.innerHTML = `<span class="badge bg-primary"><i class="fas fa-eye me-1"></i> Mode Pengawasan Direksi Aktif</span>`;
+            } else {
+                psn.innerHTML = `<span class="badge bg-secondary"><i class="fas fa-lock me-1"></i> Hanya melihat unit ${sessionMutu.unit || ''}</span>`;
+            }
+
+            await muatDaftarPDSA();
+        });
+
+        async function muatDaftarPDSA() {
+            try {
+                let query = supabaseClient.from('data_pdsa').select('*').order('tanggal_dibuat', { ascending: false });
+                
+                // Jika bukan Komite Mutu, filter hanya unitnya sendiri
+                if (sessionMutu.role !== 'Komite Mutu' && sessionMutu.unit !== 'Non-Unit') {
+                    query = query.eq('unit_kerja', sessionMutu.unit);
+                }
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                semuaPDSA = data || [];
+                document.getElementById('loadingMessage').style.display = 'none';
+                tampilkanKartuPDSA(semuaPDSA);
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loadingMessage').className = "alert alert-danger text-center fw-bold";
+                document.getElementById('loadingMessage').innerHTML = `<i class="fas fa-wifi me-2"></i> Koneksi ke Supabase bermasalah.`;
+            }
+        }
+
+        function tampilkanKartuPDSA(dataArray) {
+            const wadah = document.getElementById('pdsaListContainer');
+            wadah.innerHTML = '';
+
+            if (dataArray.length === 0) {
+                wadah.innerHTML = `<div class="text-center py-5 text-muted"><i class="fas fa-clipboard-check fa-3x mb-3 text-secondary opacity-50"></i><br>Tidak ada riwayat perbaikan mutu (PDSA) yang ditemukan.</div>`;
+                return;
+            }
+
+            dataArray.forEach(p => {
+                let id = p.id_pdsa;
+                let tgl = new Date(p.tanggal_dibuat).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'});
+                let fase = (p.fase_saat_ini || "PLAN").toUpperCase();
+                
+                let badgeClass = "f-plan";
+                if(fase === 'DO') badgeClass = "f-do";
+                if(fase === 'STUDY') badgeClass = "f-study";
+                if(fase === 'ACT') badgeClass = "f-act";
+                if(fase === 'SELESAI') badgeClass = "f-selesai";
+                
+                let masalahUtama = "-";
+                let tujuan = "-";
+                if(p.plan_data) {
+                    masalahUtama = p.plan_data.masalah || "-";
+                    tujuan = p.plan_data.tujuan || "-";
+                    
+                    // Batasi panjang string
+                    if(masalahUtama.length > 100) masalahUtama = masalahUtama.substring(0, 100) + "...";
+                    if(tujuan.length > 60) tujuan = tujuan.substring(0, 60) + "...";
+                }
+
+                let btnAksiHtml = `<a href="form_pdsa.html?id_pdsa=${id}" class="btn btn-sm btn-outline-info fw-bold w-100 shadow-sm"><i class="fas fa-edit me-1"></i> Update Progress / Cetak</a>`;
+                
+                // Tambahkan Tombol Hapus Khusus Komite Mutu
+                if(sessionMutu.role === 'Komite Mutu') {
+                    btnAksiHtml += `<button class="btn btn-sm btn-outline-danger fw-bold w-100 mt-2" onclick="hapusPDSA('${id}')"><i class="fas fa-trash me-1"></i> Hapus</button>`;
+                }
+
+                wadah.innerHTML += `
+                    <div class="col-md-6 item-pdsa" data-indikator="${p.judul_indikator.toLowerCase()}" data-unit="${p.unit_kerja.toLowerCase()}" data-fase="${fase}">
+                        <div class="pdsa-card p-4 h-100 d-flex flex-column">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge bg-secondary mb-2"><i class="fas fa-clinic-medical me-1"></i> ${p.unit_kerja}</span>
+                                <span class="fase-badge ${badgeClass} shadow-sm">${fase}</span>
+                            </div>
+                            <h5 class="fw-bold text-dark mb-1 lh-base" style="font-size: 1.05rem;">${p.judul_indikator}</h5>
+                            <small class="text-primary fw-bold d-block mb-3"><i class="fas fa-calendar-check me-1"></i> Analisis Periode: ${p.periode_analisis}</small>
+                            
+                            <div class="bg-light p-2 rounded border mb-3 flex-grow-1" style="font-size: 0.85rem;">
+                                <span class="text-muted fw-bold d-block border-bottom pb-1 mb-1">Masalah Terdentifikasi:</span>
+                                <span class="text-dark d-block mb-2 fst-italic">"${masalahUtama}"</span>
+                                
+                                <span class="text-muted fw-bold d-block border-bottom pb-1 mb-1">Tujuan Perbaikan (SMART):</span>
+                                <span class="text-success fw-bold d-block">${tujuan}</span>
+                            </div>
+
+                            <div class="mt-auto">
+                                ${btnAksiHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        window.saringPDSA = function() {
+            let teksCari = document.getElementById('cariPdsa').value.toLowerCase().trim();
+            let fasePilihan = document.getElementById('filterFase').value;
+            let kartuKartu = document.querySelectorAll('.item-pdsa');
+
+            kartuKartu.forEach(kartu => {
+                let namaIndikator = kartu.getAttribute('data-indikator');
+                let namaUnit = kartu.getAttribute('data-unit');
+                let faseSiklus = kartu.getAttribute('data-fase');
+
+                let cocokTeks = namaIndikator.includes(teksCari) || namaUnit.includes(teksCari);
+                let cocokFase = (fasePilihan === 'SEMUA') || (faseSiklus === fasePilihan);
+
+                if (cocokTeks && cocokFase) kartu.style.display = 'block';
+                else kartu.style.display = 'none';
+            });
+        }
+
+        window.hapusPDSA = async function(id) {
+            Swal.fire({
+                title: 'Yakin Hapus Siklus Ini?',
+                text: "Dokumen PDSA akan dihapus permanen dari database rumah sakit!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: 'Ya, Hapus!'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'Menghapus...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+                    try {
+                        const { error } = await supabaseClient.from('data_pdsa').delete().eq('id_pdsa', id);
+                        if (error) throw error;
+                        Swal.fire('Terhapus!', 'Dokumen PDSA telah dibuang.', 'success');
+                        muatDaftarPDSA();
+                    } catch (err) { Swal.fire('Gagal', 'Terjadi kesalahan sistem Supabase.', 'error'); }
+                }
+            });
+        };
+    </script>
+</body>
+</html>

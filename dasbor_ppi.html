@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Surveilans PPI</title>
+    <title>Dashboard Surveilans PPI - SIM PMKP</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -28,29 +28,24 @@
     <div id="navbar-container"></div>
     <div id="sidebar-container"></div>
 
-    <div class="container-fluid px-4">
+    <div class="container-fluid px-4" style="max-width: 1400px;">
         
         <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4 flex-wrap gap-3">
             <div>
                 <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-shield-virus text-success me-2"></i> Dashboard Surveilans Infeksi (PPI)</h3>
-                <p class="text-muted mb-0">Analisis insiden HAIs per Unit Ruangan dan Surgical Site Infections (SSI) per Jenis Operasi.</p>
+                <p class="text-muted mb-0">Analisis insiden HAIs per Unit Ruangan dan Surgical Site Infections (SSI/IDO) per Jenis Operasi.</p>
             </div>
             
             <div class="d-flex align-items-center gap-2 bg-white p-2 rounded shadow-sm border">
-                <label class="fw-bold text-secondary mb-0 px-2" style="font-size: 0.85rem;"><i class="fas fa-filter"></i> Periode:</label>
-                <select class="form-select form-select-sm fw-bold border-0 text-success" id="filterBulan" onchange="renderScreenData()" style="width: 150px; cursor: pointer;">
-                    <option value="Januari">Januari</option>
-                    <option value="Februari">Februari</option>
-                    <option value="Maret">Maret</option>
-                    <option value="April">April</option>
-                    <option value="Mei">Mei</option>
-                    <option value="Juni" selected>Juni</option>
-                    <option value="Juli">Juli</option>
-                    <option value="Agustus">Agustus</option>
-                    <option value="September">September</option>
-                    <option value="Oktober">Oktober</option>
-                    <option value="November">November</option>
-                    <option value="Desember">Desember</option>
+                <label class="fw-bold text-secondary mb-0 px-2" style="font-size: 0.85rem;"><i class="fas fa-filter"></i> Periode Tahun & Bulan:</label>
+                <select class="form-select form-select-sm fw-bold border-0 text-success" id="filterTahun" onchange="prosesDataPPI()" style="width: 100px; cursor: pointer;"></select>
+                <select class="form-select form-select-sm fw-bold border-0 text-success" id="filterBulan" onchange="prosesDataPPI()" style="width: 130px; cursor: pointer;">
+                    <option value="1">Januari</option><option value="2">Februari</option>
+                    <option value="3">Maret</option><option value="4">April</option>
+                    <option value="5">Mei</option><option value="6">Juni</option>
+                    <option value="7">Juli</option><option value="8">Agustus</option>
+                    <option value="9">September</option><option value="10">Oktober</option>
+                    <option value="11">November</option><option value="12">Desember</option>
                 </select>
             </div>
         </div>
@@ -66,11 +61,12 @@
 
         <div id="loadingOverlay" class="text-center py-5">
             <div class="spinner-border text-success" role="status" style="width: 3rem; height: 3rem;"></div>
-            <p class="mt-3 text-muted fw-semibold">Menghubungkan ke API Database PPI...</p>
+            <p class="mt-3 text-muted fw-semibold">Menarik dan mengkalkulasi data HAIs & IDO dari Supabase...</p>
         </div>
 
         <div class="tab-content d-none" id="ppiTabContent">
             
+            <!-- PANEL 1: HAIS -->
             <div class="tab-pane fade show active" id="panel-hais">
                 
                 <div class="row g-3 mb-4">
@@ -115,7 +111,7 @@
                     </div>
                 </div>
 
-                <div class="card card-chart p-0 overflow-hidden">
+                <div class="card card-chart p-0 overflow-hidden mb-5">
                     <div class="p-3 bg-light border-bottom">
                         <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-table me-2"></i> Tabel Breakdown Angka Kejadian & Pemakaian Alat Per Ruangan</h6>
                     </div>
@@ -137,12 +133,13 @@
                                 </tr>
                             </thead>
                             <tbody id="tbody_hais">
-                                </tbody>
+                            </tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
+            <!-- PANEL 2: SSI / IDO -->
             <div class="tab-pane fade" id="panel-ssi">
                 <div class="row g-4">
                     <div class="col-md-5">
@@ -173,90 +170,157 @@
                                         </tr>
                                     </thead>
                                     <tbody id="tbody_ssi">
-                                        </tbody>
+                                    </tbody>
                                 </table>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            
         </div>
-
     </div>
 
+    <!-- LIBRARY -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const scriptURL = API_CONFIG.PPI;
+        let dbDataHarian = [];
+        let dbSetupFormulir = [];
         
-        let rawPpiDataHAIs = [];
-        let rawPpiDataSSI = [];
+        let idFormHais = []; 
+        let idFormSsi = []; 
+
         let chartInstanceHais = null;
         let chartInstanceSsi = null;
 
-        document.addEventListener("DOMContentLoaded", function() {
-            ambilDataDariApiPPI();
+        document.addEventListener("DOMContentLoaded", async function() {
+            if (!supabaseClient) { Swal.fire('Error', 'Supabase belum dikonfigurasi', 'error'); return; }
+            
+            // Set Default Bulan Ini
+            let now = new Date();
+            document.getElementById('filterBulan').value = (now.getMonth() + 1).toString();
+            
+            await tarikDataPPI();
         });
 
-        function ambilDataDariApiPPI() {
-            fetch(`${scriptURL}?action=get_surveilans_ppi`)
-            .then(res => res.json())
-            .then(result => {
+        async function tarikDataPPI() {
+            try {
+                // 1. Tarik Struktur Formulir
+                const resForm = await supabaseClient.from('setup_formulir').select('id_form, kolom');
+                dbSetupFormulir = resForm.data || [];
+                
+                // Cari mana Form yang merupakan HAIs dan mana yang IDO/SSI berdasarkan namanya
+                dbSetupFormulir.forEach(f => {
+                    let nama = f.id_form.toUpperCase();
+                    if(nama.includes('HAIS') || nama.includes('PPI')) idFormHais.push(f.id_form);
+                    if(nama.includes('IDO') || nama.includes('SSI')) idFormSsi.push(f.id_form);
+                });
+
+                // 2. Tarik Data Input Harian (Dibatasi 2 tahun terakhir agar ringan)
+                let currentYear = new Date().getFullYear();
+                const resData = await supabaseClient.from('data_mutu_harian').select('*').gte('tahun', currentYear - 1);
+                dbDataHarian = resData.data || [];
+
+                // 3. Populate Filter Tahun
+                const tahunSelect = document.getElementById('filterTahun');
+                const tahuns = [...new Set(dbDataHarian.map(item => item.tahun.toString()))].filter(Boolean).sort().reverse();
+                if(tahuns.length === 0) tahuns.push(currentYear.toString());
+                tahuns.forEach(thn => { tahunSelect.appendChild(new Option(thn, thn)); });
+
                 document.getElementById('loadingOverlay').classList.add('d-none');
                 document.getElementById('ppiTabContent').classList.remove('d-none');
                 
-                if(result.status === 'success') {
-                    rawPpiDataHAIs = result.data_hais || [];
-                    rawPpiDataSSI = result.data_ssi || [];
-                    renderScreenData();
-                } else {
-                    Swal.fire('Gagal!', 'Gagal memilah data dari API PPI: ' + result.message, 'error');
-                }
-            })
-            .catch(err => {
-                document.getElementById('loadingOverlay').innerHTML = `<div class="alert alert-danger"><i class="fas fa-wifi me-2"></i> Hubungan Terputus. Pastikan Web App Anda sudah di-Deploy sebagai 'Anyone'.</div>`;
-            });
+                prosesDataPPI();
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loadingOverlay').innerHTML = `<div class="alert alert-danger"><i class="fas fa-wifi me-2"></i> Gagal terhubung ke Supabase Database.</div>`;
+            }
         }
 
-        // MESIN PEMINDAH HAIs (Pencari Kolom)
-        function dapatkanNilaiKolom(row, keywordKasus) {
-            let keys = Object.keys(row);
+        // ==========================================
+        // SMART PARSER: MENGUBAH ARRAY MENJADI OBYEK BERDASARKAN SETUP FORMULIR
+        // ==========================================
+        function arrayToObject(arrInput, idForm) {
+            let formSetup = dbSetupFormulir.find(f => f.id_form === idForm);
+            if(!formSetup) return null;
+
+            let obj = {};
+            formSetup.kolom.forEach((k, idx) => {
+                obj[k.judul] = arrInput[idx] || "";
+            });
+            return obj;
+        }
+
+        // FUNGSI PENCARI KOLOM BERDASARKAN KATA KUNCI (HAIS)
+        function dapatkanNilaiKolomHais(objRow, keywordKasus) {
+            let keys = Object.keys(objRow);
+            // Cari kolom yang mengandung nama alat (VAP/CAUTI) DAN kata 'kasus' atau 'phlebitis'
             let keyKasus = keys.find(k => k.toLowerCase().includes(keywordKasus.toLowerCase()) && (k.toLowerCase().includes('kasus') || k.toLowerCase().includes('phlebitis')));
+            
             if(!keyKasus) return { kasus: 0, hari: 0 };
             
             let idx = keys.indexOf(keyKasus);
-            let kasusVal = parseFloat(row[keyKasus]) || 0;
+            let kasusVal = parseFloat(objRow[keyKasus]) || 0;
             
-            // Kolom sebelahnya adalah denominator (Hari Pemakaian)
-            let hariVal = (idx !== -1 && keys[idx + 1]) ? (parseFloat(row[keys[idx + 1]]) || 0) : 0;
+            // Kolom sebelahnya di form builder PASTI denominator (Hari Pemakaian)
+            let hariVal = (idx !== -1 && keys[idx + 1]) ? (parseFloat(objRow[keys[idx + 1]]) || 0) : 0;
             
             return { kasus: kasusVal, hari: hariVal };
         }
 
-        function renderScreenData() {
-            let bulanTerpilih = document.getElementById('filterBulan').value;
+        function prosesDataPPI() {
+            let selectedTahun = parseInt(document.getElementById('filterTahun').value);
+            let selectedBulan = parseInt(document.getElementById('filterBulan').value);
             
-            // 1. OLAH DATA HAIs 
-            let dataHaisBulanIni = rawPpiDataHAIs.filter(r => (r['BULAN'] || r['Bulan'] || "").trim().toLowerCase() === bulanTerpilih.toLowerCase());
+            // Filter Data Transaksi berdasarkan Tahun & Bulan
+            let dataBulanIni = dbDataHarian.filter(r => r.tahun === selectedTahun && r.bulan === selectedBulan);
             
+            // Pisahkan yang HAIs dan yang IDO/SSI berdasarkan array idForm yang sudah dideteksi di awal
+            let rawHais = dataBulanIni.filter(r => idFormHais.includes(r.id_indikator));
+            let rawSsi = dataBulanIni.filter(r => idFormSsi.includes(r.id_indikator));
+
+            kalkulasiHAIs(rawHais);
+            kalkulasiSSI(rawSsi);
+        }
+
+        // ==========================================
+        // 1. ENGINE KALKULASI HAIS
+        // ==========================================
+        function kalkulasiHAIs(rawData) {
             let totalRs = { cautiN:0, cautiD:0, vapN:0, vapD:0, clabsiN:0, clabsiD:0, phlebitisN:0, phlebitisD:0 };
             let arrLabelsUnit = [];
             let arrChartCauti = [], arrChartVap = [], arrChartClabsi = [], arrChartPhlebitis = [];
             let tbodyHtmlHais = "";
 
-            if(dataHaisBulanIni.length === 0) {
-                tbodyHtmlHais = `<tr><td colspan="13" class="text-muted py-4 fst-italic">Tidak ada laporan entri data surveilans HAIs pada bulan ${bulanTerpilih}</td></tr>`;
+            if(rawData.length === 0) {
+                tbodyHtmlHais = `<tr><td colspan="13" class="text-muted py-4 fst-italic">Belum ada entri form HAIs (Bulanan) untuk periode ini.</td></tr>`;
             } else {
-                dataHaisBulanIni.forEach(row => {
-                    let unitName = row['Bangsal'] || row['BANGSAL'] || row['Unit'] || "-";
+                // Konversi setiap array input menjadi obyek yang bisa dibaca kolomnya
+                let parsedHais = rawData.map(r => {
+                    let obj = arrayToObject(r.data_input, r.id_indikator);
+                    // Kita juga selipkan nama unit pelapor yang asli dari tabel harian
+                    obj._unitAsli = r.unit_kerja; 
+                    return obj;
+                });
+
+                parsedHais.forEach(row => {
+                    if(!row) return;
+
+                    // Coba cari nama unit dari dalam array input, jika tidak ada, gunakan unit_kerja pelapor
+                    let keyBangsal = Object.keys(row).find(k => k.toLowerCase().includes('bangsal') || k.toLowerCase().includes('unit') || k.toLowerCase().includes('ruang'));
+                    let unitName = keyBangsal ? row[keyBangsal] : row._unitAsli;
+                    if(!unitName || unitName.trim() === "") unitName = "Tanpa Nama Unit";
                     
-                    let cauti = dapatkanNilaiKolom(row, 'cauti');
-                    let vap = dapatkanNilaiKolom(row, 'vap');
-                    let clabsi = dapatkanNilaiKolom(row, 'clabsi');
-                    let phlebitis = dapatkanNilaiKolom(row, 'phlebitis');
+                    let cauti = dapatkanNilaiKolomHais(row, 'cauti');
+                    let vap = dapatkanNilaiKolomHais(row, 'vap');
+                    let clabsi = dapatkanNilaiKolomHais(row, 'clabsi');
+                    let phlebitis = dapatkanNilaiKolomHais(row, 'phlebitis');
                     
                     totalRs.cautiN += cauti.kasus; totalRs.cautiD += cauti.hari;
                     totalRs.vapN += vap.kasus; totalRs.vapD += vap.hari;
@@ -295,56 +359,54 @@
             document.getElementById('txt_rate_phlebitis').innerText = "Rate RS: " + (totalRs.phlebitisD > 0 ? ((totalRs.phlebitisN / totalRs.phlebitisD) * 1000).toFixed(2) : "0.00") + " ‰";
             
             buildHaisChart(arrLabelsUnit, arrChartCauti, arrChartVap, arrChartClabsi, arrChartPhlebitis);
+        }
 
-            // ========================================================
-            // 2. MESIN PARSER BARU UNTUK SSI (WIDE FORMAT)
-            // ========================================================
-            let dataSsiBulanIni = rawPpiDataSSI.filter(r => (r['BULAN'] || r['Bulan'] || "").trim().toLowerCase() === bulanTerpilih.toLowerCase());
-            
+        // ==========================================
+        // 2. ENGINE KALKULASI SSI / IDO (WIDE FORMAT)
+        // ==========================================
+        function kalkulasiSSI(rawData) {
             let tbodyHtmlSsi = "";
             let arrLabelsSsi = [];
             let arrRatesSsi = [];
-            
-            // Objek wadah untuk akumulasi jika ada lebih dari 1 baris di bulan yang sama
             let ssiAgregat = {}; 
 
-            if(dataSsiBulanIni.length === 0) {
-                tbodyHtmlSsi = `<tr><td colspan="5" class="text-muted py-4 fst-italic">Tidak ada laporan kasus SSI/IDO pada bulan ${bulanTerpilih}</td></tr>`;
+            if(rawData.length === 0) {
+                tbodyHtmlSsi = `<tr><td colspan="5" class="text-muted py-4 fst-italic">Belum ada entri form SSI/IDO untuk periode ini.</td></tr>`;
             } else {
-                dataSsiBulanIni.forEach((row) => {
-                    // Ambil semua nama Header/Kolom, buang kolom Bulan dan Status
-                    let keys = Object.keys(row).filter(k => k.toUpperCase() !== 'BULAN' && k.toUpperCase() !== 'STATUS LAPORAN');
+                let parsedSsi = rawData.map(r => arrayToObject(r.data_input, r.id_indikator));
+
+                parsedSsi.forEach(row => {
+                    if(!row) return;
+
+                    // Ambil semua kunci, buang yang merupakan Dropdown Bulan
+                    let keys = Object.keys(row).filter(k => k.toUpperCase() !== 'BULAN' && !k.toLowerCase().includes('bangsal'));
                     
-                    // Baca berpasangan (Numerator & Denominator)
+                    // Di struktur IDO Anda, selalu berpasangan: [Jumlah SSI (Num), Jumlah Operasi (Den)]
                     for(let i = 0; i < keys.length; i += 2) {
                         let numKey = keys[i];
                         let denKey = keys[i+1];
                         
-                        if(!denKey) break; // Jika ganjil/kolom terakhir terpotong
+                        if(!denKey) break;
 
-                        // Mengekstrak nama operasi yang bersih dari label Denominator
+                        // Ekstrak nama operasi secara cerdas dari label Denominator
                         let namaOperasi = denKey.replace(/Jumlah Kasus /gi, '').replace(/Jumlah Operasi /gi, '').replace(/Operasi /gi, '').trim();
-                        // Membuat huruf depannya kapital (Capitalize)
                         namaOperasi = namaOperasi.charAt(0).toUpperCase() + namaOperasi.slice(1);
 
-                        // Ambil angka mentah, jika isinya 'tdd' atau huruf lain, jadikan 0
                         let num = parseFloat(row[numKey]) || 0;
                         let den = parseFloat(row[denKey]) || 0;
 
-                        // Akumulasi data ke dalam wadah Agregat
                         if(!ssiAgregat[namaOperasi]) ssiAgregat[namaOperasi] = { num: 0, den: 0 };
                         ssiAgregat[namaOperasi].num += num;
                         ssiAgregat[namaOperasi].den += den;
                     }
                 });
 
-                // Setelah diakumulasi, cetak ke tabel dan masukkan ke array grafik
                 let index = 1;
                 for(let op in ssiAgregat) {
                     let num = ssiAgregat[op].num;
                     let den = ssiAgregat[op].den;
                     
-                    // Kemenkes IDO dihitung persentase (%) 
+                    // SSI/IDO dihitung dengan persentase (%) 
                     let rate = den > 0 ? ((num / den) * 100).toFixed(2) : "0.00";
 
                     arrLabelsSsi.push(op);
@@ -363,7 +425,7 @@
 
             document.getElementById('tbody_ssi').innerHTML = tbodyHtmlSsi;
 
-            // BANGUN GRAFIK BATANG MENYAMPING UNTUK SSI AGAR LABEL BISA TERBACA JELAS
+            // RENDER GRAFIK HORIZONTAL
             const ctxSsi = document.getElementById('chartSsiTindakan').getContext('2d');
             if (chartInstanceSsi) { chartInstanceSsi.destroy(); }
 
@@ -380,7 +442,7 @@
                     }]
                 },
                 options: {
-                    indexAxis: 'y', // Ubah menjadi horizontal bar agar nama operasi tidak tumpang tindih
+                    indexAxis: 'y', 
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
@@ -391,6 +453,9 @@
             });
         }
 
+        // ==========================================
+        // FUNGSI RENDER GRAFIK HAIS
+        // ==========================================
         function buildHaisChart(labels, cauti, vap, clabsi, phlebitis) {
             const ctx = document.getElementById('chartHaisUnit').getContext('2d');
             if (chartInstanceHais) { chartInstanceHais.destroy(); }

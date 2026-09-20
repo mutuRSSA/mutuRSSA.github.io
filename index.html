@@ -24,6 +24,13 @@
         /* Animasi Ikon membesar saat kartu di-hover */
         .icon-box i { transition: transform 0.3s ease; }
         .home-card:hover .icon-box i { transform: scale(1.2); }
+
+        /* Style untuk Executive Widget */
+        .exec-widget { border-radius: 12px; padding: 15px; border-left: 5px solid; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.03); display: flex; align-items: center; gap: 15px; }
+        .exec-widget.mutu { border-color: #0d6efd; }
+        .exec-widget.insiden { border-color: #dc3545; }
+        .exec-widget.risiko { border-color: #ffc107; }
+        .exec-icon { font-size: 2rem; opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -33,87 +40,151 @@
 
     <div class="container-fluid px-4" style="max-width: 1200px;">
         
-        <div class="row mb-5">
+        <div class="row mb-4">
             <div class="col-12">
-                <div class="p-5 text-white rounded-4 shadow" style="background: linear-gradient(135deg, #2c3e50, #3c8dbc);">
-                    <h2 class="fw-bold"><i class="fas fa-hospital-symbol me-3"></i>Portal Sistem Informasi Mutu RSUD Saras Adyatma</h2>
-                    <p class="lead mb-0 mt-2 text-light" id="teksSapaan" style="opacity: 0.9;">Selamat datang di Dashboard Komite Mutu dan Keselamatan Pasien (KMKP). Silakan pilih layanan operasional di bawah ini.</p>
+                <div class="p-5 text-white rounded-4 shadow position-relative overflow-hidden" style="background: linear-gradient(135deg, #2c3e50, #3c8dbc);">
+                    <i class="fas fa-hospital-symbol position-absolute" style="font-size: 15rem; right: -20px; top: -30px; opacity: 0.1;"></i>
+                    <h2 class="fw-bold position-relative z-1"><i class="fas fa-shield-alt me-3"></i>Portal Sistem Informasi Mutu RSUD Saras Adyatma</h2>
+                    <p class="lead mb-0 mt-2 text-light position-relative z-1" id="teksSapaan" style="opacity: 0.9;">Selamat datang di Dashboard Komite Mutu dan Keselamatan Pasien (KMKP).</p>
                 </div>
             </div>
         </div>
 
-        <h5 class="fw-bold text-secondary mb-4 border-bottom pb-2">Akses Cepat Layanan</h5>
+        <!-- EXECUTIVE SUMMARY WIDGET (Tampil Khusus Komite Mutu) -->
+        <div id="executiveSummaryPanel" class="row g-3 mb-5 d-none">
+            <div class="col-md-4">
+                <div class="exec-widget mutu">
+                    <div class="exec-icon text-primary"><i class="fas fa-chart-bar"></i></div>
+                    <div>
+                        <small class="text-muted fw-bold text-uppercase" style="letter-spacing: 0.5px;">Capaian Mutu (Bulan Lalu)</small>
+                        <h5 class="fw-bold mb-0 text-dark" id="widgetMutu"><i class="fas fa-spinner fa-spin fa-sm"></i> Menghitung...</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="exec-widget insiden">
+                    <div class="exec-icon text-danger"><i class="fas fa-siren-on"></i></div>
+                    <div>
+                        <small class="text-muted fw-bold text-uppercase" style="letter-spacing: 0.5px;">Insiden Terlapor Tahun Ini</small>
+                        <h5 class="fw-bold mb-0 text-dark" id="widgetInsiden"><i class="fas fa-spinner fa-spin fa-sm"></i> Memeriksa...</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="exec-widget risiko">
+                    <div class="exec-icon text-warning"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div>
+                        <small class="text-muted fw-bold text-uppercase" style="letter-spacing: 0.5px;">Status Investigasi (RCA)</small>
+                        <h5 class="fw-bold mb-0 text-dark" id="widgetRCA"><i class="fas fa-spinner fa-spin fa-sm"></i> Mengecek...</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h5 class="fw-bold text-secondary mb-4 border-bottom pb-2">Akses Cepat Layanan (Unit Kerja)</h5>
         
-        <div class="row g-4 justify-content-center">
-            
-            <div class="col-md-6 col-lg-4">
-                <div class="card home-card h-100 bg-white" onclick="window.location.href='ikp.html'">
-                    <div class="card-body text-center p-4 d-flex flex-column">
-                        <div class="icon-box" style="background-color: #ffeaea;">
-                            <i class="fas fa-file-medical-alt fa-2x text-danger"></i>
-                        </div>
-                        <h5 class="card-title fw-bold text-dark mb-2">Laporan IKP</h5>
-                        <p class="card-text text-muted flex-grow-1" style="font-size: 0.85rem;">Pelaporan Insiden Keselamatan Pasien (KTD, KNC, KTC, Sentinel) yang sudah terjadi.</p>
-                        <span class="btn btn-outline-danger btn-sm rounded-pill px-4 mt-3 fw-bold">Lapor Insiden</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
-                <div class="card home-card h-100 bg-white" onclick="window.location.href='kpc.html'">
-                    <div class="card-body text-center p-4 d-flex flex-column">
-                        <div class="icon-box" style="background-color: #fff3cd;">
-                            <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
-                        </div>
-                        <h5 class="card-title fw-bold text-dark mb-2">Laporan KPC</h5>
-                        <p class="card-text text-muted flex-grow-1" style="font-size: 0.85rem;">Pelaporan Kondisi Potensial Cedera (situasi/fasilitas rusak yang rawan menimbulkan bahaya).</p>
-                        <span class="btn btn-outline-warning btn-sm rounded-pill px-4 mt-3 fw-bold text-dark">Lapor KPC</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-4">
+        <div class="row g-4 justify-content-center mb-5">
+            <div class="col-md-6 col-lg-3">
                 <div class="card home-card h-100 bg-white" onclick="bukaMenuMutuPintar()">
                     <div class="card-body text-center p-4 d-flex flex-column">
                         <div class="icon-box" style="background-color: #e3f2fd;">
                             <i class="fas fa-chart-line fa-2x text-primary"></i>
                         </div>
                         <h5 class="card-title fw-bold text-dark mb-2">Laporan Mutu</h5>
-                        <p class="card-text text-muted flex-grow-1" style="font-size: 0.85rem;">Portal pengisian data Indikator Mutu Nasional (INM) dan Indikator Mutu Unit (IMU).</p>
-                        <span class="btn btn-outline-primary btn-sm rounded-pill px-4 mt-3 fw-bold">Pilih Formulir Unit</span>
+                        <p class="card-text text-muted flex-grow-1" style="font-size: 0.85rem;">Input data Indikator Mutu Nasional (INM) dan Prioritas Unit harian.</p>
+                        <span class="btn btn-outline-primary btn-sm rounded-pill px-4 mt-3 fw-bold">Buka Formulir</span>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-6 col-lg-4">
-                <div class="card home-card h-100 bg-white" onclick="window.location.href='survey_budaya.html'">
+            <div class="col-md-6 col-lg-3">
+                <div class="card home-card h-100 bg-white" onclick="window.location.href='ikp.html'">
                     <div class="card-body text-center p-4 d-flex flex-column">
-                        <div class="icon-box" style="background-color: #e8f5e9;">
-                            <i class="fas fa-clipboard-list fa-2x text-success"></i>
+                        <div class="icon-box" style="background-color: #ffeaea;">
+                            <i class="fas fa-file-medical-alt fa-2x text-danger"></i>
                         </div>
-                        <h5 class="card-title fw-bold text-dark mb-2">Survey Budaya</h5>
-                        <p class="card-text text-muted flex-grow-1" style="font-size: 0.85rem;">Pengisian kuesioner evaluasi Budaya Keselamatan Pasien untuk seluruh staf rumah sakit.</p>
-                        <span class="btn btn-outline-success btn-sm rounded-pill px-4 mt-3 fw-bold">Isi Survey <i class="fas fa-external-link-alt ms-1" style="font-size: 0.75rem;"></i></span>
+                        <h5 class="card-title fw-bold text-dark mb-2">Lapor IKP</h5>
+                        <p class="card-text text-muted flex-grow-1" style="font-size: 0.85rem;">Laporkan Insiden Keselamatan Pasien (KTD, KNC, KTC, Sentinel).</p>
+                        <span class="btn btn-outline-danger btn-sm rounded-pill px-4 mt-3 fw-bold">Buat Laporan</span>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-6 col-lg-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="card home-card h-100 bg-white" onclick="window.location.href='kpc.html'">
+                    <div class="card-body text-center p-4 d-flex flex-column">
+                        <div class="icon-box" style="background-color: #fff3cd;">
+                            <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                        </div>
+                        <h5 class="card-title fw-bold text-dark mb-2">Lapor KPC</h5>
+                        <p class="card-text text-muted flex-grow-1" style="font-size: 0.85rem;">Laporkan Kondisi Potensial Cedera (Fasilitas rusak/berbahaya).</p>
+                        <span class="btn btn-outline-warning btn-sm rounded-pill px-4 mt-3 fw-bold text-dark">Buat Laporan</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
                 <div class="card home-card h-100 bg-white" onclick="window.location.href='risk_register.html'">
                     <div class="card-body text-center p-4 d-flex flex-column">
                         <div class="icon-box" style="background-color: #f3e5f5;">
                             <i class="fas fa-clipboard-check fa-2x" style="color: #9c27b0;"></i>
                         </div>
-                        <h5 class="card-title fw-bold text-dark mb-2">Risk Register Unit</h5>
-                        <p class="card-text text-muted flex-grow-1" style="font-size: 0.85rem;">Identifikasi dan evaluasi daftar risiko di unit Anda secara berkala (Enterprise Risk Management).</p>
+                        <h5 class="card-title fw-bold text-dark mb-2">Risk Register</h5>
+                        <p class="card-text text-muted flex-grow-1" style="font-size: 0.85rem;">Identifikasi dan evaluasi daftar risiko di unit Anda secara berkala.</p>
                         <span class="btn btn-sm rounded-pill px-4 mt-3 fw-bold text-white" style="background-color: #9c27b0; border-color: #9c27b0;">Kelola Risiko</span>
                     </div>
                 </div>
             </div>
-
         </div>
+
+        <!-- PANEL MANAJEMEN KOMITE (HANYA MUNCUL JIKA ADMIN) -->
+        <div id="panelKomite" class="d-none">
+            <h5 class="fw-bold text-secondary mb-4 border-bottom pb-2">Panel Manajemen (Komite Mutu)</h5>
+            <div class="row g-4 justify-content-center">
+                
+                <div class="col-md-4">
+                    <div class="card home-card h-100 bg-white" onclick="window.location.href='laporan_komprehensif.html'">
+                        <div class="card-body text-center p-4">
+                            <div class="icon-box" style="background-color: #e0f7fa;">
+                                <i class="fas fa-robot fa-2x text-info text-darken"></i>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">Cetak Laporan AI (Word)</h6>
+                            <p class="text-muted" style="font-size: 0.8rem;">Buat Laporan PMKP Terintegrasi dengan teknologi Agentic AI.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card home-card h-100 bg-white" onclick="window.location.href='daftar_insiden.html'">
+                        <div class="card-body text-center p-4">
+                            <div class="icon-box" style="background-color: #ffe0b2;">
+                                <i class="fas fa-search-plus fa-2x" style="color: #e65100;"></i>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">Investigasi & RCA</h6>
+                            <p class="text-muted" style="font-size: 0.8rem;">Analisis akar masalah insiden (5-Whys) dan tetapkan rencana perbaikan.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card home-card h-100 bg-white" onclick="window.location.href='database_admin.html'">
+                        <div class="card-body text-center p-4">
+                            <div class="icon-box" style="background-color: #eceff1;">
+                                <i class="fas fa-server fa-2x text-secondary"></i>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">Backup & Tutup Tahun</h6>
+                            <p class="text-muted" style="font-size: 0.8rem;">Kelola arsip database, pembersihan data (purge), dan download CSV.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
     </div>
 
+    <!-- LIBRARY -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -129,6 +200,7 @@
             localStorage.removeItem('editDataKPC');
             localStorage.removeItem('analisisDataIKP');
             localStorage.removeItem('analisisDataKPC');
+            localStorage.removeItem('targetInvestigasi');
             // =========================================================================
 
             const sessionStr = localStorage.getItem("sessionMutu");
@@ -137,8 +209,15 @@
                 const sapaan = document.getElementById("teksSapaan");
                 
                 // Cek apakah dia Komite Mutu atau Staf Biasa
-                if(userData.role === "Komite Mutu") {
+                if(userData.role === "Komite Mutu" || userData.role === "Super Admin") {
                     sapaan.innerHTML = `Selamat bertugas, <strong class="text-warning">${userData.username}</strong> (Tim Komite Mutu). Anda memiliki akses penuh ke seluruh dasbor pelaporan.`;
+                    
+                    // Tampilkan Fitur Khusus Admin
+                    document.getElementById('executiveSummaryPanel').classList.remove('d-none');
+                    document.getElementById('panelKomite').classList.remove('d-none');
+                    
+                    // Tarik Data Live Widget
+                    tarikDataExecutiveWidget();
                 } else {
                     sapaan.innerHTML = `Selamat datang, <strong>${userData.username}</strong> dari unit <strong class="text-warning">${userData.unit}</strong>. Silakan pilih layanan operasional di bawah ini.`;
                 }
@@ -149,31 +228,75 @@
         // FUNGSI PINTAR UNTUK MEMBUKA MENU MUTU DI SIDEBAR
         // =========================================================================
         window.bukaMenuMutuPintar = function() {
-            // 1. Munculkan Sidebar (Offcanvas)
             const sidebarEl = document.getElementById('sidebarMenu');
             if (sidebarEl) {
                 const bsOffcanvas = new bootstrap.Offcanvas(sidebarEl);
                 bsOffcanvas.show();
                 
-                // 2. Ekspansi menu "Peningkatan Mutu" setelah sidebar terbuka
                 setTimeout(() => {
                     const menuMutuEl = document.getElementById('collapseMutu');
                     if (menuMutuEl) {
                         const bsCollapse = new bootstrap.Collapse(menuMutuEl, { toggle: false });
                         bsCollapse.show();
                         
-                        // Menambahkan highlight visual sesaat agar pengguna fokus ke menu tersebut
                         const parentLabel = document.getElementById('parent-mutu');
                         if (parentLabel) {
                             parentLabel.classList.add('bg-info', 'text-white');
-                            setTimeout(() => {
-                                parentLabel.classList.remove('bg-info', 'text-white');
-                            }, 800);
+                            setTimeout(() => { parentLabel.classList.remove('bg-info', 'text-white'); }, 800);
                         }
                     }
-                }, 300); // Jeda sejenak menunggu animasi sidebar selesai
+                }, 300);
             }
         };
+
+        // =========================================================================
+        // ENGINE PENGHITUNG EXECUTIVE SUMMARY
+        // =========================================================================
+        async function tarikDataExecutiveWidget() {
+            if (!supabaseClient) return;
+            const currentYear = new Date().getFullYear();
+            let lastMonth = new Date().getMonth(); // Bulan lalu (0-11, berarti 1-12 di logika kita)
+            if (lastMonth === 0) lastMonth = 1; // Fallback jika Januari, anggap aja Januari (atau bisa logic tahun lalu)
+
+            try {
+                // 1. Cek Insiden Tahun Ini
+                const { data: dataInsiden, error: errInsiden } = await supabaseClient
+                    .from('data_insiden')
+                    .select('id_insiden, grading_risiko, status_investigasi')
+                    .gte('waktu_insiden', `${currentYear}-01-01T00:00:00Z`);
+
+                if (!errInsiden && dataInsiden) {
+                    let totalKasus = dataInsiden.length;
+                    let kasusMerah = dataInsiden.filter(d => d.grading_risiko === 'Merah' || d.grading_risiko === 'Kuning').length;
+                    let pendingReview = dataInsiden.filter(d => d.status_investigasi !== 'Selesai').length;
+
+                    document.getElementById('widgetInsiden').innerHTML = `${totalKasus} Kasus <span class="badge bg-danger rounded-pill ms-2" style="font-size:0.7rem;">${kasusMerah} Ekstrem</span>`;
+                    
+                    if (pendingReview > 0) {
+                        document.getElementById('widgetRCA').innerHTML = `<span class="text-danger">${pendingReview} Menunggu Analisis</span>`;
+                    } else {
+                        document.getElementById('widgetRCA').innerHTML = `<span class="text-success"><i class="fas fa-check-circle"></i> Semua Selesai</span>`;
+                    }
+                }
+
+                // 2. Cek Data Mutu (Anggap saja Cek Total Baris yang masuk bulan lalu)
+                const { count, error: errMutu } = await supabaseClient
+                    .from('data_mutu_harian')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('tahun', currentYear)
+                    .eq('bulan', lastMonth);
+
+                if (!errMutu) {
+                    document.getElementById('widgetMutu').innerHTML = `${count || 0} Baris Laporan`;
+                }
+
+            } catch (error) {
+                console.error("Gagal menarik data widget:", error);
+                document.getElementById('widgetInsiden').innerText = "Data tidak tersedia";
+                document.getElementById('widgetRCA').innerText = "Data tidak tersedia";
+                document.getElementById('widgetMutu').innerText = "Data tidak tersedia";
+            }
+        }
     </script>
 </body>
 </html>

@@ -3,65 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Formulir IKP - Komite Mutu</title>
+    <title>Formulir IKP - SIM PMKP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Tambahkan SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <style>
-        body { 
-            background-color: #f4f6f9; 
-            padding-top: 80px; /* Jarak agar konten tidak tertutup header */
-            padding-bottom: 40px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-        }
-        .form-section-title { color: #5a5c69; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; margin-top: 30px; }
-        .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 4px; border-top: 3px solid #3c8dbc; }
-        .btn-simpan { background-color: #3c8dbc; border-color: #367fa9; color: white; width: 120px; }
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .form-section-title { color: #5a5c69; border-bottom: 2px solid #007bff; padding-bottom: 10px; margin-bottom: 20px; margin-top: 30px; font-weight: bold; }
+        .card-custom { box-shadow: 0 4px 15px rgba(0,0,0,.05); border-radius: 8px; border-top: 4px solid #3c8dbc; background: #fff;}
+        .btn-simpan { background-color: #3c8dbc; border-color: #367fa9; color: white; width: 100%; font-weight: bold; }
         .btn-simpan:hover { background-color: #367fa9; color: white; }
         
-        /* Tema Header dan Sidebar */
-        .bg-custom-dark { background-color: #3c8dbc; } 
-        .sidebar-link.active { background-color: #f4f6f9; color: #3c8dbc; border-left: 4px solid #3c8dbc; font-weight: bold; }
-        .sidebar-link { color: #333; font-weight: 500; transition: 0.2s; }
-        .sidebar-link:hover { background-color: #e9ecef; }
-        .navbar-brand { font-size: 1.25rem; letter-spacing: 0.5px; }
+       /* Pewarnaan Grading Matrix */
+        .grade-biru { background-color: #0dcaf0 !important; color: #fff !important; border: 2px solid #0b9ebc !important; }
+        .grade-hijau { background-color: #198754 !important; color: #fff !important; border: 2px solid #146c43 !important; }
+        .grade-kuning { background-color: #ffc107 !important; color: #212529 !important; border: 2px solid #cc9a06 !important; }
+        .grade-merah { background-color: #dc3545 !important; color: #fff !important; border: 2px solid #b02a37 !important; }
+
+        .box-grading { border-radius: 10px; padding: 20px; text-align: center; transition: 0.3s; }
     </style>
 </head>
 <body>
     <div id="navbar-container"></div>
     <div id="sidebar-container"></div>
 
-    <div class="container">
-        <div class="bg-white p-4 card-custom">
+    <div class="container" style="max-width: 900px;">
+        <div class="card-custom p-4">
             <h4 class="mb-4 text-secondary d-flex align-items-center">
-                <span class="fs-3 me-2 text-dark">IKP</span> 
-                <small class="text-muted fs-6 mt-1">FORMULIR LAPORAN INSIDEN KE TIM KESELAMATAN PASIEN DI RUMAH SAKIT SARAS ADYATMA</small>
+                <span class="fs-3 me-2 text-dark"><i class="fas fa-exclamation-triangle text-danger me-2"></i> IKP</span> 
+                <small class="text-muted fs-6 mt-1" style="line-height: 1.2;">FORMULIR LAPORAN INSIDEN KESELAMATAN PASIEN<br>(KTD, KNC, KTC, SENTINEL)</small>
             </h4>
             
             <form id="ikpForm">
-                <h5 class="form-section-title">A. DATA PASIEN</h5>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">1. Umur</label>
+                <h5 class="form-section-title text-primary"><i class="fas fa-user-injured me-2"></i> A. DATA PASIEN</h5>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Nama Pasien</label>
+                        <input type="text" class="form-control border-secondary" id="inp_nama_pasien" placeholder="Inisial atau Nama Lengkap">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">No. Rekam Medis</label>
+                        <input type="text" class="form-control border-secondary" id="inp_no_rm" placeholder="Contoh: 123456">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Umur</label>
                         <div class="d-flex align-items-center gap-2">
-                            <input type="number" class="form-control" name="umur_hari" style="width: 80px;"> <span class="fw-bold">Hari</span>
-                            <input type="number" class="form-control" name="umur_bulan" style="width: 80px;"> <span class="fw-bold">Bulan</span>
-                            <input type="number" class="form-control" name="umur_tahun" style="width: 80px;"> <span class="fw-bold">Tahun</span>
+                            <input type="number" class="form-control" id="inp_umur_hari" placeholder="Hari">
+                            <input type="number" class="form-control" id="inp_umur_bulan" placeholder="Bln">
+                            <input type="number" class="form-control" id="inp_umur_tahun" placeholder="Thn">
                         </div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">3. Jenis Kelamin</label>
-                        <select class="form-select" name="jenis_kelamin">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Jenis Kelamin</label>
+                        <select class="form-select" id="inp_jk">
+                            <option value="">-- Pilih --</option>
                             <option value="Perempuan">Perempuan</option>
                             <option value="Laki-laki">Laki-laki</option>
                         </select>
                     </div>
 
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">2. Penanggung Biaya Pasien</label>
-                        <select class="form-select" name="penanggung_biaya">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Penanggung Biaya</label>
+                        <select class="form-select" id="inp_biaya">
                             <option value=""></option>
                             <option value="BPJS">BPJS</option>
                             <option value="Umum/Pribadi">Umum/Pribadi</option>
@@ -69,380 +74,287 @@
                             <option value="Jamkesda">Jamkesda</option>
                         </select>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label fw-bold">4. Tanggal Mendapatkan Pelayanan</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-white"><i class="fa-regular fa-calendar"></i></span>
-                            <input type="datetime-local" class="form-control" name="tanggal_pelayanan">
-                        </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Tgl. Mendapat Pelayanan</label>
+                        <input type="datetime-local" class="form-control" id="inp_tgl_pelayanan">
                     </div>
                 </div>
 
-                <h5 class="form-section-title">B. RINCIAN KEJADIAN</h5>
-                <div class="row">
+                <h5 class="form-section-title text-success"><i class="fas fa-notes-medical me-2"></i> B. RINCIAN KEJADIAN</h5>
+                <div class="row g-3">
                     <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">1. Tanggal dan Waktu Insiden</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white"><i class="fa-regular fa-calendar"></i></span>
-                                <input type="datetime-local" class="form-control" name="tgl_waktu_insiden">
-                            </div>
+                        <label class="form-label fw-bold">Tanggal & Waktu Insiden <span class="text-danger">*</span></label>
+                        <input type="datetime-local" class="form-control border-success" id="inp_tgl_insiden" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Jenis Insiden <span class="text-danger">*</span></label>
+                        <select class="form-select border-success fw-bold" id="inp_jenis_insiden" required>
+                            <option value="">-- Pilih --</option>
+                            <option value="KNC">KNC (Kejadian Nyaris Cedera)</option>
+                            <option value="KTC">KTC (Kejadian Tidak Cedera)</option>
+                            <option value="KTD">KTD (Kejadian Tidak Diharapkan - Cedera)</option>
+                            <option value="Sentinel">Sentinel (Kematian/Cedera Serius)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Deskripsi Insiden <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="inp_insiden" required placeholder="Contoh: Pasien jatuh dari tempat tidur">
+                    </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label fw-bold">Kronologis Kejadian <span class="text-danger">*</span></label>
+                        <small class="d-block text-muted mb-2">(Nama Pasien, Dokter, Perawat harap diinisialkan saja)</small>
+                        <textarea class="form-control" id="inp_kronologis" rows="4" required></textarea>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Tempat Kejadian <span class="text-danger">*</span></label>
+                        <select class="form-select" id="inp_lokasi" required>
+                            <option value="">-- Memuat Unit... --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Insiden Terjadi Pada Pasien</label>
+                        <select class="form-select" id="inp_terjadi_pada">
+                            <option value=""></option>
+                            <option value="Penyakit Dalam">Penyakit Dalam</option>
+                            <option value="Bedah">Bedah</option>
+                            <option value="Kesehatan Anak">Kesehatan Anak</option>
+                            <option value="Obstetri dan Ginekologi">Obstetri dan Ginekologi</option>
+                            <option value="Saraf">Saraf</option>
+                            <option value="Lainnya">Lainnya</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Unit Penyebab Insiden</label>
+                        <select class="form-select" id="inp_unit_penyebab">
+                            <option value=""></option>
+                            <option value="Farmasi">Farmasi</option>
+                            <option value="Laboratorium">Laboratorium</option>
+                            <option value="Radiologi">Radiologi</option>
+                            <option value="Rekam Medis">Rekam Medis</option>
+                            <option value="Gizi">Gizi</option>
+                            <option value="IGD">IGD</option>
+                            <option value="Rawat Inap">Rawat Inap</option>
+                            <option value="Rawat Jalan">Rawat Jalan</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Pertama Melaporkan</label>
+                        <select class="form-select" id="inp_pelapor_pertama">
+                            <option value="Perawat">Perawat</option>
+                            <option value="Dokter">Dokter</option>
+                            <option value="Pasien">Pasien/Keluarga</option>
+                            <option value="Karyawan Lain">Karyawan Lain</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-12 mt-3">
+                        <label class="form-label fw-bold">Tindakan Lanjut Seketika <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="inp_tindak_lanjut" rows="2" required placeholder="Tindakan yang langsung dilakukan..."></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Tindakan Dilakukan Oleh</label>
+                        <select class="form-select" id="inp_dilakukan_oleh">
+                            <option value="Perawat">Perawat / Bidan</option>
+                            <option value="Dokter">Dokter</option>
+                            <option value="Tim">Tim</option>
+                            <option value="Karyawan Lain">Karyawan Lain</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-12 mt-4 p-3 bg-light border rounded">
+                        <label class="form-label fw-bold">Apakah kejadian yang sama pernah terjadi di Unit lain? <span class="text-danger">*</span></label>
+                        <div class="form-check mb-1">
+                            <input class="form-check-input" type="radio" name="pernah_terjadi" id="radTidak" value="Tidak" checked>
+                            <label class="form-check-label" for="radTidak">Tidak</label>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">2. Insiden</label>
-                            <input type="text" class="form-control" name="insiden">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">3. Kronologis Insiden</label>
-                            <small class="d-block fw-bold text-dark mb-2">(Di Dalam Kronologis Nama pasien,Nama fasyankes,Nama Dokter,Nama Perawat,Nama Petugas Semua Harus Berupa Inisial)</small>
-                            <textarea class="form-control" name="kronologis" rows="4"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">4. Jenis Insiden</label>
-                            <select class="form-select" name="jenis_insiden">
-                                <option value=""></option>
-                                <option value="KNC">KNC</option>
-                                <option value="KTC">KTC</option>
-                                <option value="KTD">KTD</option>
-                                <option value="Sentinel">Sentinel</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">5. Insiden Terjadi Pada Pasien</label>
-                            <select class="form-select" name="terjadi_pada">
-                                <option value=""></option>
-                                <option value="Penyakit Dalam">Penyakit Dalam</option>
-                                <option value="Bedah">Bedah</option>
-                                <option value="THT">THT</option>
-                                <option value="Anak">Kesehatan Anak</option>
-                                <option value="Obgyn">Obstetri dan Ginekologi</option>
-                                <option value="Saraf">Saraf</option>
-                                <option value="Orthopedi">Orthopedi</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">6. Dampak Insiden Terhadap Pasien</label>
-                            <select class="form-select" name="dampak">
-                                <option value=""></option>
-                                <option value="Tidak Signifikan">1 - Tidak Signifikan (Tidak ada cedera)</option>
-                                <option value="Minor">2 - Minor (Cedera ringan, mis. luka lecet, dpt diatasi dgn pertolongan pertama)</option>
-                                <option value="Moderat">3 - Moderat (Cedera sedang, fungsi berkurang reversibel, perpanjang perawatan)</option>
-                                <option value="Mayor">4 - Mayor (Cedera luas/berat, cacat/lumpuh, fungsi hilang irreversibel)</option>
-                                <option value="Katastropik">5 - Katastropik (Kematian yg tidak berhubungan dgn perjalanan penyakit)</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">7. Probabilitas</label>
-                            <select class="form-select" name="probabilitas">
-                                <option value=""></option>
-                                <option value="Sangat Jarang">1 - Sangat Jarang (> 5 tahun / 1x)</option>
-                                <option value="Jarang">2 - Jarang (> 2 - 5 tahun / 1x)</option>
-                                <option value="Mungkin">3 - Mungkin (1 - 2 tahun / 1x)</option>
-                                <option value="Sering">4 - Sering (Beberapa kali / tahun)</option>
-                                <option value="Sangat Sering">5 - Sangat Sering (Tiap minggu / bulan)</option>
-                            </select>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="pernah_terjadi" id="radYa" value="Ya">
+                            <label class="form-check-label" for="radYa">Ya</label>
                         </div>
                         
-                        <div class="mb-3 p-3 rounded" id="boxGrading" style="background-color: #f8f9fa; border: 1px solid #dee2e6;">
-                            <label class="form-label fw-bold text-secondary mb-1">Hasil Grading Risiko:</label>
-                            <div id="hasilGrading" class="fs-5 fw-bold text-center py-2 rounded">-</div>
-                            <input type="hidden" name="grading_risiko" id="inputGrading">
+                        <div id="boxPencegahan" class="mt-3 d-none">
+                            <label class="form-label fw-bold text-primary">Tindakan Pencegahan Mencegah Terulang <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="inp_tindakan_pencegahan" rows="2" placeholder="Jelaskan langkah preventif..."></textarea>
                         </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">8. Orang Pertama Yang Melaporkan Insiden</label>
-                            <select class="form-select" name="pelapor_pertama">
-                                <option value=""></option>
-                                <option value="Dokter">Dokter</option>
-                                <option value="Perawat">Perawat</option>
-                                <option value="Pasien">Pasien</option>
-                                <option value="Karyawan">Karyawan</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">9. Insiden menyangkut pasien</label>
-                            <select class="form-select" name="menyangkut_pasien">
-                                <option value=""></option>
-                                <option value="Rawat Inap">Rawat Inap</option>
-                                <option value="Rawat Jalan">Rawat Jalan</option>
-                                <option value="UGD">UGD</option>
-                                <option value="Lainnya">Lain-lain</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">10. Tempat Insiden</label>
-                            <select class="form-select" name="tempat_insiden">
-                                <option value=""></option>
-                                <option value="Intrahospital">Di Dalam Rumah Sakit</option>
-                                <option value="Ekstrahospital">Di Luar Rumah Sakit</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">11. Unit/Departement terkait penyebab insiden</label>
-                            <select class="form-select" name="unit_terkait">
-                                <option value=""></option>
-                                <option value="Farmasi">Farmasi</option>
-                                <option value="Laboratorium">Laboratorium</option>
-                                <option value="Radiologi">Radiologi</option>
-                                <option value="Rekam Medis">Rekam Medis</option>
-                                <option value="Gizi">Gizi</option>
-                                <option value="UGD">UGD</option>
-                                <option value="Rawat Inap">Rawat Inap</option>
-                                <option value="Rawat Jalan">Rawat Jalan</option>
-                                <option value="IPSRS">IPSRS</option>
-                                <option value="CSSD">CSSD</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">12. Tindak lanjut yang dilakukan segera setelah kejadian, dan hasilnya</label>
-                            <textarea class="form-control" name="tindak_lanjut" rows="4"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">13. Tindak Lanjut Dilakukan Oleh</label>
-                            <select class="form-select" name="dilakukan_oleh">
-                                <option value=""></option>
-                                <option value="Tim">Tim</option>
-                                <option value="Dokter">Dokter</option>
-                                <option value="Perawat">Perawat</option>
-                                <option value="Bidan">Bidan</option>
-                                <option value="Karyawan">Karyawan lain</option>
-                            </select>
-                        </div>
-                        <div class="mb-4 p-3 bg-light border rounded">
-                            <label class="form-label fw-bold">14. Apakah kejadian yang sama pernah terjadi di Unit Kerja lain? <span class="text-danger">*</span></label>
-                            
-                            <div class="form-check mb-1">
-                                <input class="form-check-input" type="radio" name="pernah_terjadi" id="radioTidak" value="Tidak" required>
-                                <label class="form-check-label" for="radioTidak">Tidak</label>
+                    <div class="col-md-12 mt-4 border-top pt-4">
+                        <h6 class="fw-bold text-warning text-darken mb-3"><i class="fas fa-chess-board me-2"></i> C. Penilaian Risiko (Grading Matrix)</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Dampak Insiden</label>
+                                <select class="form-select bg-light" id="inp_dampak" onchange="hitungGrading()">
+                                    <option value="1">1 - Tidak Signifikan (Tidak ada cedera)</option>
+                                    <option value="2">2 - Minor (Cedera ringan, luka lecet)</option>
+                                    <option value="3">3 - Moderat (Cedera sedang, perpanjang rawat)</option>
+                                    <option value="4">4 - Mayor (Cedera luas/berat, cacat)</option>
+                                    <option value="5">5 - Katastropik (Kematian)</option>
+                                </select>
                             </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="pernah_terjadi" id="radioYa" value="Ya" required>
-                                <label class="form-check-label" for="radioYa">Ya</label>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Probabilitas (Frekuensi)</label>
+                                <select class="form-select bg-light" id="inp_probabilitas" onchange="hitungGrading()">
+                                    <option value="1">1 - Sangat Jarang (> 5 tahun sekali)</option>
+                                    <option value="2">2 - Jarang (2-5 tahun sekali)</option>
+                                    <option value="3">3 - Mungkin (1-2 tahun sekali)</option>
+                                    <option value="4">4 - Sering (Beberapa kali / tahun)</option>
+                                    <option value="5">5 - Sangat Sering (Tiap minggu / bulan)</option>
+                                </select>
                             </div>
-
-                            <div id="tindakanPencegahanContainer" class="mt-3 pt-3 border-top" style="display: none; border-color: #dee2e6;">
-                                <label for="tindakanPencegahan" class="form-label fw-bold text-primary">
-                                    <i class="fas fa-clipboard-check me-1"></i> Langkah/tindakan apa yang telah diambil pada pelayanan tersebut untuk mencegah terulangnya kejadian yang sama? <span class="text-danger">*</span>
-                                </label>
-                                <textarea class="form-control" id="tindakanPencegahan" name="tindakanPencegahan" rows="3" placeholder="Jelaskan langkah atau tindakan preventif yang telah diambil..."></textarea>
-                            </div>
+                        </div>
+                        <div id="hasilGrading" class="box-grading bg-light border shadow-sm mt-3">
+                            <label class="form-label fw-bold text-secondary mb-1">Hasil Grading Risiko:</label>
+                            <h3 class="fw-bold mb-0" id="txtLevelRisiko">-</h3>
+                            <input type="hidden" id="hide_grading_warna">
                         </div>
                     </div>
                 </div>
 
-                <div class="d-flex justify-content-end mt-4">
-                    <button type="submit" class="btn btn-simpan fw-bold" id="submitBtn"><i class="fas fa-save me-2"></i>SIMPAN</button>
+                <div class="d-flex justify-content-end mt-5 border-top pt-3">
+                    <button type="submit" class="btn btn-simpan shadow" id="btnSubmit"><i class="fas fa-paper-plane me-2"></i> KIRIM LAPORAN</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Panggil config.js sebelum file js lainnya -->
+    <!-- LIBRARY SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            // MENGGUNAKAN VARIABEL GLOBAL DARI config.js
-            const scriptURL = API_CONFIG.IKP;
+        const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        
+        document.addEventListener("DOMContentLoaded", async function () {
+            if (!supabaseClient) return;
 
-            // ========================================================
-            // 1. VARIABEL & ELEMEN DOM
-            // ========================================================
-            const form = document.getElementById("ikpForm");
-            const submitBtn = document.getElementById("submitBtn");
-            const dampakEl = document.querySelector('[name="dampak"]');
-            const probEl = document.querySelector('[name="probabilitas"]');
-            const hasilDiv = document.getElementById('hasilGrading');
-            const boxDiv = document.getElementById('boxGrading');
-            const inputGrading = document.getElementById('inputGrading');
-            const radioPernahTerjadi = document.querySelectorAll('input[name="pernah_terjadi"]');
-            const containerTindakan = document.getElementById('tindakanPencegahanContainer');
-            const inputTindakan = document.getElementById('tindakanPencegahan');
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('inp_tgl_insiden').value = now.toISOString().slice(0, 16);
 
-            const editDataStr = localStorage.getItem('editDataIKP');
-            let isEditMode = false;
-            let editTargetId = null;
+            await loadUnitDropdown();
+            hitungGrading();
 
-            // ========================================================
-            // 2. FUNGSI PEMBANTU
-            // ========================================================
-            function formatDateTimeLocal(isoString) {
-                if (!isoString) return '';
-                const d = new Date(isoString);
-                d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-                return d.toISOString().slice(0, 16);
-            }
-
-            function hitungGrading() {
-                const nilaiDampak = { "Tidak Signifikan": 1, "Minor": 2, "Moderat": 3, "Mayor": 4, "Katastropik": 5 };
-                const nilaiProbabilitas = { "Sangat Jarang": 1, "Jarang": 2, "Mungkin": 3, "Sering": 4, "Sangat Sering": 5 };
-
-                const d_val = nilaiDampak[dampakEl.value];
-                const p_val = nilaiProbabilitas[probEl.value];
-
-                if (d_val && p_val) {
-                    const matrix = {
-                        5: ["Moderate", "Moderate", "High", "Extreme", "Extreme"],
-                        4: ["Moderate", "Moderate", "High", "Extreme", "Extreme"],
-                        3: ["Low", "Moderate", "High", "Extreme", "Extreme"],
-                        2: ["Low", "Low", "Moderate", "High", "Extreme"],
-                        1: ["Low", "Low", "Moderate", "High", "Extreme"]
-                    };
-
-                    const hasil = matrix[p_val][d_val - 1]; 
-                    inputGrading.value = hasil;
-
-                    hasilDiv.classList.remove('text-dark', 'text-white');
-                    if (hasil === 'Low') {
-                        hasilDiv.innerText = "LOW (Rendah)";
-                        hasilDiv.style.backgroundColor = "#0d6efd";
-                        hasilDiv.classList.add('text-white');
-                    } else if (hasil === 'Moderate') {
-                        hasilDiv.innerText = "MODERATE (Sedang)";
-                        hasilDiv.style.backgroundColor = "#198754";
-                        hasilDiv.classList.add('text-white');
-                    } else if (hasil === 'High') {
-                        hasilDiv.innerText = "HIGH (Tinggi)";
-                        hasilDiv.style.backgroundColor = "#ffc107";
-                        hasilDiv.classList.add('text-dark');
-                    } else if (hasil === 'Extreme') {
-                        hasilDiv.innerText = "EXTREME (Sangat Tinggi)";
-                        hasilDiv.style.backgroundColor = "#dc3545";
-                        hasilDiv.classList.add('text-white');
-                    }
-                } else {
-                    hasilDiv.innerText = "-";
-                    hasilDiv.style.backgroundColor = "transparent";
-                    hasilDiv.classList.remove('text-white', 'text-dark');
-                    inputGrading.value = "";
-                }
-            }
-
-            // ========================================================
-            // 3. INISIALISASI EVENT LISTENER
-            // ========================================================
-            if(dampakEl && probEl) {
-                dampakEl.addEventListener('change', hitungGrading);
-                probEl.addEventListener('change', hitungGrading);
-            }
-
-            radioPernahTerjadi.forEach(radio => {
+            // Toggle Textarea Pencegahan
+            document.querySelectorAll('input[name="pernah_terjadi"]').forEach(radio => {
                 radio.addEventListener('change', function() {
+                    let box = document.getElementById('boxPencegahan');
+                    let inp = document.getElementById('inp_tindakan_pencegahan');
                     if (this.value === 'Ya') {
-                        containerTindakan.style.display = 'block';
-                        inputTindakan.setAttribute('required', 'required');
+                        box.classList.remove('d-none');
+                        inp.setAttribute('required', 'required');
                     } else {
-                        containerTindakan.style.display = 'none';
-                        inputTindakan.removeAttribute('required');
-                        inputTindakan.value = ''; 
+                        box.classList.add('d-none');
+                        inp.removeAttribute('required');
                     }
                 });
             });
+        });
 
-            // ========================================================
-            // 4. MODE EDIT (JIKA ADA DATA DARI LOCAL STORAGE)
-            // ========================================================
-            if (editDataStr) {
-                isEditMode = true;
-                const data = JSON.parse(editDataStr);
-                editTargetId = data.Timestamp;
-
-                document.querySelector('.form-section-title').innerHTML = `A. DATA PASIEN <span class="badge bg-warning text-dark ms-2">MODE EDIT</span>`;
-                submitBtn.innerHTML = "<i class='fas fa-save me-2'></i> UPDATE DATA";
-                submitBtn.classList.replace('btn-simpan', 'btn-warning');
-
-                document.querySelector('[name="umur_hari"]').value = data['Umur (Hari)'] || '';
-                document.querySelector('[name="umur_bulan"]').value = data['Umur (Bulan)'] || '';
-                document.querySelector('[name="umur_tahun"]').value = data['Umur (Tahun)'] || '';
-                document.querySelector('[name="jenis_kelamin"]').value = data['Jenis Kelamin'] || '';
-                document.querySelector('[name="penanggung_biaya"]').value = data['Penanggung Biaya'] || '';
-                document.querySelector('[name="tanggal_pelayanan"]').value = formatDateTimeLocal(data['Tanggal pelayanan']);
-                document.querySelector('[name="tgl_waktu_insiden"]').value = formatDateTimeLocal(data['Tgl & Waktu insiden']);
-                document.querySelector('[name="insiden"]').value = data['Insiden'] || '';
-                document.querySelector('[name="kronologis"]').value = data['Kronologis'] || '';
-                document.querySelector('[name="jenis_insiden"]').value = data['Jenis Insiden'] || '';
-                document.querySelector('[name="terjadi_pada"]').value = data['Terjadi Pada'] || '';
-                document.querySelector('[name="dampak"]').value = data['Dampak'] || '';
-                document.querySelector('[name="probabilitas"]').value = data['Probabilitas'] || '';
-                document.querySelector('[name="pelapor_pertama"]').value = data['Pelapor Pertama'] || '';
-                document.querySelector('[name="menyangkut_pasien"]').value = data['Menyangkut Pasien'] || '';
-                document.querySelector('[name="tempat_insiden"]').value = data['Tempat Insiden'] || '';
-                document.querySelector('[name="unit_terkait"]').value = data['Unit Terkait'] || '';
-                document.querySelector('[name="tindak_lanjut"]').value = data['Tindak Lanjut'] || '';
-                document.querySelector('[name="dilakukan_oleh"]').value = data['Dilakukan Oleh'] || '';
-                document.querySelector('[name="tindakanPencegahan"]').value = data['Tindakan Pencegahan'] || '';
-                
-                if (data['Pernah terjadi?'] === "Ya") {
-                    document.getElementById('radioYa').checked = true;
-                    containerTindakan.style.display = 'block'; 
-                } else if (data['Pernah terjadi?'] === "Tidak") {
-                    document.getElementById('radioTidak').checked = true;
-                    containerTindakan.style.display = 'none'; 
+        async function loadUnitDropdown() {
+            try {
+                const { data } = await supabaseClient.from('master_unit').select('nama_unit').order('nama_unit');
+                const sel = document.getElementById('inp_lokasi');
+                if (data) {
+                    sel.innerHTML = '<option value="">-- Pilih Lokasi Insiden --</option>';
+                    data.forEach(u => sel.add(new Option(u.nama_unit, u.nama_unit)));
                 }
-            }
+            } catch(e) {}
+        }
 
-            // Panggil hitung grading setelah load (penting untuk mode edit)
-            setTimeout(hitungGrading, 500);
+        // MESIN GRADING KEMENKES 5x5
+        window.hitungGrading = function() {
+            let dampak = parseInt(document.getElementById('inp_dampak').value);
+            let prob = parseInt(document.getElementById('inp_probabilitas').value);
+            
+            let box = document.getElementById('hasilGrading');
+            let txtLevel = document.getElementById('txtLevelRisiko');
+            let hideWarna = document.getElementById('hide_grading_warna');
 
-            // ========================================================
-            // 5. PROSES PENGIRIMAN FORM
-            // ========================================================
-            form.addEventListener("submit", function (e) {
-                e.preventDefault(); 
-                
-                submitBtn.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i> Menyimpan...";
-                submitBtn.disabled = true;
+            box.classList.remove('grade-biru', 'grade-hijau', 'grade-kuning', 'grade-merah', 'bg-light', 'text-white', 'text-dark');
 
-                const formData = new FormData(form);
-                const inputData = Object.fromEntries(formData.entries());
+            let warna = "Biru";
+            if (dampak === 5) { if (prob >= 2) warna = "Merah"; else warna = "Kuning"; } 
+            else if (dampak === 4) { if (prob >= 3) warna = "Merah"; else warna = "Kuning"; } 
+            else if (dampak === 3) { if (prob >= 4) warna = "Merah"; else if (prob === 3) warna = "Kuning"; else warna = "Hijau"; } 
+            else if (dampak === 2) { if (prob === 5) warna = "Kuning"; else if (prob >= 3) warna = "Hijau"; else warna = "Biru"; } 
+            else if (dampak === 1) { if (prob >= 4) warna = "Hijau"; else warna = "Biru"; }
 
-                const payload = {
-                    action: isEditMode ? 'update' : 'create',
-                    id: editTargetId,
-                    data: inputData
-                };
+            if (warna === "Merah") { box.classList.add('grade-merah', 'text-white'); txtLevel.innerText = "EKSTREM (Merah)"; } 
+            else if (warna === "Kuning") { box.classList.add('grade-kuning', 'text-dark'); txtLevel.innerText = "TINGGI (Kuning)"; } 
+            else if (warna === "Hijau") { box.classList.add('grade-hijau', 'text-white'); txtLevel.innerText = "SEDANG (Hijau)"; } 
+            else { box.classList.add('grade-biru', 'text-white'); txtLevel.innerText = "RENDAH (Biru)"; }
 
-                fetch(scriptURL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify(payload),
-                })
-                .then((response) => response.json())
-                .then((result) => {
-                    if (result.status === "success") {
-                        // Notifikasi SweetAlert
-                        Swal.fire({
-                            title: 'Berhasil!',
-                            text: isEditMode ? 'Data Insiden berhasil diperbarui!' : 'Laporan Insiden (IKP) berhasil disimpan!',
-                            icon: 'success',
-                            timer: 2000,
-                            showConfirmButton: false
-                        }).then(() => {
-                            if(isEditMode) {
-                                localStorage.removeItem('editDataIKP'); 
-                                window.location.href = 'daftar_insiden.html'; 
-                            } else {
-                                form.reset(); 
-                                hitungGrading(); // Reset tampilan grading
-                                containerTindakan.style.display = 'none'; // Sembunyikan textbox pencegahan
-                            }
-                        });
-                    } else {
-                        Swal.fire('Gagal!', 'Terjadi kesalahan: ' + result.message, 'error');
-                    }
-                })
-                .catch((error) => {
-                    Swal.fire('Kesalahan Jaringan', 'Gagal terhubung ke server. Periksa koneksi internet Anda.', 'error');
-                })
-                .finally(() => {
-                    submitBtn.innerHTML = isEditMode ? "<i class='fas fa-save me-2'></i> UPDATE DATA" : "<i class='fas fa-save me-2'></i> SIMPAN";
-                    submitBtn.disabled = false;
+            hideWarna.value = warna;
+        };
+
+        // SIMPAN DATA IKP KE SUPABASE (JSONB)
+        document.getElementById('ikpForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('btnSubmit');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Mengirim...';
+            btn.disabled = true;
+
+            // Kita satukan detail spesifik IKP ke dalam JSONB agar tabel ringkas
+            const detailJSON = {
+                umur_hari: document.getElementById('inp_umur_hari').value,
+                umur_bulan: document.getElementById('inp_umur_bulan').value,
+                umur_tahun: document.getElementById('inp_umur_tahun').value,
+                jenis_kelamin: document.getElementById('inp_jk').value,
+                penanggung_biaya: document.getElementById('inp_biaya').value,
+                tgl_pelayanan: document.getElementById('inp_tgl_pelayanan').value,
+                terjadi_pada_pasien: document.getElementById('inp_terjadi_pada').value,
+                unit_penyebab: document.getElementById('inp_unit_penyebab').value,
+                pelapor_pertama: document.getElementById('inp_pelapor_pertama').value,
+                pernah_terjadi_sebelumnya: document.getElementById('radYa').checked ? "Ya" : "Tidak",
+                tindakan_pencegahan: document.getElementById('inp_tindakan_pencegahan').value
+            };
+
+            const payloadData = {
+                jenis_insiden: document.getElementById('inp_jenis_insiden').value, // KTD, KNC, dll
+                waktu_insiden: document.getElementById('inp_tgl_insiden').value,
+                unit_pelapor: sessionMutu.unit || "Tidak Diketahui",
+                lokasi_kejadian: document.getElementById('inp_lokasi').value,
+                nama_pasien: document.getElementById('inp_nama_pasien').value,
+                no_rm: document.getElementById('inp_no_rm').value,
+                kronologi: `Insiden: ${document.getElementById('inp_insiden').value}\n\nKronologis:\n${document.getElementById('inp_kronologis').value}`,
+                tindakan_segera: document.getElementById('inp_tindak_lanjut').value,
+                pelaksana_tindakan: document.getElementById('inp_dilakukan_oleh').value,
+                skor_dampak: parseInt(document.getElementById('inp_dampak').value),
+                skor_probabilitas: parseInt(document.getElementById('inp_probabilitas').value),
+                grading_risiko: document.getElementById('hide_grading_warna').value,
+                nama_pelapor: sessionMutu.nama_lengkap || "Anonim",
+                detail_spesifik: detailJSON // INJEKSI JSONB
+            };
+
+            try {
+                const { error } = await supabaseClient.from('data_insiden').insert([payloadData]);
+                if (error) throw error;
+
+                Swal.fire({
+                    title: 'Laporan IKP Terkirim!',
+                    text: 'Terima kasih telah berkontribusi untuk keselamatan pasien. Laporan ini akan segera diinvestigasi oleh Komite Mutu.',
+                    icon: 'success',
+                    allowOutsideClick: false
+                }).then(() => {
+                    document.getElementById('ikpForm').reset();
+                    hitungGrading();
+                    document.getElementById('boxPencegahan').classList.add('d-none');
                 });
-            });
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal!', 'Terjadi kesalahan sistem saat mengirim laporan.', 'error');
+            } finally {
+                btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> KIRIM LAPORAN';
+                btn.disabled = false;
+            }
         });
     </script>
 </body>

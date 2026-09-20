@@ -96,7 +96,7 @@
                             </div>
                         </div>
                         <div class="info-box">
-                            <p class="mb-1" style="font-size:0.85rem;"><strong>Capaian Total (A) yang dilaporkan Unit:</strong></p>
+                            <p class="mb-1" style="font-size:0.85rem;"><strong>Capaian Total Aktual (A) dari Database:</strong></p>
                             <h3 class="fw-bold text-success mb-0" id="lbl_capaian_A">-</h3>
                         </div>
                     </div>
@@ -116,12 +116,12 @@
 
                         <div class="row align-items-center mt-3">
                             <div class="col-md-6 mb-3 mb-md-0">
-                                <label class="fw-bold text-dark mb-2">Capaian Sampel (B)</label>
+                                <label class="fw-bold text-dark mb-2">Capaian Sampel Riil (B)</label>
                                 <div class="input-group">
                                     <input type="number" step="0.01" class="form-control form-control-lg fw-bold text-primary" id="inp_capaian_B" placeholder="0.00" onkeyup="hitungAkurasi()">
                                     <span class="input-group-text fw-bold">% / ‰</span>
                                 </div>
-                                <small class="text-muted d-block mt-2" style="font-size:0.75rem;">Masukkan capaian riil hasil telusur Anda.</small>
+                                <small class="text-muted d-block mt-2" style="font-size:0.75rem;">Masukkan capaian riil dari sampel hasil telusur Anda.</small>
                             </div>
                             <div class="col-md-6 text-center border-start">
                                 <p class="text-muted mb-1" style="font-size:0.85rem;">Akurasi Data = (B / A) x 100%</p>
@@ -132,7 +132,7 @@
 
                         <div class="text-end mt-4 pt-3 border-top">
                             <button class="btn btn-primary fw-bold px-5 rounded-pill shadow" id="btnSimpan" onclick="simpanHasilValidasi()" disabled>
-                                <i class="fas fa-save me-2"></i> Simpan Hasil Validasi
+                                <i class="fas fa-save me-2"></i> Kunci & Simpan Validasi
                             </button>
                         </div>
                     </div>
@@ -152,20 +152,21 @@
                 </div>
             </div>
         </div>
-
     </div>
 
+    <!-- LIBRARY -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const MUTU_URL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
         const session = JSON.parse(localStorage.getItem("sessionMutu")) || {};
         
         let unitDataCache = [];
         let formMasterCache = [];
+        let setupFormCache = [];
         
         // State Validasi Aktif
         let current_N = 0;
@@ -173,7 +174,9 @@
         let current_A = 0;
         let current_Judul = "";
 
-        document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener("DOMContentLoaded", async function () {
+            if (!supabaseClient) return;
+
             const date = new Date();
             document.getElementById('inp_bulan').value = date.getMonth() + 1;
             
@@ -183,120 +186,290 @@
             dropdownTahun.add(new Option(thn - 1, thn - 1));
             dropdownTahun.value = thn;
 
-            // Set default nama validator dari akun yang login
             document.getElementById('inp_nama_validator').value = session.nama_lengkap || session.username || "Komite Mutu";
 
-            muatKonfigurasiUnit();
+            await muatDataDasar();
         });
 
-        function muatKonfigurasiUnit() {
-            if (!MUTU_URL) return;
-            fetch(MUTU_URL + "?action=get_panel_setup")
-            .then(res => res.json())
-            .then(res => {
-                if(res.status === 'success') {
-                    unitDataCache = res.listUnit;
-                    
-                    const selUnit = document.getElementById('inp_unit');
-                    selUnit.innerHTML = '<option value="">-- Pilih Unit Kerja --</option>';
-                    
-                    let units = unitDataCache.map(u => u.unit).sort();
-                    units.forEach(unit => { selUnit.add(new Option(unit, unit)); });
-                    
-                    fetch(MUTU_URL + "?action=get_profil_indikator").then(r => r.json()).then(r => {
-                        if(r.status === 'success') formMasterCache = r.mapping || {};
-                    });
-                }
-            });
+        async function muatDataDasar() {
+            try {
+                // 1. Tarik Unit
+                const resUnit = await supabaseClient.from('master_unit').select('*');
+                unitDataCache = resUnit.data || [];
+                
+                const selUnit = document.getElementById('inp_unit');
+                selUnit.innerHTML = '<option value="">-- Pilih Unit Kerja --</option>';
+                // PERBAIKAN: Tambahkan opsi SELURUH RS untuk validasi IMP RS
+                selUnit.add(new Option("🏥 SELURUH RUMAH SAKIT", "RS_ALL"));
+                
+                unitDataCache.sort((a,b) => a.nama_unit.localeCompare(b.nama_unit)).forEach(u => selUnit.add(new Option(u.nama_unit, u.nama_unit)));
+
+                // 2. Tarik Kamus Indikator
+                const resIndikator = await supabaseClient.from('master_indikator').select('*');
+                formMasterCache = resIndikator.data || [];
+
+                // 3. Tarik Setup Form (Kolom)
+                const resSetup = await supabaseClient.from('setup_formulir').select('*');
+                setupFormCache = resSetup.data || [];
+
+            } catch (err) {
+                Swal.fire('Error', 'Gagal memuat database dasar dari Supabase.', 'error');
+            }
         }
 
-        function updateFormDropdown() {
+        // PERBAIKAN: Fungsi Update Dropdown berdasarkan hak milik form unit
+        window.updateFormDropdown = function() {
             const unit = document.getElementById('inp_unit').value;
             const selForm = document.getElementById('inp_form');
             selForm.innerHTML = '<option value="">-- Pilih Indikator --</option>';
             
             if(!unit) return;
 
-            let unitObj = unitDataCache.find(u => u.unit === unit);
-            if(unitObj && unitObj.daftar_form) {
-                let forms = unitObj.daftar_form.split(',').map(s => s.trim()).filter(Boolean);
-                forms.forEach(f => {
-                    let judulAsli = formMasterCache[f] || f.replace(/_/g, ' ');
-                    selForm.add(new Option(judulAsli, f));
+            if (unit === "RS_ALL") {
+                // Tampilkan SEMUA indikator yang ada di master_indikator
+                formMasterCache.forEach(f => {
+                    selForm.add(new Option(f.judul_indikator, f.id_form));
                 });
+            } else {
+                // Filter hanya indikator yang dimiliki oleh unit tersebut
+                let unitObj = unitDataCache.find(u => u.nama_unit === unit);
+                if(unitObj && unitObj.daftar_form) {
+                    let forms = unitObj.daftar_form.split(',').map(s => s.trim()).filter(Boolean);
+                    forms.forEach(f => {
+                        let master = formMasterCache.find(x => x.id_form === f);
+                        let judulAsli = master ? master.judul_indikator : f.replace(/_/g, ' ');
+                        selForm.add(new Option(judulAsli, f));
+                    });
+                }
             }
         }
 
-        window.tarikSampelValidasi = function() {
+        // ==========================================
+        // SMART AGGREGATOR ENGINE (Diambil dari Laporan Mutu)
+        // ==========================================
+        function eksekusiRumusEngine(template, rows, colsConfig) {
+            if (!template) return 0;
+            let t = template.toString().trim();
+            
+            if (t.startsWith('{') && t.endsWith('}')) {
+                try {
+                    let rule = JSON.parse(t);
+                    let colIdx = parseInt(rule.target_kolom);
+                    
+                    if (rule.tipe === "COUNTALL") return rows.length;
+                    else if (rule.tipe === "SUM") {
+                        if (isNaN(colIdx)) return 0;
+                        return rows.reduce((acc, r) => acc + (parseFloat(r.data_input[colIdx]) || 0), 0);
+                    } 
+                    else if (rule.tipe === "COUNTIF") {
+                        if (isNaN(colIdx)) return 0;
+                        let kriteria = (rule.nilai_kriteria || "").toString().toLowerCase().trim();
+                        let op = rule.operator || "==";
+                        
+                        return rows.filter(r => {
+                            let val = (r.data_input[colIdx] !== null && r.data_input[colIdx] !== undefined) 
+                                        ? r.data_input[colIdx].toString().toLowerCase().trim() : "";
+                            
+                            if (op === "==") return val === kriteria;
+                            if (op === "!=") return val !== kriteria;
+                            if (op === "includes") return val.includes(kriteria);
+                            return false;
+                        }).length;
+                    }
+                } catch(e) {}
+            }
+
+            let matchCountIf = t.match(/COUNTIF\s*\(\s*\[?(.*?)\]?\s*,\s*['"]?(.*?)['"]?\s*\)/i);
+            if (matchCountIf) {
+                let colName = matchCountIf[1].trim().toLowerCase(); 
+                let crit = matchCountIf[2].trim().toLowerCase().replace(/\*/g,'');
+                let cIdx = colsConfig.findIndex(c => c.judul.toLowerCase().includes(colName));
+                if (cIdx === -1) return 0;
+                return rows.filter(r => (r.data_input[cIdx]||"").toString().toLowerCase().includes(crit)).length;
+            }
+            
+            let matchSum = t.match(/SUM\s*\(\s*\[?(.*?)\]?\s*\)/i);
+            if (matchSum) {
+                let colName = matchSum[1].trim().toLowerCase();
+                let cIdx = colsConfig.findIndex(c => c.judul.toLowerCase().includes(colName));
+                if (cIdx === -1) return 0;
+                return rows.reduce((acc, r) => acc + (parseFloat(r.data_input[cIdx])||0), 0);
+            }
+            
+            if (t.toUpperCase().includes("COUNTALL") || t.toUpperCase().includes("COUNTA")) return rows.length;
+            return 0;
+        }
+
+        // ==========================================
+        // MESIN SLOVIN & RANDOM SAMPLING PADA SISI KLIEN
+        // ==========================================
+        window.tarikSampelValidasi = async function() {
             const unit = document.getElementById('inp_unit').value;
             const id_form = document.getElementById('inp_form').value;
-            const bulan = document.getElementById('inp_bulan').value;
-            const tahun = document.getElementById('inp_tahun').value;
+            const bulan = parseInt(document.getElementById('inp_bulan').value);
+            const tahun = parseInt(document.getElementById('inp_tahun').value);
 
             if(!unit || !id_form) {
-                Swal.fire('Oops', 'Silakan pilih Unit dan Indikator Mutu terlebih dahulu.', 'warning');
-                return;
+                Swal.fire('Oops', 'Silakan pilih Unit dan Indikator Mutu terlebih dahulu.', 'warning'); return;
             }
 
             document.getElementById('workspaceValidasi').classList.add('d-none');
             document.getElementById('loadingWorkspace').classList.remove('d-none');
-            
+
             const selForm = document.getElementById('inp_form');
             current_Judul = selForm.options[selForm.selectedIndex].text;
 
-            const payload = {
-                action: 'siapkan_validasi', role: session.role,
-                unit: unit, id_form: id_form, bulan: bulan, tahun: tahun
-            };
+            try {
+                // 1. Tarik Data Harian (Populasi)
+                let query = supabaseClient.from('data_mutu_harian').select('*')
+                    .eq('id_indikator', id_form)
+                    .eq('bulan', bulan)
+                    .eq('tahun', tahun);
 
-            fetch(MUTU_URL, {
-                method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(payload)
-            })
-            .then(res => res.json())
-            .then(res => {
-                document.getElementById('loadingWorkspace').classList.add('d-none');
-                
-                if (res.status === 'success') {
-                    current_N = res.N;
-                    current_n = res.n;
-                    current_A = parseFloat(res.capaian_A) || 0;
-                    
-                    document.getElementById('lbl_N').innerText = current_N;
-                    document.getElementById('lbl_n').innerText = current_n;
-                    document.getElementById('lbl_capaian_A').innerText = current_A;
-
-                    document.getElementById('inp_capaian_B').value = "";
-                    document.getElementById('lbl_akurasi').innerText = "0%";
-                    document.getElementById('lbl_status_validitas').innerHTML = '<span class="badge bg-secondary">Menunggu Input</span>';
-                    document.getElementById('btnSimpan').disabled = true;
-
-                    renderTabelSampel(res.headers, res.sampel);
-                    
-                    document.getElementById('workspaceValidasi').classList.remove('d-none');
-                    Swal.fire({ title: 'Sampel Didapatkan!', text: `Robot berhasil menarik ${current_n} sampel acak dari total ${current_N} pasien.`, icon: 'success', timer: 2000, showConfirmButton: false });
-                } else {
-                    Swal.fire('Gagal!', res.message, 'error');
+                // PERBAIKAN: Jika bukan RS_ALL, filter unitnya
+                if (unit !== "RS_ALL") {
+                    query = query.eq('unit_kerja', unit);
                 }
-            })
-            .catch(err => {
+
+                const { data, error } = await query;
+                if (error) throw error;
+
+                let populasiData = data || [];
+                current_N = populasiData.length;
+
+                if (current_N === 0) {
+                    Swal.fire('Info', 'Tidak ada data laporan harian yang ditemukan untuk kriteria ini.', 'info');
+                    document.getElementById('loadingWorkspace').classList.add('d-none');
+                    return;
+                }
+
+                // 2. Kalkulasi Sampel (Rumus Slovin: n = N / (1 + (N * e^2)), e = 5% = 0.05)
+                let e = 0.05;
+                current_n = Math.ceil(current_N / (1 + (current_N * Math.pow(e, 2))));
+                if(current_N <= 10) current_n = current_N; 
+
+                // 3. PERBAIKAN: KALKULASI CAPAIAN AKTUAL (A) MENGGUNAKAN SMART ENGINE
+                let setup = setupFormCache.find(f => f.id_form === id_form);
+                let indikatorMaster = formMasterCache.find(f => f.id_form === id_form) || {};
+                
+                let N_total = 0, D_total = 0, sumC = 0, countC = 0;
+
+                if(setup && populasiData.length > 0) {
+                    let tmplNum = (indikatorMaster.template_numerator || "").toString().trim();
+                    let tmplDen = (indikatorMaster.template_denominator || "").toString().trim();
+
+                    // Cek jika pakai JSON/Teks Custom
+                    if (tmplNum.startsWith('{') || tmplNum.match(/(COUNTIF|SUM|COUNTALL|COUNTA)/i) || tmplDen.startsWith('{') || tmplDen.match(/(COUNTIF|SUM|COUNTALL|COUNTA)/i)) {
+                        N_total = eksekusiRumusEngine(tmplNum, populasiData, setup.kolom);
+                        D_total = eksekusiRumusEngine(tmplDen, populasiData, setup.kolom);
+                    } 
+                    // Auto Detect Kolom Biasa
+                    else {
+                        let idxNum = -1, idxDen = -1, idxCapaian = -1, idxKepatuhan = -1;
+                        setup.kolom.forEach((k, idx) => {
+                            let j = k.judul.toLowerCase();
+                            if (j === 'numerator' || j === 'n' || j === 'jumlah tindakan' || j.includes('numer')) idxNum = idx;
+                            else if (j === 'denominator' || j === 'd' || j === 'jumlah peluang' || j.includes('denom')) idxDen = idx;
+                            else if (j.includes('kepatuhan') || j.includes('kesesuaian') || j.includes('patuh')) idxKepatuhan = idx;
+                            else if (j.includes('capaian') || j.includes('hasil') || j.includes('waktu') || j.includes('nilai')) idxCapaian = idx;
+                        });
+
+                        populasiData.forEach(r => {
+                            let d = r.data_input;
+                            if (idxNum !== -1 && idxDen !== -1) {
+                                N_total += parseFloat(d[idxNum]) || 0;
+                                D_total += parseFloat(d[idxDen]) || 0;
+                            } else if (idxKepatuhan !== -1) {
+                                D_total += 1;
+                                let val = (d[idxKepatuhan]||"").toString().toLowerCase();
+                                if(val.includes('ya') || val.includes('patuh') || val.includes('sesuai') || val === '1') N_total += 1;
+                            } else {
+                                D_total += 1;
+                                if (idxCapaian !== -1) {
+                                    sumC += parseFloat(d[idxCapaian]) || 0;
+                                    countC += 1;
+                                }
+                            }
+                        });
+                    }
+                }
+
+                let isPercentage = (indikatorMaster.satuan || "").includes('%');
+                current_A = 0;
+                
+                if (unit === "RS_ALL") {
+                    // Logic Aggregation Khusus RS
+                    if (D_total > 0) {
+                        current_A = (N_total / D_total);
+                        if (isPercentage) current_A *= 100;
+                    } else if (countC > 0) {
+                        current_A = sumC / countC;
+                    }
+                } else {
+                    // Logic Normal per Unit
+                    if (D_total > 0) {
+                        current_A = (N_total / D_total);
+                        if (isPercentage) current_A *= 100;
+                    } else if (countC > 0) {
+                        current_A = sumC / countC;
+                    }
+                }
+                
+                current_A = Math.round(current_A * 100) / 100;
+
+                // 4. Pengacakan Array (Fisher-Yates Shuffle)
+                for (let i = populasiData.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [populasiData[i], populasiData[j]] = [populasiData[j], populasiData[i]];
+                }
+                
+                let sampelTerpilih = populasiData.slice(0, current_n);
+
+                // 5. Update UI
+                document.getElementById('lbl_N').innerText = current_N;
+                document.getElementById('lbl_n').innerText = current_n;
+                document.getElementById('lbl_capaian_A').innerText = current_A;
+
+                document.getElementById('inp_capaian_B').value = "";
+                document.getElementById('lbl_akurasi').innerText = "0%";
+                document.getElementById('lbl_status_validitas').innerHTML = '<span class="badge bg-secondary">Menunggu Input</span>';
+                document.getElementById('btnSimpan').disabled = true;
+
+                // Render tabel sampel, tambahkan Kolom Unit di depan jika itu RS_ALL
+                let headersTabel = setup ? setup.kolom.map(k => k.judul) : ["Data Input"];
+                if(unit === "RS_ALL") headersTabel.unshift("Unit Pelapor");
+                
+                renderTabelSampel(headersTabel, sampelTerpilih, unit === "RS_ALL");
+                
                 document.getElementById('loadingWorkspace').classList.add('d-none');
-                Swal.fire('Error', 'Gagal menyambung ke server.', 'error');
-            });
+                document.getElementById('workspaceValidasi').classList.remove('d-none');
+                
+                Swal.fire({ title: 'Sampel Didapatkan!', text: `Berhasil menarik ${current_n} sampel acak dari total ${current_N} data.`, icon: 'success', timer: 2000, showConfirmButton: false });
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loadingWorkspace').classList.add('d-none');
+                Swal.fire('Error', 'Gagal memproses data dari Supabase.', 'error');
+            }
         }
 
-        function renderTabelSampel(headers, dataSampel) {
+        function renderTabelSampel(headers, dataSampel, isAllRS) {
             const thead = document.getElementById('theadSampel');
             const tbody = document.getElementById('tbodySampel');
             
-            let thHtml = '<tr><th class="text-center" width="5%">Baris (Sheet)</th>';
+            let thHtml = '<tr><th class="text-center" width="5%">No Acak</th>';
             headers.forEach(h => { thHtml += `<th>${h}</th>`; });
             thHtml += '</tr>';
             thead.innerHTML = thHtml;
 
             let tbHtml = '';
-            dataSampel.forEach(item => {
-                tbHtml += `<tr><td class="text-center fw-bold text-primary">#${item.rowNumber}</td>`;
-                item.data.forEach(cellVal => { tbHtml += `<td>${cellVal || '-'}</td>`; });
+            dataSampel.forEach((item, idx) => {
+                tbHtml += `<tr><td class="text-center fw-bold text-primary">#${idx + 1}</td>`;
+                
+                // Tampilkan nama unit jika validasi RS ALL
+                if(isAllRS) tbHtml += `<td class="fw-bold">${item.unit_kerja}</td>`;
+                
+                (item.data_input || []).forEach(cellVal => { tbHtml += `<td>${cellVal || '-'}</td>`; });
                 tbHtml += `</tr>`;
             });
             tbody.innerHTML = tbHtml;
@@ -309,8 +482,7 @@
             if (strB === "") {
                 document.getElementById('lbl_akurasi').innerText = "0%";
                 document.getElementById('lbl_status_validitas').innerHTML = '<span class="badge bg-secondary">Menunggu Input</span>';
-                btnSimpan.disabled = true;
-                return;
+                btnSimpan.disabled = true; return;
             }
 
             const B = parseFloat(strB);
@@ -337,17 +509,18 @@
             btnSimpan.disabled = false;
         }
 
-        window.simpanHasilValidasi = function() {
+        window.simpanHasilValidasi = async function() {
             const B = document.getElementById('inp_capaian_B').value;
             const namaValidator = document.getElementById('inp_nama_validator').value.trim();
 
-            if (B === "" || !namaValidator) {
-                Swal.fire('Perhatian', 'Capaian Sampel dan Nama Validator wajib diisi.', 'warning');
-                return;
-            }
+            if (B === "" || !namaValidator) { Swal.fire('Perhatian', 'Capaian Sampel dan Nama Validator wajib diisi.', 'warning'); return; }
 
-            const unit = document.getElementById('inp_unit').value;
+            const unitSelect = document.getElementById('inp_unit');
+            const unit = unitSelect.value === "RS_ALL" ? "SELURUH RUMAH SAKIT" : unitSelect.value;
             const tahun = document.getElementById('inp_tahun').value;
+            const selectBulan = document.getElementById('inp_bulan');
+            const namaBulan = selectBulan.options[selectBulan.selectedIndex].text;
+            
             const akurasiStr = document.getElementById('lbl_akurasi').innerText.replace('%', '');
             const akurasi = parseFloat(akurasiStr);
             const statusValiditas = akurasi >= 90 ? "VALID" : "TIDAK VALID";
@@ -358,55 +531,41 @@
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#6f42c1',
-                cancelButtonColor: '#6c757d',
                 confirmButtonText: 'Ya, Simpan',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
+            }).then(async (result) => {
                 if (result.isConfirmed) {
                     const btn = document.getElementById('btnSimpan');
-                    btn.disabled = true;
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
+                    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
 
                     const payloadData = {
-                        unit: unit,
+                        unit_kerja: unit,
+                        id_indikator: document.getElementById('inp_form').value,
                         judul_indikator: current_Judul,
-                        bulan: document.getElementById('inp_bulan').options[document.getElementById('inp_bulan').selectedIndex].text,
-                        tahun: tahun,
-                        N: current_N,
-                        n: current_n,
-                        capaian_A: current_A,
-                        capaian_B: parseFloat(B),
+                        bulan: namaBulan,
+                        tahun: parseInt(tahun),
+                        populasi_n_besar: current_N,
+                        sampel_n_kecil: current_n,
+                        capaian_a: current_A,
+                        capaian_b: parseFloat(B),
                         akurasi: akurasi,
-                        status_validitas: statusValiditas,
-                        validator: namaValidator // Menggunakan nama dari form input
+                        status_validasi: statusValiditas,
+                        nama_validator: namaValidator
                     };
 
-                    fetch(MUTU_URL, {
-                        method: "POST",
-                        headers: { "Content-Type": "text/plain;charset=utf-8" },
-                        body: JSON.stringify({ action: "simpan_validasi", role: session.role, data: payloadData })
-                    })
-                    .then(res => res.json())
-                    .then(res => {
-                        if (res.status === 'success') {
-                            Swal.fire({
-                                title: 'Tersimpan!',
-                                text: 'Berita Acara Validasi telah terekam di sistem.',
-                                icon: 'success'
-                            }).then(() => {
-                                document.getElementById('workspaceValidasi').classList.add('d-none');
-                            });
-                        } else {
-                            Swal.fire('Gagal!', res.message, 'error');
-                            btn.disabled = false;
-                            btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Hasil Validasi';
-                        }
-                    })
-                    .catch(err => {
-                        Swal.fire('Error', 'Gagal menyambung ke server.', 'error');
-                        btn.disabled = false;
-                        btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Hasil Validasi';
-                    });
+                    try {
+                        const { error } = await supabaseClient.from('data_validasi').insert([payloadData]);
+                        if (error) throw error;
+
+                        Swal.fire('Tersimpan!', 'Berita Acara Validasi telah terekam di sistem.', 'success').then(() => {
+                            window.location.href = 'laporan_validasi.html';
+                        });
+
+                    } catch (err) {
+                        console.error(err);
+                        Swal.fire('Gagal!', 'Terjadi kesalahan saat menyimpan ke Supabase.', 'error');
+                    } finally {
+                        btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Kunci & Simpan Validasi';
+                    }
                 }
             });
         }

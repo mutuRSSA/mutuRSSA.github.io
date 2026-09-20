@@ -29,7 +29,7 @@
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
                 <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-users-cog text-primary me-2"></i> Manajemen Akun & Otorisasi</h3>
-                <p class="text-muted mb-0">Kelola pengguna RS dan atur Hak Akses Halaman (Supabase DB).</p>
+                <p class="text-muted mb-0">Kelola pengguna RS dan atur Hak Akses Halaman secara selektif.</p>
             </div>
             <div class="d-flex gap-2">
                 <button class="btn btn-warning fw-bold shadow-sm px-4 rounded-pill text-dark" onclick="bukaModalRole()">
@@ -66,7 +66,6 @@
                             <th width="12%" class="text-center">Role Akses</th>
                             <th width="15%">Unit Kerja</th>
                             <th width="8%" class="text-center">Status</th>
-                            <!-- Diperlebar sedikit agar muat 2 tombol -->
                             <th width="10%" class="text-center"><i class="fas fa-cogs"></i> Aksi</th>
                         </tr>
                     </thead>
@@ -152,7 +151,6 @@
                         <div class="col-md-4">
                             <div class="bg-white p-3 rounded shadow-sm mb-3">
                                 <label class="fw-bold mb-2 text-dark">Pilih Role Akses:</label>
-                                <!-- FITUR BARU: Tambahan tombol hapus disamping select role -->
                                 <div class="d-flex gap-2 mb-3">
                                     <select class="form-select border-primary fw-bold text-primary flex-grow-1" id="select_role_matrix" onchange="renderRoleCheckboxes()">
                                         <option value="">-- Sedang memuat role... --</option>
@@ -191,52 +189,52 @@
         </div>
     </div>
 
-    <!-- 1. LIBRARY SUPABASE -->
+    <!-- LIBRARY SUPABASE -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-    <!-- Skrip Utama -->
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const MUTU_URL = typeof API_CONFIG !== 'undefined' ? API_CONFIG.MUTU : "";
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
         
         let listUsers = [];
         let listRolesData = []; 
 
+        // DAFTAR HALAMAN YANG TELAH DISESUAIKAN (BARU & BERSIH)
         const masterHalaman = [
             { url: "index.html", nama: "Beranda Utama", deskripsi: "Menu publik portal mutu" },
             { url: "buku_panduan.html", nama: "Buku Panduan", deskripsi: "Panduan pemakaian sistem" },
-            { url: "profil_indikator.html", nama: "Kamus Indikator Mutu", deskripsi: "Melihat DO & Rumus" },
+            
             { url: "input_mutu.html", nama: "Input Laporan Mutu", deskripsi: "Formulir ketik capaian unit" },
-            { url: "laporan_mutu.html", nama: "Dasbor Capaian Mutu", deskripsi: "Melihat grafik & rekap bulanan" },
-            { url: "pdsa.html", nama: "Papan Kerja PDSA", deskripsi: "Form pembuatan Plan-Do-Study-Act" },
+            { url: "profil_indikator.html", nama: "Kamus Indikator Mutu", deskripsi: "Melihat profil indikator" },
+            { url: "laporan_mutu.html", nama: "Dasbor Capaian Mutu", deskripsi: "Melihat grafik & rekap indikator" },
+            { url: "form_pdsa.html", nama: "Ruang Kerja PDSA", deskripsi: "Pembuatan siklus perbaikan PDSA" },
+            
+            { url: "risk_register.html", nama: "Risk Register Unit", deskripsi: "Manajemen risiko klinis & non-klinis" },
             { url: "dasbor_ppi.html", nama: "Dasbor Surveilans PPI", deskripsi: "Rekap HAIs dan IDO" },
+            
             { url: "ikp.html", nama: "Formulir IKP", deskripsi: "Pelaporan insiden keselamatan" },
             { url: "kpc.html", nama: "Formulir KPC", deskripsi: "Pelaporan potensi cedera" },
             { url: "survey_budaya.html", nama: "Survei Budaya Keselamatan", deskripsi: "Pengisian kuesioner budaya" },
-            { url: "risk_register.html", nama: "Risk Register Unit", deskripsi: "Manajemen risiko klinis & non-klinis" },
             
-            { url: "command_center.html", nama: "[Admin] Command Center", deskripsi: "Dasbor Eksekutif Terpadu" },
-            { url: "dasbor_kepatuhan.html", nama: "[Admin] Dasbor Kepatuhan", deskripsi: "Monitoring kepatuhan setor data" },
+            { url: "laporan_komprehensif.html", nama: "[Admin] Laporan Terintegrasi", deskripsi: "Cetak Laporan PMKP AI" },
             { url: "validasi_mutu.html", nama: "[Admin] Validasi Mutu", deskripsi: "Uji akurasi Slovin & Random Sampling" },
-            { url: "laporan_validasi.html", nama: "[Admin] Laporan Validasi", deskripsi: "Cetak berita acara validasi" },
-            { url: "capa.html", nama: "[Admin] Pantau CAPA", deskripsi: "Supervisi aksi tindak lanjut" },
-            { url: "dasbor_pdsa.html", nama: "[Admin] Dasbor PDSA", deskripsi: "Supervisi kualitas analisa masalah" },
-            { url: "daftar_insiden.html", nama: "[Admin] Tabel Raw IKP", deskripsi: "Akses ke seluruh data insiden" },
-            { url: "daftar_kpc.html", nama: "[Admin] Tabel Raw KPC", deskripsi: "Akses ke seluruh data potensi cedera" },
-            { url: "rekapitulasi.html", nama: "[Admin] Rekap IKP Mutu", deskripsi: "Matriks dan pie-chart insiden" },
-            { url: "dasbor_budaya.html", nama: "[Admin] Analitik Budaya", deskripsi: "Agregat skor budaya RS" },
-            { url: "dasbor_risiko.html", nama: "[Admin] Supervisi Risiko", deskripsi: "Pemantauan heatmap risiko unit" },
-            { url: "profil_risiko_rs.html", nama: "[Admin] Profil Risiko RS", deskripsi: "10 Besar risiko prioritas korporat" },
-            { url: "daftar_fmea.html", nama: "[Admin] Arsip FMEA", deskripsi: "Manajemen proyek redesign sistem" },
-            { url: "fmea_builder.html", nama: "[Admin] FMEA Builder", deskripsi: "Alat pembuatan matriks FMEA" },
-            { url: "super_admin_panel.html", nama: "[System] Pengaturan Unit", deskripsi: "Auto-provisioning & mapping sheet" },
-            { url: "form_builder.html", nama: "[System] Form Builder", deskripsi: "Desain struktur tabel dinamis" },
-            { url: "manajemen_akun.html", nama: "[System] Manajemen Akun", deskripsi: "Pembuatan akun & pengaturan otorisasi" }
+            { url: "daftar_pdsa.html", nama: "[Admin] Pemantauan PDSA", deskripsi: "Supervisi siklus PDSA RS" },
+            { url: "daftar_insiden.html", nama: "[Admin] Daftar Insiden", deskripsi: "Akses ke seluruh data insiden" },
+            { url: "analisis_sederhana.html", nama: "[Admin] Analisis Sederhana", deskripsi: "Investigasi insiden grading rendah" },
+            { url: "analisa_rca.html", nama: "[Admin] Analisis RCA", deskripsi: "Root Cause Analysis (Merah/Kuning)" },
+            { url: "daftar_kpc.html", nama: "[Admin] Daftar KPC", deskripsi: "Akses data kondisi potensial cedera" },
+            { url: "dasbor_budaya.html", nama: "[Admin] Analitik Budaya", deskripsi: "Agregat skor budaya keselamatan RS" },
+            { url: "dasbor_risiko.html", nama: "[Admin] Supervisi Risiko RS", deskripsi: "Pemantauan heatmap risiko unit" },
+            { url: "profil_risiko_rs.html", nama: "[Admin] Profil Risiko RS", deskripsi: "Top 10 risiko prioritas korporat" },
+            { url: "daftar_fmea.html", nama: "[Admin] Arsip Proyek FMEA", deskripsi: "Manajemen proyek redesign sistem" },
+            { url: "fmea_builder.html", nama: "[Admin] FMEA Builder", deskripsi: "Pembuatan kertas kerja FMEA" },
+            { url: "database_admin.html", nama: "[System] Manajemen Database", deskripsi: "Administrator database" },
+            { url: "manajemen_akun.html", nama: "[System] Manajemen Akun", deskripsi: "Pembuatan akun & otorisasi RBAC" },
+            { url: "super_admin_panel.html", nama: "[System] Pengaturan Unit", deskripsi: "Pengaturan dasar unit kerja" },
+            { url: "form_builder.html", nama: "[System] Form Builder", deskripsi: "Desain struktur indikator" }
         ];
 
         document.addEventListener("DOMContentLoaded", function () {
@@ -260,7 +258,6 @@
                 selectUserRole.innerHTML = '<option value="">-- Pilih Role --</option>';
                 listRolesData.forEach(r => { selectUserRole.add(new Option(r.role_name, r.role_name)); });
 
-                // Update dropdown Matrix jika sedang terbuka
                 const selectRoleMatrix = document.getElementById('select_role_matrix');
                 if (selectRoleMatrix) {
                     let currentVal = selectRoleMatrix.value;
@@ -307,12 +304,10 @@
             }
         };
 
-        // FITUR BARU: Hapus Role Permanen
         window.hapusRoleTerpilih = function() {
             const roleName = document.getElementById('select_role_matrix').value;
             if (!roleName) return;
 
-            // Peringatan jika menghapus Komite Mutu (Bisa fatal)
             if (roleName === "Komite Mutu") {
                 Swal.fire('Akses Ditolak', 'Role "Komite Mutu" adalah Administrator Utama dan tidak boleh dihapus.', 'error');
                 return;
@@ -342,22 +337,27 @@
                         loadDaftarRole(); 
                     } catch (err) {
                         console.error(err);
-                        Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus role. Pastikan Policy DELETE sudah diaktifkan di Supabase.', 'error');
+                        Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus role.', 'error');
                     }
                 }
             });
         };
 
-        function loadDaftarUnit() {
-            if (!MUTU_URL) return;
-            fetch(MUTU_URL + "?action=get_panel_setup").then(res => res.json()).then(res => {
-                if (res.status === 'success') {
-                    const selUnit = document.getElementById('inp_unit');
-                    selUnit.innerHTML = '<option value="">-- Pilih Unit Kerja --</option>';
-                    selUnit.add(new Option("🏥 SELURUH RS (RS_ALL)", "RS_ALL"));
-                    res.listUnit.map(u => u.unit).sort().forEach(unit => { selUnit.add(new Option(unit, unit)); });
-                }
-            });
+        async function loadDaftarUnit() {
+            try {
+                const { data, error } = await supabaseClient.from('master_unit').select('*');
+                if (error) throw error;
+                
+                const selUnit = document.getElementById('inp_unit');
+                selUnit.innerHTML = '<option value="">-- Pilih Unit Kerja --</option>';
+                selUnit.add(new Option("Non-Unit (Komite/Manajemen)", "Non-Unit"));
+                
+                data.map(u => u.nama_unit).sort().forEach(unit => { 
+                    selUnit.add(new Option(unit, unit)); 
+                });
+            } catch(e) {
+                console.error("Gagal load unit", e);
+            }
         }
 
         async function loadUsers() {
@@ -391,7 +391,6 @@
                 let isAktif = (user.status === "Aktif" || user.status === "aktif" || user.status === "AKTIF");
                 let statusBadge = isAktif ? `<span class="badge bg-success rounded-pill px-3"><i class="fas fa-check me-1"></i> Aktif</span>` : `<span class="badge bg-secondary rounded-pill px-3"><i class="fas fa-ban me-1"></i> Diblokir</span>`;
                 
-                // FITUR BARU: Tambahan tombol hapus dengan warna merah (danger)
                 tbody.innerHTML += `
                     <tr class="${!isAktif ? "opacity-50 bg-light" : ""} user-row">
                         <td class="text-center fw-bold text-muted">${idx + 1}</td>
@@ -497,9 +496,7 @@
             }
         };
 
-        // FITUR BARU: Hapus User Permanen
         window.hapusUser = function(idUser, namaLengkap) {
-            // Proteksi akun sendiri (opsional)
             if (idUser == sessionMutu.id_user) {
                 Swal.fire('Peringatan', 'Anda tidak dapat menghapus akun Anda sendiri saat sedang login.', 'warning');
                 return;
@@ -553,7 +550,6 @@
                 return; 
             }
             
-            // Munculkan tombol Hapus Role jika ada role yang dipilih
             btnHapus.classList.remove('d-none');
             
             const roleData = listRolesData.find(r => r.role_name === roleSelected);

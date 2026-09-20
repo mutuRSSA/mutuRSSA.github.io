@@ -3,41 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar Insiden - Komite Mutu</title>
+    <title>Pusat Komando Insiden (IKP) - SIM PMKP</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    
+    <!-- LIBRARY HTML TO PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        .card-custom { box-shadow: 0 0 1px rgba(0,0,0,.125), 0 1px 3px rgba(0,0,0,.2); border-radius: 4px; border-top: 3px solid #3c8dbc; }
-        .bg-custom-dark { background-color: #3c8dbc; } 
-        .sidebar-link.active { background-color: #f4f6f9; color: #3c8dbc; border-left: 4px solid #3c8dbc; font-weight: bold; }
-        .sidebar-link { color: #333; font-weight: 500; transition: 0.2s; }
-        .sidebar-link:hover { background-color: #e9ecef; }
+        .card-custom { box-shadow: 0 4px 15px rgba(0,0,0,.05); border-radius: 12px; border-top: 4px solid #dc3545; background: #fff;}
+        table.dataTable thead th { background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; font-size: 0.85rem; text-align: center; vertical-align: middle; white-space: nowrap;}
+        table.dataTable tbody td { font-size: 0.85rem; vertical-align: middle; }
+        .kronologi-text { max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+
+        /* KARTU STATISTIK (REKAPITULASI) */
+        .stat-card { border-radius: 10px; color: white; padding: 20px; position: relative; overflow: hidden; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .stat-card .icon { position: absolute; right: -15px; bottom: -20px; font-size: 100px; opacity: 0.15; }
+        .bg-gradient-danger { background: linear-gradient(135deg, #dc3545, #f8d7da); color: #842029; border: 1px solid #f5c2c7; }
+        .bg-gradient-warning { background: linear-gradient(135deg, #ffc107, #fff3cd); color: #664d03; border: 1px solid #ffecb5; }
+        .bg-gradient-success { background: linear-gradient(135deg, #198754, #d1e7dd); color: #0f5132; border: 1px solid #badbcc; }
+        .bg-gradient-info { background: linear-gradient(135deg, #0dcaf0, #cff4fc); color: #055160; border: 1px solid #b6effb; }
         
-        .table-responsive { overflow-x: auto; white-space: normal; }
-        table.dataTable thead th { background-color: #f8f9fa; border-bottom: 2px solid #dee2e6; font-size: 0.9rem; text-align: center; vertical-align: middle;}
-        table.dataTable tbody td { font-size: 0.85rem; vertical-align: top; }
-        .kronologis-text { min-width: 300px; text-align: justify; } 
-        .btn-aksi { font-size: 0.75rem; font-weight: bold; color: #198754; background: none; border: none; padding: 0;}
-       
-        @media print {
-            body * { visibility: hidden; } 
-            #printArea, #printArea * { visibility: visible; } 
-            #printArea { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; font-family: Arial, sans-serif; }
-            
-            .print-table { width: 100%; border-collapse: collapse; font-size: 11px; }
-            .print-table th, .print-table td { border: 1px solid #000; padding: 8px; vertical-align: top; }
-            .print-table th { background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; text-align: left; text-transform: uppercase; font-size: 12px;}
-            .print-label { width: 35%; font-weight: bold; }
-            .print-value { width: 65%; }
-            
-            .print-grading-circle { display: inline-block; width: 25px; height: 25px; border-radius: 50%; vertical-align: middle; margin-left: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact;}
-            
-            @page { margin: 1cm; }
-        }
+        .chart-container { position: relative; height: 250px; width: 100%; }
+
+        /* CSS KHUSUS GENERATE PDF VIA HTML2PDF */
+        .show-on-pdf { display: none !important; }
+        .pdf-mode .hide-on-pdf { display: none !important; }
+        .pdf-mode .show-on-pdf { display: block !important; }
+        
+        /* Sembunyikan elemen UI DataTables saat di PDF */
+        .pdf-mode .dataTables_length, .pdf-mode .dataTables_filter, 
+        .pdf-mode .dataTables_info, .pdf-mode .dataTables_paginate { display: none !important; }
+        
+        /* Format Tabel PDF agar rapi */
+        .pdf-mode table.dataTable { width: 100% !important; font-size: 0.75rem !important; border-collapse: collapse !important;}
+        .pdf-mode table.dataTable th, .pdf-mode table.dataTable td { padding: 6px !important; white-space: normal !important; word-wrap: break-word !important; }
+        .pdf-mode tr { page-break-inside: avoid !important; }
+        .pdf-mode .card-custom { box-shadow: none !important; border: 1px solid #dee2e6 !important; }
     </style>
 </head>
 <body>
@@ -45,396 +53,547 @@
     <div id="navbar-container"></div>
     <div id="sidebar-container"></div>
 
-    <div class="container-fluid px-4">
-        <div class="bg-white p-4 card-custom">
-            <h5 class="mb-4 text-secondary text-uppercase border-bottom pb-2">Riwayat Insiden Keselamatan Pasien</h5>
-            
-            <div id="loadingMessage" class="alert alert-info text-center fw-bold shadow-sm">
-                <i class="fas fa-spinner fa-spin me-2"></i> Mengambil data dari server...
+    <div class="container-fluid px-4" style="max-width: 1500px;">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2 d-print-none">
+            <div>
+                <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-siren-on text-danger me-2"></i> Pusat Komando Insiden & Investigasi</h3>
+                <p class="text-muted mb-0">Dasbor analitik piramida insiden, peta sebaran unit, dan daftar raw data insiden terlapor.</p>
             </div>
+            <div>
+                <select id="filterTahun" class="form-select fw-bold shadow-sm border-danger text-danger d-inline-block w-auto me-2" onchange="loadDaftarInsiden()"></select>
+                <button class="btn btn-outline-danger fw-bold shadow-sm me-2" onclick="cetakRekapitulasiPDF()"><i class="fas fa-file-pdf me-1"></i> Cetak Rekap & Tabel (PDF)</button>
+                <button class="btn btn-outline-secondary fw-bold shadow-sm me-2" onclick="loadDaftarInsiden()"><i class="fas fa-sync-alt me-1"></i> Segarkan</button>
+                <a href="ikp.html" class="btn btn-danger fw-bold shadow-sm" target="_blank"><i class="fas fa-plus me-1"></i> Buat Laporan</a>
+            </div>
+        </div>
 
-            <div class="table-responsive">
-                <table id="insidenTable" class="table table-bordered table-striped" style="width:100%; display: none;">
-                    <thead>
-                        <tr>
-                            <th>No</th>
-                            <th>Aksi</th>
-                            <th>Investigasi</th>
-                            <th>Sisa Waktu Kirim</th>
-                            <th>Tanggal Insiden</th>
-                            <th>Umur</th>
-                            <th>Jenis Insiden</th>
-                            <th>Insiden</th>
-                            <th>Grading</th> 
-                            <th>Kronologis</th>
-                            <th>Tgl Registrasi Pasien</th>
-                            <th>Penanggung Biaya</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody">
-                    </tbody>
-                </table>
+        <div id="loadingMessage" class="text-center py-5">
+            <i class="fas fa-spinner fa-spin fa-3x text-danger mb-3"></i>
+            <h6 class="text-muted fw-bold">Memuat algoritma piramida insiden dari radar Supabase...</h6>
+        </div>
+
+        <div id="mainDashboard" style="display: none;">
+            
+            <!-- MASTER CONTAINER YANG AKAN DI-PDF-KAN (Mencakup Chart & Tabel) -->
+            <div id="cetakDashboardArea" class="p-3 mb-4 rounded" style="background-color: #f4f6f9;">
+                
+                <!-- Header Khusus Muncul Saat PDF -->
+                <div id="headerCetak" class="text-center mb-4 d-none">
+                    <h3 class="fw-bold mb-1">REKAPITULASI INSIDEN KESELAMATAN PASIEN</h3>
+                    <h5 id="lblTahunCetak" class="fw-bold text-danger"></h5>
+                    <hr style="border: 2px solid #000; opacity: 1;">
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-xl-6">
+                        <div class="bg-white p-4 h-100" style="border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,.05);">
+                            <h6 class="fw-bold border-bottom pb-2 mb-3"><i class="fas fa-layer-group text-primary me-2"></i> Matriks Grading Risiko (Risk Grading)</h6>
+                            <div class="row g-3">
+                                <div class="col-sm-6">
+                                    <div class="stat-card bg-gradient-danger">
+                                        <i class="fas fa-radiation icon"></i>
+                                        <h6 class="fw-bold mb-1">EKSTREM (Merah)</h6>
+                                        <h2 class="display-5 fw-bold mb-0" id="statMerah">0</h2>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="stat-card bg-gradient-warning">
+                                        <i class="fas fa-exclamation-triangle icon"></i>
+                                        <h6 class="fw-bold mb-1">TINGGI (Kuning)</h6>
+                                        <h2 class="display-5 fw-bold mb-0" id="statKuning">0</h2>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="stat-card bg-gradient-success">
+                                        <i class="fas fa-shield-alt icon"></i>
+                                        <h6 class="fw-bold mb-1">SEDANG (Hijau)</h6>
+                                        <h2 class="display-5 fw-bold mb-0" id="statHijau">0</h2>
+                                    </div>
+                                </div>
+                                <div class="col-sm-6">
+                                    <div class="stat-card bg-gradient-info">
+                                        <i class="fas fa-info-circle icon"></i>
+                                        <h6 class="fw-bold mb-1">RENDAH (Biru)</h6>
+                                        <h2 class="display-5 fw-bold mb-0" id="statBiru">0</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6">
+                        <div class="bg-white p-4 h-100" style="border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,.05);">
+                            <h6 class="fw-bold border-bottom pb-2 mb-3"><i class="fas fa-chart-pie text-warning me-2"></i> Piramida Jenis Insiden</h6>
+                            <div class="chart-container"><canvas id="chartJenis"></canvas></div>
+                        </div>
+                    </div>
+
+                    <div class="col-xl-3 col-md-6">
+                        <div class="bg-white p-4 h-100" style="border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,.05);">
+                            <h6 class="fw-bold border-bottom pb-2 mb-3"><i class="fas fa-map-marker-alt text-danger me-2"></i> 5 Unit Terbanyak (Heatmap)</h6>
+                            <div class="chart-container"><canvas id="chartLokasi"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PANEL TABEL INVESTIGASI RAW DATA -->
+                <div class="bg-white p-4 card-custom mt-4">
+                    <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4 hide-on-pdf">
+                        <h5 class="fw-bold text-dark mb-0"><i class="fas fa-table text-danger me-2"></i> Papan Data Raw & Panel Kendali Investigasi</h5>
+                    </div>
+                    
+                    <h5 class="fw-bold text-dark mb-3 show-on-pdf"><i class="fas fa-list text-danger me-2"></i> Rincian Insiden Terlapor</h5>
+                    
+                    <div class="table-responsive">
+                        <table id="insidenTable" class="table table-hover table-bordered table-striped" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th>No</th>
+                                    <th class="hide-on-pdf">Aksi Investigasi</th>
+                                    <th>Status / Tenggat</th>
+                                    <th>Tanggal Insiden</th>
+                                    <th>Jenis</th>
+                                    <th>Grading</th> 
+                                    <th>Lokasi Kejadian</th>
+                                    <th>Kronologi Singkat</th>
+                                    <th>Tindakan Seketika</th>
+                                    <th>Pelapor</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+            <!-- END MASTER CONTAINER -->
+            
+        </div>
+    </div>
+
+    <!-- MODAL DETAIL LENGKAP -->
+    <div class="modal fade" id="modalDetail" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white p-3 d-print-none">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-info-circle text-info me-2"></i> Detail Laporan Insiden</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                <div class="modal-body bg-light">
+                    <!-- HEADER KHUSUS PRINT -->
+                    <div class="d-none d-print-block text-center mb-4 border-bottom border-dark border-3 pb-2">
+                        <h4 class="fw-bold mb-1">LAPORAN INSIDEN KESELAMATAN PASIEN AWAL</h4>
+                        <h5>RUMAH SAKIT UMUM DAERAH SARAS ADYATMA</h5>
+                    </div>
+
+                    <div id="modalBanner" class="p-3 mb-3 rounded text-center fw-bold shadow-sm text-white"></div>
+                    
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">A. Fakta Kejadian</h6>
+                            <table class="table table-sm table-borderless" style="font-size: 0.9rem;">
+                                <tr><td width="30%" class="text-muted fw-bold">Waktu Lapor</td><td id="dtl_waktu_lapor"></td></tr>
+                                <tr><td class="text-muted fw-bold">Waktu Insiden</td><td id="dtl_waktu_insiden"></td></tr>
+                                <tr><td class="text-muted fw-bold">Lokasi Kejadian</td><td id="dtl_lokasi"></td></tr>
+                                <tr><td class="text-muted fw-bold">Jenis Laporan</td><td id="dtl_jenis"></td></tr>
+                                <tr><td class="text-muted fw-bold">Pelapor</td><td id="dtl_pelapor"></td></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm mb-3" id="cardPasien">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">B. Data Pasien Terkait</h6>
+                            <table class="table table-sm table-borderless" style="font-size: 0.9rem;">
+                                <tr><td width="30%" class="text-muted fw-bold">Nama Pasien</td><td id="dtl_nama_pasien"></td></tr>
+                                <tr><td class="text-muted fw-bold">No RM</td><td id="dtl_rm"></td></tr>
+                                <tr><td class="text-muted fw-bold">Umur & Jenis Kelamin</td><td id="dtl_umur_jk"></td></tr>
+                                <tr><td class="text-muted fw-bold">Penanggung Biaya</td><td id="dtl_biaya"></td></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm mb-3">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">C. Narasi Kejadian</h6>
+                            <label class="text-muted fw-bold" style="font-size: 0.8rem;">Kronologi:</label>
+                            <p class="bg-white p-2 border rounded" style="font-size: 0.9rem; text-align: justify; white-space: pre-wrap;" id="dtl_kronologi"></p>
+                            
+                            <label class="text-muted fw-bold mt-2" style="font-size: 0.8rem;">Tindakan Segera (Seketika):</label>
+                            <p class="bg-white p-2 border rounded" style="font-size: 0.9rem;" id="dtl_tindakan"></p>
+                            <p style="font-size: 0.85rem;"><strong>Dilakukan Oleh:</strong> <span id="dtl_pelaksana"></span></p>
+
+                            <div id="wadahFotoKPC" class="d-none mt-3 text-center">
+                                <label class="text-muted fw-bold d-block mb-2"><i class="fas fa-camera text-warning me-1"></i> Bukti Lampiran (KPC):</label>
+                                <img src="" id="dtl_foto" class="img-fluid rounded shadow-sm border" style="max-height: 300px;">
+                                <br><a href="#" id="link_foto" target="_blank" class="btn btn-sm btn-outline-primary mt-2 d-print-none"><i class="fas fa-external-link-alt me-1"></i> Buka Foto Ukuran Penuh</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border-0 shadow-sm mb-3 d-none" id="cardRencanaKPC">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-warning text-darken border-bottom pb-2 mb-3">Usulan Rencana Perbaikan (CAPA Pelapor)</h6>
+                            <table class="table table-sm table-borderless" style="font-size: 0.9rem;">
+                                <tr><td width="30%" class="text-muted fw-bold">Tindakan Lanjutan</td><td id="dtl_kpc_tindakan"></td></tr>
+                                <tr><td class="text-muted fw-bold">PIC Dituju</td><td id="dtl_kpc_pic"></td></tr>
+                                <tr><td class="text-muted fw-bold">Tenggat Target</td><td id="dtl_kpc_target"></td></tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-footer bg-light d-print-none">
+                    <button type="button" class="btn btn-outline-primary fw-bold px-4 me-auto" onclick="window.print()"><i class="fas fa-print me-1"></i> Cetak Laporan Awal</button>
+                    <button type="button" class="btn btn-secondary fw-bold px-4" data-bs-dismiss="modal">Tutup</button>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- LIBRARY SUPABASE & DATATABLES -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
     <script>
-        window.insidenData = [];
+        const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        const isAdmin = (sessionMutu.role === "Komite Mutu");
+        let listSemuaInsiden = [];
 
-        $(document).ready(function() {
-            const scriptURL = API_CONFIG.IKP;
+        Chart.register(ChartDataLabels);
+        let chartJenisInsiden = null;
+        let chartLokasiInsiden = null;
 
-            fetch(scriptURL, { redirect: "follow", headers: { "Content-Type": "text/plain;charset=utf-8" } })
-            .then(response => response.text())
-            .then(text => {
-                try {
-                    const result = JSON.parse(text);
-                    $('#loadingMessage').hide(); 
-                    $('#insidenTable').show(); 
-                    
-                    if(result.status === 'success') {
-                        window.insidenData = result.data; 
-                        let html = '';
-                        
-                        result.data.forEach((row, index) => {
-                            let umurTeks = `${row['Umur (Tahun)'] || 0} Tahun ${row['Umur (Bulan)'] || 0} Bulan ${row['Umur (Hari)'] || 0} Hari`;
-                            let tglInsidenRaw = row['Tgl & Waktu insiden'];
-                            let tglInsiden = tglInsidenRaw ? new Date(tglInsidenRaw).toLocaleString('id-ID') : '-';
-                            let tglPelayanan = row['Tanggal pelayanan'] ? new Date(row['Tanggal pelayanan']).toLocaleDateString('id-ID') : '-';
-
-                            let gradingVal = row['Grading Risiko'] || '-';
-                            let gradingBadge = gradingVal;
-                            if (gradingVal === 'Low') gradingBadge = '<span class="badge bg-primary w-100 py-2">Low</span>';
-                            else if (gradingVal === 'Moderate') gradingBadge = '<span class="badge bg-success w-100 py-2">Moderate</span>';
-                            else if (gradingVal === 'High') gradingBadge = '<span class="badge bg-warning text-dark w-100 py-2">High</span>';
-                            else if (gradingVal === 'Extreme') gradingBadge = '<span class="badge bg-danger w-100 py-2">Extreme</span>';
-
-                            let sisaWaktuHtml = '<span class="badge bg-secondary">N/A</span>';
-                            let sudahDianalisis = row['Tipe & Sub Tipe Insiden'] && row['Tipe & Sub Tipe Insiden'].toString().trim() !== '';
-
-                            if (tglInsidenRaw && gradingVal !== '-') {
-                                if (sudahDianalisis) {
-                                    sisaWaktuHtml = '<span class="badge bg-success"><i class="fas fa-check"></i> Selesai</span>';
-                                } else {
-                                    let tglKejadian = new Date(tglInsidenRaw);
-                                    let batasHari = (gradingVal === 'High' || gradingVal === 'Extreme') ? 45 : 7;
-                                    let batasTgl = new Date(tglKejadian.getTime() + (batasHari * 24 * 60 * 60 * 1000));
-                                    let sisaHari = Math.ceil((batasTgl - new Date()) / (1000 * 60 * 60 * 24));
-                                    
-                                    if (sisaHari < 0) {
-                                        sisaWaktuHtml = `<span class="badge bg-danger shadow-sm blink-me">Overdue ${Math.abs(sisaHari)} Hari</span>`;
-                                    } else if (sisaHari <= 3) {
-                                        sisaWaktuHtml = `<span class="badge bg-warning text-dark shadow-sm">Sisa ${sisaHari} Hari</span>`;
-                                    } else {
-                                        sisaWaktuHtml = `<span class="badge bg-info text-dark shadow-sm">Sisa ${sisaHari} Hari</span>`;
-                                    }
-                                }
-                            }
-
-                            let tombolAksi = '';
-                            if (sudahDianalisis) {
-                                tombolAksi = `
-                                    <button onclick="showDetail(${index})" class="btn btn-primary btn-sm text-white mb-1 w-100" title="Lihat Detail"><i class="fas fa-eye me-1"></i> Detail</button>
-                                    <button onclick="printData(${index})" class="btn btn-info btn-sm text-white mb-1 w-100" title="Cetak PDF"><i class="fas fa-print me-1"></i> Cetak</button><br>
-                                    <span class="btn-aksi text-success w-100 d-inline-block text-center mt-1" style="font-size: 0.75rem;"><i class="fas fa-check-circle me-1"></i> Analisa Selesai</span>
-                                `;
-                            } else {
-                                let fungsiAnalisis = (gradingVal === 'High' || gradingVal === 'Extreme') ? `analisisData(${index})` : `analisisSederhana(${index})`;
-                                let ikonAnalisis = (gradingVal === 'High' || gradingVal === 'Extreme') ? 'fa-search-plus' : 'fa-search';
-                                let titleAnalisis = (gradingVal === 'High' || gradingVal === 'Extreme') ? 'Lakukan RCA Komprehensif' : 'Lakukan Investigasi Sederhana';
-                                let btnWarna = (gradingVal === 'High' || gradingVal === 'Extreme') ? 'btn-danger' : 'btn-success';
-
-                                tombolAksi = `
-                                    <button onclick="showDetail(${index})" class="btn btn-primary btn-sm text-white mb-1" title="Lihat Detail"><i class="fas fa-eye"></i></button>
-                                    <button onclick="printData(${index})" class="btn btn-info btn-sm text-white mb-1" title="Cetak PDF"><i class="fas fa-print"></i></button>
-                                    <button onclick="${fungsiAnalisis}" class="btn ${btnWarna} btn-sm text-white mb-1" title="${titleAnalisis}"><i class="fas ${ikonAnalisis}"></i></button>
-                                    <button onclick="editData(${index})" class="btn btn-warning btn-sm text-white mb-1" title="Edit Data Insiden"><i class="fas fa-edit"></i></button>
-                                    <button onclick="deleteData(${index})" class="btn btn-secondary btn-sm text-white mb-1" title="Hapus"><i class="fas fa-trash"></i></button><br>
-                                    <span class="btn-aksi text-muted w-100 d-inline-block text-center mt-1" style="font-size: 0.75rem;"><i class="fas fa-paper-plane me-1"></i>Laporan Terkirim</span>
-                                `;
-                            }
-
-                            html += `
-                                <tr>
-                                    <td class="text-center">${index + 1}</td>
-                                    <td class="text-center" style="min-width: 140px;">${tombolAksi}</td>
-                                    <td class="text-center align-middle">${sisaWaktuHtml}</td>
-                                    <td class="text-center align-middle d-none">Sisa Waktu Kirim</td> <td>${tglInsiden}</td>
-                                    <td>${umurTeks}</td>
-                                    <td>${row['Jenis Insiden'] || '-'}</td>
-                                    <td>${row['Insiden'] || '-'}</td>
-                                    <td class="align-middle">${gradingBadge}</td>
-                                    <td class="kronologis-text">${row['Kronologis'] || '-'}</td>
-                                    <td>${tglPelayanan}</td>
-                                    <td>${row['Penanggung Biaya'] || '-'}</td>
-                                </tr>
-                            `;
-                        });
-                        
-                        $('#tableBody').html(html);
-                        $('#insidenTable').DataTable({
-                            "language": { "search": "Search:" },
-                            "ordering": true, "order": [[0, 'asc']], 
-                            "columnDefs": [
-                                { "targets": [1, 2], "orderable": false },
-                                { "targets": [3], "visible": false } 
-                            ]
-                        });
-                    }
-                } catch (error) {
-                    $('#loadingMessage').removeClass('alert-info').addClass('alert-danger').html(`<i class="fas fa-exclamation-triangle me-2"></i> Gagal membaca data JSON dari server.`);
-                }
-            }).catch(err => {
-                $('#loadingMessage').removeClass('alert-info').addClass('alert-danger').html(`<i class="fas fa-wifi me-2"></i> Terjadi kesalahan jaringan: ${err}`);
-            });
+        document.addEventListener("DOMContentLoaded", async function () {
+            if (!supabaseClient) { Swal.fire('Error', 'Supabase belum dikonfigurasi', 'error'); return; }
             
-            window.deleteData = function(index) {
-                Swal.fire({
-                    title: 'Yakin ingin menghapus?',
-                    text: "Data insiden ini akan dihapus secara permanen dan tidak dapat dikembalikan!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Ya, Hapus!',
-                    cancelButtonText: 'Batal'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const targetTimestamp = window.insidenData[index].Timestamp;
-                        Swal.fire({ title: 'Menghapus Data...', text: 'Mohon tunggu sebentar', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
-                        fetch(scriptURL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: 'delete', id: targetTimestamp }) })
-                        .then(res => res.json())
-                        .then(res => { if(res.status === 'success') { Swal.fire('Terhapus!', 'Data insiden berhasil dihapus.', 'success').then(() => { location.reload(); }); } else { Swal.fire('Gagal!', 'Gagal menghapus data: ' + res.message, 'error'); } })
-                        .catch(err => { Swal.fire('Error Jaringan!', 'Gagal menyambung ke server.', 'error'); });
+            const currentYear = new Date().getFullYear();
+            const filterTahun = document.getElementById('filterTahun');
+            for(let i = currentYear - 3; i <= currentYear; i++) {
+                filterTahun.add(new Option(`Tahun ${i}`, i));
+            }
+            filterTahun.value = currentYear;
+
+            await loadDaftarInsiden();
+        });
+
+        async function loadDaftarInsiden() {
+            document.getElementById('loadingMessage').style.display = 'block';
+            document.getElementById('mainDashboard').style.display = 'none';
+
+            const tahunDipilih = document.getElementById('filterTahun').value;
+            let startDate = new Date(tahunDipilih, 0, 1).toISOString();
+            let endDate = new Date(tahunDipilih, 11, 31, 23, 59, 59).toISOString();
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('data_insiden')
+                    .select('*')
+                    .gte('waktu_lapor', startDate)
+                    .lte('waktu_lapor', endDate)
+                    .order('waktu_lapor', { ascending: false });
+
+                if (error) throw error;
+                listSemuaInsiden = data || [];
+                
+                kalkulasiDanRenderStatistik();
+                renderTabel(listSemuaInsiden);
+
+                document.getElementById('loadingMessage').style.display = 'none';
+                document.getElementById('mainDashboard').style.display = 'block';
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loadingMessage').innerHTML = `<h5 class="text-danger"><i class="fas fa-wifi me-2"></i>Gagal terhubung ke Database.</h5>`;
+            }
+        }
+
+        function kalkulasiDanRenderStatistik() {
+            let sMerah = 0, sKuning = 0, sHijau = 0, sBiru = 0;
+            let countJenis = {}; let countLokasi = {};
+
+            listSemuaInsiden.forEach(row => {
+                if(row.grading_risiko === 'Merah') sMerah++;
+                else if(row.grading_risiko === 'Kuning') sKuning++;
+                else if(row.grading_risiko === 'Hijau') sHijau++;
+                else if(row.grading_risiko === 'Biru') sBiru++;
+
+                let jenis = row.jenis_insiden || 'Lainnya';
+                if(countJenis[jenis]) countJenis[jenis]++; else countJenis[jenis] = 1;
+
+                let unit = row.unit_terkait || 'Tidak Diketahui';
+                if(countLokasi[unit]) countLokasi[unit]++; else countLokasi[unit] = 1;
+            });
+
+            document.getElementById('statMerah').innerText = sMerah;
+            document.getElementById('statKuning').innerText = sKuning;
+            document.getElementById('statHijau').innerText = sHijau;
+            document.getElementById('statBiru').innerText = sBiru;
+
+            if(chartJenisInsiden) chartJenisInsiden.destroy();
+            const ctxJenis = document.getElementById('chartJenis').getContext('2d');
+            chartJenisInsiden = new Chart(ctxJenis, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(countJenis),
+                    datasets: [{ data: Object.values(countJenis), backgroundColor: ['#dc3545', '#ffc107', '#0dcaf0', '#198754', '#6c757d', '#6f42c1'] }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: {size: 11} } },
+                        datalabels: { color: '#fff', font: { weight: 'bold' } }
                     }
+                }
+            });
+
+            if(chartLokasiInsiden) chartLokasiInsiden.destroy();
+            let arrLokasi = Object.keys(countLokasi).map(k => ({ unit: k, jumlah: countLokasi[k] }));
+            arrLokasi.sort((a, b) => b.jumlah - a.jumlah);
+            let top5Lokasi = arrLokasi.slice(0, 5);
+
+            const ctxLokasi = document.getElementById('chartLokasi').getContext('2d');
+            chartLokasiInsiden = new Chart(ctxLokasi, {
+                type: 'bar',
+                data: {
+                    labels: top5Lokasi.map(i => i.unit),
+                    datasets: [{ label: 'Insiden', data: top5Lokasi.map(i => i.jumlah), backgroundColor: '#dc3545', borderRadius: 4 }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    scales: { x: { display: false } },
+                    plugins: { 
+                        legend: { display: false },
+                        datalabels: { color: '#fff', align: 'right', anchor: 'end', font: { weight: 'bold' }, formatter: Math.round }
+                    }
+                }
+            });
+        }
+
+        // ==============================================================
+        // FUNGSI BARU: GENERATE PDF MENGGUNAKAN HTML2PDF
+        // ==============================================================
+        window.cetakRekapitulasiPDF = function() {
+            const tahun = document.getElementById('filterTahun').value;
+            const element = document.getElementById('cetakDashboardArea');
+            const header = document.getElementById('headerCetak');
+            const lblTahun = document.getElementById('lblTahunCetak');
+            
+            // 1. Persiapan Tampilan PDF
+            lblTahun.innerText = "TAHUN " + tahun;
+            header.classList.remove('d-none'); 
+            element.classList.add('pdf-mode'); // Menyalakan class CSS penyembunyi UI (seperti tombol/search)
+
+            // 2. Expand DataTables agar tampil semua baris (tidak terpotong halaman 1 saja)
+            const dt = $('#insidenTable').DataTable();
+            const currentLen = dt.page.len();
+            dt.page.len(-1).draw();
+
+            const opt = {
+                margin:       [0.3, 0.3, 0.3, 0.3],
+                filename:     `Rekap_Insiden_Lengkap_RS_${tahun}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#f4f6f9' },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' },
+                pagebreak:    { mode: ['css', 'legacy'] }
+            };
+
+            Swal.fire({ 
+                title: 'Membangun Dokumen PDF...', 
+                text: 'Menggabungkan grafik dan tabel raw data...', 
+                allowOutsideClick: false, 
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            // 3. Render HTML ke PDF
+            setTimeout(() => {
+                html2pdf().set(opt).from(element).save().then(() => {
+                    // 4. Kembalikan ke tampilan Website Normal
+                    header.classList.add('d-none'); 
+                    element.classList.remove('pdf-mode');
+                    dt.page.len(currentLen).draw(); 
+                    Swal.close();
                 });
-            };
+            }, 600); // Tunggu sebentar agar animasi DataTables selesai
+        };
 
-            window.editData = function(index) {
-                localStorage.setItem('editDataIKP', JSON.stringify(window.insidenData[index]));
-                window.location.href = 'ikp.html'; 
-            };
-
-            window.showDetail = function(index) {
-                const data = window.insidenData[index];
-                let umurTeks = `${data['Umur (Tahun)'] || 0} Tahun ${data['Umur (Bulan)'] || 0} Bulan ${data['Umur (Hari)'] || 0} Hari`;
-                let tglPelayanan = data['Tanggal pelayanan'] ? new Date(data['Tanggal pelayanan']).toLocaleString('id-ID') : '-';
-                let tglInsiden = data['Tgl & Waktu insiden'] ? new Date(data['Tgl & Waktu insiden']).toLocaleString('id-ID') : '-';
-                let gradingHtml = data['Grading Risiko'] || '-';
+        function renderTabel(data) {
+            let html = '';
+            
+            data.forEach((row, index) => {
+                let idInsiden = row.id_insiden;
+                let tglInsiden = new Date(row.waktu_insiden).toLocaleString('id-ID', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'});
                 
-                if(gradingHtml === 'Low') gradingHtml = '<span class="badge bg-primary">Low</span>';
-                if(gradingHtml === 'Moderate') gradingHtml = '<span class="badge bg-success">Moderate</span>';
-                if(gradingHtml === 'High') gradingHtml = '<span class="badge bg-warning text-dark">High</span>';
-                if(gradingHtml === 'Extreme') gradingHtml = '<span class="badge bg-danger">Extreme</span>';
+                let badgeGrading = '';
+                if(row.grading_risiko === 'Merah') badgeGrading = `<span class="badge bg-danger p-2 w-100">Ekstrem (Merah)</span>`;
+                else if(row.grading_risiko === 'Kuning') badgeGrading = `<span class="badge bg-warning text-dark p-2 w-100">Tinggi (Kuning)</span>`;
+                else if(row.grading_risiko === 'Hijau') badgeGrading = `<span class="badge bg-success p-2 w-100">Sedang (Hijau)</span>`;
+                else badgeGrading = `<span class="badge bg-info text-dark p-2 w-100">Rendah (Biru)</span>`;
 
-                // ==========================================
-                // PEMBARUAN: BISA BACA PJ TINDAKAN / DILAKUKAN OLEH
-                // ==========================================
-                let picVal = data['PJ Tindakan'] || data['Dilakukan Oleh'] || '-';
+                let badgeWaktu = '';
+                let statusInv = row.status_investigasi || 'Menunggu Review';
 
-                const tbody = document.getElementById('detailTableBody');
-                tbody.innerHTML = `
-                    <tr><th class="bg-light" style="width: 35%;">1. Umur Pasien</th><td>${umurTeks}</td></tr>
-                    <tr><th class="bg-light">2. Jenis Kelamin</th><td>${data['Jenis Kelamin'] || '-'}</td></tr>
-                    <tr><th class="bg-light">3. Penanggung Biaya</th><td>${data['Penanggung Biaya'] || '-'}</td></tr>
-                    <tr><th class="bg-light">4. Tanggal Pelayanan</th><td>${tglPelayanan}</td></tr>
-                    <tr><th class="bg-light">5. Tgl & Waktu Insiden</th><td>${tglInsiden}</td></tr>
-                    <tr><th class="bg-light">6. Insiden</th><td>${data['Insiden'] || '-'}</td></tr>
-                    <tr><th class="bg-light">7. Kronologis</th><td style="text-align: justify;">${data['Kronologis'] || '-'}</td></tr>
-                    <tr><th class="bg-light">8. Jenis Insiden</th><td>${data['Jenis Insiden'] || '-'}</td></tr>
-                    <tr><th class="bg-light">9. Terjadi Pada</th><td>${data['Terjadi Pada'] || '-'}</td></tr>
-                    <tr><th class="bg-light">10. Dampak</th><td>${data['Dampak'] || '-'}</td></tr>
-                    <tr><th class="bg-light">11. Probabilitas</th><td>${data['Probabilitas'] || '-'}</td></tr>
-                    <tr><th class="bg-light">12. Grading Risiko</th><td>${gradingHtml}</td></tr>
-                    <tr><th class="bg-light">13. Pelapor Pertama</th><td>${data['Pelapor Pertama'] || '-'}</td></tr>
-                    <tr><th class="bg-light">14. Menyangkut Pasien</th><td>${data['Menyangkut Pasien'] || '-'}</td></tr>
-                    <tr><th class="bg-light">15. Tempat Insiden</th><td>${data['Tempat Insiden'] || '-'}</td></tr>
-                    <tr><th class="bg-light">16. Unit Terkait</th><td>${data['Unit Terkait'] || '-'}</td></tr>
-                    <tr><th class="bg-light">17. Tindak Lanjut Awal</th><td style="text-align: justify;">${data['Tindak Lanjut'] || '-'}</td></tr>
-                    <tr><th class="bg-light">18. Penanggung Jawab (PIC)</th><td>${picVal}</td></tr>
-                    <tr><th class="bg-light">19. Pernah Terjadi?</th><td>${data['Pernah terjadi?'] || '-'}</td></tr>
-                    <tr><th class="bg-light">20. Tindakan Pencegahan</th><td style="text-align: justify;">${data['Tindakan Pencegahan'] ? data['Tindakan Pencegahan'] : '<i class="text-muted">Tidak ada tindakan / Tidak relevan</i>'}</td></tr>
-                `;
-                new bootstrap.Modal(document.getElementById('modalDetail')).show();
-            };
-
-            window.analisisData = function(index) {
-                localStorage.setItem('analisisDataIKP', JSON.stringify(window.insidenData[index]));
-                window.location.href = 'analisis.html'; 
-            };
-
-            window.analisisSederhana = function(index) {
-                localStorage.setItem('analisisDataIKP', JSON.stringify(window.insidenData[index]));
-                window.location.href = 'analisis_sederhana.html'; 
-            };
-
-            window.printData = function(index) {
-                const data = window.insidenData[index];
-                
-                let umurTeks = `${data['Umur (Tahun)'] || 0} Tahun ${data['Umur (Bulan)'] || 0} Bulan ${data['Umur (Hari)'] || 0} Hari`;
-                let tglInsiden = data['Tgl & Waktu insiden'] ? new Date(data['Tgl & Waktu insiden']).toLocaleString('id-ID') : '-';
-                let tglPelayanan = data['Tanggal pelayanan'] ? new Date(data['Tanggal pelayanan']).toLocaleDateString('id-ID') : '-';
-                
-                let gradingVal = data['Grading Risiko'] || '';
-                let circleColor = 'transparent';
-                let isRCA = false; 
-
-                if (gradingVal === 'Low') { circleColor = '#0d6efd'; }
-                else if (gradingVal === 'Moderate') { circleColor = '#198754'; }
-                else if (gradingVal === 'High') { circleColor = '#ffc107'; isRCA = true; }
-                else if (gradingVal === 'Extreme') { circleColor = '#dc3545'; isRCA = true; }
-
-                // PEMBARUAN BACA PIC FALLBACK
-                let picVal = data['PJ Tindakan'] || data['Dilakukan Oleh'] || '-';
-
-                let printHtml = `
-                    <h3 style="text-align: center; margin-bottom: 20px;">LAPORAN INSIDEN KESELAMATAN PASIEN (IKP)</h3>
-                    <table class="print-table">
-                        <tr><th colspan="2">DATA PASIEN :</th></tr>
-                        <tr><td class="print-label">Umur</td><td class="print-value">${umurTeks}</td></tr>
-                        <tr><td class="print-label">Penanggung Biaya Pasien</td><td class="print-value">${data['Penanggung Biaya'] || '-'}</td></tr>
-                        <tr><td class="print-label">Jenis Kelamin</td><td class="print-value">${data['Jenis Kelamin'] || '-'}</td></tr>
-                        <tr><td class="print-label">Tanggal Mendapatkan Pelayanan</td><td class="print-value">${tglPelayanan}</td></tr>
-                        
-                        <tr><th colspan="2">RINCIAN KEJADIAN :</th></tr>
-                        <tr><td class="print-label">1. Tanggal Dan Waktu Insiden</td><td class="print-value">${tglInsiden}</td></tr>
-                        <tr><td class="print-label">2. Insiden</td><td class="print-value">${data['Insiden'] || '-'}</td></tr>
-                        <tr><td class="print-label">3. Kronologis Insiden</td><td class="print-value" style="text-align: justify;">${data['Kronologis'] || '-'}</td></tr>
-                        <tr><td class="print-label">4. Jenis Insiden</td><td class="print-value">${data['Jenis Insiden'] || '-'}</td></tr>
-                        <tr><td class="print-label">5. Insiden Terjadi Pada Pasien...</td><td class="print-value">${data['Terjadi Pada'] || '-'}</td></tr>
-                        <tr><td class="print-label">6. Dampak Insiden Terhadap Pasien</td><td class="print-value">${data['Dampak'] || '-'}</td></tr>
-                        <tr><td class="print-label">7. Probabilitas</td><td class="print-value">${data['Probabilitas'] || '-'}</td></tr>
-                        <tr><td class="print-label">8. Orang Pertama Yang Melaporkan</td><td class="print-value">${data['Pelapor Pertama'] || '-'}</td></tr>
-                        <tr><td class="print-label">9. Insiden Menyangkut Pasien</td><td class="print-value">${data['Menyangkut Pasien'] || '-'}</td></tr>
-                        <tr><td class="print-label">10. Tempat Insiden</td><td class="print-value">${data['Tempat Insiden'] || '-'}</td></tr>
-                        <tr><td class="print-label">11. Unit / Departemen Terkait</td><td class="print-value">${data['Unit Terkait'] || '-'}</td></tr>
-                        <tr><td class="print-label">12. Tindakan Lanjut...</td><td class="print-value" style="text-align: justify;">${data['Tindak Lanjut'] || '-'}</td></tr>
-                        <tr><td class="print-label">13. Penanggung Jawab (PIC)</td><td class="print-value">${picVal}</td></tr>
-                        <tr><td class="print-label">14. Apakah kejadian insiden sama pernah terjadi?</td><td class="print-value">${data['Pernah terjadi?'] || '-'}</td></tr>
-                        <tr><td class="print-label">15. Tindakan Pencegahan</td><td class="print-value" style="text-align: justify;">${data['Tindakan Pencegahan'] || '-'}</td></tr>
-                        
-                        <tr>
-                            <td colspan="2" style="text-align: right; border: none; padding-top: 20px; padding-bottom: 20px;">
-                                <span style="font-weight: bold; vertical-align: middle;">Grading</span> 
-                                <span class="print-grading-circle" style="background-color: ${circleColor};"></span>
-                            </td>
-                        </tr>
-                `;
-
-                if (isRCA) {
-                    printHtml += `
-                        <tr><th colspan="2">HASIL ROOT CAUSE ANALYSIS (RCA) :</th></tr>
-                        <tr><td class="print-label">1. Tipe Insiden Dan Sub Tipe Insiden</td><td class="print-value">${data['Tipe & Sub Tipe Insiden'] || '-'}</td></tr>
-                        <tr><td class="print-label">2. Tipe harm</td><td class="print-value">${data['Tipe Harm'] || '-'}</td></tr>
-                        <tr>
-                            <td class="print-label">3. Masalah</td>
-                            <td class="print-value">
-                                <strong>A. Asuhan pelayanan/CMP:</strong><br>${data['Masalah CMP'] || '-'}<br><br>
-                                <strong>B. Masalah Pelayanan/SDP:</strong><br>${data['Masalah SDP'] || '-'}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="print-label">4. Penyebab Insiden</td>
-                            <td class="print-value">
-                                <strong>A. Penyebab Langsung:</strong><br>${data['Penyebab Langsung'] || '-'}<br><br>
-                                <strong>B. Akar Masalah:</strong><br>${(data['Akar Masalah'] || '-').replace(/\n/g, '<br>')}
-                            </td>
-                        </tr>
-                        <tr><td class="print-label">5. Orang Yang Terlibat...</td><td class="print-value">${data['Orang Terlibat'] || '-'}</td></tr>
-                        <tr><td class="print-label">6. Proses / Fase Pelayanan...</td><td class="print-value">${data['Proses/Fase Pelayanan'] || '-'}</td></tr>
-                        <tr><td class="print-label">7. Faktor Kontributor</td><td class="print-value">${(data['Faktor Kontributor'] || '-').replace(/\n/g, '<br>')}</td></tr>
-                        <tr>
-                            <td class="print-label">8. Faktor Mitigasi</td>
-                            <td class="print-value">
-                                <strong>a. Untuk Pasien:</strong> ${data['Mitigasi Pasien'] || '-'}<br>
-                                <strong>b. Untuk Fasyankes:</strong> ${data['Mitigasi Fasyankes'] || '-'}<br>
-                                <strong>c. Untuk Faktor Penyebab:</strong> ${data['Mitigasi Faktor Terkait'] || '-'}
-                            </td>
-                        </tr>
-                        <tr><td class="print-label">9. Cara Mendeteksi Insiden</td><td class="print-value">${data['Cara Mendeteksi'] || '-'}</td></tr>
-                        <tr><td class="print-label">10. Dampak Pada Fasyankes</td><td class="print-value">${data['Dampak Fasyankes'] || '-'}</td></tr>
-                        <tr><td class="print-label">11. Rekomendasi</td><td class="print-value" style="text-align: justify;">${(data['Rekomendasi'] || '-').replace(/\n/g, '<br>')}</td></tr>
-                        <tr><td class="print-label">12. Tindakan Yang Akan Dilakukan</td><td class="print-value" style="text-align: justify;">${(data['Tindakan Akan Dilakukan'] || '-').replace(/\n/g, '<br>')}</td></tr>
-                        <tr>
-                            <td class="print-label">13. Tindakan Perbaikan</td>
-                            <td class="print-value">
-                                <strong>a. Kepada Pasien:</strong> ${data['Perbaikan Kepada Pasien'] || '-'}<br>
-                                <strong>b. Kepada Fasyankes:</strong> ${data['Perbaikan Kepada Fasyankes'] || '-'}
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="print-label">14. Tindakan Untuk Mengurangi Risiko</td>
-                            <td class="print-value">
-                                <strong>a. Kepada Pasien:</strong> ${data['Risiko Kepada Pasien'] || '-'}<br>
-                                <strong>b. Kepada Petugas:</strong> ${data['Risiko Kepada Petugas'] || '-'}<br>
-                                <strong>c. Untuk Fasyankes:</strong> ${data['Risiko Untuk Lingkungan'] || '-'}<br>
-                                <strong>d. Faktor Penyebab:</strong> ${data['Risiko Faktor Mempengaruhi'] || '-'}
-                            </td>
-                        </tr>
-                        <tr><td class="print-label">15. Pembelajaran</td><td class="print-value">${data['Pembelajaran'] || '-'}</td></tr>
-                        <tr><td class="print-label">16. Safety Alert</td><td class="print-value">${data['Safety Alert'] || '-'}</td></tr>
-                    </table>
-                    `;
+                if (statusInv === 'Selesai') {
+                    badgeWaktu = `<span class="badge bg-success p-2 w-100"><i class="fas fa-check-double me-1"></i> Ditutup (Selesai)</span>`;
                 } else {
-                    printHtml += `
-                        <tr><th colspan="2">HASIL INVESTIGASI SEDERHANA :</th></tr>
-                        <tr><td class="print-label">1. Tipe Insiden</td><td class="print-value">${data['Tipe & Sub Tipe Insiden'] || '-'}</td></tr>
-                        <tr><td class="print-label">2. Penyebab Langsung</td><td class="print-value" style="text-align: justify;">${(data['Penyebab Langsung'] || '-').replace(/\n/g, '<br>')}</td></tr>
-                        <tr><td class="print-label">3. Akar Masalah</td><td class="print-value" style="text-align: justify;">${(data['Akar Masalah'] || '-').replace(/\n/g, '<br>')}</td></tr>
-                        <tr><td class="print-label">4. Rekomendasi / Usulan Perbaikan</td><td class="print-value" style="text-align: justify;">${(data['Rekomendasi'] || '-').replace(/\n/g, '<br>')}</td></tr>
-                        <tr><td class="print-label">5. Tindakan Yang Akan Dilakukan</td><td class="print-value" style="text-align: justify;">${(data['Tindakan Akan Dilakukan'] || '-').replace(/\n/g, '<br>')}</td></tr>
-                    </table>
-                    `;
+                    let tglKejadian = new Date(row.waktu_insiden);
+                    let batasHari = (row.grading_risiko === 'Merah' || row.grading_risiko === 'Kuning') ? 45 : (row.grading_risiko === 'Hijau' ? 14 : 7);
+                    
+                    let batasTgl = new Date(tglKejadian.getTime() + (batasHari * 24 * 60 * 60 * 1000));
+                    let sisaHari = Math.ceil((batasTgl - new Date()) / (1000 * 60 * 60 * 24));
+
+                    if (sisaHari < 0) { badgeWaktu = `<span class="badge bg-danger shadow-sm p-2 w-100">OVERDUE ${Math.abs(sisaHari)} HR</span>`; } 
+                    else if (sisaHari <= 3) { badgeWaktu = `<span class="badge bg-warning text-dark shadow-sm p-2 w-100"><i class="fas fa-hourglass-half me-1"></i> Sisa ${sisaHari} Hari</span>`; } 
+                    else { badgeWaktu = `<span class="badge bg-secondary shadow-sm p-2 w-100"><i class="fas fa-hourglass-start me-1"></i> Sisa ${sisaHari} Hari</span>`; }
                 }
 
-                printHtml += `
-                    <div style="margin-top: 50px; width: 100%; text-align: right;">
-                        <p style="margin-bottom: 70px;">Kepala Unit / Ketua Tim Investigasi</p>
-                        <p><b>( ......................................... )</b></p>
-                    </div>
+                let aksiHtml = '';
+                let isRCA = (row.jenis_insiden !== 'KPC' && (row.grading_risiko === 'Merah' || row.grading_risiko === 'Kuning'));
+
+                if(statusInv === 'Selesai') {
+                    aksiHtml = `<button class="btn btn-sm btn-primary shadow-sm w-100 fw-bold text-white mb-1" onclick="${isRCA ? `bukaRCA('${idInsiden}')` : `bukaSederhana('${idInsiden}')`}"><i class="fas fa-print me-1"></i> Lihat Laporan Investigasi</button>`;
+                } else {
+                    if(!isAdmin) {
+                        aksiHtml = `<span class="text-muted" style="font-size:0.75rem;">Akses Terbatas: Menunggu Review Komite</span>`;
+                    } else {
+                        if(isRCA) {
+                            aksiHtml = `<button class="btn btn-sm btn-danger shadow-sm w-100 fw-bold text-white mb-1" onclick="bukaRCA('${idInsiden}')"><i class="fas fa-search-plus me-1"></i> Mulai Tim RCA</button>`;
+                        } else {
+                            aksiHtml = `<button class="btn btn-sm btn-success shadow-sm w-100 fw-bold text-white mb-1" onclick="bukaSederhana('${idInsiden}')"><i class="fas fa-search me-1"></i> Buat Investigasi Sederhana</button>`;
+                        }
+                    }
+                }
+                
+                if (isAdmin) {
+                    aksiHtml += `<button class="btn btn-sm btn-outline-secondary w-100 fw-bold" onclick="hapusLaporan('${idInsiden}')"><i class="fas fa-trash me-1"></i> Hapus Kasus</button>`;
+                }
+
+                html += `
+                    <tr>
+                        <td class="text-center">${index + 1}</td>
+                        <td style="min-width: 170px;" class="hide-on-pdf">${aksiHtml}</td>
+                        <td class="text-center">${badgeWaktu}</td>
+                        <td class="fw-bold">${tglInsiden}</td>
+                        <td class="text-center"><span class="badge bg-dark">${row.jenis_insiden}</span></td>
+                        <td class="text-center">${badgeGrading}</td>
+                        <td>${row.lokasi_kejadian}</td>
+                        <td class="kronologi-text text-primary fw-bold" onclick="lihatDetail('${idInsiden}')" title="Klik untuk membaca kronologi lengkap"><i class="fas fa-hand-pointer me-1 text-warning"></i> ${row.kronologi}</td>
+                        <td>${row.tindakan_segera}</td>
+                        <td>${row.nama_pelapor}<br><small class="text-muted">${row.unit_pelapor}</small></td>
+                    </tr>
                 `;
+            });
+
+            if ($.fn.DataTable.isDataTable('#insidenTable')) { $('#insidenTable').DataTable().destroy(); }
+            document.getElementById('tableBody').innerHTML = html;
+            
+            $('#insidenTable').DataTable({
+                "language": { "search": "Pencarian Spesifik:", "lengthMenu": "Tampilkan _MENU_ Laporan" },
+                "ordering": true,
+                "order": [[3, 'desc']] 
+            });
+        }
+
+        window.lihatDetail = function(uuid) {
+            const data = listSemuaInsiden.find(r => r.id_insiden === uuid);
+            if(!data) return;
+
+            let banner = document.getElementById('modalBanner');
+            banner.className = 'p-3 mb-3 rounded text-center fw-bold shadow-sm text-white';
+            if(data.grading_risiko === 'Merah') { banner.classList.add('bg-danger'); banner.innerHTML = 'RISIKO EKSTREM (MERAH) - Wajib RCA Maksimal 45 Hari'; }
+            else if(data.grading_risiko === 'Kuning') { banner.classList.add('bg-warning', 'text-dark'); banner.classList.remove('text-white'); banner.innerHTML = 'RISIKO TINGGI (KUNING) - Wajib RCA Maksimal 45 Hari'; }
+            else if(data.grading_risiko === 'Hijau') { banner.classList.add('bg-success'); banner.innerHTML = 'RISIKO SEDANG (HIJAU) - Investigasi Sederhana Maksimal 14 Hari'; }
+            else { banner.classList.add('bg-info', 'text-dark'); banner.classList.remove('text-white'); banner.innerHTML = 'RISIKO RENDAH (BIRU) - Investigasi Sederhana Maksimal 7 Hari'; }
+
+            document.getElementById('dtl_waktu_lapor').innerText = new Date(data.waktu_lapor).toLocaleString('id-ID');
+            document.getElementById('dtl_waktu_insiden').innerText = new Date(data.waktu_insiden).toLocaleString('id-ID');
+            document.getElementById('dtl_lokasi').innerText = data.lokasi_kejadian;
+            document.getElementById('dtl_jenis').innerHTML = `<span class="badge bg-dark">${data.jenis_insiden}</span>`;
+            document.getElementById('dtl_pelapor').innerText = `${data.nama_pelapor} (${data.unit_pelapor})`;
+
+            let spesifik = data.detail_spesifik || {};
+            
+            let cardPasien = document.getElementById('cardPasien');
+            let wadahFoto = document.getElementById('wadahFotoKPC');
+            let cardKPC = document.getElementById('cardRencanaKPC');
+
+            if(data.jenis_insiden !== 'KPC') {
+                cardPasien.classList.remove('d-none');
+                wadahFoto.classList.add('d-none');
+                cardKPC.classList.add('d-none');
+
+                document.getElementById('dtl_nama_pasien').innerText = data.nama_pasien || '-';
+                document.getElementById('dtl_rm').innerText = data.no_rm || '-';
+                document.getElementById('dtl_biaya').innerText = spesifik.penanggung_biaya || '-';
                 
-                const printContainer = document.getElementById('printArea');
-                printContainer.innerHTML = printHtml;
-                printContainer.style.display = 'block'; 
+                let umurTxt = `${spesifik.umur_tahun || 0} thn, ${spesifik.umur_bulan || 0} bln, ${spesifik.umur_hari || 0} hari`;
+                document.getElementById('dtl_umur_jk').innerText = `${umurTxt} | ${spesifik.jenis_kelamin || '-'}`;
+            } else {
+                cardPasien.classList.add('d-none');
                 
-                window.print();
-                
-                setTimeout(() => {
-                    printContainer.innerHTML = '';
-                    printContainer.style.display = 'none';
-                }, 1000);
-            };
-        });
+                if(spesifik.foto_bukti && spesifik.foto_bukti !== "") {
+                    wadahFoto.classList.remove('d-none');
+                    document.getElementById('dtl_foto').src = spesifik.foto_bukti;
+                    document.getElementById('link_foto').href = spesifik.foto_bukti;
+                } else {
+                    wadahFoto.classList.add('d-none');
+                }
+
+                cardKPC.classList.remove('d-none');
+                document.getElementById('dtl_kpc_tindakan').innerText = spesifik.tindakan_lanjutan || '-';
+                document.getElementById('dtl_kpc_pic').innerText = spesifik.pj_tindakan || '-';
+                document.getElementById('dtl_kpc_target').innerText = spesifik.target_tgl_selesai ? new Date(spesifik.target_tgl_selesai).toLocaleDateString('id-ID') : '-';
+            }
+
+            document.getElementById('dtl_kronologi').innerText = data.kronologi;
+            document.getElementById('dtl_tindakan').innerText = data.tindakan_segera;
+            document.getElementById('dtl_pelaksana').innerText = data.pelaksana_tindakan;
+
+            new bootstrap.Modal(document.getElementById('modalDetail')).show();
+        };
+
+        window.bukaRCA = function(uuid) {
+            localStorage.setItem("targetInvestigasi", uuid);
+            window.location.href = "analisa_rca.html";
+        };
+
+        window.bukaSederhana = function(uuid) {
+            localStorage.setItem("targetInvestigasi", uuid);
+            window.location.href = "analisis_sederhana.html";
+        };
+
+        window.hapusLaporan = function(uuid) {
+            Swal.fire({
+                title: 'Hapus Laporan Ini?',
+                text: "Laporan insiden beserta hasil investigasinya (jika ada) akan dihapus permanen dari database!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'Menghapus...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+                    try {
+                        const { error } = await supabaseClient.from('data_insiden').delete().eq('id_insiden', uuid);
+                        if (error) throw error;
+                        
+                        Swal.fire('Terhapus!', 'Laporan insiden berhasil dihapus.', 'success');
+                        loadDaftarInsiden(); 
+                    } catch (err) {
+                        Swal.fire('Gagal', 'Terjadi kesalahan jaringan.', 'error');
+                    }
+                }
+            });
+        };
     </script>
-    <div class="modal fade" id="modalDetail" tabindex="-1" aria-labelledby="modalDetailLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header bg-custom-dark text-white">
-                    <h5 class="modal-title fw-bold" id="modalDetailLabel"><i class="fas fa-info-circle me-2"></i> Detail Lengkap Laporan IKP</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <table class="table table-sm table-bordered">
-                        <tbody id="detailTableBody">
-                        </tbody>
-                    </table>
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div id="printArea" style="display: none;"></div>
-    
-    <script src="auth.js"></script>
-    <script src="components.js"></script>
 </body>
 </html>

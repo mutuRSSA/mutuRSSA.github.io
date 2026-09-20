@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Daftar Proyek FMEA - SIM PMKP</title>
+    <title>Dashboard Proyek FMEA - SIM PMKP</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -13,31 +13,67 @@
     body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
     .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.04); border-radius: 12px; border-top: 4px solid #6f42c1; background: #fff;}
     
-    .project-card {
-        border: 1px solid #e2e8f0; border-radius: 8px; transition: 0.2s; background: #fff; margin-bottom: 15px;
-    }
+    .card-stats { border-radius: 8px; padding: 20px; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    
+    .project-card { border: 1px solid #e2e8f0; border-radius: 8px; transition: 0.2s; background: #fff; margin-bottom: 15px; }
     .project-card:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,.08); border-color: #6f42c1; }
     
-    .badge-fmea { padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.75rem; }
-    .badge-active { background-color: #e3f2fd; color: #0d6efd; }
-    .badge-closed { background-color: #d1e7dd; color: #0f5132; }
+    .badge-fmea { padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 0.75rem; cursor: pointer; }
+    .badge-active { background-color: #e3f2fd; color: #0d6efd; border: 1px solid #0d6efd; }
+    .badge-closed { background-color: #d1e7dd; color: #0f5132; border: 1px solid #0f5132; }
+
+    /* ================= CSS KHUSUS CETAK PDF ================= */
+    @media print {
+        body { background-color: #fff !important; padding-top: 0 !important; }
+        #navbar-container, #sidebar-container, .d-print-none, .btn { display: none !important; }
+        .modal-content { border: none !important; box-shadow: none !important; }
+        .modal-body { padding: 0 !important; }
+        
+        .print-table { width: 100%; border-collapse: collapse; font-size: 9.5px; font-family: Arial, sans-serif;}
+        .print-table th, .print-table td { border: 1px solid #000; padding: 4px 6px; vertical-align: top; word-wrap: break-word;}
+        .print-table th { background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; text-align: center; vertical-align: middle;}
+        
+        @page { size: landscape; margin: 10mm; }
+    }
     </style>
 </head>
 <body>
     <div id="navbar-container"></div>
     <div id="sidebar-container"></div>
 
-    <div class="container px-4" style="max-width: 1100px;">
-        <div class="bg-white p-4 card-custom">
+    <div class="container-fluid px-4" style="max-width: 1300px;">
+        <div class="bg-white p-4 card-custom d-print-none">
             
             <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-4 flex-wrap gap-2">
                 <div>
-                    <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-folder-open text-primary me-2"></i> Perpustakaan Arsip FMEA</h4>
-                    <p class="text-muted mb-0">Daftar proyek redesain proses pelayanan klinis korporat.</p>
+                    <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-project-diagram text-primary me-2" style="color: #6f42c1 !important;"></i> Dashboard Pemantauan FMEA</h4>
+                    <p class="text-muted mb-0">Pusat kontrol proyek redesain proses pelayanan klinis (Failure Mode and Effects Analysis).</p>
                 </div>
                 <a href="fmea_builder.html" class="btn btn-purple text-white fw-bold shadow-sm" style="background-color: #6f42c1;">
-                    <i class="fas fa-plus me-1"></i> Proyek Baru Manual
+                    <i class="fas fa-plus me-1"></i> Buat Proyek FMEA Baru
                 </a>
+            </div>
+
+            <!-- KARTU STATISTIK -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card-stats" style="background: linear-gradient(135deg, #34495e, #2c3e50);">
+                        <h6 class="fw-bold mb-1 opacity-75 text-uppercase" style="font-size:0.8rem;"><i class="fas fa-folder-open me-1"></i> Total Proyek FMEA</h6>
+                        <h2 class="fw-bold mb-0" id="stat_proyek">0</h2>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card-stats" style="background: linear-gradient(135deg, #fd7e14, #d35400);">
+                        <h6 class="fw-bold mb-1 opacity-75 text-uppercase" style="font-size:0.8rem;"><i class="fas fa-exclamation-triangle me-1"></i> Mode Kegagalan Teridentifikasi</h6>
+                        <h2 class="fw-bold mb-0" id="stat_kegagalan">0</h2>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card-stats" style="background: linear-gradient(135deg, #dc3545, #b02a37);">
+                        <h6 class="fw-bold mb-1 opacity-75 text-uppercase" style="font-size:0.8rem;"><i class="fas fa-radiation-alt me-1"></i> Titik Kritis (RPN &ge; 80)</h6>
+                        <h2 class="fw-bold mb-0" id="stat_ekstrem">0</h2>
+                    </div>
+                </div>
             </div>
 
             <div class="row g-2 mb-4 p-3 bg-light rounded border">
@@ -57,7 +93,7 @@
             </div>
 
             <div id="loadingMessage" class="alert alert-info text-center fw-bold shadow-sm">
-                <i class="fas fa-spinner fa-spin me-2"></i> Menarik arsip dari database master...
+                <i class="fas fa-spinner fa-spin me-2"></i> Sinkronisasi dengan database master FMEA...
             </div>
 
             <div id="fmeaListContainer" class="row"></div>
@@ -65,32 +101,116 @@
         </div>
     </div>
 
+    <!-- MODAL PANTAU & CETAK -->
+    <div class="modal fade" id="modalPantau" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-fullscreen">
+            <div class="modal-content">
+                <div class="modal-header d-print-none" style="background-color: #2c3e50; color: white;">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-print me-2"></i> Laporan & Pemantauan FMEA</h5>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-info text-white fw-bold shadow-sm" onclick="window.print()"><i class="fas fa-file-pdf me-1"></i> Cetak Laporan Resmi</button>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                </div>
+                <div class="modal-body bg-white p-4">
+                    
+                    <!-- HEADER KHUSUS PRINT -->
+                    <div class="d-none d-print-block text-center mb-4 border-bottom border-dark border-3 pb-2">
+                        <h3 class="fw-bold mb-1">FAILURE MODE AND EFFECTS ANALYSIS (FMEA)</h3>
+                        <h5 class="text-uppercase mb-0">RUMAH SAKIT UMUM DAERAH SARAS ADYATMA</h5>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <table class="table table-sm table-borderless mb-0" style="width: auto; font-size: 0.95rem;">
+                                <tr><td class="fw-bold text-muted">Proses yang dianalisis</td><td>: <strong id="lbl_proses" class="text-dark"></strong></td></tr>
+                                <tr><td class="fw-bold text-muted">Ketua Tim FMEA</td><td>: <strong id="lbl_ketua" class="text-dark"></strong></td></tr>
+                                <tr><td class="fw-bold text-muted">Tanggal Inisiasi</td><td>: <strong id="lbl_tanggal" class="text-dark"></strong></td></tr>
+                                <tr><td class="fw-bold text-muted">Sumber Eskalasi</td><td>: <strong id="lbl_sumber" class="text-dark"></strong></td></tr>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="printTableContainer">
+                        <!-- Tabel digenerate via JS -->
+                    </div>
+
+                    <!-- FOOTER TTD PRINT -->
+                    <div class="mt-5 pt-4 d-none d-print-block" style="page-break-inside: avoid;">
+                        <div class="row">
+                            <div class="col-8"></div>
+                            <div class="col-4 text-center">
+                                <p class="mb-5">Ketua Tim FMEA</p>
+                                <br><br><br>
+                                <p class="mb-0 fw-bold text-decoration-underline" id="print_ttd"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LIBRARY SUPABASE -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const scriptURL = API_CONFIG.RISK; // Menembak file script database manajemen risiko
         let semuaProyekFMEA = [];
 
-        document.addEventListener("DOMContentLoaded", function () {
-            fetch(scriptURL)
-                .then(res => res.json())
-                .then(result => {
-                    document.getElementById('loadingMessage').style.display = 'none';
-                    if (result.status === 'success') {
-                        semuaProyekFMEA = result.data_fmea || [];
-                        tampilkanKartuProyek(semuaProyekFMEA);
-                    } else {
-                        document.getElementById('loadingMessage').innerHTML = `<i class="fas fa-lock me-2"></i> Gagal memuat arsip.`;
-                    }
-                })
-                .catch(err => {
-                    document.getElementById('loadingMessage').className = "alert alert-danger text-center fw-bold";
-                    document.getElementById('loadingMessage').innerHTML = `<i class="fas fa-wifi me-2"></i> Koneksi bermasalah.`;
-                });
+        document.addEventListener("DOMContentLoaded", async function () {
+            if (!supabaseClient) return;
+            await muatDaftarFMEA();
         });
+
+        async function muatDaftarFMEA() {
+            try {
+                // Tarik SELURUH data (termasuk JSONB tabel_data) untuk dianalisis
+                const { data, error } = await supabaseClient.from('data_fmea').select('*').order('tanggal_dibuat', { ascending: false });
+                if (error) throw error;
+
+                semuaProyekFMEA = data || [];
+                document.getElementById('loadingMessage').style.display = 'none';
+                
+                kalkulasiStatistik(semuaProyekFMEA);
+                tampilkanKartuProyek(semuaProyekFMEA);
+
+            } catch (err) {
+                document.getElementById('loadingMessage').className = "alert alert-danger text-center fw-bold";
+                document.getElementById('loadingMessage').innerHTML = `<i class="fas fa-wifi me-2"></i> Koneksi ke Supabase bermasalah.`;
+            }
+        }
+
+        function kalkulasiStatistik(dataArray) {
+            let totalMode = 0;
+            let totalEkstrem = 0;
+
+            dataArray.forEach(p => {
+                let tabel = p.tabel_data || [];
+                tabel.forEach(row => {
+                    // Cek jika baris tidak kosong (Ada Sub Proses atau Mode Kegagalan)
+                    if(row[0] || row[1]) {
+                        totalMode++;
+                        
+                        // Kalkulasi RPN manual = S * O * D
+                        let s = parseInt(row[3]) || 0;
+                        let o = parseInt(row[5]) || 0;
+                        let d = parseInt(row[7]) || 0;
+                        let rpn = s * o * d;
+
+                        if (rpn >= 80) totalEkstrem++;
+                    }
+                });
+            });
+
+            document.getElementById('stat_proyek').innerText = dataArray.length;
+            document.getElementById('stat_kegagalan').innerText = totalMode;
+            document.getElementById('stat_ekstrem').innerText = totalEkstrem;
+        }
 
         function tampilkanKartuProyek(dataArray) {
             const wadah = document.getElementById('fmeaListContainer');
@@ -102,31 +222,119 @@
             }
 
             dataArray.forEach(p => {
-                let statusProyek = p["Status"] || "Aktif";
+                let id = p.id_proyek;
+                let tgl = new Date(p.tanggal_dibuat).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'});
+                let statusProyek = p.status_proyek || "Aktif";
                 let badgeClass = statusProyek === "Aktif" ? "badge-active" : "badge-closed";
                 
                 wadah.innerHTML += `
-                    <div class="col-12 item-proyek-fmea" data-proses="${p["Nama Proses"].toLowerCase()}" data-ketua="${p["Ketua Tim"].toLowerCase()}" data-status="${statusProyek}">
+                    <div class="col-12 item-proyek-fmea" data-proses="${(p.nama_proses||'').toLowerCase()}" data-ketua="${(p.ketua_tim||'').toLowerCase()}" data-status="${statusProyek}">
                         <div class="project-card p-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
                             <div>
                                 <div class="d-flex align-items-center gap-2 mb-2">
-                                    <span class="badge bg-secondary font-monospace" style="font-size:0.75rem;">${p["ID Proyek"]}</span>
-                                    <span class="badge-fmea ${badgeClass}">${statusProyek.toUpperCase()}</span>
+                                    <span class="badge bg-secondary font-monospace" style="font-size:0.75rem;">${id.substring(0,8).toUpperCase()}</span>
+                                    <span class="badge-fmea ${badgeClass}" onclick="ubahStatus('${id}', '${statusProyek}')" title="Klik untuk mengubah status proyek">${statusProyek.toUpperCase()}</span>
                                 </div>
-                                <h5 class="fw-bold text-dark mb-1">${p["Nama Proses"]}</h5>
-                                <small class="text-muted d-block mb-1"><i class="fas fa-user-tie me-1"></i> Ketua Tim: <b>${p["Ketua Tim"] || "-"}</b></small>
-                                <small class="text-muted" style="font-size:0.8rem;"><i class="fas fa-calendar-alt me-1"></i> Tanggal Inisiasi: ${p["Tanggal Dibuat"] || "-"}</small>
+                                <h5 class="fw-bold text-dark mb-1">${p.nama_proses}</h5>
+                                <small class="text-muted d-block mb-1"><i class="fas fa-user-tie me-1"></i> Ketua Tim: <b>${p.ketua_tim || "-"}</b></small>
+                                <small class="text-muted" style="font-size:0.8rem;"><i class="fas fa-calendar-alt me-1"></i> Tanggal Inisiasi: ${tgl}</small>
                             </div>
                             <div class="text-end">
-                                <small class="text-purple d-block mb-2 fw-bold text-uppercase" style="font-size:0.75rem; color:#6f42c1;"><i class="fas fa-link me-1"></i> ${p["Sumber Risiko"] || "Manual"}</small>
-                                <a href="fmea_builder.html?proyek_id=${p["ID Proyek"]}" class="btn btn-sm btn-outline-primary fw-bold">
-                                    <i class="fas fa-eye me-1"></i> Buka Detail Rangka
-                                </a>
+                                <small class="d-block mb-2 fw-bold text-uppercase" style="font-size:0.75rem; color:#6f42c1;"><i class="fas fa-link me-1"></i> ${p.sumber_risiko || "Manual"}</small>
+                                <div class="d-flex gap-2 justify-content-end mb-1">
+                                    <button class="btn btn-sm btn-info text-white fw-bold shadow-sm" onclick="bukaPantauCetak('${id}')"><i class="fas fa-print me-1"></i> Pantau & Cetak</button>
+                                    <a href="fmea_builder.html?proyek_id=${id}" class="btn btn-sm btn-outline-primary fw-bold shadow-sm"><i class="fas fa-edit me-1"></i> Edit Tabel</a>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger fw-bold mt-1" onclick="hapusFMEA('${id}')"><i class="fas fa-trash me-1"></i> Hapus Proyek</button>
                             </div>
                         </div>
                     </div>
                 `;
             });
+        }
+
+        window.bukaPantauCetak = function(id) {
+            let p = semuaProyekFMEA.find(x => x.id_proyek === id);
+            if(!p) return;
+
+            document.getElementById('lbl_proses').innerText = p.nama_proses;
+            document.getElementById('lbl_ketua').innerText = p.ketua_tim || "-";
+            document.getElementById('print_ttd').innerText = p.ketua_tim || "( ......................................... )";
+            document.getElementById('lbl_tanggal').innerText = new Date(p.tanggal_dibuat).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'});
+            document.getElementById('lbl_sumber').innerText = p.sumber_risiko || "Manual";
+
+            let tabelData = p.tabel_data || [];
+            let htmlTable = `
+                <table class="print-table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th width="3%">No</th>
+                            <th width="10%">Langkah / Sub-Proses</th>
+                            <th width="12%">Mode Kegagalan</th>
+                            <th width="10%">Dampak Potensial</th>
+                            <th width="3%">S</th>
+                            <th width="10%">Penyebab</th>
+                            <th width="3%">O</th>
+                            <th width="10%">Sistem Kontrol</th>
+                            <th width="3%">D</th>
+                            <th width="4%">RPN</th>
+                            <th width="12%">Rencana Tindakan</th>
+                            <th width="7%">PIC & Target</th>
+                            <th width="10%">Tindak Lanjut / Realisasi</th>
+                            <th width="3%">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            let validCount = 1;
+            tabelData.forEach((row, i) => {
+                // Hanya render baris yang ada isinya
+                if(row[0] || row[1] || row[4]) {
+                    
+                    // Kalkulasi RPN
+                    let s = parseInt(row[3]) || 0;
+                    let o = parseInt(row[5]) || 0;
+                    let d = parseInt(row[7]) || 0;
+                    let rpn = s * o * d;
+
+                    let rpnBadge = rpn >= 80 ? `<span class="badge bg-danger fs-6">${rpn}</span>` : `<b>${rpn || ''}</b>`;
+
+                    // Kolom ke-12 dan 13 adalah fitur baru yang akan kita tambahkan di fmea_builder
+                    let tindakLanjut = row[12] || '-';
+                    let statusRealisasi = row[13] || '-';
+
+                    let picTarget = `<b>${row[10] || '-'}</b><br><small>${row[11] || '-'}</small>`;
+
+                    htmlTable += `
+                        <tr>
+                            <td class="text-center">${validCount++}</td>
+                            <td>${row[0] || ''}</td>
+                            <td>${row[1] || ''}</td>
+                            <td>${row[2] || ''}</td>
+                            <td class="text-center">${row[3] || ''}</td>
+                            <td>${row[4] || ''}</td>
+                            <td class="text-center">${row[5] || ''}</td>
+                            <td>${row[6] || ''}</td>
+                            <td class="text-center">${row[7] || ''}</td>
+                            <td class="text-center align-middle">${rpnBadge}</td>
+                            <td>${row[9] || ''}</td>
+                            <td class="text-center">${picTarget}</td>
+                            <td>${tindakLanjut}</td>
+                            <td class="text-center fw-bold text-success">${statusRealisasi}</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            if (validCount === 1) {
+                htmlTable += `<tr><td colspan="14" class="text-center py-4 text-muted fst-italic">Tabel FMEA masih kosong. Silakan Edit Tabel terlebih dahulu.</td></tr>`;
+            }
+
+            htmlTable += `</tbody></table>`;
+            document.getElementById('printTableContainer').innerHTML = htmlTable;
+
+            new bootstrap.Modal(document.getElementById('modalPantau')).show();
         }
 
         function saringProyekFMEA() {
@@ -142,13 +350,53 @@
                 let cocokTeks = namaProses.includes(teksCari) || namaKetua.includes(teksCari);
                 let cocokStatus = (statusPilihan === 'SEMUA') || (statusProyek === statusPilihan);
 
-                if (cocokTeks && cocokStatus) {
-                    kartu.style.display = 'block';
-                } else {
-                    kartu.style.display = 'none';
-                }
+                if (cocokTeks && cocokStatus) kartu.style.display = 'block';
+                else kartu.style.display = 'none';
             });
         }
+
+        window.ubahStatus = async function(id, statusBaru) {
+            let nextStatus = statusBaru === "Aktif" ? "Selesai" : "Aktif";
+            Swal.fire({
+                title: 'Ubah Status Proyek?',
+                text: `Status akan diubah menjadi: ${nextStatus}`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Ubah',
+                confirmButtonColor: '#6f42c1'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'Memperbarui...', didOpen: () => { Swal.showLoading(); } });
+                    try {
+                        const { error } = await supabaseClient.from('data_fmea').update({ status_proyek: nextStatus }).eq('id_proyek', id);
+                        if (error) throw error;
+                        Swal.fire('Berhasil!', 'Status berhasil diubah.', 'success');
+                        muatDaftarFMEA();
+                    } catch (err) { Swal.fire('Gagal', 'Terjadi kesalahan sistem.', 'error'); }
+                }
+            });
+        };
+
+        window.hapusFMEA = async function(id) {
+            Swal.fire({
+                title: 'Yakin Hapus Proyek?',
+                text: "Proyek FMEA beserta tabel analisisnya akan dihapus permanen!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                confirmButtonText: 'Ya, Hapus!'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({ title: 'Menghapus...', didOpen: () => { Swal.showLoading(); } });
+                    try {
+                        const { error } = await supabaseClient.from('data_fmea').delete().eq('id_proyek', id);
+                        if (error) throw error;
+                        Swal.fire('Terhapus!', 'Data FMEA berhasil dihapus.', 'success');
+                        muatDaftarFMEA();
+                    } catch (err) { Swal.fire('Gagal', 'Terjadi kesalahan sistem.', 'error'); }
+                }
+            });
+        };
     </script>
 </body>
 </html>
