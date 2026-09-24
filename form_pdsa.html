@@ -56,19 +56,23 @@
 
             <!-- HEADER IDENTITAS -->
             <div class="row g-3 mb-4 p-3 bg-light rounded border align-items-end">
-                <div class="col-md-5">
-                    <label class="form-label text-secondary mb-1">Indikator Mutu yang Diperbaiki <span class="text-danger">*</span></label>
-                    <select id="inp_id_indikator" class="form-select fw-bold border-info text-dark" onchange="muatOpsiPareto()" required>
-                        <option value="">-- Memuat Kamus Indikator... --</option>
-                    </select>
-                </div>
                 <div class="col-md-3">
-                    <label class="form-label text-secondary mb-1">Bulan & Tahun Kejadian</label>
-                    <input type="text" class="form-control border-info text-dark" id="inp_periode" placeholder="Contoh: Juni 2026" required>
+                    <label class="form-label text-secondary mb-1">Unit Kerja <span class="text-danger">*</span></label>
+                    <select id="inp_unit" class="form-select fw-bold border-info text-primary" onchange="loadIndikatorUnit()" required></select>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label text-secondary mb-1">Tim / Pembuat Laporan</label>
-                    <input type="text" class="form-control border-info text-dark" id="inp_tim" placeholder="Nama Ka. Unit / Ketua Tim">
+                    <label class="form-label text-secondary mb-1">Indikator yang Diperbaiki <span class="text-danger">*</span></label>
+                    <select id="inp_id_indikator" class="form-select fw-bold border-info text-dark" onchange="muatOpsiPareto()" required>
+                        <option value="">-- Pilih Unit Dulu --</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label text-secondary mb-1">Periode (Bln/Thn)</label>
+                    <input type="text" class="form-control border-info text-dark" id="inp_periode" placeholder="Maret 2026" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label text-secondary mb-1">Ketua Tim / PJ</label>
+                    <input type="text" class="form-control border-info text-dark" id="inp_tim" placeholder="Nama Ka. Unit">
                 </div>
             </div>
 
@@ -249,43 +253,54 @@
         
         let dbMasterIndikator = [];
         let dbSetupFormulir = [];
-        let dbDataHarian = [];
+        let daftarUnitMaster = [];
         let paretoChart = null;
 
         document.addEventListener("DOMContentLoaded", async function () {
             if (!supabaseClient) return;
 
             try {
-                // 1. Load Kamus Indikator
-                const resInd = await supabaseClient.from('master_indikator').select('id_form, judul_indikator');
-                dbMasterIndikator = resInd.data || [];
-                const selInd = document.getElementById('inp_id_indikator');
-                selInd.innerHTML = '<option value="">-- Pilih Indikator Mutu --</option>';
-                dbMasterIndikator.forEach(i => selInd.add(new Option(i.judul_indikator, i.id_form)));
-
-                // 2. Load Setup Formulir
+                // 1. Tarik Setup Formulir Dulu
                 const resForm = await supabaseClient.from('setup_formulir').select('*');
                 dbSetupFormulir = resForm.data || [];
 
-                // 3. LOGIKA PENANGKAP URL OTOMATIS
+                // 2. Tarik Kamus Indikator
+                const resInd = await supabaseClient.from('master_indikator').select('id_form, judul_indikator');
+                dbMasterIndikator = resInd.data || [];
+
+                // 3. Tarik Master Unit (Untuk filter hak akses)
+                const resUnit = await supabaseClient.from('master_unit').select('*').order('nama_unit');
+                if (resUnit.data) daftarUnitMaster = resUnit.data;
+
+                const selUnit = document.getElementById('inp_unit');
+                selUnit.innerHTML = '';
+
+                // Proteksi Hak Akses Unit
+                if (sessionMutu.role === "Komite Mutu" || sessionMutu.role === "Super Admin") {
+                    selUnit.add(new Option("== Pilih Unit ==", ""));
+                    daftarUnitMaster.forEach(u => selUnit.add(new Option(u.nama_unit, u.nama_unit)));
+                } else {
+                    selUnit.add(new Option(sessionMutu.unit, sessionMutu.unit));
+                    selUnit.disabled = true; // Kunci jika bukan admin
+                    loadIndikatorUnit(); // Otomatis panggil indikator
+                }
+
+                // 4. Logika Penarik Data Lama (Update)
                 const autoIdIndikator = urlParams.get('id_indikator');
                 const autoPeriode = urlParams.get('periode');
 
                 if (urlIdPdsa) {
-                    // Mode Edit PDSA yang sudah ada
                     await loadExistingPDSA(urlIdPdsa);
                 } else {
-                    // Mode Buat Baru
                     document.getElementById('inp_tim').value = sessionMutu.nama_lengkap || "";
                     
-                    // Jika dilempar dari Dasbor Mutu, otomatis pilih Indikator & Periode
                     if(autoIdIndikator) {
-                        selInd.value = autoIdIndikator;
-                        muatOpsiPareto(); // Pancing mesin Pareto agar langsung siap
+                        setTimeout(() => {
+                            document.getElementById('inp_id_indikator').value = autoIdIndikator;
+                            muatOpsiPareto(); 
+                        }, 500); // Beri jeda agar list dropdown termuat dulu
                     }
-                    if(autoPeriode) {
-                        document.getElementById('inp_periode').value = autoPeriode;
-                    }
+                    if(autoPeriode) document.getElementById('inp_periode').value = autoPeriode;
                 }
 
             } catch (err) {
@@ -293,6 +308,28 @@
                 Swal.fire('Error', 'Gagal memuat database dasar.', 'error');
             }
         });
+
+        // ==========================================
+        // FUNGSI MENGAMBIL INDIKATOR SESUAI UNIT
+        // ==========================================
+        window.loadIndikatorUnit = function() {
+            const namaUnit = document.getElementById('inp_unit').value;
+            const selIndikator = document.getElementById('inp_id_indikator');
+            selIndikator.innerHTML = '<option value="">-- Pilih Indikator --</option>';
+
+            if (!namaUnit) return;
+            const unitData = daftarUnitMaster.find(u => u.nama_unit === namaUnit);
+            
+            if (unitData && unitData.daftar_form) {
+                let forms = unitData.daftar_form.split(',').map(s => s.trim());
+                forms.forEach(f => {
+                    // Cari judul aslinya dari master_indikator agar cantik dilihat
+                    let cariJudul = dbMasterIndikator.find(i => i.id_form === f);
+                    let displayTeks = cariJudul ? cariJudul.judul_indikator : f;
+                    selIndikator.add(new Option(displayTeks, f));
+                });
+            }
+        }
 
         // ==========================================
         // MESIN PARETO GENERATOR
@@ -306,7 +343,6 @@
 
             let setup = dbSetupFormulir.find(f => f.id_form === idForm);
             if(setup && setup.kolom) {
-                // Tampilkan hanya kolom yang bertipe dropdown atau teks panjang (biasanya ini isian alasan)
                 setup.kolom.forEach((k, idx) => {
                     if(k.tipe === 'dropdown' || k.tipe === 'text') {
                         selPareto.add(new Option(`Kolom: ${k.judul}`, idx));
@@ -318,7 +354,6 @@
         window.generatePareto = async function() {
             let idForm = document.getElementById('inp_id_indikator').value;
             let idxKolom = document.getElementById('pareto_kolom').value;
-            let periode = document.getElementById('inp_periode').value;
 
             if(!idForm || idxKolom === "") {
                 Swal.fire('Gagal', 'Pilih Indikator dan Kolom yang ingin dianalisis terlebih dahulu.', 'warning'); return;
@@ -327,7 +362,6 @@
             Swal.fire({ title: 'Mengkalkulasi Pareto...', didOpen: () => { Swal.showLoading(); }});
 
             try {
-                // Tarik data harian khusus form ini. (Asumsi: kita tarik 1000 data terakhir untuk dianalisis)
                 const { data, error } = await supabaseClient.from('data_mutu_harian').select('*').eq('id_indikator', idForm).limit(1000);
                 if (error) throw error;
                 
@@ -336,11 +370,9 @@
                     Swal.fire('Info', 'Tidak ada data input harian untuk indikator ini.', 'info'); return;
                 }
 
-                // Hitung Frekuensi Alasan
                 let frekuensi = {};
                 rawData.forEach(row => {
                     let nilaiKolom = row.data_input[idxKolom];
-                    // Bersihkan dan abaikan yang kosong atau bernilai "Ya/Tidak"
                     if(nilaiKolom && nilaiKolom.trim() !== "" && nilaiKolom.toLowerCase() !== "ya" && nilaiKolom.toLowerCase() !== "tidak") {
                         frekuensi[nilaiKolom] = (frekuensi[nilaiKolom] || 0) + 1;
                     }
@@ -349,10 +381,9 @@
                 let sortedArray = Object.entries(frekuensi).map(([label, count]) => ({label, count})).sort((a,b) => b.count - a.count);
                 
                 if(sortedArray.length === 0) {
-                    Swal.fire('Info', 'Kolom yang dipilih tidak berisi data yang bisa dikelompokkan menjadi Pareto.', 'info'); return;
+                    Swal.fire('Info', 'Kolom yang dipilih tidak berisi alasan (hanya kosong atau Ya/Tidak).', 'info'); return;
                 }
 
-                // Kalkulasi Kumulatif Pareto
                 let totalKasus = sortedArray.reduce((sum, item) => sum + item.count, 0);
                 let kumulatif = 0;
                 let arrLabels = []; let arrCount = []; let arrCumPct = [];
@@ -360,8 +391,6 @@
                 sortedArray.forEach(item => {
                     kumulatif += item.count;
                     let pct = (kumulatif / totalKasus) * 100;
-                    
-                    // Batasi nama label jika terlalu panjang
                     let lbl = item.label.length > 25 ? item.label.substring(0, 25) + "..." : item.label;
                     
                     arrLabels.push(lbl);
@@ -369,10 +398,8 @@
                     arrCumPct.push(pct.toFixed(1));
                 });
 
-                // Tampilkan Canvas
                 document.getElementById('paretoContainer').classList.remove('d-none');
                 renderChartPareto(arrLabels, arrCount, arrCumPct);
-                
                 Swal.close();
 
             } catch (err) {
@@ -390,23 +417,8 @@
                 data: {
                     labels: labels,
                     datasets: [
-                        {
-                            type: 'line',
-                            label: 'Persentase Kumulatif (%)',
-                            data: dataCumulative,
-                            borderColor: '#dc3545',
-                            backgroundColor: '#dc3545',
-                            borderWidth: 2,
-                            yAxisID: 'y1',
-                            markerType: 'circle'
-                        },
-                        {
-                            type: 'bar',
-                            label: 'Jumlah Frekuensi (Kasus)',
-                            data: dataCounts,
-                            backgroundColor: '#0dcaf0',
-                            yAxisID: 'y'
-                        }
+                        { type: 'line', label: 'Persentase Kumulatif (%)', data: dataCumulative, borderColor: '#dc3545', backgroundColor: '#dc3545', borderWidth: 2, yAxisID: 'y1', markerType: 'circle' },
+                        { type: 'bar', label: 'Jumlah Frekuensi (Kasus)', data: dataCounts, backgroundColor: '#0dcaf0', yAxisID: 'y' }
                     ]
                 },
                 options: {
@@ -443,16 +455,16 @@
         // SIMPAN DATA KE SUPABASE
         // ==========================================
         window.simpanPDSA = async function() {
+            let selUnit = document.getElementById('inp_unit').value;
             let selIndikator = document.getElementById('inp_id_indikator');
             let idIndikator = selIndikator.value;
             let namaIndikator = selIndikator.options[selIndikator.selectedIndex].text;
             let periode = document.getElementById('inp_periode').value.trim();
 
-            if (!idIndikator || !periode) {
-                Swal.fire('Gagal', 'Identitas Indikator dan Periode wajib diisi.', 'warning'); return;
+            if (!selUnit || !idIndikator || !periode) {
+                Swal.fire('Gagal', 'Identitas Unit, Indikator, dan Periode wajib diisi.', 'warning'); return;
             }
 
-            // Kemas data per fase
             let planData = {
                 tim: document.getElementById('inp_tim').value,
                 masalah: document.getElementById('plan_masalah').value,
@@ -464,23 +476,10 @@
                 ]
             };
 
-            let doData = {
-                pelaksanaan: document.getElementById('do_pelaksanaan').value,
-                hambatan: document.getElementById('do_hambatan').value
-            };
+            let doData = { pelaksanaan: document.getElementById('do_pelaksanaan').value, hambatan: document.getElementById('do_hambatan').value };
+            let studyData = { data_sebelum: document.getElementById('study_data_sebelum').value, data_sesudah: document.getElementById('study_data_sesudah').value, analisis: document.getElementById('study_analisis').value };
+            let actData = { keputusan: document.getElementById('act_keputusan').value, tindak_lanjut: document.getElementById('act_tindak_lanjut').value };
 
-            let studyData = {
-                data_sebelum: document.getElementById('study_data_sebelum').value,
-                data_sesudah: document.getElementById('study_data_sesudah').value,
-                analisis: document.getElementById('study_analisis').value
-            };
-
-            let actData = {
-                keputusan: document.getElementById('act_keputusan').value,
-                tindak_lanjut: document.getElementById('act_tindak_lanjut').value
-            };
-
-            // Tentukan fase saat ini secara kasar berdasarkan isian terakhir
             let faseCurrent = 'PLAN';
             if(document.getElementById('do_pelaksanaan').value) faseCurrent = 'DO';
             if(document.getElementById('study_analisis').value) faseCurrent = 'STUDY';
@@ -488,7 +487,7 @@
             if(document.getElementById('act_keputusan').value !== "") faseCurrent = 'SELESAI';
 
             const payloadData = {
-                unit_kerja: sessionMutu.unit || "Komite Mutu",
+                unit_kerja: selUnit, // <-- SEKARANG MENGAMBIL DARI PILIHAN DROPDOWN
                 judul_indikator: namaIndikator,
                 id_indikator: idIndikator,
                 periode_analisis: periode,
@@ -511,8 +510,7 @@
                 }
 
                 Swal.fire('Tersimpan!', 'Data siklus perbaikan telah diamankan ke database.', 'success').then(() => {
-                    // Opsional: Bawa kembali ke dashboard PDSA yang akan kita buat nanti
-                    // window.location.href = "daftar_pdsa.html";
+                    window.location.href = "daftar_pdsa.html"; // KEMBALIKAN KE PAPAN KENDALI
                 });
             } catch(err) {
                 console.error(err);
@@ -520,14 +518,23 @@
             }
         };
 
+        // ==========================================
         // FUNGSI MUAT DATA LAMA
+        // ==========================================
         async function loadExistingPDSA(id) {
             try {
                 const { data, error } = await supabaseClient.from('data_pdsa').select('*').eq('id_pdsa', id).single();
                 if (error) throw error;
                 
-                document.getElementById('inp_id_indikator').value = data.id_indikator;
-                document.getElementById('inp_periode').value = data.periode_analisis;
+                // Set Identitas
+                document.getElementById('inp_unit').value = data.unit_kerja;
+                loadIndikatorUnit(); // Pancing dropdown indikator agar terisi sesuai unitnya
+
+                setTimeout(() => {
+                    document.getElementById('inp_id_indikator').value = data.id_indikator;
+                    document.getElementById('inp_periode').value = data.periode_analisis;
+                    muatOpsiPareto();
+                }, 500); // Beri waktu agar loadIndikatorUnit selesai
                 
                 if(data.plan_data) {
                     document.getElementById('inp_tim').value = data.plan_data.tim || "";
@@ -558,8 +565,6 @@
                     document.getElementById('act_keputusan').value = data.act_data.keputusan || "";
                     document.getElementById('act_tindak_lanjut').value = data.act_data.tindak_lanjut || "";
                 }
-
-                muatOpsiPareto();
 
             } catch(e) {
                 console.error(e);
