@@ -25,8 +25,7 @@ const API_CONFIG = {
     RISK: "https://script.google.com/macros/s/AKfycbztzI8Gu1NcLPJgw0xy6lf4mqnmqy31V0FKDcj9ipPy9m84lEJ2-_jSTCzvUjOfud6g9g/exec",
     MENU: "https://script.google.com/macros/s/AKfycbxRcpdb3tnHFWXWVLBzIymqAQnmygkxc_QoRVR43At859Yi6ZwYNkN0mSJaaKa5i4GJ/exec",
     COMPILER: "https://script.google.com/macros/s/AKfycbw3W4HOdLjo0Dz7y-sGLaC2ZXTxf-DcdMrC8ufeSBKZGE0ZpHTPGgRucTj2wJZ50JS_/exec",
-    PPI: "https://script.google.com/macros/s/AKfycbw1J8m83-DeYBGpb4mB8-pI1SotM-xSzwbSGlDhUaA0DUGxu2AZTf6BfsYydGPL4XI9/exec",
-    // 👇 TAMBAHKAN BARIS INI (Ganti dengan Key Groq Anda) 👇
-    GROQ_API_KEY: "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"
-    // AUTH Apps Script dihapus karena kita pakai Supabase
+    PPI: "https://script.google.com/macros/s/AKfycbw1J8m83-DeYBGpb4mB8-pI1SotM-xSzwbSGlDhUaA0DUGxu2AZTf6BfsYydGPL4XI9/exec"
+    // GROQ_API_KEY DIHAPUS DARI SINI — sekarang disimpan sebagai secret di
+    // Supabase Edge Function 'generate-laporan-ai', tidak pernah dikirim ke browser.
 };

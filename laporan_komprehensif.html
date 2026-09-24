@@ -89,7 +89,8 @@
             Swal.fire('Akses Ditolak', 'Halaman ini khusus untuk Pimpinan Komite Mutu.', 'error').then(() => window.location.href = 'index.html');
         }
 
-        const MASTER_API_KEY = typeof API_CONFIG !== 'undefined' ? API_CONFIG.GROQ_API_KEY : "";
+        // GROQ_API_KEY TIDAK LAGI ADA DI SINI — pemanggilan AI sekarang lewat
+        // Edge Function 'generate-laporan-ai' (key disimpan sebagai secret di server).
 
         let masterIndikator = []; let setupForm = [];
         let rawDataMutu = []; let hasilAgregasi = []; 
@@ -169,8 +170,6 @@
         }
 
         window.jalankanProsesIntegrasi = async function() {
-            if (!MASTER_API_KEY) { Swal.fire('API Key Hilang', 'Parameter GROQ_API_KEY belum diisi.', 'error'); return; }
-
             const btn = document.getElementById('btnGenerate');
             btn.disabled = true; btn.innerHTML = '<div class="loader-ai me-2"></div> Sistem Sedang Bekerja...';
             document.getElementById('terminalBox').style.display = 'block';
@@ -234,7 +233,7 @@
                 await generateChartsBase64(listBulanTeks);
 
                 logTerminal("Merumuskan Prompt Khusus untuk Qwen AI...");
-                let narasiAI = await callGroqAPI(MASTER_API_KEY, judulPeriodeRaw, listBulanTeks);
+                let narasiAI = await callGroqAPI(judulPeriodeRaw);
 
                 logTerminal("Menyusun struktur dokumen MS Word (Tata Naskah Dinas)...");
                 buildWordDocument(judulPeriodeRaw, narasiAI, listBulanTeks);
@@ -437,48 +436,24 @@
         // ==============================================
         // AI PROMPT & GROQ (QWEN)
         // ==============================================
-        async function callGroqAPI(apiKey, periodeTxt, listBulanTeks) {
-            const apiUrl = "https://api.groq.com/openai/v1/chat/completions";
+        async function callGroqAPI(periodeTxt) {
+            // GROQ_API_KEY tidak lagi ada di client — panggilan diteruskan lewat
+            // Edge Function 'generate-laporan-ai', yang menyimpan key sebagai secret
+            // di server dan memvalidasi ulang role user sebelum memanggil Groq.
+            const { data, error } = await supabaseClient.functions.invoke('generate-laporan-ai', {
+                body: {
+                    periodeTxt: periodeTxt,
+                    statDataMutu: statDataMutu,
+                    statDataInsiden: statDataInsiden,
+                    jumlahRisiko: rawDataRisiko.length,
+                    jumlahFmea: rawDataFmea.length,
+                    jumlahBudaya: rawDataBudaya.length
+                }
+            });
 
-            let budayaTxt = rawDataBudaya.length > 0 ? `Terdapat hasil survei budaya keselamatan pasien pada periode ini dengan total ${rawDataBudaya.length} responden.` : `Tidak ada survei budaya keselamatan pasien yang dilakukan pada periode ini.`;
-
-            const promptText = `Anda adalah seorang Direktur Peningkatan Mutu Rumah Sakit yang sangat profesional.
-Tugas Anda adalah menulis Bab "ANALISIS TERINTEGRASI DAN TINDAK LANJUT" untuk Laporan Komite Mutu periode ${periodeTxt} dalam bahasa Indonesia yang sangat formal, terstruktur, dan elegan sesuai standar akreditasi KARS/JCI.
-
-Berikut adalah ringkasan data riil periode ini:
-1. DATA MUTU: Total indikator dipantau: ${statDataMutu.total}. Tercapai: ${statDataMutu.tercapai}, Gagal: ${statDataMutu.gagal}. Rata-rata capaian INM adalah ${statDataMutu.avgInm}%. Sebagian besar indikator gagal telah dilakukan perbaikan (PDSA).
-2. DATA INSIDEN (IKP): Terjadi total ${statDataInsiden.total} insiden. Ekstrem/Merah: ${statDataInsiden.merah}, Tinggi/Kuning: ${statDataInsiden.kuning}, Sedang/Hijau: ${statDataInsiden.hijau}, Rendah/Biru: ${statDataInsiden.biru}.
-3. DATA RISIKO & FMEA: Terdapat ${rawDataRisiko.length} risiko prioritas di Profil RS, dan ${rawDataFmea.length} proyek redesain FMEA sedang berjalan.
-4. BUDAYA KESELAMATAN: ${budayaTxt}
-
-TUGAS ANDA:
-Buatkan output teks HANYA dalam format HTML (gunakan tag <p>, <ul>, <li>, <b> langsung, tanpa <html> atau <body>) yang mencakup:
-1. Bahas korelasi antara capaian mutu (terutama keberhasilan PDSA) dengan tren insiden keselamatan pasien (jenis/grading).
-2. Hubungkan analisis tersebut dengan Manajemen Risiko (FMEA) dan Budaya Keselamatan Pasien di rumah sakit.
-3. Berikan 3 poin "Rekomendasi Strategis Direktur" (menggunakan bullet points) untuk triwulan berikutnya.
-
-Aturan ketat: DILARANG menggunakan kalimat pembuka murahan seperti 'Berdasarkan data di atas'. Langsung gunakan gaya bahasa laporan eksekutif.`;
-
-            const requestBody = {
-                model: "qwen-2.5-32b", // Diubah ke qwen 2.5 agar lebih cerdas
-                messages: [{ role: "user", content: promptText }],
-                temperature: 0.3
-            };
-
-            try {
-                const response = await fetch(apiUrl, {
-                    method: "POST", 
-                    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + apiKey }, 
-                    body: JSON.stringify(requestBody)
-                });
-
-                if (!response.ok) throw new Error("Gagal terhubung ke API AI Groq.");
-                
-                const data = await response.json();
-                if (data.choices && data.choices[0].message.content) {
-                    return data.choices[0].message.content.replace(/```html/g, "").replace(/```/g, "");
-                } else throw new Error("Format respons AI tidak dikenali.");
-            } catch (err) { throw new Error(err.message); }
+            if (error) throw new Error("Gagal memanggil layanan AI: " + error.message);
+            if (!data || data.error) throw new Error(data && data.error ? data.error : "Format respons AI tidak dikenali.");
+            return data.content;
         }
 
         // ==============================================

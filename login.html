@@ -57,10 +57,10 @@
         
         <form id="formLogin" onsubmit="eksekusiLogin(event)">
             <div class="mb-3 text-start">
-                <label class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">Username</label>
+                <label class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">Email</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-user text-muted"></i></span>
-                    <input type="text" class="form-control border-start-0 ps-0 fw-bold" id="inp_user" placeholder="Ketik nama pengguna..." required autocomplete="username">
+                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-envelope text-muted"></i></span>
+                    <input type="email" class="form-control border-start-0 ps-0 fw-bold" id="inp_user" placeholder="nama@rsuda.local" required autocomplete="username">
                 </div>
             </div>
             
@@ -97,16 +97,24 @@
         localStorage.removeItem("sessionMutu");
         localStorage.removeItem("menuMutu");
 
+        // Jika sudah punya sesi Supabase yang masih valid, langsung lempar ke beranda
+        (async function cekSesiExisting() {
+            if (!supabaseClient) return;
+            const { data } = await supabaseClient.auth.getSession();
+            if (data.session) {
+                window.location.href = "index.html";
+            }
+        })();
+
         async function eksekusiLogin(e) {
             e.preventDefault();
 
-            // PERBAIKAN 1: Gunakan supabaseClient (Sesuai config.js)
             if (!supabaseClient) {
                 Swal.fire('Konfigurasi Salah', 'Supabase belum diinisialisasi di config.js', 'error');
                 return;
             }
 
-            const inputUsername = document.getElementById('inp_user').value.trim();
+            const inputEmail = document.getElementById('inp_user').value.trim();
             const inputPassword = document.getElementById('inp_pass').value;
             const btn = document.getElementById('btnLogin');
 
@@ -114,59 +122,70 @@
             btn.innerHTML = '<i class="fas fa-circle-notch fa-spin me-2"></i> Memvalidasi Kredensial...';
 
             try {
-                // PERBAIKAN 2: Semua nama kolom disesuaikan menjadi huruf kecil (lowercase)
-                const { data: userData, error: userError } = await supabaseClient
-                    .from('users') 
+                // TAHAP 1: Autentikasi asli lewat Supabase Auth (password di-hash di server, tidak pernah kita lihat)
+                const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+                    email: inputEmail,
+                    password: inputPassword
+                });
+
+                if (authError || !authData.user) {
+                    Swal.fire('Akses Ditolak', 'Email atau Password salah!', 'error');
+                    resetButton();
+                    return;
+                }
+
+                // TAHAP 2: Ambil data profil (role, unit, hak akses halaman) milik user yang barusan login
+                const { data: profil, error: profilError } = await supabaseClient
+                    .from('profiles')
                     .select('*')
-                    .eq('username', inputUsername) 
-                    .eq('password', inputPassword)
-                    .maybeSingle(); 
-
-                if (userError || !userData) {
-                    Swal.fire('Akses Ditolak', 'Username atau Password salah!', 'error');
-                    resetButton();
-                    return;
-                }
-
-                // Supabase terkadang sensitif, kita handle variasi huruf untuk 'aktif'
-                if (userData.status !== 'Aktif' && userData.status !== 'aktif' && userData.status !== 'AKTIF') {
-                    Swal.fire('Akses Ditolak', 'Akun Anda telah dinonaktifkan. Hubungi Komite Mutu.', 'error');
-                    resetButton();
-                    return;
-                }
-
-                let allowedPages = ["index.html", "login.html"];
-                
-                // Pencarian hak akses dengan huruf kecil
-                const { data: roleData, error: roleError } = await supabaseClient
-                    .from('role_permissions')
-                    .select('allowed_pages')
-                    .eq('role', userData.role)
+                    .eq('id', authData.user.id)
                     .single();
 
-                if (!roleError && roleData && roleData.allowed_pages) {
-                    allowedPages = roleData.allowed_pages.split(',').map(s => s.trim()).filter(Boolean);
+                if (profilError || !profil) {
+                    Swal.fire('Profil Tidak Ditemukan', 'Akun berhasil login tapi data profil belum lengkap. Hubungi Super Admin.', 'error');
+                    await supabaseClient.auth.signOut();
+                    resetButton();
+                    return;
                 }
 
-                if(!allowedPages.includes("index.html")) allowedPages.push("index.html");
-                if(!allowedPages.includes("login.html")) allowedPages.push("login.html");
+                if (profil.status !== 'Aktif') {
+                    Swal.fire('Akses Ditolak', 'Akun Anda telah dinonaktifkan. Hubungi Komite Mutu.', 'error');
+                    await supabaseClient.auth.signOut();
+                    resetButton();
+                    return;
+                }
 
-                // PERBAIKAN 3: Memperbaiki variabel allowedPages (P besar) dan ID yang benar
+                // TAHAP 3: Ambil allowed_pages dari role_permissions berdasarkan role user
+                // (per-role, bukan per-user — sesuai desain tabel role_permissions Anda)
+                let allowedPages = ["index.html", "login.html"];
+                const { data: roleData } = await supabaseClient
+                    .from('role_permissions')
+                    .select('allowed_pages')
+                    .eq('role', profil.role)
+                    .single();
+
+                if (roleData && roleData.allowed_pages) {
+                    allowedPages = roleData.allowed_pages.split(',').map(s => s.trim()).filter(Boolean);
+                }
+                if (!allowedPages.includes("index.html")) allowedPages.push("index.html");
+                if (!allowedPages.includes("login.html")) allowedPages.push("login.html");
+
+                // Cache untuk kenyamanan UI/filter query di halaman lain.
+                // CATATAN: ini BUKAN mekanisme keamanan — keamanan sesungguhnya ada di
+                // sesi Supabase (JWT) + Row Level Security di database.
                 const sessionPayload = {
-                    id_user: userData.id,
-                    username: userData.username,
-                    nama_lengkap: userData.nama_lengkap,
-                    role: userData.role,
-                    unit: userData.unit_kerja,
-                    allowed_pages: allowedPages // <--- Diperbaiki di sini
+                    id_user: authData.user.id,
+                    username: authData.user.email,
+                    nama_lengkap: profil.nama_lengkap,
+                    role: profil.role,
+                    unit: profil.unit_kerja,
+                    allowed_pages: allowedPages
                 };
-
-                // Simpan ke memori browser
                 localStorage.setItem("sessionMutu", JSON.stringify(sessionPayload));
-                
+
                 Swal.fire({
                     title: 'Login Berhasil!',
-                    text: 'Selamat datang kembali, ' + userData.nama_lengkap,
+                    text: 'Selamat datang kembali, ' + (profil.nama_lengkap || authData.user.email),
                     icon: 'success',
                     timer: 1500,
                     showConfirmButton: false
