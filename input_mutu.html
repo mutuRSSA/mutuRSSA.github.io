@@ -11,9 +11,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
 
     <!-- HANDSONTABLE & HYPERFORMULA -->
-    <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.css" rel="stylesheet" media="screen">
-    <script src="https://cdn.jsdelivr.net/npm/hyperformula/dist/hyperformula.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/handsontable@18.1.1/dist/handsontable.full.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/handsontable@18.1.1/dist/handsontable.full.min.css" rel="stylesheet" media="screen">
+    <script src="https://cdn.jsdelivr.net/npm/hyperformula@3.4.0/dist/hyperformula.full.min.js"></script>
 
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
@@ -34,6 +34,53 @@
         .handsontable th .colHeader { white-space: normal !important; word-wrap: break-word !important; line-height: 1.4 !important; padding: 8px 4px !important; }
         .handsontable thead th { height: auto !important; vertical-align: middle !important; }
         .layout-transition { transition: all 0.4s ease-in-out; }
+
+        /* ===== Warna tabel Excel (Handsontable) =====
+           Berlaku untuk tema lama maupun tema baru Handsontable (variabel --ht-*),
+           sehingga teks selalu gelap di atas latar terang. */
+        #spreadsheet, .handsontable, .handsontableEditor, .autocompleteEditor, .htDatepickerHolder { color-scheme: light; }
+        :root {
+            --ht-foreground-color: #212529;              --ht-background-color: #ffffff;
+            --ht-cell-editor-foreground-color: #212529;  --ht-cell-editor-background-color: #ffffff;
+            --ht-cell-editor-border-color: #0d6efd;
+            --ht-header-foreground-color: #212529;       --ht-header-background-color: #e9ecef;
+            --ht-header-highlighted-foreground-color: #0a2a5c; --ht-header-highlighted-background-color: #b6d4fe;
+            --ht-header-active-foreground-color: #ffffff; --ht-header-active-background-color: #0d6efd;
+            --ht-row-header-odd-background-color: #e9ecef; --ht-row-header-even-background-color: #e9ecef;
+            --ht-menu-item-hover-color: #212529;          --ht-menu-item-active-color: #212529;
+        }
+        /* Sel yang sedang diketik */
+        .handsontable .handsontableInput, .handsontableInputHolder textarea, .handsontableInputHolder input {
+            color: #212529 !important; background-color: #ffffff !important; caret-color: #212529 !important;
+            -webkit-text-fill-color: #212529 !important; font-size: 0.9rem;
+        }
+        /* Judul kolom & nomor baris */
+        .handsontable thead th, .handsontable tbody th { color: #212529 !important; background-color: #e9ecef !important; }
+        .handsontable thead th .colHeader, .handsontable tbody th .rowHeader { color: inherit !important; }
+        .handsontable th.ht__highlight, .handsontable thead th.ht__highlight, .handsontable tbody th.ht__highlight {
+            color: #0a2a5c !important; background-color: #b6d4fe !important;
+        }
+        .handsontable th.ht__active_highlight, .handsontable thead th.ht__active_highlight, .handsontable tbody th.ht__active_highlight {
+            color: #ffffff !important; background-color: #0d6efd !important;
+        }
+        /* Daftar pilihan dropdown */
+        .handsontable.listbox td, .autocompleteEditor td, .handsontableEditor td, .htAutocompleteEditor td {
+            color: #212529 !important; background-color: #ffffff !important; font-size: 0.9rem; padding: 4px 8px !important;
+        }
+        .handsontable.listbox tr:hover td, .handsontable.listbox td.current, .handsontable.listbox td.highlight,
+        .autocompleteEditor td.current, .handsontableEditor td.current, .htAutocompleteEditor td.current {
+            color: #ffffff !important; background-color: #0d6efd !important;
+        }
+        .handsontable.listbox td strong, .autocompleteEditor td strong, .handsontableEditor td strong { color: inherit !important; font-weight: 700; }
+        .autocompleteEditor, .handsontableEditor { box-shadow: 0 6px 16px rgba(0,0,0,.18); border: 1px solid #adb5bd; background: #ffffff; }
+        /* Kalender pilihan tanggal */
+        .pika-single, .pika-title, .pika-label, .pika-table th { color: #212529 !important; background-color: #ffffff; }
+        .pika-button { color: #212529 !important; background-color: #f1f3f5 !important; }
+        .is-selected .pika-button, .pika-button:hover, .is-today .pika-button:hover { background-color: #0d6efd !important; color: #ffffff !important; }
+        .is-today .pika-button { color: #0d6efd !important; font-weight: 700; }
+        /* Menu klik kanan */
+        .htContextMenu td, .htContextMenu .htItemWrapper { color: #212529 !important; }
+        .htContextMenu td.current, .htContextMenu td:hover { background-color: #e7f1ff !important; }
     </style>
 </head>
 <body>
@@ -78,9 +125,10 @@
 
                     <div class="mt-3">
                         <label class="form-label-custom">Pilih Formulir Indikator <span class="text-danger">*</span></label>
-                        <select class="form-select border-primary fw-bold" id="sel_indikator" onchange="bangunFormDinamis()">
+                        <select class="form-select border-primary fw-bold" id="sel_indikator" onfocus="this.dataset.sebelum = this.value" onchange="bangunFormDinamis()">
                             <option value="">-- Pilih Unit Terlebih Dahulu --</option>
                         </select>
+                        <small class="text-muted d-none d-block mt-1" id="infoDaftarForm" style="font-size:0.78rem;"></small>
                     </div>
                 </div>
 
@@ -98,6 +146,10 @@
                     </div>
 
                     <form id="formDinamisContainer">
+                        <div id="bannerEdit" class="alert alert-warning py-2 px-3 d-flex align-items-center justify-content-between d-none" style="font-size:0.85rem;">
+                            <span><i class="fas fa-pen me-2"></i> Sedang mengedit data yang sudah tersimpan.</span>
+                            <button type="button" class="btn btn-sm btn-outline-dark" onclick="batalEditForm()">Batal edit</button>
+                        </div>
                         <div id="wadahInputDinamis" class="dynamic-input-row row g-3"></div>
                         <div class="d-grid mt-4">
                             <button type="button" class="btn btn-primary fw-bold py-2 shadow" id="btnSimpanDataForm" onclick="simpanDataTransaksi('form')">
@@ -108,17 +160,20 @@
 
                     <div id="excelContainer" class="d-none">
                         <div class="alert alert-success p-2 mb-2 d-flex align-items-center" style="font-size: 0.85rem;">
-                            <i class="fas fa-magic fa-2x me-3"></i> 
+                            <i class="fas fa-table fa-2x me-3"></i> 
                             <div>
-                                <b>Smart Date Routing Aktif!</b> Paste data dari Excel, sistem otomatis memisahkan data ke bulan & tahun sesuai tanggal transaksi.
+                                Data bulan terpilih sudah dimuat (baris <span style="background:#f4f9ff;border:1px solid #cfe2ff;padding:0 6px;">biru muda</span>) — ubah langsung di sel.
+                                Isi / tempel data baru di baris kosong di bawahnya. Hapus baris: klik kanan → <i>Remove row</i>.
+                                Tanggal menentukan bulan tersimpan (Smart Date Routing).
                             </div>
                         </div>
                         <div id="spreadsheetWadah" class="w-100 border rounded mb-3 bg-white" style="position: relative;">
                             <div id="spreadsheet" style="height: 500px;"></div>
                         </div>
+                        <div class="small fw-bold text-warning mb-2" id="statusTabel"></div>
                         <div class="d-grid mt-2">
                             <button type="button" class="btn btn-success fw-bold py-3 shadow fs-5" id="btnSimpanDataExcel" onclick="simpanDataTransaksi('excel')">
-                                <i class="fas fa-layer-group me-2"></i> Simpan Semua Baris ke Database
+                                <i class="fas fa-layer-group me-2"></i> Simpan Semua Perubahan
                             </button>
                         </div>
                     </div>
@@ -227,10 +282,9 @@
 
                 if (formParam && isAdmin) {
                     // Cari form ini milik unit mana (agar dropdown unit otomatis berpindah)
-                    const { data: indData } = await supabaseClient.from('master_indikator').select('unit_pelaksana').eq('id_form', formParam).maybeSingle();
-                    if(indData && indData.unit_pelaksana && indData.unit_pelaksana !== 'Semua Unit (Hospital Wide)') {
-                        selUnit.value = indData.unit_pelaksana;
-                    }
+                    // Unit pertama yang mengisi formulir ini menurut Pengaturan Unit Kerja
+                    const unitPengisi = daftarUnitMaster.find(u => (u.daftar_form || '').split(',').map(x => x.trim()).includes(formParam));
+                    if (unitPengisi) selUnit.value = unitPengisi.nama_unit;
                 }
 
                 // 3. Load Indikator
@@ -245,6 +299,7 @@
             
             selIndikator.innerHTML = '<option value="">-- Sedang memuat indikator... --</option>';
             document.getElementById('panelInputDinamis').classList.add('d-none');
+            tandaiBerubah(false); idEditForm = null; dataPeriode = [];
             
             if (!namaUnit) {
                 selIndikator.innerHTML = '<option value="">-- Pilih Unit Terlebih Dahulu --</option>';
@@ -268,15 +323,10 @@
                 const judulPerForm = new Map();
                 data.forEach(d => { if (!judulPerForm.has(d.id_form)) judulPerForm.set(d.id_form, []); judulPerForm.get(d.id_form).push(d.judul_indikator); });
 
-                const dipilih = new Set();
-                if (namaUnit === "Semua Unit (Hospital Wide)") data.forEach(d => dipilih.add(d.id_form));
-                data.forEach(d => {
-                    let pelaksana = (d.unit_pelaksana || "").toLowerCase();
-                    if (pelaksana.includes(namaUnit.toLowerCase()) || pelaksana.includes("semua unit") || pelaksana.includes("hospital")) dipilih.add(d.id_form);
-                });
+                // Formulir yang diisi unit = daftar di Pengaturan Unit Kerja (Super Admin Panel).
+                // Profil Indikator hanya dipakai untuk memberi nama yang mudah dibaca.
                 const daftarUnit = ((resUnit.data && resUnit.data[0] && resUnit.data[0].daftar_form) || '').split(',').map(x => x.trim()).filter(Boolean);
-                daftarUnit.forEach(f => dipilih.add(f));
-
+                const dipilih = new Set(daftarUnit);
                 const opsi = [...dipilih].filter(f => adaForm.has(f)).map(f => {
                     const judul = judulPerForm.get(f);
                     return { id: f, label: judul ? judul.join(' / ') : f.replace(/_/g, ' ') + ' (formulir)' };
@@ -285,6 +335,15 @@
                 selIndikator.innerHTML = '<option value="">-- Pilih Indikator --</option>';
                 opsi.forEach(o => selIndikator.add(new Option(o.label, o.id)));
                 if (!opsi.length) selIndikator.innerHTML = '<option value="">-- Belum ada formulir untuk unit ini --</option>';
+                const tidakDikenal = daftarUnit.filter(f => !adaForm.has(f));
+                const info = document.getElementById('infoDaftarForm');
+                if (info) {
+                    const pesan = !daftarUnit.length
+                        ? '<i class="fas fa-info-circle me-1"></i> Belum ada formulir yang diatur untuk unit ini. Hubungi admin untuk mengaturnya di <b>Pengaturan Unit Kerja</b>.'
+                        : tidakDikenal.length ? `<i class="fas fa-exclamation-triangle me-1 text-warning"></i> Formulir tidak ditemukan di Form Builder: ${tidakDikenal.map(f => esc(f)).join(', ')}.` : '';
+                    info.classList.toggle('d-none', !pesan);
+                    info.innerHTML = pesan;
+                }
 
                 // Auto Select Form jika ada ID dari URL Param
                 if (autoSelectFormId) {
@@ -319,7 +378,15 @@
         }
 
         async function bangunFormDinamis() {
-            const idForm = document.getElementById('sel_indikator').value;
+            const selForm = document.getElementById('sel_indikator');
+            if (tabelBerubah) {
+                const k = await Swal.fire({ title: 'Buang perubahan tabel?', text: 'Ada perubahan di tabel Excel yang belum disimpan.', icon: 'warning',
+                    showCancelButton: true, confirmButtonText: 'Buang perubahan', cancelButtonText: 'Kembali' });
+                if (!k.isConfirmed) { if (selForm.dataset.sebelum !== undefined) selForm.value = selForm.dataset.sebelum; return; }
+            }
+            selForm.dataset.sebelum = selForm.value;
+            idEditForm = null; dataPeriode = []; tandaiBerubah(false);
+            const idForm = selForm.value;
             const panel = document.getElementById('panelInputDinamis');
             if (!idForm) { panel.classList.add('d-none'); return; }
             
@@ -330,7 +397,7 @@
                 const { data, error } = await supabaseClient.from('setup_formulir').select('kolom').eq('id_form', idForm).single();
                 if (error) throw error;
                 cetakBiruAktif = data.kolom; 
-                renderExcelTabel(); renderFormTunggal(); loadDataTabel();
+                renderFormTunggal(); await loadDataTabel(true);
             } catch (err) {
                 document.getElementById('wadahInputDinamis').innerHTML = '<div class="alert alert-danger w-100">Gagal memuat struktur formulir (Form Builder kosong).</div>';
             }
@@ -349,10 +416,68 @@
             return a.split(',').map(x => x.trim().toLowerCase()).includes(unit);
         }
 
+        // =====================================================================
+        // TABEL EXCEL = data bulan terpilih + baris kosong untuk data baru.
+        // Kolom tersembunyi paling kanan menyimpan id baris database, sehingga baris
+        // yang diubah / dihapus / ditambah dikenali saat "Simpan Semua Perubahan".
+        // Form Tunggal memakai mesin rumus terpisah (hotHitung) agar tidak mengganggu tabel.
+        // =====================================================================
+        let barisAsli = new Map();      // id -> kunci isi kolom input (deteksi perubahan)
+        let dataPeriode = [];           // baris database untuk unit + formulir + bulan terpilih
+        let tabelBerubah = false;       // ada perubahan tabel Excel yang belum disimpan
+        let hotHitung = null;           // mesin rumus Form Tunggal (tidak tampil)
+        let idEditForm = null;          // id baris yang sedang diedit di Form Tunggal
+        let periodeAktif = null;        // { bulan, tahun, form } yang sedang dimuat
+        let selDiedit = null;           // { row, col, nilai } sel yang editornya sedang dibuka
+        const BARIS_KOSONG = 20;
+
+        const adaRumus = c => !!(c && c.formula && c.formula.trim() !== '');
+        const nilaiError = v => typeof v === 'string' && /^#(DIV\/0!|VALUE!|N\/A|REF!|NAME\?|NUM!|ERROR!|CYCLE!)$/.test(v);
+
+        function rumusBaris(col, r) {
+            return '=' + col.formula
+                .replace(/\[(\d+)\]:\[(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (r + 1) + ":" + colToLetter(parseInt(e)) + (r + 1))
+                .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (r + 1));
+        }
+        function barisDenganRumus(r, denganKolomId = true) {
+            const row = Array(cetakBiruAktif.length + (denganKolomId ? 1 : 0)).fill(null);
+            cetakBiruAktif.forEach((col, c) => { if (adaRumus(col)) row[c] = rumusBaris(col, r); });
+            return row;
+        }
+        // Rapikan satu baris sebelum disimpan / dibandingkan
+        function bersihkanBaris(row) {
+            return cetakBiruAktif.map((col, idx) => {
+                const cell = row[idx];
+                if (tipeKolom(col) === 'checkbox') return (cell === true || cell === 'Ya') ? 'Ya' : 'Tidak';
+                if (cell === undefined || nilaiError(cell)) return null;
+                return cell;
+            });
+        }
+        // Baris kosong: tidak ada kolom input yang terisi (checkbox "Tidak" dianggap kosong)
+        function barisKosong(row) {
+            return !cetakBiruAktif.some((col, idx) => {
+                if (adaRumus(col)) return false;
+                const cell = row[idx];
+                if (tipeKolom(col) === 'checkbox') return cell === true || cell === 'Ya';
+                return cell !== null && cell !== undefined && cell !== '' && cell !== false;
+            });
+        }
+        // Kunci isi kolom input saja (kolom rumus dihitung ulang, tidak ikut dibandingkan)
+        function kunciIsi(row) {
+            return JSON.stringify(cetakBiruAktif.map((col, i) => adaRumus(col) ? '' : String(row[i] ?? '').trim().toLowerCase()));
+        }
+
+        function tandaiBerubah(v) {
+            tabelBerubah = v;
+            const el = document.getElementById('statusTabel');
+            if (el) el.innerHTML = v ? '<i class="fas fa-circle text-warning me-1"></i> Ada perubahan yang belum disimpan' : '';
+        }
+
         function renderExcelTabel() {
             const container = document.getElementById('spreadsheet');
             container.innerHTML = '';
-            if(hotInstance) { hotInstance.destroy(); }
+            if (hotInstance) { hotInstance.destroy(); hotInstance = null; }
+            const n = cetakBiruAktif.length;
 
             let hotColumns = cetakBiruAktif.map(c => {
                 let rawType = tipeKolom(c);
@@ -365,32 +490,41 @@
                 else if (rawType === 'time') { config.type = 'time'; config.timeFormat = 'HH:mm:ss'; config.correctFormat = true; } 
                 else if (rawType === 'number') { config.type = 'numeric'; }
 
-                if (rawType === 'readonly' || c.formula || !bolehIsiKolom(c)) { config.readOnly = true; }
+                if (rawType === 'readonly' || adaRumus(c) || !bolehIsiKolom(c)) { config.readOnly = true; }
                 return config;
             });
+            hotColumns.push({ type: 'text', readOnly: true, width: 1 });   // kolom id (disembunyikan)
 
-            let emptyData = Array.from({length: 50}, () => Array(cetakBiruAktif.length).fill(null));
-
-            const applyFormulasToRow = (rowArray, rowIndex) => {
-                cetakBiruAktif.forEach((col, colIndex) => {
-                    if (col.formula && col.formula.trim() !== "") {
-                        let excelFormula = col.formula
-                            .replace(/\[(\d+)\]:\[(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (rowIndex + 1) + ":" + colToLetter(parseInt(e)) + (rowIndex + 1))
-                            .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (rowIndex + 1));
-                        rowArray[colIndex] = "=" + excelFormula;
-                    }
-                });
-            };
-
-            emptyData.forEach((row, idx) => applyFormulasToRow(row, idx));
+            // Data bulan terpilih (kolom rumus diganti rumus agar dihitung ulang saat diedit)
+            barisAsli = new Map();
+            const data = dataPeriode.map((d, r) => {
+                const row = barisDenganRumus(r);
+                const isi = Array.isArray(d.data_input) ? d.data_input : [];
+                cetakBiruAktif.forEach((col, c) => { if (!adaRumus(col)) row[c] = isi[c] ?? null; });
+                row[n] = d.id;
+                barisAsli.set(d.id, kunciIsi(bersihkanBaris(isi)));
+                return row;
+            });
+            for (let i = 0; i < BARIS_KOSONG; i++) data.push(barisDenganRumus(data.length));
+            const tersembunyi = cetakBiruAktif.map((c, i) => c.sembunyi ? i : -1).filter(i => i >= 0).concat([n]);
 
             hotInstance = new Handsontable(container, {
-                data: emptyData, colHeaders: cetakBiruAktif.map(c => c.judul), columns: hotColumns,
+                data, colHeaders: cetakBiruAktif.map(c => c.judul).concat(['id']), columns: hotColumns,
                 rowHeaders: true, width: '100%', height: 500, stretchH: 'all', contextMenu: true, 
                 formulas: { engine: HyperFormula }, licenseKey: 'non-commercial-and-evaluation', 
-                autoColumnSize: false, manualColumnResize: true, 
-                hiddenColumns: { columns: cetakBiruAktif.map((c, i) => c.sembunyi ? i : -1).filter(i => i >= 0), indicators: false },
+                autoColumnSize: false, manualColumnResize: true, minSpareRows: 5,
+                hiddenColumns: { columns: tersembunyi, indicators: false },
 
+                // Sel yang sedang dibuka editornya (untuk menjaga isi tanggal bila kalender ditutup tanpa memilih)
+                afterBeginEditing: function(row, col) { selDiedit = { row, col, nilai: this.getDataAtCell(row, col) }; },
+                beforeKeyDown: function(e) {
+                    const ed = this.getActiveEditor && this.getActiveEditor();
+                    if (!(ed && ed.isOpened && ed.isOpened())) selDiedit = null;   // hapus lewat tombol Delete tetap boleh
+                },
+                afterSelection: function() {
+                    const ed = this.getActiveEditor && this.getActiveEditor();
+                    if (!(ed && ed.isOpened && ed.isOpened())) selDiedit = null;
+                },
                 beforeChange: function(changes, source) {
                     if (!changes) return;
                     changes.forEach(change => {
@@ -398,6 +532,15 @@
                         if(!colDef) return;
                         let colType = tipeKolom(colDef);
                         let newVal = change[3];
+
+                        // Kalender ditutup tanpa memilih tanggal -> jangan kosongkan isi lama
+                        if ((colType === 'date' || colType === 'calendar') && (newVal === null || newVal === undefined || newVal === '')
+                            && selDiedit && selDiedit.row === change[0] && selDiedit.col === change[1]
+                            && selDiedit.nilai !== null && selDiedit.nilai !== undefined && selDiedit.nilai !== '') {
+                            change[3] = selDiedit.nilai;
+                            selDiedit = null;
+                            return;
+                        }
 
                         if ((colType === 'date' || colType === 'calendar') && newVal) {
                             let parsedDate = parseIndoDate(newVal);
@@ -414,20 +557,32 @@
                         }
                     });
                 },
-                afterPaste: function(data, coords) {
+                afterChange: function(changes, source) {
+                    selDiedit = null;
+                    if (!changes || ['loadData', 'autoFormulaSweep', 'formulaBaru'].includes(source)) return;
+                    // Nilai yang sama persis dengan sebelumnya bukan perubahan
+                    if (changes.some(c => String(c[2] ?? '') !== String(c[3] ?? ''))) tandaiBerubah(true);
+                },
+                afterRemoveRow: function() { tandaiBerubah(true); },
+                // Baris baru (menu klik kanan / baris cadangan) langsung diberi rumus baris
+                afterCreateRow: function(index, amount) {
+                    const hot = this;
+                    setTimeout(() => {
+                        const upd = [];
+                        for (let r = index; r < index + amount; r++)
+                            cetakBiruAktif.forEach((col, c) => { if (adaRumus(col) && !hot.getSourceDataAtCell(r, c)) upd.push([r, c, rumusBaris(col, r)]); });
+                        if (upd.length) hot.setDataAtCell(upd, 'formulaBaru');
+                    }, 0);
+                },
+                afterPaste: function() {
                     const hot = this;
                     setTimeout(() => {
                         let updates = []; const rowCount = hot.countRows();
                         for (let r = 0; r < rowCount; r++) {
                             cetakBiruAktif.forEach((col, c) => {
-                                if (col.formula && col.formula.trim() !== "") {
-                                    let val = hot.getDataAtCell(r, c);
-                                    if (val === null || val === "" || (typeof val === 'string' && !val.startsWith('='))) {
-                                         let excelFormula = col.formula
-                                            .replace(/\[(\d+)\]:\[(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (r + 1) + ":" + colToLetter(parseInt(e)) + (r + 1))
-                                            .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (r + 1));
-                                         updates.push([r, c, "=" + excelFormula]);
-                                    }
+                                if (adaRumus(col)) {
+                                    let val = hot.getSourceDataAtCell(r, c);
+                                    if (val === null || val === "" || (typeof val === 'string' && !val.startsWith('='))) updates.push([r, c, rumusBaris(col, r)]);
                                 }
                             });
                         }
@@ -439,22 +594,43 @@
                     cellProperties.renderer = function(instance, td, r, c, prop, value, cellProps) {
                         var baseRenderer = Handsontable.renderers.getRenderer(cellProps.type || 'text');
                         baseRenderer.apply(this, arguments);
-                        if (cellProps.readOnly) { td.style.backgroundColor = '#f1f3f5'; td.style.color = '#0dcaf0'; td.style.fontWeight = 'bold'; } 
-                        else { td.style.backgroundColor = '#ffffff'; td.style.color = '#2c3e50'; }
-                        if (value === '#DIV/0!' || value === '#VALUE!') td.innerHTML = '<span style="color:#dee2e6">-</span>'; 
+                        const tersimpan = !!instance.getSourceDataAtCell(r, n);
+                        if (cellProps.readOnly) { td.style.backgroundColor = '#eef1f4'; td.style.color = '#0a4f9e'; td.style.fontWeight = 'bold'; } 
+                        else { td.style.backgroundColor = tersimpan ? '#f4f9ff' : '#ffffff'; td.style.color = '#2c3e50'; }
+                        if (nilaiError(value)) td.innerHTML = '<span style="color:#dee2e6">-</span>'; 
                     };
                     return cellProperties;
                 }
+            });
+            tandaiBerubah(false);
+            siapkanHitungForm();
+        }
+
+        // Mesin rumus untuk Form Tunggal (satu baris, di luar layar)
+        function siapkanHitungForm() {
+            let wadah = document.getElementById('spreadsheetHitung');
+            if (!wadah) {
+                wadah = document.createElement('div');
+                wadah.id = 'spreadsheetHitung';
+                wadah.setAttribute('aria-hidden', 'true');
+                wadah.style.cssText = 'position:absolute;left:-10000px;top:0;width:800px;height:80px;overflow:hidden;';
+                document.body.appendChild(wadah);
+            }
+            if (hotHitung) { hotHitung.destroy(); hotHitung = null; }
+            wadah.innerHTML = '';
+            hotHitung = new Handsontable(wadah, {
+                data: [barisDenganRumus(0, false)], formulas: { engine: HyperFormula },
+                licenseKey: 'non-commercial-and-evaluation', width: 800, height: 80
             });
         }
 
         function renderFormTunggal() {
             const wadahForm = document.getElementById('wadahInputDinamis');
             wadahForm.innerHTML = '';
-            let headHTML = '<tr><th class="text-center" width="5%"><i class="fas fa-trash"></i></th>';
+            let headHTML = '<tr><th class="text-center" style="width:90px">Aksi</th>';
 
             cetakBiruAktif.forEach((kolomAsli, index) => {
-                const field = { ...kolomAsli, tipe: (kolomAsli.formula && kolomAsli.formula.trim()) ? 'readonly' : tipeKolom(kolomAsli) };
+                const field = { ...kolomAsli, tipe: adaRumus(kolomAsli) ? 'readonly' : tipeKolom(kolomAsli) };
                 const boleh = bolehIsiKolom(field);
                 let colClass = "col-md-12";
                 if (field.tipe === "number" || field.tipe === "time" || field.tipe === "readonly") colClass = "col-md-6";
@@ -477,7 +653,7 @@
                 } else {
                     let inputType = ({ calendar: 'date', number: 'number', time: 'time' })[field.tipe] || 'text';
                     const petunjuk = field.tipe.startsWith('durasi_') ? `placeholder="${field.tipe === 'durasi_hm' ? 'jj:mm' : field.tipe === 'durasi_ms' ? 'mm:dd' : 'jj:mm:dd'}"` : '';
-                    inputHTML = `<input type="${inputType}" ${inputType === 'number' ? 'step="any"' : ''} class="form-control input-data-transaksi" id="${idInput}" data-index="${index}" ${petunjuk} ${triggerCalc} ${kunci}>`;
+                    inputHTML = `<input type="${inputType}" ${inputType === 'number' ? 'step="any"' : ''} ${inputType === 'time' ? 'step="1"' : ''} class="form-control input-data-transaksi" id="${idInput}" data-index="${index}" ${petunjuk} ${triggerCalc} ${kunci}>`;
                 }
 
                 const ketAkses = boleh ? '' : ` <small class="text-muted fw-normal" title="Hanya dapat diisi: ${esc(field.akses)}"><i class="fas fa-lock"></i> unit lain</small>`;
@@ -488,7 +664,7 @@
         }
 
         window.kalkulasiOtomatisDariHOT = function() {
-            if(!hotInstance) return;
+            if(!hotHitung) return;
             let updates = [];
             document.querySelectorAll('.input-data-transaksi:not(.input-formula)').forEach(el => {
                 let idx = parseInt(el.getAttribute('data-index'));
@@ -498,20 +674,136 @@
                     let m = moment(val); if(m.isValid()) val = m.format('DD/MM/YYYY');
                 }
                 if (tipeKolom(cetakBiruAktif[idx]) === 'number' && val !== '') { val = parseFloat(val); }
-                updates.push([0, idx, val]); 
+                updates.push([0, idx, val === '' ? null : val]); 
             });
 
-            hotInstance.setDataAtCell(updates, 'silentFormTunggalUpdate');
+            hotHitung.setDataAtCell(updates, 'silentFormTunggalUpdate');
 
             setTimeout(() => {
                 document.querySelectorAll('.input-formula').forEach(el => {
                     let idx = parseInt(el.getAttribute('data-index'));
-                    let result = hotInstance.getDataAtCell(0, idx);
-                    if (result === '#DIV/0!' || result === '#VALUE!' || result === null || result === '') { el.value = ''; } 
+                    let result = hotHitung.getDataAtCell(0, idx);
+                    if (nilaiError(result) || result === null || result === '') { el.value = ''; } 
                     else if (typeof result === 'number') { el.value = Math.round(result * 100) / 100; } 
                     else { el.value = result; }
                 });
             }, 50);
+        }
+
+        // ---------- Edit baris di Form Tunggal ----------
+        function aturLabelForm() {
+            const btn = document.getElementById('btnSimpanDataForm');
+            btn.innerHTML = idEditForm ? '<i class="fas fa-check me-2"></i> Simpan Perubahan' : '<i class="fas fa-save me-2"></i> Simpan Satu Baris';
+            btn.classList.toggle('btn-warning', !!idEditForm);
+            btn.classList.toggle('btn-primary', !idEditForm);
+            document.getElementById('bannerEdit').classList.toggle('d-none', !idEditForm);
+            document.querySelectorAll('#tbodyTransaksi tr[data-id]').forEach(tr => tr.classList.toggle('table-warning', tr.dataset.id === idEditForm));
+        }
+
+        window.editDataTransaksi = function(id) {
+            const d = dataPeriode.find(x => x.id === id);
+            if (!d) return;
+            if (document.getElementById('modeExcel').checked) { document.getElementById('modeForm').checked = true; toggleModeInput(); }
+            document.getElementById('formDinamisContainer').reset();
+            idEditForm = id;
+            const isi = Array.isArray(d.data_input) ? d.data_input : [];
+            document.querySelectorAll('.input-data-transaksi:not(.input-formula)').forEach(el => {
+                const v = isi[parseInt(el.dataset.index)];
+                if (el.type === 'checkbox') el.checked = (v === 'Ya' || v === true);
+                else if (el.type === 'date') { const m = parseIndoDate(v); el.value = (v && m.isValid()) ? m.format('YYYY-MM-DD') : ''; }
+                else if (el.type === 'time') el.value = v ? parseTime24(v) : '';
+                else if (el.tagName === 'SELECT') {
+                    const s = v === null || v === undefined ? '' : String(v);
+                    if (s && ![...el.options].some(o => o.value === s)) el.add(new Option(s, s));
+                    el.value = s;
+                }
+                else el.value = v ?? '';
+            });
+            kalkulasiOtomatisDariHOT();
+            aturLabelForm();
+            document.getElementById('panelInputDinamis').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        };
+
+        window.batalEditForm = function() {
+            idEditForm = null;
+            document.getElementById('formDinamisContainer').reset();
+            kalkulasiOtomatisDariHOT();
+            aturLabelForm();
+        };
+
+        // ---------- Simpan ----------
+        // Kunci kiriman: kiriman yang sama dipakai ulang bila penyimpanan sebelumnya gagal di tengah jalan
+        // (mis. koneksi putus), sehingga database tidak menyimpan dua kali.
+        let kirimanTertunda = null;
+        function buatKunciKirim() {
+            if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16); });
+        }
+        const ringkasNomor = arr => arr.length > 15 ? arr.slice(0, 15).join(', ') + ` … (+${arr.length - 15} lagi)` : arr.join(', ');
+
+        // Bulan & tahun baris dari kolom tanggal / bulan (Smart Date Routing)
+        function hitungPeriode(cleanRow, defBulan, defTahun) {
+            let dateIdx = -1; let isMonthDropdown = false;
+            cetakBiruAktif.forEach((c, idx) => {
+                let t = (c.tipe || '').toLowerCase(); let j = (c.judul || '').toLowerCase();
+                if (t === 'date' || t === 'calendar' || j.includes('tanggal')) { if (dateIdx === -1) { dateIdx = idx; isMonthDropdown = false; } }
+                else if (j.includes('bulan')) { if (dateIdx === -1) { dateIdx = idx; isMonthDropdown = true; } }
+            });
+            let bulan = defBulan, tahun = defTahun;
+            if (dateIdx !== -1 && cleanRow[dateIdx]) {
+                let strVal = cleanRow[dateIdx].toString().toLowerCase();
+                if (isMonthDropdown) {
+                    const iM = {'januari':1, 'februari':2, 'maret':3, 'april':4, 'mei':5, 'juni':6, 'juli':7, 'agustus':8, 'september':9, 'oktober':10, 'november':11, 'desember':12};
+                    for (let m in iM) { if (strVal.includes(m)) { bulan = iM[m]; break; } }
+                } else {
+                    let parsed = parseIndoDate(strVal);
+                    if (parsed.isValid()) { bulan = parsed.month() + 1; tahun = parsed.year(); }
+                }
+            }
+            return { bulan, tahun };
+        }
+
+        // Simpan baris baru lewat database (tolak kiriman ganda, tanya baris yang sama persis).
+        // Mengembalikan hasil, atau null bila pengguna membatalkan.
+        async function simpanBaruDenganCek(rows, nomorBaris, satuBaris) {
+            const sidik = JSON.stringify(rows);
+            if (!kirimanTertunda || kirimanTertunda.sidik !== sidik) kirimanTertunda = { sidik, kunci: buatKunciKirim() };
+            let { data: hasil, error } = await supabaseClient.rpc('simpan_data_mutu', { p_rows: rows, p_kunci: kirimanTertunda.kunci, p_mode: 'tanya' });
+            if (error) throw error;
+            if (hasil.status === 'konfirmasi') {
+                const diDb = hasil.sama_dengan_tersimpan.map(i => nomorBaris[i]);
+                const diKirim = hasil.sama_dalam_kiriman.map(i => nomorBaris[i]);
+                const html = `<div class="text-start small">
+                    ${diDb.length ? `<p class="mb-2"><i class="fas fa-database text-warning me-1"></i> ${satuBaris ? 'Isian ini' : `<b>${diDb.length} baris</b> (baris ${ringkasNomor(diDb)})`} <b>sama persis</b> dengan data yang sudah tersimpan untuk unit, formulir, dan bulan yang sama.</p>` : ''}
+                    ${diKirim.length ? `<p class="mb-2"><i class="fas fa-clone text-warning me-1"></i> <b>${diKirim.length} baris</b> (baris ${ringkasNomor(diKirim)}) sama persis dengan baris lain di tabel ini.</p>` : ''}
+                    <p class="mb-0 text-muted">Jika memang data berbeda (mis. dua pasien dengan isian identik), pilih <b>Tetap simpan semua</b>.</p></div>`;
+                const pilih = await Swal.fire({ title: 'Ada data yang sama persis', icon: 'warning', html,
+                    showDenyButton: true, showCancelButton: true,
+                    confirmButtonText: satuBaris ? 'Jangan simpan' : 'Lewati yang sama', denyButtonText: 'Tetap simpan semua', cancelButtonText: 'Batal' });
+                if (!pilih.isConfirmed && !pilih.isDenied) { kirimanTertunda = null; return null; }
+                ({ data: hasil, error } = await supabaseClient.rpc('simpan_data_mutu', { p_rows: rows, p_kunci: kirimanTertunda.kunci, p_mode: pilih.isDenied ? 'semua' : 'lewati' }));
+                if (error) throw error;
+            }
+            kirimanTertunda = null;
+            return hasil;
+        }
+
+        // Ubah baris yang sudah tersimpan. Mengembalikan { diubah, gagal[] }.
+        async function ubahBaris(list) {
+            const { data, error } = await supabaseClient.rpc('ubah_data_mutu', { p_rows: list });
+            if (error) throw error;
+            return data;
+        }
+
+        async function hapusBaris(ids) {
+            for (let i = 0; i < ids.length; i += 200) {
+                const { error } = await supabaseClient.from('data_mutu_harian').delete().in('id', ids.slice(i, i + 200));
+                if (error) throw error;
+            }
+        }
+
+        function toast(judul, ikon = 'success') {
+            Swal.fire({ toast: true, position: 'top-end', icon: ikon, title: judul, showConfirmButton: false, timer: 2800 });
         }
 
         window.simpanDataTransaksi = async function(mode) {
@@ -522,103 +814,124 @@
 
             if(!unitKerja || !idIndikator) { Swal.fire('Peringatan', 'Lengkapi parameter unit dan indikator.', 'warning'); return; }
 
-            const btnId = mode === 'excel' ? 'btnSimpanDataExcel' : 'btnSimpanDataForm';
-            const btn = document.getElementById(btnId);
+            const btn = document.getElementById(mode === 'excel' ? 'btnSimpanDataExcel' : 'btnSimpanDataForm');
+            const labelExcel = '<i class="fas fa-layer-group me-2"></i> Simpan Semua Perubahan';
             btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
-
-            let payloadList = [];
-
-            let dateIdx = -1; let isMonthDropdown = false;
-            cetakBiruAktif.forEach((c, idx) => {
-                let t = (c.tipe || '').toLowerCase(); let j = (c.judul || '').toLowerCase();
-                if(t === 'date' || t === 'calendar' || j.includes('tanggal')) {
-                    if(dateIdx === -1) { dateIdx = idx; isMonthDropdown = false; }
-                } else if (j.includes('bulan')) {
-                    if(dateIdx === -1) { dateIdx = idx; isMonthDropdown = true; }
-                }
-            });
-
-            if (mode === 'form') {
-                let rowData = hotInstance.getDataAtRow(0);
-                let isRowEmpty = true;
-                rowData.forEach((cell, idx) => { if (!cetakBiruAktif[idx].formula && cell !== null && cell !== "" && cell !== false) isRowEmpty = false; });
-                if(isRowEmpty) { Swal.fire('Kosong', 'Harap isi setidaknya 1 field data.', 'warning'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Satu Baris'; return; }
-
-                let cleanRow = rowData.map((cell, idx) => {
-                    if (cetakBiruAktif[idx].tipe === 'checkbox') return (cell === true || cell === 'Ya') ? 'Ya' : 'Tidak';
-                    if (cell === '#DIV/0!' || cell === '#VALUE!') return null;
-                    return cell;
-                });
-
-                let rowBulan = defBulan; let rowTahun = defTahun;
-                if (dateIdx !== -1 && cleanRow[dateIdx]) {
-                    let strVal = cleanRow[dateIdx].toString().toLowerCase();
-                    if(isMonthDropdown) {
-                        const iM = {'januari':1, 'februari':2, 'maret':3, 'april':4, 'mei':5, 'juni':6, 'juli':7, 'agustus':8, 'september':9, 'oktober':10, 'november':11, 'desember':12};
-                        for(let m in iM) { if(strVal.includes(m)) { rowBulan = iM[m]; break; } }
-                    } else {
-                        let parsed = parseIndoDate(strVal);
-                        if (parsed.isValid()) { rowBulan = parsed.month() + 1; rowTahun = parsed.year(); }
-                    }
-                }
-
-                payloadList.push({ unit_kerja: unitKerja, id_indikator: idIndikator, bulan: rowBulan, tahun: rowTahun, petugas_input: session.nama_lengkap, data_input: cleanRow });
-            } 
-            else if (mode === 'excel') {
-                let rawData = hotInstance.getData(); 
-                rawData.forEach(row => {
-                    let isRowEmpty = true;
-                    row.forEach((cell, idx) => { if (!cetakBiruAktif[idx].formula && cell !== null && cell !== "" && cell !== false) isRowEmpty = false; });
-
-                    if (!isRowEmpty) {
-                        let cleanRow = row.map((cell, idx) => {
-                            if (cetakBiruAktif[idx].tipe === 'checkbox') return (cell === true || cell === 'Ya') ? 'Ya' : 'Tidak';
-                            if (cell === '#DIV/0!' || cell === '#VALUE!') return null;
-                            return cell;
-                        });
-
-                        let rowBulan = defBulan; let rowTahun = defTahun;
-                        if (dateIdx !== -1 && cleanRow[dateIdx]) {
-                            let strVal = cleanRow[dateIdx].toString().toLowerCase();
-                            if(isMonthDropdown) {
-                                const iM = {'januari':1, 'februari':2, 'maret':3, 'april':4, 'mei':5, 'juni':6, 'juli':7, 'agustus':8, 'september':9, 'oktober':10, 'november':11, 'desember':12};
-                                for(let m in iM) { if(strVal.includes(m)) { rowBulan = iM[m]; break; } }
-                            } else {
-                                let parsed = parseIndoDate(strVal);
-                                if (parsed.isValid()) { rowBulan = parsed.month() + 1; rowTahun = parsed.year(); }
-                            }
-                        }
-
-                        payloadList.push({ unit_kerja: unitKerja, id_indikator: idIndikator, bulan: rowBulan, tahun: rowTahun, petugas_input: session.nama_lengkap, data_input: cleanRow });
-                    }
-                });
-                if (payloadList.length === 0) { Swal.fire('Kosong', 'Tabel tidak ada data valid.', 'info'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-layer-group me-2"></i> Simpan Semua Baris ke Database'; return; }
-            }
+            let adaYangTersimpan = false;
 
             try {
-                const { error } = await supabaseClient.from('data_mutu_harian').insert(payloadList);
-                if (error) throw error;
-                if (mode === 'form') { document.getElementById('formDinamisContainer').reset(); renderExcelTabel(); } else { renderExcelTabel(); } 
-                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: payloadList.length + ' Data tersimpan', showConfirmButton: false, timer: 2000 });
-                loadDataTabel();
+                // ===== FORM TUNGGAL =====
+                if (mode === 'form') {
+                    const rowData = hotHitung.getDataAtRow(0);
+                    if (barisKosong(rowData)) { Swal.fire('Kosong', 'Harap isi setidaknya 1 field data.', 'warning'); return; }
+                    const clean = bersihkanBaris(rowData);
+                    const per = hitungPeriode(clean, defBulan, defTahun);
+
+                    if (idEditForm) {
+                        const hasil = await ubahBaris([{ id: idEditForm, data_input: clean, bulan: per.bulan, tahun: per.tahun }]);
+                        if (hasil.gagal.length) { Swal.fire('Tidak tersimpan', 'Baris ini sudah dihapus atau Anda tidak berhak mengubahnya.', 'warning'); return; }
+                        adaYangTersimpan = true;
+                        idEditForm = null;
+                        document.getElementById('formDinamisContainer').reset();
+                        kalkulasiOtomatisDariHOT();
+                        toast((per.bulan !== defBulan || per.tahun !== defTahun) ? `Perubahan tersimpan (pindah ke bulan ${per.bulan}/${per.tahun} sesuai tanggal)` : 'Perubahan tersimpan');
+                        return;
+                    }
+
+                    const hasil = await simpanBaruDenganCek([{ unit_kerja: unitKerja, id_indikator: idIndikator, bulan: per.bulan, tahun: per.tahun, data_input: clean }], [1], true);
+                    if (!hasil) return;
+                    adaYangTersimpan = true;
+                    document.getElementById('formDinamisContainer').reset();
+                    kalkulasiOtomatisDariHOT();
+                    toast(hasil.sudah_tersimpan ? 'Data ini sudah tersimpan sebelumnya' : hasil.dimasukkan ? '1 data tersimpan' : 'Tidak ada data baru yang disimpan',
+                          hasil.dimasukkan || hasil.sudah_tersimpan ? 'success' : 'info');
+                    return;
+                }
+
+                // ===== TABEL EXCEL: baru, diubah, dihapus =====
+                const n = cetakBiruAktif.length;
+                const baru = [], nomorBaru = [], ubah = [], hapus = [];
+                const idTampil = new Set();
+                hotInstance.getData().forEach((row, i) => {
+                    const id = row[n] || null;
+                    const kosong = barisKosong(row);
+                    if (id) {
+                        idTampil.add(id);
+                        if (kosong) { hapus.push(id); return; }          // isi baris dikosongkan = hapus
+                        const clean = bersihkanBaris(row);
+                        if (kunciIsi(clean) !== barisAsli.get(id)) {
+                            const per = hitungPeriode(clean, defBulan, defTahun);
+                            ubah.push({ id, data_input: clean, bulan: per.bulan, tahun: per.tahun });
+                        }
+                        return;
+                    }
+                    if (kosong) return;
+                    const clean = bersihkanBaris(row);
+                    const per = hitungPeriode(clean, defBulan, defTahun);
+                    baru.push({ unit_kerja: unitKerja, id_indikator: idIndikator, bulan: per.bulan, tahun: per.tahun, data_input: clean });
+                    nomorBaru.push(i + 1);
+                });
+                barisAsli.forEach((_, id) => { if (!idTampil.has(id)) hapus.push(id); });   // baris dihapus lewat klik kanan
+
+                if (!baru.length && !ubah.length && !hapus.length) { toast('Tidak ada perubahan untuk disimpan', 'info'); return; }
+                if (ubah.length || hapus.length) {
+                    const ok = await Swal.fire({
+                        title: 'Simpan perubahan tabel?', icon: hapus.length ? 'warning' : 'question',
+                        html: `<ul class="text-start mb-0">
+                            ${baru.length ? `<li><b>${baru.length}</b> baris baru</li>` : ''}
+                            ${ubah.length ? `<li><b>${ubah.length}</b> baris diubah</li>` : ''}
+                            ${hapus.length ? `<li class="text-danger"><b>${hapus.length}</b> baris dihapus</li>` : ''}</ul>
+                            <small class="text-muted">Perubahan & penghapusan tercatat di Log Audit.</small>`,
+                        showCancelButton: true, confirmButtonText: 'Ya, simpan', cancelButtonText: 'Batal',
+                        confirmButtonColor: hapus.length ? '#dc3545' : undefined });
+                    if (!ok.isConfirmed) return;
+                }
+
+                const ringkas = [];
+                if (hapus.length) { await hapusBaris(hapus); adaYangTersimpan = true; ringkas.push(`${hapus.length} dihapus`); }
+                if (ubah.length) {
+                    const h = await ubahBaris(ubah); adaYangTersimpan = true;
+                    ringkas.push(`${h.diubah} diubah`);
+                    if (h.gagal.length) Swal.fire('Sebagian tidak tersimpan', `${h.gagal.length} baris tidak bisa diubah (sudah dihapus orang lain atau bukan hak Anda).`, 'warning');
+                }
+                if (baru.length) {
+                    const h = await simpanBaruDenganCek(baru, nomorBaru, false);
+                    if (h) { adaYangTersimpan = true; ringkas.push(h.sudah_tersimpan ? `${h.sudah_tersimpan} baru (sudah tersimpan sebelumnya)` : `${h.dimasukkan} baru${h.dilewati ? `, ${h.dilewati} sama dilewati` : ''}`); }
+                    else ringkas.push('baris baru dibatalkan');
+                }
+                const pindah = [...ubah, ...baru].some(r => r.bulan !== defBulan || r.tahun !== defTahun);
+                toast('Tersimpan: ' + ringkas.join(', ') + (pindah ? ' — sebagian masuk ke bulan lain sesuai tanggal' : ''));
             } catch (err) {
                 console.error(err);
-                Swal.fire('Gagal!', 'Terjadi kesalahan jaringan atau database.', 'error');
+                const pesan = /row-level security/i.test(err.message || '') ? 'Anda tidak berhak menyimpan data untuk unit ini.'
+                    : (err.message && !/fetch|network/i.test(err.message)) ? esc(err.message)
+                    : 'Koneksi terputus. Coba simpan lagi — data tidak akan tersimpan dua kali.';
+                Swal.fire('Gagal!', pesan + (adaYangTersimpan ? '<br><small>Sebagian perubahan sudah tersimpan; tabel dimuat ulang.</small>' : ''), 'error');
             } finally {
-                if(mode === 'form') btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Satu Baris';
-                else btn.innerHTML = '<i class="fas fa-layer-group me-2"></i> Simpan Semua Baris ke Database';
                 btn.disabled = false;
+                if (mode === 'form') aturLabelForm(); else btn.innerHTML = labelExcel;
+                if (adaYangTersimpan) await loadDataTabel(true);
             }
         };
 
-        async function loadDataTabel() {
+        // ---------- Muat data bulan terpilih (tabel kanan + tabel Excel) ----------
+        async function loadDataTabel(paksa = false) {
             const unitKerja = document.getElementById('sel_unit').value;
-            const bulan = document.getElementById('sel_bulan').value;
-            const tahun = document.getElementById('sel_tahun').value;
+            const selBulan = document.getElementById('sel_bulan'), selTahun = document.getElementById('sel_tahun');
+            const bulan = selBulan.value, tahun = selTahun.value;
             const idIndikator = document.getElementById('sel_indikator').value;
             const tbody = document.getElementById('tbodyTransaksi');
 
             if(!unitKerja || !idIndikator) return;
+            if (!paksa && tabelBerubah) {
+                const k = await Swal.fire({ title: 'Buang perubahan tabel?', text: 'Ada perubahan di tabel Excel yang belum disimpan.', icon: 'warning',
+                    showCancelButton: true, confirmButtonText: 'Buang perubahan', cancelButtonText: 'Kembali' });
+                if (!k.isConfirmed) {
+                    if (periodeAktif) { selBulan.value = periodeAktif.bulan; selTahun.value = periodeAktif.tahun; }
+                    return;
+                }
+            }
+            periodeAktif = { bulan, tahun, form: idIndikator };
             document.getElementById('lbl_bulan_tahun').innerText = `- Bulan ${bulan}/${tahun}`;
             document.getElementById('loadingTabel').classList.remove('d-none'); tbody.innerHTML = '';
 
@@ -627,28 +940,46 @@
                     .from('data_mutu_harian').select('id, data_input, created_at')
                     .eq('unit_kerja', unitKerja).eq('id_indikator', idIndikator)
                     .eq('bulan', bulan).eq('tahun', tahun)
-                    .order('created_at', { ascending: false })
+                    .order('created_at', { ascending: true })
                     .order('id'));
 
                 if (error) throw error;
-                if(data.length === 0) { tbody.innerHTML = '<tr><td colspan="100%" class="text-center py-4 text-muted">Belum ada data di bulan ini.</td></tr>'; } 
+                dataPeriode = data || [];
+                if (idEditForm && !dataPeriode.some(d => d.id === idEditForm)) { idEditForm = null; document.getElementById('formDinamisContainer').reset(); }
+
+                if(dataPeriode.length === 0) { tbody.innerHTML = '<tr><td colspan="100%" class="text-center py-4 text-muted">Belum ada data di bulan ini.</td></tr>'; } 
                 else {
-                    data.forEach(row => {
-                        let htmlBaris = `<tr><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="hapusDataTransaksi('${escJsAttr(row.id)}')"><i class="fas fa-times"></i></button></td>`;
+                    tbody.innerHTML = [...dataPeriode].reverse().map(row => {
+                        let htmlBaris = `<tr data-id="${esc(row.id)}"><td class="text-center text-nowrap">
+                            <button class="btn btn-sm btn-outline-primary me-1" title="Edit baris" onclick="editDataTransaksi('${escJsAttr(row.id)}')"><i class="fas fa-pen"></i></button>
+                            <button class="btn btn-sm btn-outline-danger" title="Hapus baris" onclick="hapusDataTransaksi('${escJsAttr(row.id)}')"><i class="fas fa-times"></i></button></td>`;
                         if(Array.isArray(row.data_input)) { row.data_input.forEach((val, i) => { if (cetakBiruAktif[i] && cetakBiruAktif[i].sembunyi) return; htmlBaris += `<td>${val !== null && val !== undefined ? esc(val) : '-'}</td>`; }); }
-                        htmlBaris += '</tr>'; tbody.innerHTML += htmlBaris;
-                    });
+                        return htmlBaris + '</tr>';
+                    }).join('');
                 }
-            } catch (err) { tbody.innerHTML = '<tr><td colspan="100%" class="text-center py-4 text-danger">Gagal menarik data.</td></tr>'; } 
-            finally { document.getElementById('loadingTabel').classList.add('d-none'); }
+            } catch (err) {
+                dataPeriode = [];
+                tbody.innerHTML = '<tr><td colspan="100%" class="text-center py-4 text-danger">Gagal menarik data.</td></tr>';
+            } finally {
+                document.getElementById('loadingTabel').classList.add('d-none');
+                renderExcelTabel();
+                kalkulasiOtomatisDariHOT();
+                aturLabelForm();
+            }
         }
 
-        window.hapusDataTransaksi = function(idTransaksi) {
-            Swal.fire({ title: 'Hapus Data?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Ya, Hapus' })
-            .then(async (result) => {
-                if (result.isConfirmed) { await supabaseClient.from('data_mutu_harian').delete().eq('id', idTransaksi); loadDataTabel(); }
-            });
-        }
+        window.hapusDataTransaksi = async function(idTransaksi) {
+            const r = await Swal.fire({ title: 'Hapus Data?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545', confirmButtonText: 'Ya, Hapus',
+                html: tabelBerubah ? '<small class="text-danger">Perubahan tabel Excel yang belum disimpan akan hilang.</small>' : undefined });
+            if (!r.isConfirmed) return;
+            const { error } = await supabaseClient.from('data_mutu_harian').delete().eq('id', idTransaksi);
+            if (error) { Swal.fire('Gagal', /row-level security/i.test(error.message) ? 'Anda tidak berhak menghapus data ini.' : esc(error.message), 'error'); return; }
+            if (idEditForm === idTransaksi) idEditForm = null;
+            toast('Data dihapus');
+            loadDataTabel(true);
+        };
+
+        window.addEventListener('beforeunload', e => { if (tabelBerubah) { e.preventDefault(); e.returnValue = ''; } });
     </script>
 </body>
 </html>

@@ -10,7 +10,7 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!-- LIBRARY EXCEL (SheetJS) -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <style>
         body { background-color: #f0f2f5; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
@@ -83,6 +83,21 @@
             <div id="terminalLog" class="text-success font-monospace" style="font-size: 0.85rem; height: 180px; overflow-y: auto;"></div>
         </div>
 
+        <!-- PANEL CEK DATA GANDA -->
+        <div class="card-custom p-4 mt-4 border-top border-4 border-warning">
+            <h5 class="fw-bold text-warning text-darken mb-1"><i class="fas fa-clone me-2"></i> Cek Data Ganda (Data Mutu)</h5>
+            <p class="small text-muted mb-3">Mencari baris yang isinya <b>sama persis</b> (unit, formulir, bulan, dan seluruh isian sama). Tidak semua duplikat salah — dua pasien bisa punya isian identik —
+                jadi periksa dulu sebelum menghapus. Saat menghapus, baris yang paling awal disimpan tetap dipertahankan.</p>
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                <div class="input-group input-group-sm" style="width: 150px;"><span class="input-group-text">Tahun</span><input type="number" id="dup_tahun" class="form-control"></div>
+                <select id="dup_form" class="form-select form-select-sm" style="max-width: 320px;"><option value="">Semua formulir</option></select>
+                <button class="btn btn-sm btn-warning fw-bold" onclick="cariDuplikat()"><i class="fas fa-search me-1"></i> Cari</button>
+                <button class="btn btn-sm btn-outline-danger fw-bold ms-auto d-none" id="btnHapusDup" onclick="hapusDuplikatTerpilih()"><i class="fas fa-trash me-1"></i> Hapus salinan yang dicentang</button>
+            </div>
+            <div id="dup_ringkas" class="small mb-2"></div>
+            <div id="dup_hasil"></div>
+        </div>
+
     </div>
 
     <!-- LIBRARY & SCRIPT -->
@@ -103,7 +118,73 @@
             const selTahun = document.getElementById('purge_tahun');
             selTahun.add(new Option(`Tahun Lalu (${currentYear - 1})`, currentYear - 1));
             selTahun.add(new Option(`Dua Tahun Lalu (${currentYear - 2})`, currentYear - 2));
+            document.getElementById('dup_tahun').value = currentYear;
+            supabaseClient.from('setup_formulir').select('id_form').order('id_form').then(({ data }) => {
+                const sel = document.getElementById('dup_form');
+                (data || []).forEach(f => sel.add(new Option(f.id_form, f.id_form)));
+            });
         });
+
+        // ==========================================
+        // CEK DATA GANDA
+        // ==========================================
+        let hasilDuplikat = [];
+        window.cariDuplikat = async function() {
+            const tahun = parseInt(document.getElementById('dup_tahun').value, 10);
+            const form = document.getElementById('dup_form').value || null;
+            const wadah = document.getElementById('dup_hasil');
+            wadah.innerHTML = '<div class="text-muted small"><i class="fas fa-spinner fa-spin me-1"></i> Mencari...</div>';
+            document.getElementById('btnHapusDup').classList.add('d-none');
+            try {
+                hasilDuplikat = await ambilSemuaBaris(() => supabaseClient.rpc('daftar_duplikat_mutu', { p_tahun: tahun, p_id_form: form }).order('id_form').order('unit_kerja').order('bulan').order('id_simpan'));
+                const salinan = hasilDuplikat.reduce((a, d) => a + d.id_hapus.length, 0);
+                document.getElementById('dup_ringkas').innerHTML = hasilDuplikat.length
+                    ? `<b>${hasilDuplikat.length}</b> kelompok isian identik, total <b>${salinan}</b> salinan (di luar baris pertama).`
+                    : '';
+                if (!hasilDuplikat.length) { wadah.innerHTML = '<div class="alert alert-success small mb-0">Tidak ada data ganda untuk pilihan ini.</div>'; return; }
+                const potong = v => { const t = v === null || v === undefined ? '' : String(v); return t.length > 18 ? t.slice(0, 18) + '…' : t; };
+                const tgl = t => t ? new Date(t).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : '-';
+                wadah.innerHTML = `<div class="table-responsive" style="max-height: 420px; overflow-y: auto;"><table class="table table-sm small align-middle">
+                    <thead class="table-light" style="position: sticky; top: 0;"><tr>
+                        <th><input type="checkbox" class="form-check-input" onchange="document.querySelectorAll('.cek-dup').forEach(c => c.checked = this.checked)"></th>
+                        <th>Formulir</th><th>Unit</th><th>Bln</th><th class="text-end">Jumlah</th><th>Contoh isi</th><th>Disimpan</th></tr></thead>
+                    <tbody>${hasilDuplikat.map((d, i) => `<tr>
+                        <td><input type="checkbox" class="form-check-input cek-dup" data-i="${i}"></td>
+                        <td><code>${esc(d.id_form)}</code></td><td>${esc(d.unit_kerja)}</td><td>${d.bulan}</td>
+                        <td class="text-end fw-bold">${d.jumlah}×</td>
+                        <td class="text-muted">${esc((d.contoh_isi || []).slice(0, 6).map(potong).join(' | '))}</td>
+                        <td class="text-muted">${tgl(d.pertama)}${d.pertama !== d.terakhir ? ' – ' + tgl(d.terakhir) : ''}</td>
+                    </tr>`).join('')}</tbody></table></div>`;
+                document.getElementById('btnHapusDup').classList.remove('d-none');
+            } catch (err) {
+                console.error(err);
+                wadah.innerHTML = `<div class="alert alert-danger small mb-0">${esc(err.message || String(err))}</div>`;
+            }
+        };
+
+        window.hapusDuplikatTerpilih = async function() {
+            const dipilih = [...document.querySelectorAll('.cek-dup:checked')].map(c => hasilDuplikat[parseInt(c.dataset.i, 10)]);
+            const ids = dipilih.flatMap(d => d.id_hapus);
+            if (!ids.length) { Swal.fire('Belum ada yang dicentang', '', 'info'); return; }
+            const ok = await Swal.fire({ title: 'Hapus salinan?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#dc3545',
+                html: `<b>${ids.length}</b> baris salinan dari <b>${dipilih.length}</b> kelompok akan dihapus.<br>Baris pertama tiap kelompok tetap disimpan. Penghapusan tercatat di Log Audit.`,
+                confirmButtonText: 'Ya, hapus', cancelButtonText: 'Batal' });
+            if (!ok.isConfirmed) return;
+            let terhapus = 0;
+            try {
+                for (let i = 0; i < ids.length; i += 200) {
+                    const bagian = ids.slice(i, i + 200);
+                    const { error } = await supabaseClient.from('data_mutu_harian').delete().in('id', bagian);
+                    if (error) throw error;
+                    terhapus += bagian.length;
+                }
+                Swal.fire('Selesai', `${terhapus} baris salinan dihapus.`, 'success');
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Sebagian gagal', `${terhapus} baris terhapus. ${esc(err.message || '')}`, 'warning');
+            }
+            cariDuplikat();
+        };
 
         function logTerminal(pesan) {
             const term = document.getElementById('terminalLog');
