@@ -47,9 +47,14 @@
                 <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-book-medical text-primary me-2"></i> Kamus Profil Indikator</h3>
                 <p class="text-muted mb-0">Ensiklopedia digital definisi operasional, target mutu RS, dan metodologi.</p>
             </div>
-            <button class="btn btn-primary fw-bold shadow-sm px-4 rounded-pill d-none" id="btnTambahIndikator" onclick="bukaModalTambah()">
-                <i class="fas fa-plus-circle me-2"></i> Tambah Profil Baru
-            </button>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-success fw-bold shadow-sm px-4 rounded-pill d-none" id="btnPeriksaRumus" onclick="bukaDiagnosa()">
+                    <i class="fas fa-stethoscope me-2"></i> Periksa Rumus
+                </button>
+                <button class="btn btn-primary fw-bold shadow-sm px-4 rounded-pill d-none" id="btnTambahIndikator" onclick="bukaModalTambah()">
+                    <i class="fas fa-plus-circle me-2"></i> Tambah Profil Baru
+                </button>
+            </div>
         </div>
 
         <div class="row mb-4 g-3">
@@ -90,6 +95,27 @@
                 </div>
                 <div class="modal-footer bg-white border-top p-3">
                     <button type="button" class="btn btn-secondary px-5 rounded-pill fw-bold" data-bs-dismiss="modal">Tutup Detail</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PERIKSA RUMUS (HANYA ADMIN) -->
+    <div class="modal fade" id="modalDiagnosa" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-stethoscope me-2"></i> Periksa Rumus Semua Indikator</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                        <div class="input-group input-group-sm" style="width:150px"><span class="input-group-text">Tahun</span><input type="number" id="diag_tahun" class="form-control"></div>
+                        <button class="btn btn-sm btn-success fw-bold" onclick="jalankanDiagnosa()"><i class="fas fa-sync me-1"></i> Periksa</button>
+                        <div class="form-check ms-2"><input class="form-check-input" type="checkbox" id="diag_masalah" checked onchange="renderDiagnosa()"><label class="form-check-label small" for="diag_masalah">Hanya yang perlu perhatian</label></div>
+                    </div>
+                    <div id="diag_ringkas" class="mb-2"></div>
+                    <div id="diag_isi"></div>
                 </div>
             </div>
         </div>
@@ -192,7 +218,7 @@
                             <!-- TAB 4: VISUAL BUILDER RUMUS ENGINE -->
                             <div class="tab-pane fade" id="tab-builder" role="tabpanel">
                                 <div class="alert alert-info border-0 shadow-sm" style="font-size: 0.85rem;">
-                                    <i class="fas fa-magic me-2"></i> <b>Visual Engine:</b> Atur logika hitung untuk Dashboard Laporan Mutu. Sistem akan menyimpan logika ini dalam format JSON terstruktur (anti-error).
+                                    <i class="fas fa-magic me-2"></i> <b>Pembangun rumus:</b> setiap sisi (N dan D) terdiri dari satu atau lebih <b>komponen</b> yang dijumlah/dikurangkan. Komponen dapat menghitung baris, menjumlahkan kolom angka, atau berupa angka tetap; boleh dari <b>formulir lain</b> (unit &amp; bulan yang sama) dan boleh punya <b>banyak syarat</b> (semua harus terpenuhi). Bulan/tanggal tidak perlu dijadikan syarat — data sudah dikelompokkan per bulan..
                                 </div>
                                 
                                 <div id="builderWarning" class="alert alert-warning d-none" style="font-size: 0.85rem;">
@@ -201,64 +227,31 @@
                                 
                                 <div id="builderInterface">
                                     <div class="builder-box border-primary">
-                                        <div class="builder-box-header text-primary"><i class="fas fa-calculator me-2"></i> Pengaturan Numerator</div>
-                                        <div class="row g-2 align-items-end">
-                                            <div class="col-md-3">
-                                                <label class="form-label text-muted" style="font-size:0.75rem;">Metode Agregasi</label>
-                                                <select class="form-select border-primary" id="b_num_tipe" onchange="toggleBuilderFields('num')">
-                                                    <option value="COUNTALL">Hitung Semua Baris (Count)</option>
-                                                    <option value="COUNTIF" selected>Hitung Bersyarat (CountIf)</option>
-                                                    <option value="SUM">Jumlahkan (Sum)</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-4 b-num-col">
-                                                <label class="form-label text-muted" style="font-size:0.75rem;">Pilih Kolom Form</label>
-                                                <select class="form-select" id="b_num_kolom"></select>
-                                            </div>
-                                            <div class="col-md-2 b-num-op">
-                                                <label class="form-label text-muted" style="font-size:0.75rem;">Operator</label>
-                                                <select class="form-select text-center" id="b_num_op">
-                                                    <option value="==">Sama Dengan</option>
-                                                    <option value="!=">Tidak Sama</option>
-                                                    <option value="includes">Mengandung</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3 b-num-val">
-                                                <label class="form-label text-muted" style="font-size:0.75rem;">Nilai Kriteria</label>
-                                                <input type="text" class="form-control" id="b_num_nilai" placeholder="Contoh: Ya / Sesuai">
-                                            </div>
-                                        </div>
+                                        <div class="builder-box-header text-primary"><i class="fas fa-calculator me-2"></i> Numerator (N) — pembilang</div>
+                                        <div id="rb_num"></div>
                                     </div>
-
                                     <div class="builder-box border-warning">
-                                        <div class="builder-box-header text-warning text-darken"><i class="fas fa-users me-2"></i> Pengaturan Denominator</div>
-                                        <div class="row g-2 align-items-end">
-                                            <div class="col-md-3">
-                                                <label class="form-label text-muted" style="font-size:0.75rem;">Metode Agregasi</label>
-                                                <select class="form-select border-warning" id="b_den_tipe" onchange="toggleBuilderFields('den')">
-                                                    <option value="COUNTALL" selected>Hitung Semua Baris (Count)</option>
-                                                    <option value="COUNTIF">Hitung Bersyarat (CountIf)</option>
-                                                    <option value="SUM">Jumlahkan (Sum)</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-4 b-den-col d-none">
-                                                <label class="form-label text-muted" style="font-size:0.75rem;">Pilih Kolom Form</label>
-                                                <select class="form-select" id="b_den_kolom"></select>
-                                            </div>
-                                            <div class="col-md-2 b-den-op d-none">
-                                                <label class="form-label text-muted" style="font-size:0.75rem;">Operator</label>
-                                                <select class="form-select text-center" id="b_den_op">
-                                                    <option value="==">Sama Dengan</option>
-                                                    <option value="!=">Tidak Sama</option>
-                                                    <option value="includes">Mengandung</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-3 b-den-val d-none">
-                                                <label class="form-label text-muted" style="font-size:0.75rem;">Nilai Kriteria</label>
-                                                <input type="text" class="form-control" id="b_den_nilai">
-                                            </div>
-                                        </div>
+                                        <div class="builder-box-header text-warning text-darken"><i class="fas fa-users me-2"></i> Denominator (D) — penyebut</div>
+                                        <div id="rb_den"></div>
                                     </div>
+                                    <div class="builder-box border-success">
+                                        <div class="builder-box-header text-success"><i class="fas fa-vial me-2"></i> Uji dengan data</div>
+                                        <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                                            <div class="input-group input-group-sm" style="width:150px"><span class="input-group-text">Tahun</span><input type="number" id="rb_tahun_uji" class="form-control"></div>
+                                            <button type="button" class="btn btn-sm btn-success fw-bold" onclick="ujiRumusBuilder()"><i class="fas fa-play me-1"></i> Hitung</button>
+                                            <span class="small text-muted">Memakai rumus di atas (belum perlu disimpan), satuan di tab 2, dan data di database.</span>
+                                        </div>
+                                        <div id="rb_hasil_uji"></div>
+                                    </div>
+                                    <details class="small mb-2">
+                                        <summary class="text-muted">Lanjutan: lihat / tempel JSON rumus</summary>
+                                        <label class="form-label mt-2 mb-1">N</label>
+                                        <textarea id="rb_json_num" class="form-control form-control-sm font-monospace" rows="2"></textarea>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary mt-1" onclick="rbTerapkanJson('num')">Terapkan JSON N</button>
+                                        <label class="form-label mt-2 mb-1 d-block">D</label>
+                                        <textarea id="rb_json_den" class="form-control form-control-sm font-monospace" rows="2"></textarea>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary mt-1" onclick="rbTerapkanJson('den')">Terapkan JSON D</button>
+                                    </details>
                                 </div>
                             </div>
                         </div>
@@ -280,6 +273,8 @@
     <script src="config.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
+    <script src="engine_mutu.js"></script>
+    <script src="rumus_builder.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
@@ -291,7 +286,7 @@
 
         document.addEventListener("DOMContentLoaded", async function () {
             if (!supabaseClient) { Swal.fire('Error', 'Supabase belum dikonfigurasi', 'error'); return; }
-            if (isAdmin) document.getElementById('btnTambahIndikator').classList.remove('d-none');
+            if (isAdmin) { document.getElementById('btnTambahIndikator').classList.remove('d-none'); document.getElementById('btnPeriksaRumus').classList.remove('d-none'); }
             
             await loadUnitDropdown();
             await loadFormBuilderDropdown(); 
@@ -566,84 +561,30 @@
             let firstTab = new bootstrap.Tab(document.querySelector('#profilTabs button[data-bs-target="#tab-dasar"]'));
             firstTab.show();
             
-            document.getElementById('b_num_tipe').value = "COUNTIF";
-            document.getElementById('b_den_tipe').value = "COUNTALL";
-            toggleBuilderFields('num'); toggleBuilderFields('den');
+            rbDefault();
+            document.getElementById('rb_hasil_uji').innerHTML = '';
+            document.getElementById('rb_tahun_uji').value = new Date().getFullYear();
         }
+
+        // ---------- Pembangun rumus (rumus_builder.js) ----------
+        RB.idForm = () => document.getElementById('inp_id_form').value;
+        RB.daftarForm = () => listFormulirMaster;
 
         window.renderVisualBuilder = function() {
             const idForm = document.getElementById('inp_id_form').value;
             const uiDiv = document.getElementById('builderInterface');
             const warnDiv = document.getElementById('builderWarning');
-            const selNum = document.getElementById('b_num_kolom');
-            const selDen = document.getElementById('b_den_kolom');
-            
             if(!idForm) { uiDiv.style.display = 'none'; warnDiv.classList.remove('d-none'); return; }
-            
             uiDiv.style.display = 'block'; warnDiv.classList.add('d-none');
-            selNum.innerHTML = ''; selDen.innerHTML = '';
-
-            let targetForm = listFormulirMaster.find(f => f.id_form === idForm);
-            if(targetForm && targetForm.kolom) {
-                targetForm.kolom.forEach((k, idx) => {
-                    selNum.add(new Option(`[${idx}] ${k.judul}`, idx));
-                    selDen.add(new Option(`[${idx}] ${k.judul}`, idx));
-                });
-            } else {
-                selNum.add(new Option("Form tidak memiliki kolom", ""));
-                selDen.add(new Option("Form tidak memiliki kolom", ""));
-            }
+            rbRender('num'); rbRender('den');
         };
 
-        window.toggleBuilderFields = function(jenis) {
-            const tipe = document.getElementById(`b_${jenis}_tipe`).value;
-            const col = document.querySelectorAll(`.b-${jenis}-col`);
-            const op = document.querySelectorAll(`.b-${jenis}-op`);
-            const val = document.querySelectorAll(`.b-${jenis}-val`);
-
-            if(tipe === "COUNTALL") {
-                col.forEach(el => el.classList.add('d-none'));
-                op.forEach(el => el.classList.add('d-none'));
-                val.forEach(el => el.classList.add('d-none'));
-            } else if(tipe === "SUM") {
-                col.forEach(el => el.classList.remove('d-none'));
-                op.forEach(el => el.classList.add('d-none'));
-                val.forEach(el => el.classList.add('d-none'));
-            } else {
-                col.forEach(el => el.classList.remove('d-none'));
-                op.forEach(el => el.classList.remove('d-none'));
-                val.forEach(el => el.classList.remove('d-none'));
-            }
+        window.ujiRumusBuilder = function() {
+            const tahun = parseInt(document.getElementById('rb_tahun_uji').value, 10) || new Date().getFullYear();
+            RB.tahunSaran = tahun;
+            rbUji({ tahun, satuan: document.getElementById('inp_satuan').value, unitPelaksana: document.getElementById('inp_unit_pelaksana').value,
+                    wadah: document.getElementById('rb_hasil_uji') });
         };
-
-        function extractVisualJSON(jenis) {
-            const tipe = document.getElementById(`b_${jenis}_tipe`).value;
-            if(tipe === "COUNTALL") return JSON.stringify({ tipe: "COUNTALL" });
-            else if(tipe === "SUM") return JSON.stringify({ tipe: "SUM", target_kolom: document.getElementById(`b_${jenis}_kolom`).value });
-            else {
-                return JSON.stringify({
-                    tipe: "COUNTIF", target_kolom: document.getElementById(`b_${jenis}_kolom`).value,
-                    operator: document.getElementById(`b_${jenis}_op`).value,
-                    nilai_kriteria: document.getElementById(`b_${jenis}_nilai`).value
-                });
-            }
-        }
-
-        function injectVisualJSON(jenis, jsonString) {
-            try {
-                let obj = JSON.parse(jsonString);
-                document.getElementById(`b_${jenis}_tipe`).value = obj.tipe || "COUNTALL";
-                toggleBuilderFields(jenis);
-                
-                if(obj.tipe === "SUM") {
-                    document.getElementById(`b_${jenis}_kolom`).value = obj.target_kolom;
-                } else if(obj.tipe === "COUNTIF") {
-                    document.getElementById(`b_${jenis}_kolom`).value = obj.target_kolom;
-                    document.getElementById(`b_${jenis}_op`).value = obj.operator;
-                    document.getElementById(`b_${jenis}_nilai`).value = obj.nilai_kriteria;
-                }
-            } catch(e) {}
-        }
 
         window.bukaModalTambah = function() {
             resetForm();
@@ -704,8 +645,12 @@
             document.getElementById('inp_periode_pelaporan').value = item.periode_pelaporan || 'Bulanan';
             document.getElementById('inp_penyajian_data').value = item.penyajian_data || '';
 
-            if(item.template_numerator) injectVisualJSON('num', item.template_numerator);
-            if(item.template_denominator) injectVisualJSON('den', item.template_denominator);
+            const stN = rbDariTemplate('num', item.template_numerator);
+            const stD = rbDariTemplate('den', item.template_denominator);
+            renderVisualBuilder();
+            if (stN === 'tidak_dikenal' || stD === 'tidak_dikenal') {
+                document.getElementById('rb_hasil_uji').innerHTML = '<div class="alert alert-warning small mb-0">Rumus tersimpan bukan format aplikasi (mungkin masih rumus Google Sheet). Susun ulang di atas, atau pakai halaman <b>Konversi Rumus Lama</b>.</div>';
+            }
             
             new bootstrap.Modal(document.getElementById('modalIndikator')).show();
         };
@@ -722,11 +667,19 @@
             let arrJenis = [];
             document.querySelectorAll('.chk-jenis:checked').forEach(cb => arrJenis.push(cb.value));
 
+            let strJSONNum = rbKeTemplate('num');
+            let strJSONDen = rbKeTemplate('den');
+            const kolomUntuk = f => { const x = listFormulirMaster.find(d => d.id_form === (f || idForm)); return x ? x.kolom : undefined; };
+            const masalahRumus = [...periksaTemplate(strJSONNum, kolomUntuk).map(m => 'N: ' + m), ...periksaTemplate(strJSONDen, kolomUntuk).map(m => 'D: ' + m)];
+            if (masalahRumus.length) {
+                const lanjut = await Swal.fire({ title: 'Rumus belum lengkap', icon: 'warning', showCancelButton: true,
+                    html: `<div class="text-start small">${masalahRumus.map(m => esc(m)).join('<br>')}</div><br>Indikator ini akan tampil kosong di laporan. Tetap simpan?`,
+                    confirmButtonText: 'Tetap simpan', cancelButtonText: 'Perbaiki dulu' });
+                if (!lanjut.isConfirmed) return;
+            }
+
             const btn = document.getElementById('btnSimpan'); 
             btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
-
-            let strJSONNum = extractVisualJSON('num');
-            let strJSONDen = extractVisualJSON('den');
 
             const payloadData = {
                 id_form: idForm, 
@@ -780,6 +733,50 @@
             } finally {
                 btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Profil Indikator';
             }
+        };
+
+        // ---------- Periksa rumus semua indikator ----------
+        let hasilDiagnosa = [];
+        const DIAG = { masalah: ['bg-danger', 'Masalah', 0], peringatan: ['bg-warning text-dark', 'Perlu cek', 1], info: ['bg-info text-dark', 'Info', 2], ok: ['bg-success', 'OK', 3] };
+
+        window.bukaDiagnosa = function() {
+            document.getElementById('diag_tahun').value = document.getElementById('diag_tahun').value || new Date().getFullYear();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDiagnosa')).show();
+            jalankanDiagnosa();
+        };
+
+        window.jalankanDiagnosa = async function() {
+            const tahun = parseInt(document.getElementById('diag_tahun').value, 10) || new Date().getFullYear();
+            document.getElementById('diag_isi').innerHTML = '<div class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin me-2"></i> Memeriksa rumus & data...</div>';
+            try {
+                hasilDiagnosa = await diagnosaRumusSemua(listIndikator.filter(p => p.status_aktif !== false), listFormulirMaster, tahun);
+                renderDiagnosa();
+            } catch (err) {
+                console.error(err);
+                document.getElementById('diag_isi').innerHTML = `<div class="alert alert-danger">${esc(err.message || String(err))}</div>`;
+            }
+        };
+
+        window.renderDiagnosa = function() {
+            const hitung = t => hasilDiagnosa.filter(h => h.tingkat === t).length;
+            document.getElementById('diag_ringkas').innerHTML = Object.entries(DIAG).map(([k, [w, l]]) => `<span class="badge ${w} me-1 p-2">${l}: ${hitung(k)}</span>`).join('');
+            const hanyaMasalah = document.getElementById('diag_masalah').checked;
+            const baris = hasilDiagnosa.filter(h => !hanyaMasalah || h.tingkat !== 'ok')
+                .sort((a, b) => DIAG[a.tingkat][2] - DIAG[b.tingkat][2] || String(a.profil.judul_indikator).localeCompare(String(b.profil.judul_indikator), 'id'));
+            document.getElementById('diag_isi').innerHTML = baris.length ? `<div class="table-responsive"><table class="table table-sm align-middle small">
+                <thead class="table-light"><tr><th>Status</th><th>Indikator</th><th>Keterangan</th><th>Data</th><th></th></tr></thead>
+                <tbody>${baris.map(h => `<tr>
+                    <td><span class="badge ${DIAG[h.tingkat][0]}">${DIAG[h.tingkat][1]}</span></td>
+                    <td><div class="fw-bold">${esc(h.profil.judul_indikator)}</div><code class="small">${esc(h.profil.id_form || '-')}</code> <span class="text-muted">${esc(h.profil.kategori_indikator || '')}</span></td>
+                    <td>${esc(h.pesan)}</td><td class="text-muted">${esc(h.ringkas)}</td>
+                    <td><button class="btn btn-sm btn-outline-primary" onclick="perbaikiRumus('${h.profil.id_indikator}')"><i class="fas fa-wrench"></i> Buka</button></td>
+                </tr>`).join('')}</tbody></table></div>` : '<div class="alert alert-success mb-0">Semua rumus indikator aktif menghasilkan capaian.</div>';
+        };
+
+        window.perbaikiRumus = function(id) {
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalDiagnosa')).hide();
+            bukaModalEdit(id);
+            new bootstrap.Tab(document.querySelector('#profilTabs button[data-bs-target="#tab-builder"]')).show();
         };
 
         window.hapusIndikator = function(uuid, namaJudul) {

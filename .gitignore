@@ -1,0 +1,8 @@
+# Data lama dari Google Sheet (berisi data pasien) - JANGAN di-commit
+data_lama/
+
+# File sementara Supabase CLI
+supabase/.temp/
+
+# Dependensi
+node_modules/

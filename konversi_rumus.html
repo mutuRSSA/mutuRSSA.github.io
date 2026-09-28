@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Konversi Rumus Lama - SIM PMKP</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        body { background-color: #f0f2f5; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff; }
+        .langkah { width: 30px; height: 30px; border-radius: 50%; background: #6f42c1; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 8px; flex-shrink: 0; }
+        .zona-file { border: 2px dashed #b9a6e0; border-radius: 12px; padding: 28px; text-align: center; background: #faf8ff; cursor: pointer; transition: .2s; }
+        .zona-file:hover, .zona-file.aktif { background: #f1ecfc; border-color: #6f42c1; }
+        .tabel-kecil th { font-size: .72rem; text-transform: uppercase; color: #6c757d; white-space: nowrap; position: sticky; top: 0; background: #f8f9fa; z-index: 1; }
+        .tabel-kecil td { font-size: .82rem; vertical-align: top; }
+        .rumus-lama { font-family: Consolas, monospace; font-size: .72rem; color: #6c757d; word-break: break-all; display: block; max-width: 320px; max-height: 3.2em; overflow: hidden; }
+        .rumus-baru { font-weight: 600; color: #212529; }
+        .stat { border-radius: 10px; padding: 12px; text-align: center; cursor: pointer; border: 2px solid transparent; }
+        .stat.pilih { border-color: #6f42c1; }
+        .stat .angka { font-size: 1.5rem; font-weight: 700; line-height: 1.1; }
+        .stat .label { font-size: .72rem; text-transform: uppercase; letter-spacing: .5px; }
+        .baris-manual { background: #fff8f8; }
+        .wadah-tabel { max-height: 65vh; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4" style="max-width: 1400px;">
+        <div class="mb-4">
+            <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-square-root-alt text-primary me-2"></i> Konversi Rumus Indikator Lama</h3>
+            <p class="text-muted mb-0">Mengubah rumus <code>COUNTIFS</code>/<code>SUMIFS</code> di sheet <b>Setup_Indikator</b> (Google Sheet) menjadi template rumus aplikasi baru, lalu mengujinya dengan data di database sebelum disimpan ke Profil Indikator.</p>
+        </div>
+
+        <div class="card-custom p-4 mb-3">
+            <h5 class="fw-bold d-flex align-items-center"><span class="langkah">1</span> Pilih file DATABASE_MUTU_MASTER.xlsx</h5>
+            <div class="zona-file mt-2" id="zonaFile" onclick="document.getElementById('inpFile').click()">
+                <i class="fas fa-cloud-upload-alt fa-2x text-primary mb-2"></i>
+                <div class="fw-bold">Klik atau seret file ke sini</div>
+                <small class="text-muted">Dibutuhkan sheet <b>Setup_Indikator</b> dan <b>Setup_Formulir</b>. Sheet <b>REKAP_GABUNGAN</b> (jika ada) dipakai untuk membandingkan hasil uji.</small>
+                <input type="file" id="inpFile" accept=".xlsx" class="d-none">
+            </div>
+            <div class="mt-3 small text-muted d-none" id="infoMuat"><i class="fas fa-spinner fa-spin me-1"></i> <span id="teksMuat"></span></div>
+        </div>
+
+        <div class="card-custom p-4 mb-3 d-none" id="kartuHasil">
+            <h5 class="fw-bold d-flex align-items-center"><span class="langkah">2</span> Periksa, uji, lalu terapkan</h5>
+            <p class="small text-muted mb-3">
+                Kriteria bulan/tanggal dibuang karena data aplikasi baru sudah dikelompokkan per bulan. Kolom dicocokkan lewat <b>judul kolom</b> di Form Builder.
+                Rumus gabungan (+/−), rujukan ke sheet lain, dan angka tetap ikut dikonversi. Indikator yang tidak punya Profil (mis. surveilans PPI) tidak ditampilkan di daftar utama karena tidak dilaporkan.
+                Klik <b>Uji</b> untuk menghitung dengan data di database dan membandingkannya dengan rekap lama.
+            </p>
+
+            <div class="row g-2 mb-3" id="ringkasan"></div>
+
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-2">
+                <div class="input-group input-group-sm" style="width: 170px;">
+                    <span class="input-group-text">Tahun uji</span>
+                    <input type="number" class="form-control" id="inpTahun" min="2000" max="2100">
+                </div>
+                <button class="btn btn-outline-primary btn-sm" onclick="ujiTerpilih()"><i class="fas fa-vial me-1"></i> Uji semua yang dicentang</button>
+                <button class="btn btn-success btn-sm fw-bold ms-auto" onclick="terapkanTerpilih()"><i class="fas fa-check-double me-1"></i> Terapkan yang dicentang ke Profil Indikator</button>
+            </div>
+
+            <div class="table-responsive wadah-tabel border rounded">
+                <table class="table table-sm tabel-kecil mb-0">
+                    <thead><tr>
+                        <th style="width:28px"><input type="checkbox" class="form-check-input" id="cekSemua" onchange="centangSemua(this.checked)"></th>
+                        <th>Indikator</th><th>Numerator</th><th>Denominator</th><th>Status</th><th>Rumus sekarang</th><th class="text-center">Uji</th>
+                    </tr></thead>
+                    <tbody id="bodyHasil"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal hasil uji -->
+    <div class="modal fade" id="modalUji" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header"><h6 class="modal-title fw-bold" id="judulUji"></h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body" id="isiUji"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="engine_mutu.js"></script>
+    <script src="impor_mutu.js"></script>
+    <script src="konversi_rumus.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Akses halaman: RBAC. Menyimpan ke master_indikator: hanya role administrator (RLS).
+        const PETA_UNIT_LAMA = { 'unit rawat inap': 'unit rawat inap - truntum' };
+        const normUnit = u => { const n = konvNormal(u); return PETA_UNIT_LAMA[n] || n; };
+
+        let hasil = [];             // baris tabel
+        let rekap = null;           // Map "unit|id_form|judul|bulan" -> {N, D, C}
+        let filterAktif = 'semua';
+        document.getElementById('inpTahun').value = new Date().getFullYear();
+
+        // ---------- Pembaca Excel ----------
+        function nilaiSel(cell) {
+            let v = cell.value;
+            if (v === null || v === undefined) return null;
+            if (v instanceof Date) return v;
+            if (typeof v === 'object') {
+                if (v.richText) return v.richText.map(t => t.text).join('');
+                if ('result' in v) return v.result ?? null;
+                if ('text' in v) return v.text;
+                return null;
+            }
+            return v;
+        }
+        async function bacaXlsx(file) {
+            const wb = new ExcelJS.Workbook();
+            await wb.xlsx.load(await file.arrayBuffer());
+            const ambil = nama => {
+                const ws = wb.worksheets.find(w => w.name === nama);
+                if (!ws) return null;
+                const rows = [];
+                ws.eachRow({ includeEmpty: true }, (row, no) => {
+                    const isi = [];
+                    for (let c = 1; c <= ws.columnCount; c++) isi.push(nilaiSel(row.getCell(c)));
+                    rows[no - 1] = isi;
+                });
+                return Array.from(rows, r => r || []);
+            };
+            return { indikator: ambil('Setup_Indikator'), formulir: ambil('Setup_Formulir'), rekap: ambil('REKAP_GABUNGAN') };
+        }
+
+        // ---------- Langkah 1 ----------
+        const zona = document.getElementById('zonaFile');
+        zona.addEventListener('dragover', e => { e.preventDefault(); zona.classList.add('aktif'); });
+        zona.addEventListener('dragleave', () => zona.classList.remove('aktif'));
+        zona.addEventListener('drop', e => { e.preventDefault(); zona.classList.remove('aktif'); prosesFile(e.dataTransfer.files[0]); });
+        document.getElementById('inpFile').addEventListener('change', e => prosesFile(e.target.files[0]));
+
+        function tampilMuat(teks) {
+            document.getElementById('infoMuat').classList.toggle('d-none', !teks);
+            document.getElementById('teksMuat').textContent = teks || '';
+        }
+
+        async function prosesFile(file) {
+            if (!file || !/\.xlsx$/i.test(file.name)) { Swal.fire('Oops', 'Pilih file berformat .xlsx', 'warning'); return; }
+            try {
+                tampilMuat('Memuat Profil Indikator & Form Builder dari database...');
+                const [ind, form] = await Promise.all([
+                    ambilSemua(() => supabaseClient.from('master_indikator').select('*').order('id_indikator')),
+                    ambilSemua(() => supabaseClient.from('setup_formulir').select('id_form, kolom').order('id_form'))
+                ]);
+                if (ind.error) throw ind.error;
+                if (form.error) throw form.error;
+                const kolomBaru = new Map((form.data || []).map(f => [f.id_form, Array.isArray(f.kolom) ? f.kolom : []]));
+
+                tampilMuat(`Membaca ${file.name}...`);
+                const x = await bacaXlsx(file);
+                if (!x.indikator || !x.formulir) throw new Error('Sheet Setup_Indikator / Setup_Formulir tidak ditemukan. Pastikan file yang dipilih adalah DATABASE_MUTU_MASTER.xlsx.');
+
+                // Kolom formulir versi lama (urutan = huruf kolom A, B, ...)
+                const kolomLama = new Map();
+                x.formulir.slice(1).forEach(r => {
+                    if (!r[0]) return;
+                    const id = String(r[0]).trim();
+                    if (!kolomLama.has(id)) kolomLama.set(id, []);
+                    kolomLama.get(id).push({ judul: String(r[1] ?? '').trim(), tipe: String(r[2] ?? '').trim() });
+                });
+
+                const h = (x.indikator[0] || []).map(konvNormal);
+                const kol = n => h.indexOf(n);
+                const iId = kol('id form'), iJudul = kol('judul indikator'), iSatuan = kol('satuan');
+                const iN = kol('template numerator'), iD = kol('template denominator');
+                if ([iId, iJudul, iN, iD].some(i => i < 0)) throw new Error('Kolom ID_Form / Judul Indikator / Template_Numerator / Template_Denominator tidak ditemukan di Setup_Indikator.');
+
+                const profil = ind.data || [];
+                hasil = x.indikator.slice(1).filter(r => r[iId]).map((r, i) => {
+                    const idForm = String(r[iId]).trim();
+                    const judul = String(r[iJudul] ?? '').trim();
+                    const kandidat = profil.filter(p => p.id_form === idForm);
+                    const p = kandidat.find(k => konvNormal(k.judul_indikator) === konvNormal(judul)) || (kandidat.length === 1 ? kandidat[0] : null);
+                    const kb = kolomBaru.get(idForm);
+                    const kl = kolomLama.get(idForm) || [];
+                    const tidakAda = alasan => ({ status: 'manual', template: null, catatan: [alasan] });
+                    const ctx = { idForm, kolomLama, kolomBaru };
+                    const n = !kb ? tidakAda(`formulir "${idForm}" belum ada di Form Builder`) : konversiRumusLama(r[iN], ctx);
+                    const d = !kb ? tidakAda(`formulir "${idForm}" belum ada di Form Builder`) : konversiRumusLama(r[iD], ctx);
+                    return {
+                        no: i, idForm, judul, satuan: String(r[iSatuan] ?? ''), profil: p, kolom: kb || [],
+                        kolomFn: f => kolomBaru.get(f || idForm) || [],
+                        lamaN: r[iN], lamaD: r[iD], n, d, uji: null,
+                        dipilih: false
+                    };
+                });
+                hasil.forEach(x => {
+                    x.status = statusGabung(x);
+                    x.sama = x.profil && x.n.template && x.d.template && samaTemplate(x.n.template, x.profil.template_numerator) && samaTemplate(x.d.template, x.profil.template_denominator);
+                    x.dipilih = !!(x.profil && (x.status === 'otomatis' || x.status === 'cek') && !x.sama);
+                });
+
+                // REKAP_GABUNGAN -> pembanding
+                rekap = null;
+                if (x.rekap && x.rekap.length > 1) {
+                    const hr = x.rekap[0].map(konvNormal);
+                    const c = n => hr.indexOf(n);
+                    rekap = new Map();
+                    x.rekap.slice(1).forEach(r => {
+                        const b = imporBacaBulan(r[c('bulan')]);
+                        if (!b || !r[c('id form')]) return;
+                        rekap.set(`${Number(r[c('tahun')])}|${normUnit(r[c('unit')])}|${String(r[c('id form')]).trim()}|${konvNormal(r[c('judul indikator')])}|${b}`,
+                            { N: Number(r[c('numerator')]) || 0, D: Number(r[c('denominator')]) || 0, C: r[c('pencapaian')] === null || r[c('pencapaian')] === '' ? null : Number(r[c('pencapaian')]) });
+                    });
+                }
+
+                tampilMuat('');
+                filterAktif = 'semua';
+                render();
+                document.getElementById('kartuHasil').classList.remove('d-none');
+            } catch (err) {
+                console.error(err); tampilMuat('');
+                Swal.fire('Gagal', esc(err.message || String(err)), 'error');
+            }
+        }
+
+        function samaTemplate(a, b) {
+            const pa = mutuParseTemplate(a), pb = mutuParseTemplate(b);
+            if (!pa || !pb) return false;
+            const bersih = t => JSON.stringify(Object.keys(t).sort().reduce((o, k) => (o[k] = String(t[k] ?? ''), o), {}));
+            return bersih(pa) === bersih(pb);
+        }
+
+        function statusGabung(x) {
+            if (!x.profil) return 'tanpa_profil';
+            const s = [x.n.status, x.d.status];
+            if (s.includes('manual') || s.includes('kosong')) return 'manual';
+            if (s.includes('cek')) return 'cek';
+            return 'otomatis';
+        }
+
+        const LABEL = {
+            otomatis: ['bg-success', 'Otomatis'], cek: ['bg-warning text-dark', 'Perlu cek'],
+            manual: ['bg-danger', 'Manual'], tanpa_profil: ['bg-secondary', 'Tanpa profil']
+        };
+
+        // ---------- Tabel ----------
+        function render() {
+            const cocokFilter = (x, k) => k === 'semua' ? x.status !== 'tanpa_profil' : k === 'sama' ? x.sama : x.status === k;
+            const hitung = k => hasil.filter(x => cocokFilter(x, k)).length;
+            const kotak = (k, warna, label) => `<div class="col-6 col-md"><div class="stat ${warna} ${filterAktif === k ? 'pilih' : ''}" onclick="aturFilter('${k}')"><div class="angka">${hitung(k)}</div><div class="label">${label}</div></div></div>`;
+            document.getElementById('ringkasan').innerHTML =
+                kotak('semua', 'bg-light border', 'Semua') +
+                kotak('otomatis', 'bg-success bg-opacity-10 text-success', 'Otomatis') +
+                kotak('cek', 'bg-warning bg-opacity-25 text-dark', 'Perlu cek') +
+                kotak('manual', 'bg-danger bg-opacity-10 text-danger', 'Manual') +
+                kotak('tanpa_profil', 'bg-light text-muted border', 'Tanpa profil (tidak dilaporkan)') +
+                kotak('sama', 'bg-info bg-opacity-10 text-info', 'Sudah sama');
+
+            const tampil = hasil.filter(x => cocokFilter(x, filterAktif));
+            const sel = (lama, k, kolom) => `
+                <span class="rumus-lama" title="${esc(String(lama ?? ''))}">${esc(String(lama ?? '(kosong)'))}</span>
+                <div class="mt-1 ${k.template ? 'rumus-baru' : 'text-danger small'}">${k.template ? '<i class="fas fa-arrow-right text-primary me-1"></i>' + esc(jelaskanTemplate(k.template, kolom)) : '<i class="fas fa-times me-1"></i>tidak dapat dikonversi'}</div>`;
+            document.getElementById('bodyHasil').innerHTML = tampil.map(x => {
+                const [warna, label] = LABEL[x.status];
+                const bisaPilih = x.profil && (x.n.template || x.d.template);
+                const catatan = [...new Set([...x.n.catatan.map(c => 'N: ' + c), ...x.d.catatan.map(c => 'D: ' + c)])]
+                    .filter(c => !/sudah format baru/.test(c));
+                const sekarang = x.profil
+                    ? `<div class="small">N: ${esc(jelaskanTemplate(x.profil.template_numerator, x.kolomFn))}</div><div class="small">D: ${esc(jelaskanTemplate(x.profil.template_denominator, x.kolomFn))}</div>${x.sama ? '<span class="badge bg-info mt-1">sama dengan hasil konversi</span>' : ''}`
+                    : '<span class="small text-muted">Indikator ini belum ada di Profil Indikator</span>';
+                return `<tr class="${x.status === 'manual' ? 'baris-manual' : ''}">
+                    <td><input type="checkbox" class="form-check-input" ${x.dipilih ? 'checked' : ''} ${bisaPilih ? '' : 'disabled'} onchange="hasil[${x.no}].dipilih = this.checked"></td>
+                    <td style="min-width:200px"><div class="fw-bold">${esc(x.judul)}</div><code class="small">${esc(x.idForm)}</code> <span class="badge bg-light text-dark border">${esc(x.satuan || '-')}</span></td>
+                    <td style="min-width:240px">${sel(x.lamaN, x.n, x.kolomFn)}</td>
+                    <td style="min-width:240px">${sel(x.lamaD, x.d, x.kolomFn)}</td>
+                    <td style="min-width:150px"><span class="badge ${warna}">${label}</span>${catatan.length ? `<ul class="small text-muted ps-3 mb-0 mt-1">${catatan.map(c => `<li>${esc(c)}</li>`).join('')}</ul>` : ''}</td>
+                    <td style="min-width:200px">${sekarang}</td>
+                    <td class="text-center" style="min-width:90px">
+                        ${x.profil ? `<button class="btn btn-sm btn-outline-primary" onclick="ujiSatu(${x.no}, true)"><i class="fas fa-vial"></i> Uji</button>` : ''}
+                        ${x.uji ? `<div class="small mt-1 ${x.uji.cocok === x.uji.dibanding ? 'text-success' : 'text-warning'} fw-bold" style="cursor:pointer" onclick="ujiSatu(${x.no}, true)">${x.uji.ringkas}</div>` : ''}
+                    </td>
+                </tr>`;
+            }).join('') || '<tr><td colspan="7" class="text-center text-muted py-4">Tidak ada baris.</td></tr>';
+            document.getElementById('cekSemua').checked = false;
+        }
+
+        window.aturFilter = k => { filterAktif = k; render(); };
+        window.centangSemua = cek => {
+            const tampil = hasil.filter(x => filterAktif === 'semua' ? x.status !== 'tanpa_profil' : filterAktif === 'sama' ? x.sama : x.status === filterAktif);
+            tampil.forEach(x => { if (x.profil && (x.n.template || x.d.template)) x.dipilih = cek; });
+            render(); document.getElementById('cekSemua').checked = cek;
+        };
+
+        // Template yang dipakai: hasil konversi, atau rumus sekarang bila sisi itu tidak bisa dikonversi
+        const templateUji = x => ({
+            n: x.n.template || (x.profil && x.profil.template_numerator) || null,
+            d: x.d.template || (x.profil && x.profil.template_denominator) || null
+        });
+
+        // ---------- Uji dengan data database ----------
+        async function jalankanUji(x) {
+            const tahun = parseInt(document.getElementById('inpTahun').value, 10);
+            const t = templateUji(x);
+            const { data, error } = await supabaseClient.rpc('uji_rumus_mutu', {
+                p_id_form: x.idForm, p_template_n: t.n, p_template_d: t.d, p_satuan: x.satuan || x.profil?.satuan || '', p_tahun: tahun,
+                p_unit_pelaksana: x.profil?.unit_pelaksana || null
+            });
+            if (error) throw error;
+            let cocok = 0, dibanding = 0;
+            const baris = (data || []).map(r => {
+                const lama = rekap ? rekap.get(`${tahun}|${normUnit(r.unit_kerja)}|${x.idForm}|${konvNormal(x.judul)}|${r.bulan}`) : null;
+                let sama = null;
+                if (lama) {
+                    dibanding++;
+                    const C = r.capaian === null ? null : Number(r.capaian);
+                    const lc = lama.C === null ? null : Math.round(lama.C * 100) / 100;
+                    sama = (C === null && (lc === null || lc === 0)) || (C !== null && lc !== null && Math.abs(C - lc) <= 0.1);
+                    if (sama) cocok++;
+                }
+                return { ...r, lama, sama };
+            });
+            x.uji = { tahun, baris, cocok, dibanding, ringkas: dibanding ? `${cocok}/${dibanding} cocok` : `${baris.length} data` };
+            return x.uji;
+        }
+
+        window.ujiSatu = async function (no, tampilkan) {
+            const x = hasil[no];
+            try {
+                Swal.fire({ title: 'Menguji...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const u = await jalankanUji(x);
+                Swal.close();
+                render();
+                if (tampilkan) tampilUji(x, u);
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal menguji', esc(err.message || String(err)), 'error');
+            }
+        };
+
+        function tampilUji(x, u) {
+            const t = templateUji(x);
+            document.getElementById('judulUji').textContent = `Uji: ${x.judul} (${u.tahun})`;
+            const angka = v => v === null || v === undefined ? '-' : Number(v).toLocaleString('id-ID', { maximumFractionDigits: 2 });
+            document.getElementById('isiUji').innerHTML = `
+                <div class="small mb-2"><b>N:</b> ${esc(jelaskanTemplate(t.n, x.kolomFn))}<br><b>D:</b> ${esc(jelaskanTemplate(t.d, x.kolomFn))}</div>
+                ${u.baris.length === 0 ? `<div class="alert alert-light border small">Belum ada data formulir <code>${esc(x.idForm)}</code> di database untuk tahun ${u.tahun}.</div>` : `
+                ${rekap ? `<p class="small mb-2">Cocok dengan REKAP_GABUNGAN: <b>${u.cocok}</b> dari ${u.dibanding} unit × bulan yang bisa dibandingkan (toleransi 0,1). Selisih kecil pada jumlah baris biasanya karena perbedaan data (mis. tanggal yang dibetulkan saat impor), bukan rumus.</p>` : ''}
+                <div class="table-responsive"><table class="table table-sm tabel-kecil">
+                    <thead><tr><th>Unit</th><th>Bulan</th><th class="text-end">Baris</th><th class="text-end">N / D baru</th><th class="text-end">Capaian baru</th>${rekap ? '<th class="text-end">N / D lama</th><th class="text-end">Capaian lama</th><th></th>' : ''}</tr></thead>
+                    <tbody>${u.baris.map(r => `<tr class="${r.sama === false ? 'table-warning' : ''}">
+                        <td>${esc(r.unit_kerja)}</td><td>${r.bulan}</td><td class="text-end">${r.jumlah_baris}</td>
+                        <td class="text-end">${angka(r.numerator)} / ${angka(r.denominator)}</td><td class="text-end fw-bold">${angka(r.capaian)}</td>
+                        ${rekap ? `<td class="text-end">${r.lama ? angka(r.lama.N) + ' / ' + angka(r.lama.D) : '-'}</td><td class="text-end">${r.lama ? angka(r.lama.C) : '-'}</td>
+                        <td>${r.sama === true ? '<i class="fas fa-check text-success"></i>' : r.sama === false ? '<i class="fas fa-exclamation-triangle text-warning"></i>' : ''}</td>` : ''}
+                    </tr>`).join('')}</tbody>
+                </table></div>`}`;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalUji')).show();
+        }
+
+        window.ujiTerpilih = async function () {
+            const pilih = hasil.filter(x => x.dipilih);
+            if (!pilih.length) { Swal.fire('Belum ada yang dicentang', '', 'info'); return; }
+            Swal.fire({ title: 'Menguji...', html: `<span id="progUji">0/${pilih.length}</span>`, allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            let gagal = 0;
+            for (let i = 0; i < pilih.length; i++) {
+                try { await jalankanUji(pilih[i]); } catch (e) { console.error(e); gagal++; }
+                const el = document.getElementById('progUji'); if (el) el.textContent = `${i + 1}/${pilih.length}`;
+            }
+            render();
+            const tot = pilih.reduce((a, x) => a + (x.uji ? x.uji.dibanding : 0), 0);
+            const cocok = pilih.reduce((a, x) => a + (x.uji ? x.uji.cocok : 0), 0);
+            Swal.fire('Uji selesai', `${pilih.length} indikator diuji${gagal ? `, ${gagal} gagal` : ''}.${rekap && tot ? `<br>Cocok dengan rekap lama: <b>${cocok}</b> dari ${tot} unit × bulan (${Math.round(cocok / tot * 100)}%).` : ''}<br><small class="text-muted">Klik hasil di kolom Uji untuk melihat rinciannya.</small>`, 'success');
+        };
+
+        // ---------- Terapkan ----------
+        window.terapkanTerpilih = async function () {
+            const pilih = hasil.filter(x => x.dipilih && x.profil && (x.n.template || x.d.template));
+            if (!pilih.length) { Swal.fire('Belum ada yang dicentang', '', 'info'); return; }
+            const sebagian = pilih.filter(x => !x.n.template || !x.d.template).length;
+            const ok = await Swal.fire({
+                title: 'Terapkan rumus baru?',
+                html: `Template rumus <b>${pilih.length}</b> indikator di Profil Indikator akan diganti.${sebagian ? `<br><small class="text-muted">${sebagian} indikator hanya diganti salah satu sisinya (sisi yang tidak bisa dikonversi tidak diubah).</small>` : ''}<br><small class="text-muted">Perubahan tercatat di Log Audit.</small>`,
+                icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, terapkan', cancelButtonText: 'Batal'
+            });
+            if (!ok.isConfirmed) return;
+
+            Swal.fire({ title: 'Menyimpan...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            let berhasil = 0; const gagal = [];
+            for (const x of pilih) {
+                const ubah = {};
+                if (x.n.template) ubah.template_numerator = x.n.template;
+                if (x.d.template) ubah.template_denominator = x.d.template;
+                const { data, error } = await supabaseClient.from('master_indikator').update(ubah).eq('id_indikator', x.profil.id_indikator).select('*');
+                if (error || !data || !data.length) { gagal.push(`${x.judul}: ${error ? error.message : 'tidak ada izin mengubah'}`); continue; }
+                x.profil = data[0]; x.sama = x.n.template && x.d.template ? true : x.sama; x.dipilih = false; berhasil++;
+            }
+            render();
+            Swal.fire(gagal.length ? 'Selesai dengan catatan' : 'Berhasil',
+                `${berhasil} indikator diperbarui.${gagal.length ? `<br><div class="text-start small mt-2">${gagal.map(g => esc(g)).join('<br>')}</div>` : ''}`,
+                gagal.length ? 'warning' : 'success');
+        };
+    </script>
+</body>
+</html>

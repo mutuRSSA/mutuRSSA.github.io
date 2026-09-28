@@ -197,34 +197,35 @@
                 logTerminal("1. Memuat Master Kamus Indikator...");
                 const masterIndikator = await ambilSemuaBaris(() => supabaseClient.from('master_indikator').select('*').order('id_indikator'));
                 
-                logTerminal("2. Memuat Struktur Parameter Engine (Formulir)...");
-                const setupForm = await ambilSemuaBaris(() => supabaseClient.from('setup_formulir').select('*').order('id_form'));
-
-                logTerminal(`3. Menarik seluruh raw data transaksi tahun ${tahun}...`);
-                const rawDataMutu = await ambilSemuaBaris(() => supabaseClient.from('data_mutu_harian').select('*').eq('tahun', tahun).order('id'));
-
-                if (rawDataMutu.length === 0) {
+                logTerminal(`2. Menghitung jumlah data mentah tahun ${tahun}...`);
+                const { count: jumlahBaris, error: errHitung } = await supabaseClient.from('data_mutu_harian').select('id', { count: 'exact', head: true }).eq('tahun', tahun);
+                if (errHitung) throw errHitung;
+                if (!jumlahBaris) {
                     logTerminal("Peringatan: Tidak ditemukan data mentah apapun di tahun ini.");
                     throw new Error("Tidak ada data untuk diproses/dihapus.");
                 }
+                logTerminal(`Total data mentah: ${jumlahBaris} baris.`);
 
-                logTerminal(`Total data mentah ditarik: ${rawDataMutu.length} baris.`);
+                logTerminal("3. Database menghitung Numerator, Denominator & Capaian per INDIKATOR x UNIT x BULAN...");
+                logTerminal("   (fungsi hitung_capaian_mutu — sama persis dengan Laporan Mutu)");
+                const hasilDb = await ambilSemuaBaris(() => supabaseClient.rpc('hitung_capaian_mutu', { p_tahun: tahun }).order('id_indikator').order('unit_kerja').order('bulan'));
+                const dataArsip = susunRingkasanDariHasil(tahun, masterIndikator, hasilDb);
+                logTerminal(`Selesai. ${dataArsip.length} ringkasan (indikator x unit x bulan) siap dibekukan.`);
 
-                logTerminal("4. Mesin Agregator berjalan: menghitung Numerator, Denominator & Capaian per INDIKATOR x UNIT x BULAN...");
-                logTerminal("   (memakai engine_mutu.js — rumus yang sama persis dengan Laporan Mutu)");
-                const { ringkasan: dataArsip, barisTerangkum } = susunRingkasanTutupTahun(tahun, masterIndikator, setupForm, rawDataMutu);
-
-                logTerminal(`Selesai di-compile. ${dataArsip.length} ringkasan (indikator x unit x bulan) siap dibekukan.`);
-
-                const tidakTerangkum = rawDataMutu.length - barisTerangkum;
-                if (tidakTerangkum > 0) {
-                    logTerminal(`⚠️ ${tidakTerangkum} baris milik indikator tanpa profil/formulir/template rumus: tidak masuk ringkasan, tetapi tetap disimpan di tabel cadangan.`);
+                logTerminal("4. Memeriksa data yang tidak masuk ringkasan...");
+                const { data: perForm, error: errForm } = await supabaseClient.rpc('ringkasan_formulir_mutu', { p_tahun: tahun });
+                if (errForm) throw errForm;
+                const formTerangkum = new Set(masterIndikator.filter(p => p.id_form && indikatorPakaiEngine(p)).map(p => p.id_form));
+                const tidakTerangkum = (perForm || []).filter(f => !formTerangkum.has(f.id_form));
+                if (tidakTerangkum.length) {
+                    const n = tidakTerangkum.reduce((a, f) => a + Number(f.jumlah_baris), 0);
+                    logTerminal(`⚠️ ${n} baris dari ${tidakTerangkum.length} formulir tanpa indikator berumus (mis. surveilans PPI): tidak masuk ringkasan, tetapi tetap disimpan di tabel cadangan.`);
                 }
 
                 logTerminal("5. Menyimpan ringkasan & memindahkan data mentah (satu transaksi di database)...");
                 const { data: hasilTutup, error: errTutup } = await supabaseClient.rpc('tutup_tahun_mutu', {
                     p_tahun: tahun,
-                    p_jumlah_baris: rawDataMutu.length,
+                    p_jumlah_baris: jumlahBaris,
                     p_ringkasan: dataArsip
                 });
                 if (errTutup) throw errTutup;

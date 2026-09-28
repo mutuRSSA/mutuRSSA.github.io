@@ -252,27 +252,39 @@
             }
 
             try {
-                // HANYA TARIK INDIKATOR YANG AKTIF (TIDAK DIARSIPKAN) DARI SUPABASE
-                const { data, error } = await supabaseClient.from('master_indikator')
-                    .select('id_form, judul_indikator, unit_pelaksana')
-                    .neq('status_aktif', false) 
-                    .order('judul_indikator', { ascending: true });
+                // Formulir yang boleh diisi unit ini =
+                //   daftar_form unit (Super Admin Panel; dulu "Akses_Formulir" di Setup_Unit)
+                //   + formulir dari indikator aktif yang unit pelaksananya unit ini / seluruh RS.
+                // Formulir tanpa profil (mis. surveilans PPI) tetap bisa diisi lewat daftar_form.
+                const [resInd, resUnit, resForm] = await Promise.all([
+                    supabaseClient.from('master_indikator').select('id_form, judul_indikator, unit_pelaksana').neq('status_aktif', false).order('judul_indikator', { ascending: true }),
+                    supabaseClient.from('master_unit').select('nama_unit, daftar_form').eq('nama_unit', namaUnit).limit(1),
+                    supabaseClient.from('setup_formulir').select('id_form').order('id_form')
+                ]);
+                if (resInd.error) throw resInd.error;
+                const data = resInd.data || [];
+                const adaForm = new Set((resForm.data || []).map(f => f.id_form));
 
-                if (error) throw error;
+                const judulPerForm = new Map();
+                data.forEach(d => { if (!judulPerForm.has(d.id_form)) judulPerForm.set(d.id_form, []); judulPerForm.get(d.id_form).push(d.judul_indikator); });
 
-                // Saring berdasarkan hak unit
-                let filteredForms = data;
-                if (namaUnit !== "" && namaUnit !== "Semua Unit (Hospital Wide)") {
-                    filteredForms = data.filter(d => {
-                        let pelaksana = (d.unit_pelaksana || "").toLowerCase();
-                        return pelaksana.includes(namaUnit.toLowerCase()) || pelaksana.includes("semua unit") || pelaksana.includes("hospital");
-                    });
-                }
+                const dipilih = new Set();
+                if (namaUnit === "Semua Unit (Hospital Wide)") data.forEach(d => dipilih.add(d.id_form));
+                data.forEach(d => {
+                    let pelaksana = (d.unit_pelaksana || "").toLowerCase();
+                    if (pelaksana.includes(namaUnit.toLowerCase()) || pelaksana.includes("semua unit") || pelaksana.includes("hospital")) dipilih.add(d.id_form);
+                });
+                const daftarUnit = ((resUnit.data && resUnit.data[0] && resUnit.data[0].daftar_form) || '').split(',').map(x => x.trim()).filter(Boolean);
+                daftarUnit.forEach(f => dipilih.add(f));
+
+                const opsi = [...dipilih].filter(f => adaForm.has(f)).map(f => {
+                    const judul = judulPerForm.get(f);
+                    return { id: f, label: judul ? judul.join(' / ') : f.replace(/_/g, ' ') + ' (formulir)' };
+                }).sort((a, b) => a.label.localeCompare(b.label, 'id'));
 
                 selIndikator.innerHTML = '<option value="">-- Pilih Indikator --</option>';
-                filteredForms.forEach(f => { 
-                    selIndikator.add(new Option(f.judul_indikator, f.id_form)); 
-                });
+                opsi.forEach(o => selIndikator.add(new Option(o.label, o.id)));
+                if (!opsi.length) selIndikator.innerHTML = '<option value="">-- Belum ada formulir untuk unit ini --</option>';
 
                 // Auto Select Form jika ada ID dari URL Param
                 if (autoSelectFormId) {
@@ -324,13 +336,26 @@
             }
         }
 
+        // Tipe kolom: nama dari builder Google Sheet lama disamakan (numeric -> number, date -> calendar)
+        function tipeKolom(c) {
+            const t = (c.tipe || 'text').toString().toLowerCase().trim();
+            return ({ numeric: 'number', date: 'calendar' })[t] || t;
+        }
+        // Hak isi kolom per unit (kolom "Hak Akses Kolom" di Form Builder; lama: "Akses Unit")
+        function bolehIsiKolom(c) {
+            const a = (c.akses || '').toString().trim();
+            if (!a || a.toUpperCase() === 'ALL' || a === 'None') return true;
+            const unit = (document.getElementById('sel_unit').value || '').toLowerCase().trim();
+            return a.split(',').map(x => x.trim().toLowerCase()).includes(unit);
+        }
+
         function renderExcelTabel() {
             const container = document.getElementById('spreadsheet');
             container.innerHTML = '';
             if(hotInstance) { hotInstance.destroy(); }
 
             let hotColumns = cetakBiruAktif.map(c => {
-                let rawType = (c.tipe || 'text').toString().toLowerCase().trim();
+                let rawType = tipeKolom(c);
                 let colWidth = c.lebar ? parseInt(c.lebar) : 200; 
                 let config = { type: 'text', readOnly: false, wordWrap: true, width: colWidth }; 
 
@@ -340,7 +365,7 @@
                 else if (rawType === 'time') { config.type = 'time'; config.timeFormat = 'HH:mm:ss'; config.correctFormat = true; } 
                 else if (rawType === 'number') { config.type = 'numeric'; }
 
-                if (rawType === 'readonly' || c.formula) { config.readOnly = true; }
+                if (rawType === 'readonly' || c.formula || !bolehIsiKolom(c)) { config.readOnly = true; }
                 return config;
             });
 
@@ -364,13 +389,14 @@
                 rowHeaders: true, width: '100%', height: 500, stretchH: 'all', contextMenu: true, 
                 formulas: { engine: HyperFormula }, licenseKey: 'non-commercial-and-evaluation', 
                 autoColumnSize: false, manualColumnResize: true, 
+                hiddenColumns: { columns: cetakBiruAktif.map((c, i) => c.sembunyi ? i : -1).filter(i => i >= 0), indicators: false },
 
                 beforeChange: function(changes, source) {
                     if (!changes) return;
                     changes.forEach(change => {
                         let colDef = cetakBiruAktif[change[1]];
                         if(!colDef) return;
-                        let colType = (colDef.tipe || '').toString().toLowerCase().trim();
+                        let colType = tipeKolom(colDef);
                         let newVal = change[3];
 
                         if ((colType === 'date' || colType === 'calendar') && newVal) {
@@ -427,30 +453,36 @@
             wadahForm.innerHTML = '';
             let headHTML = '<tr><th class="text-center" width="5%"><i class="fas fa-trash"></i></th>';
 
-            cetakBiruAktif.forEach((field, index) => {
+            cetakBiruAktif.forEach((kolomAsli, index) => {
+                const field = { ...kolomAsli, tipe: (kolomAsli.formula && kolomAsli.formula.trim()) ? 'readonly' : tipeKolom(kolomAsli) };
+                const boleh = bolehIsiKolom(field);
                 let colClass = "col-md-12";
                 if (field.tipe === "number" || field.tipe === "time" || field.tipe === "readonly") colClass = "col-md-6";
-                else if (field.tipe === "date" || field.tipe === "dropdown") colClass = "col-md-6";
+                else if (field.tipe === "calendar" || field.tipe === "dropdown") colClass = "col-md-6";
+                if (field.sembunyi) colClass += " d-none";
+                const kunci = boleh ? '' : 'disabled';
 
                 let inputHTML = ''; let idInput = `inp_dinamis_${index}`;
                 let triggerCalc = `onkeyup="kalkulasiOtomatisDariHOT()" onchange="kalkulasiOtomatisDariHOT()"`;
 
                 if (field.tipe === 'dropdown') {
                     let opts = field.opsi ? field.opsi.split(',').map(s => `<option value="${esc(s.trim())}">${esc(s.trim())}</option>`).join('') : '';
-                    inputHTML = `<select class="form-select input-data-transaksi" id="${idInput}" data-index="${index}" ${triggerCalc}><option value="">-- Pilih --</option>${opts}</select>`;
+                    inputHTML = `<select class="form-select input-data-transaksi" id="${idInput}" data-index="${index}" ${triggerCalc} ${kunci}><option value="">-- Pilih --</option>${opts}</select>`;
                 } 
                 else if (field.tipe === 'checkbox') {
-                    inputHTML = `<div class="form-check fs-5 mt-1 border rounded p-2 bg-white"><input class="form-check-input input-data-transaksi ms-1" type="checkbox" id="${idInput}" data-index="${index}" value="Ya" ${triggerCalc}><label class="form-check-label text-secondary ms-2" for="${idInput}" style="font-size:0.9rem;">Tandai jika "Ya"</label></div>`;
+                    inputHTML = `<div class="form-check fs-5 mt-1 border rounded p-2 bg-white"><input class="form-check-input input-data-transaksi ms-1" type="checkbox" id="${idInput}" data-index="${index}" value="Ya" ${triggerCalc} ${kunci}><label class="form-check-label text-secondary ms-2" for="${idInput}" style="font-size:0.9rem;">Tandai jika "Ya"</label></div>`;
                 }
                 else if (field.tipe === 'readonly') {
                     inputHTML = `<input type="text" class="form-control input-formula input-data-transaksi" id="${idInput}" data-index="${index}" placeholder="Otomatis" readonly>`;
                 } else {
-                    let inputType = field.tipe === 'calendar' ? 'date' : field.tipe;
-                    inputHTML = `<input type="${inputType}" class="form-control input-data-transaksi" id="${idInput}" data-index="${index}" ${triggerCalc}>`;
+                    let inputType = ({ calendar: 'date', number: 'number', time: 'time' })[field.tipe] || 'text';
+                    const petunjuk = field.tipe.startsWith('durasi_') ? `placeholder="${field.tipe === 'durasi_hm' ? 'jj:mm' : field.tipe === 'durasi_ms' ? 'mm:dd' : 'jj:mm:dd'}"` : '';
+                    inputHTML = `<input type="${inputType}" ${inputType === 'number' ? 'step="any"' : ''} class="form-control input-data-transaksi" id="${idInput}" data-index="${index}" ${petunjuk} ${triggerCalc} ${kunci}>`;
                 }
 
-                wadahForm.innerHTML += `<div class="${colClass}"><label class="form-label-custom">${esc(field.judul)}</label>${inputHTML}</div>`;
-                headHTML += `<th>${esc(field.judul)}</th>`;
+                const ketAkses = boleh ? '' : ` <small class="text-muted fw-normal" title="Hanya dapat diisi: ${esc(field.akses)}"><i class="fas fa-lock"></i> unit lain</small>`;
+                wadahForm.innerHTML += `<div class="${colClass}"><label class="form-label-custom">${esc(field.judul)}${ketAkses}</label>${inputHTML}</div>`;
+                if (!field.sembunyi) headHTML += `<th>${esc(field.judul)}</th>`;
             });
             headHTML += '</tr>'; document.getElementById('theadTransaksi').innerHTML = headHTML;
         }
@@ -465,7 +497,7 @@
                 if (el.type === 'date' && val !== '') {
                     let m = moment(val); if(m.isValid()) val = m.format('DD/MM/YYYY');
                 }
-                if (cetakBiruAktif[idx].tipe === 'number' && val !== '') { val = parseFloat(val); }
+                if (tipeKolom(cetakBiruAktif[idx]) === 'number' && val !== '') { val = parseFloat(val); }
                 updates.push([0, idx, val]); 
             });
 
@@ -602,8 +634,8 @@
                 if(data.length === 0) { tbody.innerHTML = '<tr><td colspan="100%" class="text-center py-4 text-muted">Belum ada data di bulan ini.</td></tr>'; } 
                 else {
                     data.forEach(row => {
-                        let htmlBaris = `<tr><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="hapusDataTransaksi('${row.id}')"><i class="fas fa-times"></i></button></td>`;
-                        if(Array.isArray(row.data_input)) { row.data_input.forEach(val => { htmlBaris += `<td>${val !== null ? val : '-'}</td>`; }); }
+                        let htmlBaris = `<tr><td class="text-center"><button class="btn btn-sm btn-outline-danger" onclick="hapusDataTransaksi('${escJsAttr(row.id)}')"><i class="fas fa-times"></i></button></td>`;
+                        if(Array.isArray(row.data_input)) { row.data_input.forEach((val, i) => { if (cetakBiruAktif[i] && cetakBiruAktif[i].sembunyi) return; htmlBaris += `<td>${val !== null && val !== undefined ? esc(val) : '-'}</td>`; }); }
                         htmlBaris += '</tr>'; tbody.innerHTML += htmlBaris;
                     });
                 }

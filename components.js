@@ -154,6 +154,8 @@ function loadNavigation() {
                     <a href="form_builder.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0 mt-1" id="menu-form-builder" style="font-size: 0.95rem;"><i class="fas fa-cubes me-2"></i> Form Builder</a>
                     <a href="database_admin.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0 mt-1" style="font-size: 0.95rem;"><i class="fas fa-server me-2"></i> Backup & Database</a>
                     ${allowedPages.includes("audit_log.html") ? `<a href="audit_log.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0 mt-1" id="menu-audit-log" style="font-size: 0.95rem;"><i class="fas fa-history me-2"></i> Log Audit</a>` : ''}
+                    ${allowedPages.includes("impor_data_lama.html") ? `<a href="impor_data_lama.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0 mt-1" id="menu-impor-data" style="font-size: 0.95rem;"><i class="fas fa-file-import me-2"></i> Impor Data Lama</a>` : ''}
+                    ${allowedPages.includes("konversi_rumus.html") ? `<a href="konversi_rumus.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0 mt-1" id="menu-konversi-rumus" style="font-size: 0.95rem;"><i class="fas fa-square-root-alt me-2"></i> Konversi Rumus Lama</a>` : ''}
                 </div>
             </div>
 

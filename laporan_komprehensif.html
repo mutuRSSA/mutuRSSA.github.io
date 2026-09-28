@@ -143,7 +143,7 @@
             term.scrollTop = term.scrollHeight;
         }
 
-        // eksekusiRumusEngine() sekarang ada di engine_mutu.js (dipakai bersama dengan Tutup Tahun)
+        // Rumus N/D dihitung di database (fungsi hitung_capaian_mutu); engine_mutu.js dipakai untuk hitungCapaianND.
 
         window.jalankanProsesIntegrasi = async function() {
             const btn = document.getElementById('btnGenerate');
@@ -174,8 +174,8 @@
                 logTerminal("Mengecek Gudang Arsip (Capaian Beku)...");
                 rawDataArsip = await ambilSemuaBaris(() => supabaseClient.from('arsip_capaian_mutu').select('*').eq('tahun', tahun).in('bulan', listBulanAngka).order('id'));
                 
-                logTerminal("Mengekstrak Data Mentah Harian (Live)...");
-                rawDataMutu = await ambilSemuaBaris(() => supabaseClient.from('data_mutu_harian').select('*').eq('tahun', tahun).in('bulan', listBulanAngka).order('id'));
+                logTerminal("Menghitung capaian live di database...");
+                rawDataMutu = await ambilSemuaBaris(() => supabaseClient.rpc('hitung_capaian_mutu', { p_tahun: tahun, p_bulan: listBulanAngka }).order('id_indikator').order('unit_kerja').order('bulan'));
 
                 logTerminal("Mengeksekusi Agregator Hybrid...");
                 kalkulasiCapaianKuantitatif(tahun, listBulanTeks, listBulanAngka);
@@ -252,12 +252,14 @@
                 let kat = (profil.kategori_indikator || "").toLowerCase();
                 let jenis = "IMP-Unit"; 
                 if (kat.includes("nasional") || kat.includes("inm")) jenis = "INM";
-                else if (kat.includes("prioritas") && (kat.includes("rs") || kat.includes("rumah sakit"))) jenis = "IMP-RS";
+                else if (kat.includes("imp-rs") || kat.includes("imp rs") || (kat.includes("prioritas") && (/\brs\b/.test(kat) || kat.includes("rumah sakit")))) jenis = "IMP-RS";
 
                 let sf = setupForm.find(f => f.id_form === idForm);
                 if(!sf) return;
+                // Indikator tanpa rumus & tanpa arsip tidak dilaporkan (mis. surveilans PPI)
+                if (!indikatorPakaiEngine(profil) && !rawDataArsip.some(a => a.id_indikator === idIndikatorAsli)) return;
 
-                let dataTransaksiFormIni = rawDataMutu.filter(d => d.id_indikator === idForm);
+                let dataTransaksiFormIni = rawDataMutu.filter(d => d.id_indikator === idIndikatorAsli);
                 
                 let tempBulanData = {};
                 dataTransaksiFormIni.forEach(trans => {
@@ -311,11 +313,10 @@
                         } 
                         // 2. JIKA TIDAK ADA DI ARSIP, JALANKAN MESIN LIVE
                         else if (tempBulanData[unt] && tempBulanData[unt][b]) {
+                            // Hasil hitung database per unit; untuk RS_ALL, N & D semua unit dijumlahkan.
                             let rows = tempBulanData[unt][b];
-                            if(isEngine) {
-                                blnData[b].num += eksekusiRumusEngine(tmplNum, rows, sf.kolom);
-                                blnData[b].den += eksekusiRumusEngine(tmplDen, rows, sf.kolom);
-                            } 
+                            blnData[b].num += rows.reduce((acc, r) => acc + (Number(r.numerator) || 0), 0);
+                            blnData[b].den += rows.reduce((acc, r) => acc + (Number(r.denominator) || 0), 0);
                         }
                     });
 
@@ -325,9 +326,7 @@
                     namaBulanArr.forEach(b => {
                         // Jika bukan data arsip, kalkulasi num/den
                         if (!blnData[b].isArsip) {
-                            let N = blnData[b].num; let D = blnData[b].den; let finalCapai = null;
-                            if(D > 0) { finalCapai = N / D; if(isPercentage) finalCapai *= 100; } 
-                            if(finalCapai !== null) blnData[b].val = Math.round(finalCapai * 100) / 100;
+                            blnData[b].val = hitungCapaianND(blnData[b].num, blnData[b].den, profil.satuan);
                         }
 
                         if(blnData[b].val !== null) {

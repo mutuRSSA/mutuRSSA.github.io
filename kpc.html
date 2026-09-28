@@ -30,6 +30,22 @@
             </div>
 
             <form id="formKPC">
+
+                <!-- IDENTITAS PELAPOR (terisi otomatis jika login; dipilih manual jika tanpa login) -->
+                <div class="alert alert-light border mb-4" id="boxPelapor">
+                    <div id="pelaporLogin" class="d-none small"><i class="fas fa-user-check text-success me-1"></i> Dilaporkan sebagai <b id="teksPelaporLogin"></b></div>
+                    <div id="pelaporPublik" class="row g-3 d-none">
+                        <div class="col-12 small text-muted"><i class="fas fa-info-circle me-1"></i> Anda mengirim laporan <b>tanpa login</b>. Pilih unit Anda. Nama boleh dikosongkan (anonim).</div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Unit Pelapor <span class="text-danger">*</span></label>
+                            <select class="form-select" id="inp_unit_pelapor"><option value="">-- Memuat Unit... --</option></select>
+                        </div>
+                        <div class="col-md-6" id="kolomNamaPelapor">
+                            <label class="form-label fw-bold">Nama Pelapor <small class="text-muted fw-normal">(opsional)</small></label>
+                            <input type="text" class="form-control" id="inp_nama_pelapor" maxlength="150" placeholder="Kosongkan untuk anonim">
+                        </div>
+                    </div>
+                </div>
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="fw-bold mb-1 text-secondary">Lokasi / Unit Penemuan <span class="text-danger">*</span></label>
@@ -118,15 +134,47 @@
             await loadUnitDropdown();
         });
 
+        // ===== Mode pelapor: login atau publik (tanpa login) =====
+        let modePublik = true;
+        async function siapkanPelapor() {
+            const { data } = await supabaseClient.auth.getSession();
+            const login = !!(data && data.session);
+            const unitSesi = sessionMutu.unit;
+            modePublik = !login || !unitSesi || unitSesi === 'Non-Unit';
+            if (!modePublik) {
+                document.getElementById('teksPelaporLogin').textContent = `${sessionMutu.nama_lengkap || sessionMutu.username || ''} — ${unitSesi}`;
+                document.getElementById('pelaporLogin').classList.remove('d-none');
+            } else {
+                document.getElementById('pelaporPublik').classList.remove('d-none');
+                document.getElementById('inp_unit_pelapor').required = true;
+                // Login tapi tanpa unit (Non-Unit): nama diambil dari akun, cukup pilih unit
+                if (login) document.getElementById('kolomNamaPelapor').classList.add('d-none');
+            }
+        }
+
+        // Daftar unit lewat fungsi publik (bisa dipakai tanpa login; hanya berisi nama unit)
+        async function ambilDaftarUnit() {
+            const { data, error } = await supabaseClient.rpc('daftar_unit_publik');
+            if (error) { console.error(error); return []; }
+            return (data || []).map(u => u.nama_unit);
+        }
+
+        function isiDropdownUnit(id, placeholder, daftar) {
+            const sel = document.getElementById(id);
+            if (!sel) return;
+            sel.innerHTML = `<option value="">${placeholder}</option>`;
+            daftar.forEach(n => sel.add(new Option(n, n)));
+        }
+
+        function pesanError(err) {
+            return (err && err.message) ? err.message : 'Terjadi kesalahan saat mengirim laporan.';
+        }
+
         async function loadUnitDropdown() {
-            try {
-                const { data } = await supabaseClient.from('master_unit').select('nama_unit').order('nama_unit');
-                const sel = document.getElementById('inp_lokasi');
-                if (data) {
-                    sel.innerHTML = '<option value="">-- Pilih Lokasi Ditemukan --</option>';
-                    data.forEach(u => sel.add(new Option(u.nama_unit, u.nama_unit)));
-                }
-            } catch(e) {}
+            const daftar = await ambilDaftarUnit();
+            isiDropdownUnit('inp_lokasi', '-- Pilih Lokasi Ditemukan --', daftar);
+            isiDropdownUnit('inp_unit_pelapor', '-- Pilih Unit Anda --', daftar);
+            await siapkanPelapor();
         }
 
         window.previewImage = function(event) {
@@ -162,7 +210,7 @@
             btn.disabled = true;
 
             const isAnonim = document.getElementById('chk_anonim').checked;
-            const pelapor = isAnonim ? "Anonim" : (sessionMutu.nama_lengkap || "Tanpa Nama");
+            const pelapor = (isAnonim || !modePublik) ? '' : document.getElementById('inp_nama_pelapor').value.trim();
             let linkFotoDrive = "";
 
             // TAHAP 1: Unggah Foto ke Google Drive
@@ -224,7 +272,7 @@
             const payloadData = {
                 jenis_insiden: "KPC", 
                 waktu_insiden: document.getElementById('inp_waktu').value,
-                unit_pelapor: sessionMutu.unit || "Tidak Diketahui",
+                unit_pelapor: modePublik ? document.getElementById('inp_unit_pelapor').value : sessionMutu.unit,
                 lokasi_kejadian: document.getElementById('inp_lokasi').value,
                 nama_pasien: "-", 
                 no_rm: "-",
@@ -235,11 +283,13 @@
                 skor_probabilitas: 0,
                 grading_risiko: "Biru", 
                 nama_pelapor: pelapor,
+                anonim: isAnonim,
                 detail_spesifik: detailJSON
             };
 
             try {
-                const { error } = await supabaseClient.from('data_insiden').insert([payloadData]);
+                // Dikirim lewat fungsi database: validasi, anti-spam, dan bisa tanpa login
+                const { error } = await supabaseClient.rpc('lapor_insiden', { p: payloadData });
                 if (error) throw error;
 
                 Swal.fire({
@@ -253,7 +303,7 @@
                 });
             } catch (err) {
                 console.error(err);
-                Swal.fire('Gagal!', 'Terjadi kesalahan jaringan saat menyimpan database.', 'error');
+                Swal.fire('Gagal!', pesanError(err), 'error');
             } finally {
                 btn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Kirim Laporan KPC';
                 btn.disabled = false;

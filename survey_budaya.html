@@ -96,7 +96,8 @@
 
             // Load Daftar Unit
             try {
-                const { data } = await supabaseClient.from('master_unit').select('nama_unit').order('nama_unit');
+                // Lewat fungsi publik: bisa diisi tanpa login, hanya berisi nama unit
+                const { data } = await supabaseClient.rpc('daftar_unit_publik');
                 const sel = document.getElementById('inp_unit_kerja');
                 if (data) {
                     sel.innerHTML = '<option value="">-- Pilih Unit Anda --</option>';
@@ -370,7 +371,8 @@
             };
 
             try {
-                const { error } = await supabaseClient.from('data_survey_budaya').insert([payloadData]);
+                // Lewat fungsi database: validasi & anti-spam, bisa tanpa login, tetap anonim
+                const { error } = await supabaseClient.rpc('kirim_survei_budaya', { p: payloadData });
                 if (error) throw error;
 
                 Swal.fire({
@@ -386,7 +388,7 @@
 
             } catch (err) {
                 console.error(err);
-                Swal.fire('Gagal!', 'Terjadi kesalahan sistem saat menghubungi pangkalan data.', 'error');
+                Swal.fire('Gagal!', (err && err.message) || 'Terjadi kesalahan sistem saat menghubungi pangkalan data.', 'error');
             } finally {
                 btnSubmit.innerHTML = '<i class="fas fa-paper-plane me-2"></i> KIRIM JAWABAN SURVEI';
                 btnSubmit.disabled = false;

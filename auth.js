@@ -10,7 +10,10 @@
 
 async function jagaGerbang() {
     const currentPage = window.location.pathname.split("/").pop() || "index.html";
-    const halamanPublik = ["index.html", "login.html", ""];
+    // Halaman yang bisa dibuka tanpa login. Formulir pelaporan & survei dikirim
+    // lewat fungsi database (lapor_insiden, kirim_survei_budaya) yang memvalidasi
+    // isian dan membatasi spam; pengunjung tanpa login tidak bisa MEMBACA data.
+    const halamanPublik = ["index.html", "login.html", "", "ikp.html", "kpc.html", "survey_budaya.html"];
 
     if (!supabaseClient) return;
 

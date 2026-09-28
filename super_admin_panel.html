@@ -14,6 +14,12 @@
         .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff;}
         .table-custom th { background-color: #2c3e50; color: white; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; border: none; padding: 12px; }
         .table-custom td { vertical-align: middle; font-size: 0.95rem; border-bottom: 1px solid #f1f3f5; padding: 12px; }
+        .daftar-opsi-form { max-height: 320px; overflow-y: auto; background: #fff; border: 1px solid #dee2e6; border-radius: 8px; }
+        .opsi-form { padding: 8px 12px; border-bottom: 1px solid #f1f3f5; cursor: pointer; }
+        .opsi-form:last-child { border-bottom: none; }
+        .opsi-form:hover { background: #f8f9fa; }
+        .opsi-form.terpilih { background: #eef6ff; }
+        .opsi-form .judul-ind { font-size: 0.8rem; color: #6c757d; }
     </style>
 </head>
 <body>
@@ -86,9 +92,26 @@
                         </div>
 
                         <div class="mb-4">
-                            <label class="fw-bold mb-1 text-dark">Daftar Indikator Mutu Wajib (ID Form)</label>
-                            <textarea class="form-control" id="inp_daftar_form" rows="3" placeholder="Pisahkan dengan koma. Contoh: IAK_1, IAK_2, IAM_1"></textarea>
-                            <small class="text-muted" style="font-size: 0.8rem;">Indikator yang diketik di sini akan muncul di Dasbor Input Mutu unit tersebut.</small>
+                            <div class="d-flex justify-content-between align-items-end mb-1 flex-wrap gap-2">
+                                <label class="fw-bold text-dark mb-0">Formulir yang Diisi Unit Ini <span class="badge bg-primary ms-1" id="jumlahFormTerpilih">0 dipilih</span></label>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="aturSemuaForm(true)">Pilih semua yang tampil</button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="aturSemuaForm(false)">Kosongkan</button>
+                                </div>
+                            </div>
+                            <input type="hidden" id="inp_daftar_form">
+                            <div class="input-group input-group-sm mb-2">
+                                <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                                <input type="text" class="form-control" id="cariForm" placeholder="Cari nama formulir atau judul indikator..." oninput="renderOpsiForm()">
+                                <select class="form-select" id="saringForm" style="max-width: 190px;" onchange="renderOpsiForm()">
+                                    <option value="">Semua formulir</option>
+                                    <option value="dipilih">Yang dipilih saja</option>
+                                    <option value="profil">Punya profil indikator</option>
+                                    <option value="tanpa">Tanpa profil (mis. PPI)</option>
+                                </select>
+                            </div>
+                            <div class="daftar-opsi-form" id="daftarOpsiForm"></div>
+                            <small class="text-muted" style="font-size: 0.8rem;">Daftar diambil dari Form Builder. Formulir yang dicentang muncul di halaman Input Mutu unit ini (selain formulir dari indikator yang unit pelaksananya unit ini).</small>
                         </div>
 
                         <div class="d-grid mt-2 border-top pt-3">
@@ -113,6 +136,8 @@
 
     <script>
         let listUnits = [];
+        let daftarFormSistem = [];      // [{ id_form, judul: [..] }] dari Form Builder + Profil Indikator
+        let formTerpilih = new Set();   // id_form yang dicentang di modal
 
         document.addEventListener("DOMContentLoaded", function () {
             if (!supabaseClient) {
@@ -120,7 +145,93 @@
                 return;
             }
             loadUnits();
+            muatDaftarForm();
         });
+
+        // Formulir yang ada di Form Builder, beserta judul indikator yang memakainya
+        async function muatDaftarForm() {
+            try {
+                const [resForm, resInd] = await Promise.all([
+                    ambilSemua(() => supabaseClient.from('setup_formulir').select('id_form').order('id_form')),
+                    ambilSemua(() => supabaseClient.from('master_indikator').select('id_indikator, id_form, judul_indikator, status_aktif').order('id_indikator'))
+                ]);
+                if (resForm.error) throw resForm.error;
+                const judul = new Map();
+                (resInd.data || []).filter(i => i.status_aktif !== false && i.id_form).forEach(i => {
+                    if (!judul.has(i.id_form)) judul.set(i.id_form, []);
+                    judul.get(i.id_form).push(i.judul_indikator);
+                });
+                daftarFormSistem = (resForm.data || []).map(f => ({ id_form: f.id_form, judul: judul.get(f.id_form) || [] }))
+                    .sort((a, b) => a.id_form.localeCompare(b.id_form, 'id'));
+                if (listUnits.length) renderTable(listUnits);
+            } catch (err) {
+                console.error('Gagal memuat daftar formulir', err);
+            }
+        }
+
+        const pecahDaftarForm = teks => (teks || '').split(',').map(s => s.trim()).filter(Boolean);
+
+        function sinkronInputForm() {
+            // Urutan mengikuti daftar Form Builder; formulir lama yang tidak dikenal tetap di akhir
+            const dikenal = daftarFormSistem.map(f => f.id_form).filter(id => formTerpilih.has(id));
+            const lain = [...formTerpilih].filter(id => !daftarFormSistem.some(f => f.id_form === id));
+            document.getElementById('inp_daftar_form').value = [...dikenal, ...lain].join(', ');
+            document.getElementById('jumlahFormTerpilih').textContent = `${formTerpilih.size} dipilih`;
+        }
+
+        window.renderOpsiForm = function() {
+            const wadah = document.getElementById('daftarOpsiForm');
+            const cari = document.getElementById('cariForm').value.toLowerCase().trim();
+            const saring = document.getElementById('saringForm').value;
+            // Formulir yang tercatat di unit tetapi sudah tidak ada di Form Builder ikut ditampilkan (agar bisa dilepas)
+            const hilang = [...formTerpilih].filter(id => !daftarFormSistem.some(f => f.id_form === id)).map(id => ({ id_form: id, judul: [], hilang: true }));
+            const semua = [...daftarFormSistem, ...hilang];
+            const tampil = semua.filter(f => {
+                if (saring === 'dipilih' && !formTerpilih.has(f.id_form)) return false;
+                if (saring === 'profil' && !f.judul.length) return false;
+                if (saring === 'tanpa' && (f.judul.length || f.hilang)) return false;
+                if (!cari) return true;
+                return f.id_form.toLowerCase().replace(/_/g, ' ').includes(cari.replace(/_/g, ' ')) || f.judul.some(j => (j || '').toLowerCase().includes(cari));
+            });
+            wadah.dataset.tampil = JSON.stringify(tampil.map(f => f.id_form));
+            if (!daftarFormSistem.length && !hilang.length) {
+                wadah.innerHTML = '<div class="p-3 text-muted small">Belum ada formulir di Form Builder (atau gagal dimuat).</div>';
+                return;
+            }
+            wadah.innerHTML = tampil.map((f, i) => {
+                const on = formTerpilih.has(f.id_form);
+                const ket = f.hilang ? '<span class="badge bg-danger ms-1">tidak ada di Form Builder</span>'
+                    : !f.judul.length ? '<span class="badge bg-secondary ms-1">tanpa profil</span>' : '';
+                return `<label class="opsi-form d-flex align-items-start gap-2 mb-0 ${on ? 'terpilih' : ''}" for="opsiForm_${i}">
+                    <input class="form-check-input mt-1" type="checkbox" id="opsiForm_${i}" data-id="${esc(f.id_form)}" ${on ? 'checked' : ''} onchange="pilihForm(this)">
+                    <span><code class="fw-bold">${esc(f.id_form)}</code>${ket}
+                    ${f.judul.length ? `<div class="judul-ind">${f.judul.map(j => esc(j)).join(' · ')}</div>` : ''}</span>
+                </label>`;
+            }).join('') || '<div class="p-3 text-muted small">Tidak ada formulir yang cocok.</div>';
+        };
+
+        window.pilihForm = function(el) {
+            const id = el.dataset.id;
+            if (el.checked) formTerpilih.add(id); else formTerpilih.delete(id);
+            el.closest('.opsi-form').classList.toggle('terpilih', el.checked);
+            sinkronInputForm();
+        };
+
+        window.aturSemuaForm = function(pilih) {
+            const tampil = JSON.parse(document.getElementById('daftarOpsiForm').dataset.tampil || '[]');
+            if (pilih) tampil.forEach(id => formTerpilih.add(id));
+            else if (document.getElementById('cariForm').value || document.getElementById('saringForm').value) tampil.forEach(id => formTerpilih.delete(id));
+            else formTerpilih.clear();
+            sinkronInputForm(); renderOpsiForm();
+        };
+
+        async function siapkanPilihanForm(teksDaftar) {
+            if (!daftarFormSistem.length) await muatDaftarForm();
+            formTerpilih = new Set(pecahDaftarForm(teksDaftar));
+            document.getElementById('cariForm').value = '';
+            document.getElementById('saringForm').value = '';
+            sinkronInputForm(); renderOpsiForm();
+        }
 
         // 1. READ: AMBIL DATA DARI TABEL master_unit
         async function loadUnits() {
@@ -160,7 +271,10 @@
                 if(unit.daftar_form) {
                     let forms = unit.daftar_form.split(',').map(s => s.trim()).filter(Boolean);
                     forms.forEach(f => {
-                        badgeForms += `<span class="badge bg-info text-dark me-1 mb-1 border">${esc(f)}</span>`;
+                        const dikenal = !daftarFormSistem.length || daftarFormSistem.some(x => x.id_form === f);
+                        badgeForms += dikenal
+                            ? `<span class="badge bg-info text-dark me-1 mb-1 border">${esc(f)}</span>`
+                            : `<span class="badge bg-danger me-1 mb-1" title="Tidak ada di Form Builder">${esc(f)} <i class="fas fa-exclamation-triangle"></i></span>`;
                     });
                 } else {
                     badgeForms = '<span class="text-muted fst-italic" style="font-size:0.8rem;">Belum ada indikator</span>';
@@ -191,6 +305,7 @@
             document.getElementById('formUnit').reset(); 
             document.getElementById('inp_id').value = "";
             document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle me-2 text-primary"></i> Tambah Unit Baru';
+            siapkanPilihanForm('');
             new bootstrap.Modal(document.getElementById('modalUnit')).show();
         }
 
@@ -202,7 +317,7 @@
             document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit me-2 text-warning"></i> Edit Konfigurasi Unit';
             document.getElementById('inp_nama_unit').value = unit.nama_unit;
             document.getElementById('inp_kepala_unit').value = unit.kepala_unit || '';
-            document.getElementById('inp_daftar_form').value = unit.daftar_form || '';
+            siapkanPilihanForm(unit.daftar_form || '');
             
             new bootstrap.Modal(document.getElementById('modalUnit')).show();
         }

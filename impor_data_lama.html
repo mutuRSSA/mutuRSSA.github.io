@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impor Data Lama - SIM PMKP</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        body { background-color: #f0f2f5; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff; }
+        .langkah { width: 30px; height: 30px; border-radius: 50%; background: #6f42c1; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 8px; flex-shrink: 0; }
+        .zona-file { border: 2px dashed #b9a6e0; border-radius: 12px; padding: 28px; text-align: center; background: #faf8ff; cursor: pointer; transition: .2s; }
+        .zona-file:hover, .zona-file.aktif { background: #f1ecfc; border-color: #6f42c1; }
+        .tabel-kecil th { font-size: .72rem; text-transform: uppercase; color: #6c757d; white-space: nowrap; }
+        .tabel-kecil td { font-size: .85rem; vertical-align: middle; }
+        .stat { border-radius: 10px; padding: 14px; text-align: center; }
+        .stat .angka { font-size: 1.6rem; font-weight: 700; line-height: 1.1; }
+        .stat .label { font-size: .75rem; text-transform: uppercase; letter-spacing: .5px; }
+        .log-impor { background: #1e1e1e; color: #9fef00; font-family: Consolas, monospace; font-size: .8rem; border-radius: 8px; padding: 12px; max-height: 260px; overflow-y: auto; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4" style="max-width: 1250px;">
+        <div class="mb-4">
+            <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-file-import text-primary me-2"></i> Impor Data Mutu dari Google Sheet</h3>
+            <p class="text-muted mb-0">Unggah file <b>.xlsx</b> hasil unduhan Google Sheet (File → Download → Microsoft Excel). Data diperiksa dulu sebelum disimpan.</p>
+        </div>
+
+        <!-- LANGKAH 1 -->
+        <div class="card-custom p-4 mb-3">
+            <h5 class="fw-bold d-flex align-items-center"><span class="langkah">1</span> Pilih file</h5>
+            <div class="zona-file mt-2" id="zonaFile" onclick="document.getElementById('inpFile').click()">
+                <i class="fas fa-cloud-upload-alt fa-2x text-primary mb-2"></i>
+                <div class="fw-bold">Klik atau seret file ke sini</div>
+                <small class="text-muted">File unit (DB_MUTU_*.xlsx) — boleh banyak sekaligus. Sertakan juga <b>DATABASE_MUTU_MASTER.xlsx</b> untuk mencocokkan angka dengan rekap lama.</small>
+                <input type="file" id="inpFile" accept=".xlsx" multiple class="d-none">
+            </div>
+            <div class="mt-3 small text-muted d-none" id="infoMuat"><i class="fas fa-spinner fa-spin me-1"></i> <span id="teksMuat"></span></div>
+        </div>
+
+        <!-- LANGKAH 2 -->
+        <div class="card-custom p-4 mb-3 d-none" id="kartuPeriksa">
+            <h5 class="fw-bold d-flex align-items-center"><span class="langkah">2</span> Periksa hasil pembacaan</h5>
+            <p class="small text-muted mb-3">Pastikan setiap file dipasangkan ke <b>unit yang benar</b>. Kombinasi unit + indikator + bulan yang <b>sudah ada</b> di aplikasi akan dilewati.</p>
+
+            <div class="row g-2 mb-3" id="ringkasan"></div>
+
+            <div class="table-responsive">
+                <table class="table table-sm tabel-kecil align-middle">
+                    <thead><tr><th>File</th><th style="min-width:260px">Unit tujuan</th><th>Sheet → Formulir <span class="fw-normal">(siap / sudah ada / bermasalah)</span></th><th class="text-end">Total file</th></tr></thead>
+                    <tbody id="bodyFile"></tbody>
+                </table>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap mt-2">
+                <button class="btn btn-outline-danger btn-sm d-none" id="btnUnduhMasalah" onclick="unduhBermasalah()"><i class="fas fa-download me-1"></i> Unduh baris bermasalah (CSV)</button>
+            </div>
+        </div>
+
+        <!-- LANGKAH 3: COCOKKAN DENGAN REKAP LAMA -->
+        <div class="card-custom p-4 mb-3 d-none" id="kartuCocok">
+            <h5 class="fw-bold d-flex align-items-center"><span class="langkah">3</span> Cocokkan capaian dengan rekap lama</h5>
+            <p class="small text-muted mb-2">Capaian dihitung ulang dengan rumus di Profil Indikator (aplikasi baru), lalu dibandingkan dengan <code>REKAP_GABUNGAN</code> di Google Sheet. Selisih biasanya berarti template rumus di Profil Indikator perlu dicek.</p>
+            <div id="hasilCocok"></div>
+        </div>
+
+        <!-- LANGKAH 4 -->
+        <div class="card-custom p-4 mb-3 d-none" id="kartuImpor">
+            <h5 class="fw-bold d-flex align-items-center"><span class="langkah">4</span> Impor ke database</h5>
+            <p class="small text-muted mb-3">Impor berjalan per batch. Jika terputus, cukup jalankan lagi: data yang sudah masuk otomatis dilewati.</p>
+            <button class="btn btn-primary fw-bold px-4" id="btnImpor" onclick="jalankanImpor()"><i class="fas fa-play me-2"></i> Mulai Impor</button>
+            <div class="progress mt-3 d-none" id="wadahProgres" style="height: 22px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" id="barProgres" style="width:0%">0%</div>
+            </div>
+            <div class="log-impor mt-3 d-none" id="logImpor"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="engine_mutu.js"></script>
+    <script src="impor_mutu.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Akses halaman: RBAC. Impor ke database: hanya role administrator (dicek di fungsi impor_data_mutu).
+        const TAHUN_IMPOR = 2026;
+        const UKURAN_BATCH = 2000;
+
+        let daftarUnit = [];            // nama unit di Supabase
+        let formulir = new Map();       // id_form -> kolom[]
+        let daftarProfil = [];          // profil indikator (untuk cek capaian)
+        let kombinasiAda = new Set();   // "unit|id_form|bulan" yang sudah ada di Supabase
+        let fileUnit = [];              // [{ namaFile, sheets, unit, hasil[] }]
+        let rekapLama = null;           // baris REKAP_GABUNGAN dari file master
+        let semuaBermasalah = [];
+
+        const kunciKomb = (u, f, b) => `${u}|${f}|${b}`;
+
+        // ---------- Pembaca Excel (ExcelJS) -> { nama, rows[][] } ----------
+        function formatAdalahTanggal(fmt) {
+            if (!fmt || /general/i.test(fmt)) return false;
+            const bersih = fmt.replace(/"[^"]*"/g, '').replace(/\[[^\]]*\]/g, '');
+            return /[dmyhs]/i.test(bersih);
+        }
+        function serialKeTanggal(n) { return new Date(Math.round((n - 25569) * 86400000)); }
+        function nilaiSel(cell) {
+            let v = cell.value;
+            if (v === null || v === undefined) return null;
+            if (v instanceof Date) return v;
+            if (typeof v === 'object') {
+                if ('result' in v) v = v.result;
+                else if (v.richText) return v.richText.map(t => t.text).join('');
+                else if ('text' in v) return v.text;
+                else return null; // error / hyperlink kosong
+                if (v instanceof Date) return v;
+                if (v && typeof v === 'object') return null;
+            }
+            if (typeof v === 'number' && formatAdalahTanggal(cell.numFmt)) return serialKeTanggal(v);
+            return v;
+        }
+        async function bacaXlsx(file) {
+            const wb = new ExcelJS.Workbook();
+            await wb.xlsx.load(await file.arrayBuffer());
+            return wb.worksheets.map(ws => {
+                const rows = [];
+                const jmlKolom = ws.columnCount;
+                ws.eachRow({ includeEmpty: true }, (row, nomor) => {
+                    const isi = [];
+                    for (let c = 1; c <= jmlKolom; c++) isi.push(nilaiSel(row.getCell(c)));
+                    rows[nomor - 1] = isi;
+                });
+                return { nama: ws.name, rows: Array.from(rows, r => r || []) };
+            });
+        }
+
+        // ---------- Data referensi dari Supabase ----------
+        async function muatReferensi() {
+            const [unit, form, ind, ada] = await Promise.all([
+                supabaseClient.rpc('daftar_unit_publik'),
+                ambilSemua(() => supabaseClient.from('setup_formulir').select('id_form, kolom').order('id_form')),
+                ambilSemua(() => supabaseClient.from('master_indikator').select('*').order('id_indikator')),
+                ambilSemua(() => supabaseClient.from('data_mutu_harian').select('unit_kerja, id_indikator, bulan').eq('tahun', TAHUN_IMPOR).order('id'))
+            ]);
+            for (const r of [unit, form, ind, ada]) if (r.error) throw r.error;
+            daftarUnit = (unit.data || []).map(u => u.nama_unit);
+            formulir = new Map((form.data || []).map(f => [f.id_form, Array.isArray(f.kolom) ? f.kolom : []]));
+            daftarProfil = (ind.data || []).filter(p => p.id_form && p.status_aktif !== false);
+            kombinasiAda = new Set((ada.data || []).map(d => kunciKomb(d.unit_kerja, d.id_indikator, d.bulan)));
+        }
+
+        // ---------- Langkah 1: pilih file ----------
+        const zona = document.getElementById('zonaFile');
+        zona.addEventListener('dragover', e => { e.preventDefault(); zona.classList.add('aktif'); });
+        zona.addEventListener('dragleave', () => zona.classList.remove('aktif'));
+        zona.addEventListener('drop', e => { e.preventDefault(); zona.classList.remove('aktif'); prosesFile([...e.dataTransfer.files]); });
+        document.getElementById('inpFile').addEventListener('change', e => prosesFile([...e.target.files]));
+
+        function tampilMuat(teks) {
+            document.getElementById('infoMuat').classList.toggle('d-none', !teks);
+            document.getElementById('teksMuat').textContent = teks || '';
+        }
+
+        async function prosesFile(files) {
+            files = files.filter(f => /\.xlsx$/i.test(f.name));
+            if (!files.length) { Swal.fire('Oops', 'Pilih file berformat .xlsx', 'warning'); return; }
+            try {
+                tampilMuat('Memuat data referensi dari database...');
+                await muatReferensi();
+                if (formulir.size === 0) throw new Error('Form Builder di aplikasi masih kosong. Buat formulir indikator terlebih dahulu.');
+
+                fileUnit = []; rekapLama = null;
+                for (let i = 0; i < files.length; i++) {
+                    tampilMuat(`Membaca ${files[i].name} (${i + 1}/${files.length})...`);
+                    const sheets = await bacaXlsx(files[i]);
+                    const rekap = sheets.find(s => s.nama === 'REKAP_GABUNGAN');
+                    if (rekap) { rekapLama = rekap.rows; continue; }  // file master
+                    fileUnit.push({ namaFile: files[i].name, sheets, unit: imporTebakUnit(files[i].name, daftarUnit) });
+                }
+                tampilMuat('');
+                konversiSemua();
+            } catch (err) {
+                console.error(err); tampilMuat('');
+                Swal.fire('Gagal membaca', esc(err.message || String(err)), 'error');
+            }
+        }
+
+        // ---------- Langkah 2: konversi & ringkasan ----------
+        function konversiSemua() {
+            semuaBermasalah = [];
+            fileUnit.forEach(f => {
+                f.hasil = [];
+                if (!f.unit) return;
+                f.sheets.filter(s => s.nama !== 'SHADOW_REKAP').forEach(s => {
+                    const h = imporKonversiSheet(s, formulir, f.unit, { tahun: TAHUN_IMPOR, petugas: 'Impor Google Sheet' });
+                    h.sudahAda = h.baris.filter(b => kombinasiAda.has(kunciKomb(b.unit_kerja, b.id_indikator, b.bulan))).length;
+                    h.bermasalah.forEach(m => semuaBermasalah.push({ file: f.namaFile, sheet: s.nama, ...m }));
+                    f.hasil.push(h);
+                });
+            });
+            renderPeriksa();
+            renderCocok();
+        }
+
+        function renderPeriksa() {
+            let totSiap = 0, totAda = 0, totMasalah = 0, fileTanpaUnit = 0;
+            const body = document.getElementById('bodyFile');
+            body.innerHTML = fileUnit.map((f, fi) => {
+                const opsi = ['<option value="">— pilih unit —</option>', ...daftarUnit.map(u => `<option value="${esc(u)}" ${u === f.unit ? 'selected' : ''}>${esc(u)}</option>`)].join('');
+                if (!f.unit) fileTanpaUnit++;
+                const hs = f.hasil || [];
+                const baris = hs.map(h => {
+                    const siap = h.baris.length - h.sudahAda;
+                    totSiap += siap; totAda += h.sudahAda; totMasalah += h.bermasalah.length;
+                    const cat = [...h.catatan];
+                    if (h.tahunDibetulkan) cat.push(`${h.tahunDibetulkan} tahun salah ketik dibetulkan ke ${TAHUN_IMPOR}`);
+                    if (h.kolomSheetDiabaikan.length) cat.push(`Kolom tidak ada di formulir: ${h.kolomSheetDiabaikan.join(', ')}`);
+                    if (h.kolomFormulirKosong.length) cat.push(`Kolom formulir tanpa data: ${h.kolomFormulirKosong.join(', ')}`);
+                    return `<div class="d-flex justify-content-between border-bottom py-1 gap-2">
+                        <span>${esc(h.namaSheet)} ${h.idForm ? `<span class="text-muted">→</span> <code>${esc(h.idForm)}</code>` : '<span class="badge bg-secondary">dilewati</span>'}</span>
+                        <span class="text-nowrap small">${siap} / ${h.sudahAda} / ${h.bermasalah.length}</span></div>
+                        ${cat.length ? `<div class="small text-muted mb-1">${cat.map(esc).join('<br>')}</div>` : ''}`;
+                }).join('');
+                const siapF = hs.reduce((a, h) => a + h.baris.length - h.sudahAda, 0);
+                const adaF = hs.reduce((a, h) => a + h.sudahAda, 0);
+                const masalahF = hs.reduce((a, h) => a + h.bermasalah.length, 0);
+                return `<tr>
+                    <td class="fw-semibold">${esc(f.namaFile)}</td>
+                    <td><select class="form-select form-select-sm ${f.unit ? '' : 'border-danger'}" onchange="gantiUnit(${fi}, this.value)">${opsi}</select></td>
+                    <td>${f.unit ? baris : '<span class="text-danger small">Pilih unit tujuan untuk file ini</span>'}</td>
+                    <td class="text-end text-nowrap small"><b>${siapF}</b> siap · ${adaF} ada · ${masalahF} masalah</td>
+                </tr>`;
+            }).join('');
+
+            document.getElementById('ringkasan').innerHTML = `
+                <div class="col-6 col-md-3"><div class="stat bg-success bg-opacity-10 text-success"><div class="angka">${totSiap.toLocaleString('id-ID')}</div><div class="label">Baris siap diimpor</div></div></div>
+                <div class="col-6 col-md-3"><div class="stat bg-secondary bg-opacity-10 text-secondary"><div class="angka">${totAda.toLocaleString('id-ID')}</div><div class="label">Dilewati (sudah ada)</div></div></div>
+                <div class="col-6 col-md-3"><div class="stat bg-danger bg-opacity-10 text-danger"><div class="angka">${totMasalah.toLocaleString('id-ID')}</div><div class="label">Bermasalah</div></div></div>
+                <div class="col-6 col-md-3"><div class="stat bg-primary bg-opacity-10 text-primary"><div class="angka">${fileUnit.length}</div><div class="label">File unit</div></div></div>`;
+
+            document.getElementById('kartuPeriksa').classList.remove('d-none');
+            document.getElementById('btnUnduhMasalah').classList.toggle('d-none', totMasalah === 0);
+            document.getElementById('kartuImpor').classList.toggle('d-none', totSiap === 0);
+            const btn = document.getElementById('btnImpor');
+            btn.disabled = fileTanpaUnit > 0;
+            btn.title = fileTanpaUnit > 0 ? 'Masih ada file tanpa unit tujuan' : '';
+        }
+
+        window.gantiUnit = function (i, unit) {
+            fileUnit[i].unit = unit;
+            konversiSemua();
+        };
+
+        window.unduhBermasalah = function () {
+            const baris = [['File', 'Sheet', 'Baris Excel', 'Masalah', 'Nilai tanggal/bulan']]
+                .concat(semuaBermasalah.map(m => [m.file, m.sheet, m.baris, m.alasan, m.nilai]));
+            const csv = baris.map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(';')).join('\r\n');
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }));
+            a.download = 'baris_bermasalah_impor_mutu.csv';
+            a.click();
+        };
+
+        // ---------- Langkah 3: cocokkan dengan REKAP_GABUNGAN ----------
+        function renderCocok() {
+            const kartu = document.getElementById('kartuCocok');
+            const wadah = document.getElementById('hasilCocok');
+            if (!rekapLama) {
+                kartu.classList.remove('d-none');
+                wadah.innerHTML = '<div class="alert alert-light border small mb-0"><i class="fas fa-info-circle me-1"></i> Sertakan file <b>DATABASE_MUTU_MASTER.xlsx</b> di langkah 1 untuk menjalankan pencocokan ini.</div>';
+                return;
+            }
+            const h = (rekapLama[0] || []).map(x => imporNormal(x));
+            const iU = h.indexOf('unit'), iT = h.indexOf('tahun'), iB = h.indexOf('bulan'), iF = h.indexOf('id form'), iJ = h.indexOf('judul indikator'), iC = h.indexOf('pencapaian');
+            const PETA_UNIT_LAMA = { 'unit rawat inap': 'unit rawat inap - truntum' };
+            const normUnit = u => { const n = imporNormal(u); return PETA_UNIT_LAMA[n] || n; };
+            const rekap = new Map();
+            rekapLama.slice(1).forEach(r => {
+                if (Number(r[iT]) !== TAHUN_IMPOR) return;
+                const b = imporBacaBulan(r[iB]); const c = r[iC];
+                if (!b || c === null || c === '' || isNaN(Number(c))) return;
+                rekap.set(`${normUnit(r[iU])}|${r[iF]}|${imporNormal(r[iJ])}|${b}`, Number(c));
+            });
+
+            // Hitung capaian dari data yang akan diimpor (per indikator x unit x bulan),
+            // dengan aturan yang sama dengan database (termasuk rumus lintas formulir)
+            const semua = [];
+            fileUnit.forEach(f => (f.hasil || []).forEach(hs => semua.push(...hs.baris)));
+            const formBerumus = new Set(daftarProfil.filter(p => indikatorPakaiEngine(p)).map(p => p.id_form));
+            const tanpaRumus = new Set(semua.map(b => b.id_indikator).filter(f => !formBerumus.has(f)));
+
+            let sama = 0, beda = [], tanpaRekap = 0;
+            daftarProfil.filter(p => indikatorPakaiEngine(p)).forEach(p => {
+                hitungKelompokIndikator(p, semua).forEach(g => {
+                    const k = `${normUnit(g.unit_kerja)}|${p.id_form}|${imporNormal(p.judul_indikator)}|${g.bulan}`;
+                    if (!rekap.has(k)) { tanpaRekap++; return; }
+                    const C = g.capaian ?? 0;
+                    const lama = Math.round(rekap.get(k) * 100) / 100;
+                    if (Math.abs(C - lama) <= 0.1) sama++;
+                    else beda.push({ unit: g.unit_kerja, form: p.id_form, judul: p.judul_indikator, bulan: g.bulan, C, lama, N: g.numerator, D: g.denominator });
+                });
+            });
+
+            const total = sama + beda.length;
+            beda.sort((a, b) => Math.abs(b.C - b.lama) - Math.abs(a.C - a.lama));
+            wadah.innerHTML = `
+                <div class="row g-2 mb-3">
+                    <div class="col-6 col-md-3"><div class="stat bg-success bg-opacity-10 text-success"><div class="angka">${sama}</div><div class="label">Capaian sama</div></div></div>
+                    <div class="col-6 col-md-3"><div class="stat bg-warning bg-opacity-25 text-dark"><div class="angka">${beda.length}</div><div class="label">Capaian berbeda</div></div></div>
+                    <div class="col-6 col-md-3"><div class="stat bg-light text-muted border"><div class="angka">${tanpaRumus.size}</div><div class="label">Formulir tanpa rumus</div></div></div>
+                    <div class="col-6 col-md-3"><div class="stat bg-light text-muted border"><div class="angka">${tanpaRekap}</div><div class="label">Tidak ada di rekap lama</div></div></div>
+                </div>
+                ${total ? `<p class="small mb-2">Kecocokan: <b>${Math.round(sama / total * 100)}%</b> dari ${total} kombinasi unit × indikator × bulan yang bisa dibandingkan.</p>` : ''}
+                ${tanpaRumus.size ? `<p class="small text-muted mb-2">Formulir tanpa indikator berumus di Profil Indikator (mis. surveilans PPI, atau rumus belum diisi): ${[...tanpaRumus].map(f => `<code>${esc(f)}</code>`).join(', ')}</p>` : ''}
+                ${beda.length ? `<div class="table-responsive" style="max-height:360px; overflow-y:auto;"><table class="table table-sm tabel-kecil">
+                    <thead class="table-light"><tr><th>Unit</th><th>Indikator</th><th>Bulan</th><th class="text-end">N / D baru</th><th class="text-end">Capaian baru</th><th class="text-end">Rekap lama</th></tr></thead>
+                    <tbody>${beda.slice(0, 200).map(x => `<tr><td>${esc(x.unit)}</td><td>${esc(x.judul)}<br><code class="small">${esc(x.form)}</code></td><td>${x.bulan}</td><td class="text-end">${x.N} / ${x.D}</td><td class="text-end fw-bold">${x.C}</td><td class="text-end">${x.lama}</td></tr>`).join('')}</tbody>
+                </table></div>${beda.length > 200 ? `<small class="text-muted">Menampilkan 200 selisih terbesar dari ${beda.length}.</small>` : ''}` : ''}`;
+            kartu.classList.remove('d-none');
+        }
+
+        // ---------- Langkah 4: impor ----------
+        function logImpor(teks) {
+            const el = document.getElementById('logImpor');
+            el.classList.remove('d-none');
+            el.textContent += `[${new Date().toLocaleTimeString('id-ID')}] ${teks}\n`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function susunBatch() {
+            // Satu kombinasi unit+indikator+bulan tidak pernah dipecah ke 2 batch
+            const perKomb = new Map();
+            fileUnit.forEach(f => (f.hasil || []).forEach(h => h.baris.forEach(b => {
+                const k = kunciKomb(b.unit_kerja, b.id_indikator, b.bulan);
+                if (kombinasiAda.has(k)) return;
+                if (!perKomb.has(k)) perKomb.set(k, { file: f.namaFile, rows: [] });
+                perKomb.get(k).rows.push(b);
+            })));
+            const batch = []; let kini = { rows: [], file: new Set() };
+            for (const { file, rows } of perKomb.values()) {
+                if (kini.rows.length && kini.rows.length + rows.length > UKURAN_BATCH) { batch.push(kini); kini = { rows: [], file: new Set() }; }
+                kini.rows.push(...rows); kini.file.add(file);
+            }
+            if (kini.rows.length) batch.push(kini);
+            return batch;
+        }
+
+        window.jalankanImpor = async function () {
+            const batch = susunBatch();
+            const total = batch.reduce((a, b) => a + b.rows.length, 0);
+            if (!total) { Swal.fire('Tidak ada data baru', 'Semua kombinasi sudah ada di database.', 'info'); return; }
+
+            const ok = await Swal.fire({
+                title: 'Mulai impor?',
+                html: `<b>${total.toLocaleString('id-ID')}</b> baris akan disimpan dalam ${batch.length} batch.<br><small class="text-muted">Proses bisa beberapa menit. Jangan tutup halaman ini.</small>`,
+                icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, impor', cancelButtonText: 'Batal'
+            });
+            if (!ok.isConfirmed) return;
+
+            const btn = document.getElementById('btnImpor');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Mengimpor...';
+            document.getElementById('wadahProgres').classList.remove('d-none');
+            const bar = document.getElementById('barProgres');
+            let masuk = 0, dilewati = 0, gagal = 0, selesai = 0;
+
+            for (let i = 0; i < batch.length; i++) {
+                const b = batch[i];
+                const label = [...b.file].join(', ').slice(0, 190);
+                try {
+                    const { data, error } = await supabaseClient.rpc('impor_data_mutu', { p_rows: b.rows, p_sumber: label });
+                    if (error) throw error;
+                    masuk += data.dimasukkan; dilewati += data.dilewati;
+                    logImpor(`Batch ${i + 1}/${batch.length}: ${data.dimasukkan} masuk, ${data.dilewati} dilewati (${label})`);
+                } catch (err) {
+                    gagal += b.rows.length;
+                    logImpor(`Batch ${i + 1}/${batch.length} GAGAL: ${err.message || err}`);
+                }
+                selesai += b.rows.length;
+                const pct = Math.round(selesai / total * 100);
+                bar.style.width = pct + '%'; bar.textContent = pct + '%';
+            }
+
+            bar.classList.remove('progress-bar-animated');
+            logImpor(`SELESAI. Masuk: ${masuk}, dilewati: ${dilewati}, gagal: ${gagal}.`);
+            btn.innerHTML = '<i class="fas fa-check me-2"></i> Selesai';
+            Swal.fire(gagal ? 'Selesai dengan catatan' : 'Impor selesai!',
+                `${masuk.toLocaleString('id-ID')} baris masuk, ${dilewati.toLocaleString('id-ID')} dilewati${gagal ? `, <b>${gagal.toLocaleString('id-ID')} gagal</b> (lihat log, lalu jalankan ulang)` : ''}.`,
+                gagal ? 'warning' : 'success');
+        };
+    </script>
+</body>
+</html>
