@@ -459,7 +459,7 @@
             const tbody = document.getElementById('tbodySampel');
             
             let thHtml = '<tr><th class="text-center" width="5%">No Acak</th>';
-            headers.forEach(h => { thHtml += `<th>${h}</th>`; });
+            headers.forEach(h => { thHtml += `<th>${esc(h)}</th>`; });
             thHtml += '</tr>';
             thead.innerHTML = thHtml;
 
@@ -468,7 +468,7 @@
                 tbHtml += `<tr><td class="text-center fw-bold text-primary">#${idx + 1}</td>`;
                 
                 // Tampilkan nama unit jika validasi RS ALL
-                if(isAllRS) tbHtml += `<td class="fw-bold">${item.unit_kerja}</td>`;
+                if(isAllRS) tbHtml += `<td class="fw-bold">${esc(item.unit_kerja)}</td>`;
                 
                 (item.data_input || []).forEach(cellVal => { tbHtml += `<td>${cellVal || '-'}</td>`; });
                 tbHtml += `</tr>`;

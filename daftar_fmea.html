@@ -235,12 +235,12 @@
                                     <span class="badge bg-secondary font-monospace" style="font-size:0.75rem;">${id.substring(0,8).toUpperCase()}</span>
                                     <span class="badge-fmea ${badgeClass}" onclick="ubahStatus('${id}', '${statusProyek}')" title="Klik untuk mengubah status proyek">${statusProyek.toUpperCase()}</span>
                                 </div>
-                                <h5 class="fw-bold text-dark mb-1">${p.nama_proses}</h5>
-                                <small class="text-muted d-block mb-1"><i class="fas fa-user-tie me-1"></i> Ketua Tim: <b>${p.ketua_tim || "-"}</b></small>
+                                <h5 class="fw-bold text-dark mb-1">${esc(p.nama_proses)}</h5>
+                                <small class="text-muted d-block mb-1"><i class="fas fa-user-tie me-1"></i> Ketua Tim: <b>${esc(p.ketua_tim || "-")}</b></small>
                                 <small class="text-muted" style="font-size:0.8rem;"><i class="fas fa-calendar-alt me-1"></i> Tanggal Inisiasi: ${tgl}</small>
                             </div>
                             <div class="text-end">
-                                <small class="d-block mb-2 fw-bold text-uppercase" style="font-size:0.75rem; color:#6f42c1;"><i class="fas fa-link me-1"></i> ${p.sumber_risiko || "Manual"}</small>
+                                <small class="d-block mb-2 fw-bold text-uppercase" style="font-size:0.75rem; color:#6f42c1;"><i class="fas fa-link me-1"></i> ${esc(p.sumber_risiko || "Manual")}</small>
                                 <div class="d-flex gap-2 justify-content-end mb-1">
                                     <button class="btn btn-sm btn-info text-white fw-bold shadow-sm" onclick="bukaPantauCetak('${id}')"><i class="fas fa-print me-1"></i> Pantau & Cetak</button>
                                     <a href="fmea_builder.html?proyek_id=${id}" class="btn btn-sm btn-outline-primary fw-bold shadow-sm"><i class="fas fa-edit me-1"></i> Edit Tabel</a>
@@ -304,23 +304,23 @@
                     let tindakLanjut = row[12] || '-';
                     let statusRealisasi = row[13] || '-';
 
-                    let picTarget = `<b>${row[10] || '-'}</b><br><small>${row[11] || '-'}</small>`;
+                    let picTarget = `<b>${esc(row[10] || '-')}</b><br><small>${esc(row[11] || '-')}</small>`;
 
                     htmlTable += `
                         <tr>
                             <td class="text-center">${validCount++}</td>
-                            <td>${row[0] || ''}</td>
-                            <td>${row[1] || ''}</td>
-                            <td>${row[2] || ''}</td>
-                            <td class="text-center">${row[3] || ''}</td>
-                            <td>${row[4] || ''}</td>
-                            <td class="text-center">${row[5] || ''}</td>
-                            <td>${row[6] || ''}</td>
-                            <td class="text-center">${row[7] || ''}</td>
+                            <td>${esc(row[0] || '')}</td>
+                            <td>${esc(row[1] || '')}</td>
+                            <td>${esc(row[2] || '')}</td>
+                            <td class="text-center">${esc(row[3] || '')}</td>
+                            <td>${esc(row[4] || '')}</td>
+                            <td class="text-center">${esc(row[5] || '')}</td>
+                            <td>${esc(row[6] || '')}</td>
+                            <td class="text-center">${esc(row[7] || '')}</td>
                             <td class="text-center align-middle">${rpnBadge}</td>
-                            <td>${row[9] || ''}</td>
+                            <td>${esc(row[9] || '')}</td>
                             <td class="text-center">${picTarget}</td>
-                            <td>${tindakLanjut}</td>
+                            <td>${esc(tindakLanjut)}</td>
                             <td class="text-center fw-bold text-success">${statusRealisasi}</td>
                         </tr>
                     `;

@@ -186,7 +186,7 @@
                 } else {
                     if(data.nama_pasien) {
                         let s = data.detail_spesifik || {};
-                        let detailP = `${data.nama_pasien} (RM: ${data.no_rm})<br>${s.umur_tahun||0}Th ${s.umur_bulan||0}Bl | ${s.jenis_kelamin||'-'} | ${s.penanggung_biaya||'-'}`;
+                        let detailP = `${esc(data.nama_pasien)} (RM: ${esc(data.no_rm)})<br>${s.umur_tahun||0}Th ${s.umur_bulan||0}Bl | ${esc(s.jenis_kelamin||'-')} | ${esc(s.penanggung_biaya||'-')}`;
                         document.getElementById('fakta_pasien').innerHTML = detailP;
                     }
                 }

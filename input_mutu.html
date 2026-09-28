@@ -436,7 +436,7 @@
                 let triggerCalc = `onkeyup="kalkulasiOtomatisDariHOT()" onchange="kalkulasiOtomatisDariHOT()"`;
 
                 if (field.tipe === 'dropdown') {
-                    let opts = field.opsi ? field.opsi.split(',').map(s => `<option value="${s.trim()}">${s.trim()}</option>`).join('') : '';
+                    let opts = field.opsi ? field.opsi.split(',').map(s => `<option value="${esc(s.trim())}">${esc(s.trim())}</option>`).join('') : '';
                     inputHTML = `<select class="form-select input-data-transaksi" id="${idInput}" data-index="${index}" ${triggerCalc}><option value="">-- Pilih --</option>${opts}</select>`;
                 } 
                 else if (field.tipe === 'checkbox') {
@@ -449,8 +449,8 @@
                     inputHTML = `<input type="${inputType}" class="form-control input-data-transaksi" id="${idInput}" data-index="${index}" ${triggerCalc}>`;
                 }
 
-                wadahForm.innerHTML += `<div class="${colClass}"><label class="form-label-custom">${field.judul}</label>${inputHTML}</div>`;
-                headHTML += `<th>${field.judul}</th>`;
+                wadahForm.innerHTML += `<div class="${colClass}"><label class="form-label-custom">${esc(field.judul)}</label>${inputHTML}</div>`;
+                headHTML += `<th>${esc(field.judul)}</th>`;
             });
             headHTML += '</tr>'; document.getElementById('theadTransaksi').innerHTML = headHTML;
         }

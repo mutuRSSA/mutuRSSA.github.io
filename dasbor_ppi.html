@@ -339,7 +339,7 @@
                     
                     tbodyHtmlHais += `
                         <tr>
-                            <td class="fw-bold text-dark text-start" style="padding-left:15px;">${unitName}</td>
+                            <td class="fw-bold text-dark text-start" style="padding-left:15px;">${esc(unitName)}</td>
                             <td>${cauti.kasus}</td><td>${cauti.hari}</td><td><span class="badge bg-info badge-rate">${rCauti} ‰</span></td>
                             <td>${vap.kasus}</td><td>${vap.hari}</td><td><span class="badge bg-warning text-dark badge-rate">${rVap} ‰</span></td>
                             <td>${clabsi.kasus}</td><td>${clabsi.hari}</td><td><span class="badge bg-primary badge-rate">${rClabsi} ‰</span></td>
@@ -416,7 +416,7 @@
                     tbodyHtmlSsi += `
                         <tr>
                             <td>${index++}</td>
-                            <td class="text-start fw-semibold text-dark">${op}</td>
+                            <td class="text-start fw-semibold text-dark">${esc(op)}</td>
                             <td>${num}</td>
                             <td>${den}</td>
                             <td><span class="badge bg-danger fs-6 px-3 rounded-pill">${rate} %</span></td>

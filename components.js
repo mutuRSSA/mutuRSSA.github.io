@@ -73,11 +73,11 @@ function loadNavigation() {
     let navbarRightHTML = isLoggedIn 
         ? `<div class="dropdown">
             <button class="btn btn-outline-light btn-sm dropdown-toggle fw-bold border-0" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                <i class="fas fa-user-circle fa-lg me-1"></i> ${userData.username}
+                <i class="fas fa-user-circle fa-lg me-1"></i> ${esc(userData.username)}
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow mt-2">
-                <li class="px-3 py-2 bg-light border-bottom"><small class="text-muted d-block">Hak Akses:</small><span class="fw-bold text-primary"><i class="fas fa-shield-alt me-1"></i> ${role}</span></li>
-                <li class="px-3 py-2 bg-light border-bottom"><small class="text-muted d-block">Unit Tugas:</small><span class="fw-bold text-dark"><i class="fas fa-hospital me-1"></i> ${unit}</span></li>
+                <li class="px-3 py-2 bg-light border-bottom"><small class="text-muted d-block">Hak Akses:</small><span class="fw-bold text-primary"><i class="fas fa-shield-alt me-1"></i> ${esc(role)}</span></li>
+                <li class="px-3 py-2 bg-light border-bottom"><small class="text-muted d-block">Unit Tugas:</small><span class="fw-bold text-dark"><i class="fas fa-hospital me-1"></i> ${esc(unit)}</span></li>
                 <li><a class="dropdown-item py-2 mt-1" href="ganti_password.html"><i class="fas fa-key me-2 text-secondary"></i> Ganti Password</a></li>
                 <li><button class="dropdown-item text-danger fw-bold py-2" onclick="window.logoutSystem()"><i class="fas fa-sign-out-alt me-2"></i> Logout Sistem</button></li>
             </ul>
@@ -153,6 +153,7 @@ function loadNavigation() {
                     <a href="super_admin_panel.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0 mt-1" id="menu-super-admin" style="font-size: 0.95rem;"><i class="fas fa-hospital me-2"></i> Pengaturan Unit</a>
                     <a href="form_builder.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0 mt-1" id="menu-form-builder" style="font-size: 0.95rem;"><i class="fas fa-cubes me-2"></i> Form Builder</a>
                     <a href="database_admin.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0 mt-1" style="font-size: 0.95rem;"><i class="fas fa-server me-2"></i> Backup & Database</a>
+                    ${allowedPages.includes("audit_log.html") ? `<a href="audit_log.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0 mt-1" id="menu-audit-log" style="font-size: 0.95rem;"><i class="fas fa-history me-2"></i> Log Audit</a>` : ''}
                 </div>
             </div>
 
@@ -165,8 +166,7 @@ function loadNavigation() {
                     <a href="daftar_pdsa.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-daftar-pdsa" style="font-size: 0.95rem;"><i class="fas fa-tasks me-2"></i> Pemantauan PDSA</a>
                     <a href="daftar_insiden.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0 mt-1" id="menu-daftar-ikp" style="font-size: 0.95rem;"><i class="fas fa-table me-2"></i> Daftar Insiden (IKP)</a>
                     <a href="analisis_sederhana.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-analisis-sederhana" style="font-size: 0.95rem;"><i class="fas fa-search me-2"></i> Analisis Sederhana</a>
-                    <a href="analisa_rca.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-analisis-rca" style="font-size: 0.95rem;"><i class="fas fa-project-diagram me-2"></i> Analisis RCA</a>
-                    <a href="daftar_kpc.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-daftar-kpc" style="font-size: 0.95rem;"><i class="fas fa-list-alt me-2"></i> Daftar KPC</a>
+                    <a href="analisis_rca.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-analisis-rca" style="font-size: 0.95rem;"><i class="fas fa-project-diagram me-2"></i> Analisis RCA</a>
                     <a href="dasbor_budaya.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0 mt-1" id="menu-dasbor-budaya" style="font-size: 0.95rem;"><i class="fas fa-spider me-2"></i> Analitik Budaya</a>
                     <a href="dasbor_risiko.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0 mt-1" id="menu-dasbor-risiko" style="font-size: 0.95rem;"><i class="fas fa-broadcast-tower me-2"></i> Supervisi Risiko RS</a>
                     <a href="profil_risiko_rs.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-profil-risiko" style="font-size: 0.95rem;"><i class="fas fa-crown me-2"></i> Profil Risiko RS</a>
@@ -242,8 +242,7 @@ function loadNavigation() {
     else if (page === 'daftar_pdsa.html') { document.getElementById('menu-daftar-pdsa')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'daftar_insiden.html') { document.getElementById('menu-daftar-ikp')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'analisis_sederhana.html') { document.getElementById('menu-analisis-sederhana')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
-    else if (page === 'analisa_rca.html') { document.getElementById('menu-analisis-rca')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
-    else if (page === 'daftar_kpc.html') { document.getElementById('menu-daftar-kpc')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
+    else if (page === 'analisis_rca.html') { document.getElementById('menu-analisis-rca')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'dasbor_budaya.html') { document.getElementById('menu-dasbor-budaya')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'dasbor_risiko.html') { document.getElementById('menu-dasbor-risiko')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'profil_risiko_rs.html') { document.getElementById('menu-profil-risiko')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }

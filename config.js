@@ -85,3 +85,22 @@ async function ambilSemua(buatQuery, ukuranHalaman = 1000) {
     try { return { data: await ambilSemuaBaris(buatQuery, ukuranHalaman), error: null }; }
     catch (error) { return { data: null, error }; }
 }
+
+// 6. PENGAMAN XSS
+// Semua teks dari database/pengguna yang dimasukkan ke HTML (innerHTML,
+// template string, Swal html) WAJIB lewat esc(). Tanpa ini, isian seperti
+// kronologi insiden bisa berisi <script>/<img onerror> yang ikut berjalan
+// di browser Komite Mutu (dengan hak admin).
+function esc(s) {
+    return String(s ?? '').replace(/[&<>"'`]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;', '`': '&#96;' }[c]));
+}
+
+// Untuk teks di DALAM argumen JavaScript pada atribut HTML, misalnya
+//   onclick="hapus('${escJsAttr(nama)}')"
+// esc() saja tidak cukup (browser men-decode &#39; kembali jadi ' sebelum
+// JS dijalankan), jadi di-escape untuk JS dulu, baru untuk HTML.
+function escJsAttr(s) {
+    const js = String(s ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"')
+        .replace(/\r?\n/g, '\\n').replace(/</g, '\\x3c');
+    return esc(js);
+}

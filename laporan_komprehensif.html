@@ -503,20 +503,20 @@
                 items.forEach((item, idx) => {
                     let tdBulans = listBulan.map(b => `<td style="text-align:center;">${item.capaian_bulan[b].val !== null ? item.capaian_bulan[b].val : '-'}</td>`).join('');
                     let cl = item.isTercapai ? "color: green;" : "color: red; font-weight: bold;";
-                    html += `<tr><td style="text-align:center;">${idx+1}</td><td>${item.judul}</td><td style="text-align:center;">${item.target} ${item.satuan}</td>${tdBulans}<td style="text-align:center; ${cl}">${item.rata_rata} ${item.satuan}</td></tr>`;
+                    html += `<tr><td style="text-align:center;">${idx+1}</td><td>${esc(item.judul)}</td><td style="text-align:center;">${item.target} ${esc(item.satuan)}</td>${tdBulans}<td style="text-align:center; ${cl}">${item.rata_rata} ${esc(item.satuan)}</td></tr>`;
                 });
                 html += `</tbody></table>`;
 
                 html += `<p><b>Grafik Tren & Tindak Lanjut (PDSA):</b></p>`;
                 items.forEach((item, idx) => {
-                    html += `<h5>${idx+1}. ${item.judul}</h5>`;
+                    html += `<h5>${idx+1}. ${esc(item.judul)}</h5>`;
                     html += `<div style="text-align:center; margin-bottom: 10pt;"><img src="${item.chartBase64}" width="400" height="200"></div>`;
                     
                     let pdsaMatch = rawDataPdsa.find(p => p.id_indikator === item.id_indikator);
                     if(pdsaMatch) { 
                         let masalah = pdsaMatch.plan_data ? pdsaMatch.plan_data.masalah : "-";
                         let rencana = pdsaMatch.plan_data && pdsaMatch.plan_data.action[0] ? pdsaMatch.plan_data.action[0].act : "-";
-                        html += `<table><thead><tr><th width="50%">Analisa Akar Masalah</th><th width="50%">Rencana Tindak Lanjut</th></tr></thead><tbody><tr><td>${masalah}</td><td>${rencana}</td></tr></tbody></table>`;
+                        html += `<table><thead><tr><th width="50%">Analisa Akar Masalah</th><th width="50%">Rencana Tindak Lanjut</th></tr></thead><tbody><tr><td>${esc(masalah)}</td><td>${esc(rencana)}</td></tr></tbody></table>`;
                     }
                 });
                 return html;
@@ -539,19 +539,19 @@
                 });
 
                 for(let uName in unitsObj) {
-                    impUnitHtml += `<h4>Unit: ${uName}</h4>`;
+                    impUnitHtml += `<h4>Unit: ${esc(uName)}</h4>`;
                     let items = unitsObj[uName];
                     
                     impUnitHtml += `<table><thead><tr><th width="5%">No</th><th width="35%">Judul Indikator</th><th width="10%">Target</th>${thBulan}<th width="10%">Rata-rata</th></tr></thead><tbody>`;
                     items.forEach((item, idx) => {
                         let tdBulans = listBulan.map(b => `<td style="text-align:center;">${item.capaian_bulan[b].val !== null ? item.capaian_bulan[b].val : '-'}</td>`).join('');
                         let cl = item.isTercapai ? "color: green;" : "color: red; font-weight: bold;";
-                        impUnitHtml += `<tr><td style="text-align:center;">${idx+1}</td><td>${item.judul}</td><td style="text-align:center;">${item.target} ${item.satuan}</td>${tdBulans}<td style="text-align:center; ${cl}">${item.rata_rata} ${item.satuan}</td></tr>`;
+                        impUnitHtml += `<tr><td style="text-align:center;">${idx+1}</td><td>${esc(item.judul)}</td><td style="text-align:center;">${item.target} ${esc(item.satuan)}</td>${tdBulans}<td style="text-align:center; ${cl}">${item.rata_rata} ${esc(item.satuan)}</td></tr>`;
                     });
                     impUnitHtml += `</tbody></table>`;
 
                     items.forEach((item, idx) => {
-                        impUnitHtml += `<h5>${idx+1}. ${item.judul}</h5>`;
+                        impUnitHtml += `<h5>${idx+1}. ${esc(item.judul)}</h5>`;
                         impUnitHtml += `<div style="text-align:center; margin-bottom: 10pt;"><img src="${item.chartBase64}" width="400" height="200"></div>`;
                         
                         let pdsaMatch = rawDataPdsa.find(p => p.id_indikator === item.id_indikator && p.unit_kerja === item.unit);
@@ -560,7 +560,7 @@
                         if(pdsaMatch) {
                             let masalah = pdsaMatch.plan_data ? pdsaMatch.plan_data.masalah : "-";
                             let rencana = pdsaMatch.plan_data && pdsaMatch.plan_data.action[0] ? pdsaMatch.plan_data.action[0].act : "-";
-                            impUnitHtml += `<table><thead><tr><th width="50%">Analisa Akar Masalah</th><th width="50%">Rencana Tindak Lanjut</th></tr></thead><tbody><tr><td>${masalah}</td><td>${rencana}</td></tr></tbody></table>`;
+                            impUnitHtml += `<table><thead><tr><th width="50%">Analisa Akar Masalah</th><th width="50%">Rencana Tindak Lanjut</th></tr></thead><tbody><tr><td>${esc(masalah)}</td><td>${esc(rencana)}</td></tr></tbody></table>`;
                         }
                     });
                 }
@@ -580,7 +580,7 @@
             } else {
                 rawDataInsiden.forEach((r, i) => {
                     let tgl = new Date(r.waktu_insiden).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}) + " " + r.waktu_insiden.split('T')[1].substring(0,5);
-                    tabelInsidenHtml += `<tr><td style="text-align:center;">${i+1}</td><td>${tgl}</td><td>${r.insiden}</td><td style="text-align:center; font-weight:bold;">${r.grading_risiko}</td><td>${r.unit_terkait}</td></tr>`;
+                    tabelInsidenHtml += `<tr><td style="text-align:center;">${i+1}</td><td>${tgl}</td><td>${esc(r.insiden)}</td><td style="text-align:center; font-weight:bold;">${esc(r.grading_risiko)}</td><td>${esc(r.unit_terkait)}</td></tr>`;
                 });
             }
 
@@ -596,7 +596,7 @@
             if(rawDataRisiko.length === 0) tabelRisikoLengkapHtml = "<tr><td colspan='5' style='text-align:center;'>Belum ada Profil Risiko Korporat.</td></tr>";
             else {
                 rawDataRisiko.forEach((r, i) => {
-                    tabelRisikoLengkapHtml += `<tr><td style="text-align:center;">${i+1}</td><td>${r.kategori_risiko || '-'}</td><td>${r.risiko_teridentifikasi}</td><td style="text-align:center;">${r.skor_akhir}</td><td>${r.status_penanganan || 'Belum Ditangani'}</td></tr>`;
+                    tabelRisikoLengkapHtml += `<tr><td style="text-align:center;">${i+1}</td><td>${esc(r.kategori_risiko || '-')}</td><td>${esc(r.risiko_teridentifikasi)}</td><td style="text-align:center;">${r.skor_akhir}</td><td>${esc(r.status_penanganan || 'Belum Ditangani')}</td></tr>`;
                 });
             }
 
@@ -604,7 +604,7 @@
             if(rawDataFmea.length === 0) tabelFmeaHtml = "<tr><td colspan='4' style='text-align:center;'>Tidak ada Proyek FMEA yang berjalan pada periode ini.</td></tr>";
             else {
                 rawDataFmea.forEach((f, i) => {
-                    tabelFmeaHtml += `<tr><td style="text-align:center;">${i+1}</td><td>${f.nama_proses}</td><td>${f.ketua_tim || '-'}</td><td style="text-align:center; font-weight:bold;">${f.status_proyek || 'Aktif'}</td></tr>`;
+                    tabelFmeaHtml += `<tr><td style="text-align:center;">${i+1}</td><td>${esc(f.nama_proses)}</td><td>${esc(f.ketua_tim || '-')}</td><td style="text-align:center; font-weight:bold;">${esc(f.status_proyek || 'Aktif')}</td></tr>`;
                 });
             }
 

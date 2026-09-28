@@ -210,7 +210,7 @@
                 
                 // Cek apakah dia Komite Mutu atau Staf Biasa
                 if(isAdminMutu(userData.role)) {
-                    sapaan.innerHTML = `Selamat bertugas, <strong class="text-warning">${userData.username}</strong> (Tim Komite Mutu). Anda memiliki akses penuh ke seluruh dasbor pelaporan.`;
+                    sapaan.innerHTML = `Selamat bertugas, <strong class="text-warning">${esc(userData.username)}</strong> (Tim Komite Mutu). Anda memiliki akses penuh ke seluruh dasbor pelaporan.`;
                     
                     // Tampilkan Fitur Khusus Admin
                     document.getElementById('executiveSummaryPanel').classList.remove('d-none');
@@ -219,7 +219,7 @@
                     // Tarik Data Live Widget
                     tarikDataExecutiveWidget();
                 } else {
-                    sapaan.innerHTML = `Selamat datang, <strong>${userData.username}</strong> dari unit <strong class="text-warning">${userData.unit}</strong>. Silakan pilih layanan operasional di bawah ini.`;
+                    sapaan.innerHTML = `Selamat datang, <strong>${esc(userData.username)}</strong> dari unit <strong class="text-warning">${esc(userData.unit)}</strong>. Silakan pilih layanan operasional di bawah ini.`;
                 }
             }
         });

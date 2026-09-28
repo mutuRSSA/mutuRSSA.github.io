@@ -160,7 +160,7 @@
                 if(unit.daftar_form) {
                     let forms = unit.daftar_form.split(',').map(s => s.trim()).filter(Boolean);
                     forms.forEach(f => {
-                        badgeForms += `<span class="badge bg-info text-dark me-1 mb-1 border">${f}</span>`;
+                        badgeForms += `<span class="badge bg-info text-dark me-1 mb-1 border">${esc(f)}</span>`;
                     });
                 } else {
                     badgeForms = '<span class="text-muted fst-italic" style="font-size:0.8rem;">Belum ada indikator</span>';
@@ -169,12 +169,12 @@
                 tbody.innerHTML += `
                     <tr class="unit-row">
                         <td class="text-center fw-bold text-muted">${idx + 1}</td>
-                        <td class="fw-bold text-primary search-target" style="font-size: 1.05rem;">${unit.nama_unit}</td>
-                        <td class="search-target">${unit.kepala_unit || '-'}</td>
+                        <td class="fw-bold text-primary search-target" style="font-size: 1.05rem;">${esc(unit.nama_unit)}</td>
+                        <td class="search-target">${esc(unit.kepala_unit || '-')}</td>
                         <td>${badgeForms}</td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-primary rounded-circle me-1" onclick="bukaModalEdit('${unit.id}')" title="Edit Unit"><i class="fas fa-pen"></i></button>
-                            <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="hapusUnit('${unit.id}', '${unit.nama_unit}')" title="Hapus Permanen"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="hapusUnit('${unit.id}', '${escJsAttr(unit.nama_unit)}')" title="Hapus Permanen"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>`;
             });
@@ -257,7 +257,7 @@
         window.hapusUnit = function(idUnit, namaUnit) {
             Swal.fire({
                 title: 'Hapus Permanen?',
-                html: `Anda yakin ingin menghapus unit <b>${namaUnit}</b>?<br><small class="text-danger">Akses unit ini ke form akan hilang.</small>`,
+                html: `Anda yakin ingin menghapus unit <b>${esc(namaUnit)}</b>?<br><small class="text-danger">Akses unit ini ke form akan hilang.</small>`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',

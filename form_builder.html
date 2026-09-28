@@ -169,16 +169,16 @@
                 let kolomArray = item.kolom || [];
                 let kolomBadges = kolomArray.map((k, colIndex) => {
                     let tipeColor = k.tipe === 'readonly' || k.formula ? 'bg-danger' : 'bg-info text-dark';
-                    let aksesInfo = k.akses === 'ALL' ? '' : `<i class="fas fa-lock ms-1 text-warning" title="Dibatasi: ${k.akses}"></i>`;
+                    let aksesInfo = k.akses === 'ALL' ? '' : `<i class="fas fa-lock ms-1 text-warning" title="Dibatasi: ${esc(k.akses)}"></i>`;
                     return `<span class="badge bg-light text-dark border me-1 mb-1 font-monospace" style="font-size:12px;">
-                                <strong class="text-primary">[${colIndex}]</strong> ${k.judul} <small class="${tipeColor} px-1 rounded mx-1" style="font-size:10px;">${k.tipe}</small>${aksesInfo}
+                                <strong class="text-primary">[${colIndex}]</strong> ${esc(k.judul)} <small class="${tipeColor} px-1 rounded mx-1" style="font-size:10px;">${esc(k.tipe)}</small>${aksesInfo}
                             </span>`;
                 }).join('');
 
                 tbody.innerHTML += `
                     <tr>
                         <td class="text-center fw-bold">${index + 1}</td>
-                        <td class="fw-bold text-dark fs-6"><code>${item.id_form}</code><br><small class="text-muted fw-normal">${kolomArray.length} Kolom</small></td>
+                        <td class="fw-bold text-dark fs-6"><code>${item.id_form}</code><br><small class="text-muted fw-normal">${esc(kolomArray.length)} Kolom</small></td>
                         <td><div class="d-flex flex-wrap">${kolomBadges}</div></td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-info fw-bold shadow-sm px-3" onclick="bukaModalFormBuilder(${index})">
@@ -213,7 +213,7 @@
             let optionsHTML = selectTypes.map(t => `<option value="${t}" ${tipe === t ? 'selected' : ''}>${t.toUpperCase()}</option>`).join('');
 
             let unitBadgesHTML = dataUnitGlobal.map(u => 
-                `<span class="badge bg-light text-dark badge-unit-select m-1" onclick="tambahAksesUnit('${randId}', '${u}')">${u}</span>`
+                `<span class="badge bg-light text-dark badge-unit-select m-1" onclick="tambahAksesUnit('${randId}', '${escJsAttr(u)}')">${esc(u)}</span>`
             ).join('');
 
             let html = `
@@ -225,7 +225,7 @@
                     <div class="row g-3">
                         <div class="col-md-3">
                             <label class="form-label-sm">Nama/Judul Kolom</label>
-                            <input type="text" class="form-control form-control-sm fb-col-judul border-secondary" value="${judul}" placeholder="Contoh: Jumlah Sampel">
+                            <input type="text" class="form-control form-control-sm fb-col-judul border-secondary" value="${esc(judul)}" placeholder="Contoh: Jumlah Sampel">
                         </div>
                         <div class="col-md-2">
                             <label class="form-label-sm">Tipe Data</label>
@@ -237,7 +237,7 @@
                         <div class="col-md-5">
                             <label class="form-label-sm text-primary"><i class="fas fa-shield-alt me-1"></i> Hak Akses Kolom</label>
                             <div class="input-group input-group-sm">
-                                <input type="text" class="form-control border-primary fb-col-akses fw-bold" value="${akses}" placeholder="ALL">
+                                <input type="text" class="form-control border-primary fb-col-akses fw-bold" value="${esc(akses)}" placeholder="ALL">
                                 <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"><i class="fas fa-list"></i></button>
                                 <div class="dropdown-menu dropdown-menu-end dropdown-menu-akses p-3" style="width: 300px;">
                                     <h6 class="fw-bold mb-2 border-bottom pb-2">Atur Siapa yang Bisa Mengisi:</h6>
@@ -257,11 +257,11 @@
                     <div class="row mt-2 g-2">
                         <div class="col-md-12 fb-dep-opsi" style="display: ${tipe === 'dropdown' ? 'block' : 'none'};">
                             <label class="form-label-sm text-info">Opsi Dropdown</label>
-                            <input type="text" class="form-control form-control-sm fb-col-opsi border-info" value="${opsi}" placeholder="Pisahkan dengan koma. Contoh: Ya, Tidak, N/A">
+                            <input type="text" class="form-control form-control-sm fb-col-opsi border-info" value="${esc(opsi)}" placeholder="Pisahkan dengan koma. Contoh: Ya, Tidak, N/A">
                         </div>
                         <div class="col-md-12 fb-dep-formula" style="display: ${tipe === 'readonly' ? 'block' : 'none'};">
                             <label class="form-label-sm text-danger">Formula Math Excel (Otomatis)</label>
-                            <input type="text" class="form-control form-control-sm fb-col-formula border-danger" value="${formula}" placeholder="Gunakan indeks [x]. Contoh: [1]/[2]*100">
+                            <input type="text" class="form-control form-control-sm fb-col-formula border-danger" value="${esc(formula)}" placeholder="Gunakan indeks [x]. Contoh: [1]/[2]*100">
                         </div>
                     </div>
                 </div>

@@ -219,7 +219,7 @@
                 dropdownUnit.value = userUnit;
                 dropdownUnit.setAttribute("disabled", "true");
                 dropdownUnit.classList.add("bg-light", "text-muted", "border-secondary");
-                pesanUnit.innerHTML = `<span class="text-success fw-bold"><i class="fas fa-user-lock me-1"></i> Terkunci untuk Unit ${userUnit}</span>`;
+                pesanUnit.innerHTML = `<span class="text-success fw-bold"><i class="fas fa-user-lock me-1"></i> Terkunci untuk Unit ${esc(userUnit)}</span>`;
             } 
             else if (isAdminMutu(userRole)) {
                 pesanUnit.innerHTML = `<span class="text-primary fw-bold"><i class="fas fa-filter me-1"></i> Mode Admin: Melihat semua data.</span>`;
@@ -375,13 +375,13 @@
                 tbody.innerHTML += `
                     <tr>
                         <td class="text-center fw-bold fs-5">${index + 1}</td>
-                        <td class="text-center fw-bold text-primary">${row.unit_kerja || '-'}<br><small class="text-muted d-print-none">(${row.tahun})</small></td> 
-                        <td>${row.risiko_teridentifikasi} ${badgeStatus}</td>
-                        <td>${row.penyebab}</td>
+                        <td class="text-center fw-bold text-primary">${esc(row.unit_kerja || '-')}<br><small class="text-muted d-print-none">(${row.tahun})</small></td> 
+                        <td>${esc(row.risiko_teridentifikasi)} ${badgeStatus}</td>
+                        <td>${esc(row.penyebab)}</td>
                         <td class="text-center">${row.dampak}</td>
                         <td class="text-center">${row.frekuensi}</td>
-                        <td>${row.dampak_timbul}</td>
-                        <td>${row.penanganan_saat_ini}</td>
+                        <td>${esc(row.dampak_timbul)}</td>
+                        <td>${esc(row.penanganan_saat_ini)}</td>
                         <td class="text-center fs-5 ${warnaSR}">${row.skor_risiko}</td>
                         <td class="text-center fw-bold text-primary">${row.kontrol}</td>
                         <td class="text-center fw-bold fs-5 text-dark" style="background-color: #e9ecef;">${row.skor_akhir}</td>

@@ -533,7 +533,7 @@
                         let nText = (num !== '' && num !== null && num !== 0) ? num : '-';
                         let dText = (den !== '' && den !== null && den !== 0) ? den : '-';
 
-                        let clickAction = (selectedUnit === "RS_ALL") ? `onclick="lihatDetailUnit('${judul.replace(/'/g, "\\'")}', '${b}', ${t}, '${item.satuan}')" style="cursor:pointer;" title="Klik untuk audit kontribusi unit kerja"` : "";
+                        let clickAction = (selectedUnit === "RS_ALL") ? `onclick="lihatDetailUnit('${escJsAttr(judul)}', '${b}', ${t}, '${escJsAttr(item.satuan)}')" style="cursor:pointer;" title="Klik untuk audit kontribusi unit kerja"` : "";
 
                         let tombolPdsa = "";
                         if (!isTercapai) {
@@ -642,7 +642,7 @@
                     <div class="accordion-item border mb-3 shadow-sm" style="border-radius: 8px; overflow: hidden;">
                         <h2 class="accordion-header" id="heading_${collapseId}">
                             <button class="accordion-button collapsed fw-bold text-primary bg-light" type="button" data-bs-toggle="collapse" data-bs-target="#${collapseId}" style="font-size: 1rem;">
-                                <i class="fas fa-clinic-medical me-2 text-secondary"></i> UNIT: ${uName}
+                                <i class="fas fa-clinic-medical me-2 text-secondary"></i> UNIT: ${esc(uName)}
                             </button>
                         </h2>
                         <div id="${collapseId}" class="accordion-collapse collapse" data-bs-parent="#accordionImpUnit">

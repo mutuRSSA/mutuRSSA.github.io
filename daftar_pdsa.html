@@ -95,7 +95,7 @@
             if(isAdminMutu(sessionMutu.role)) {
                 psn.innerHTML = `<span class="badge bg-primary"><i class="fas fa-eye me-1"></i> Mode Pengawasan Direksi Aktif</span>`;
             } else {
-                psn.innerHTML = `<span class="badge bg-secondary"><i class="fas fa-lock me-1"></i> Hanya melihat unit ${sessionMutu.unit || ''}</span>`;
+                psn.innerHTML = `<span class="badge bg-secondary"><i class="fas fa-lock me-1"></i> Hanya melihat unit ${esc(sessionMutu.unit || '')}</span>`;
             }
 
             await muatDaftarPDSA();
@@ -163,21 +163,21 @@
                 }
 
                 wadah.innerHTML += `
-                    <div class="col-md-6 item-pdsa" data-indikator="${p.judul_indikator.toLowerCase()}" data-unit="${p.unit_kerja.toLowerCase()}" data-fase="${fase}">
+                    <div class="col-md-6 item-pdsa" data-indikator="${esc(p.judul_indikator.toLowerCase())}" data-unit="${esc(p.unit_kerja.toLowerCase())}" data-fase="${esc(fase)}">
                         <div class="pdsa-card p-4 h-100 d-flex flex-column">
                             <div class="d-flex justify-content-between align-items-start mb-2">
-                                <span class="badge bg-secondary mb-2"><i class="fas fa-clinic-medical me-1"></i> ${p.unit_kerja}</span>
-                                <span class="fase-badge ${badgeClass} shadow-sm">${fase}</span>
+                                <span class="badge bg-secondary mb-2"><i class="fas fa-clinic-medical me-1"></i> ${esc(p.unit_kerja)}</span>
+                                <span class="fase-badge ${badgeClass} shadow-sm">${esc(fase)}</span>
                             </div>
-                            <h5 class="fw-bold text-dark mb-1 lh-base" style="font-size: 1.05rem;">${p.judul_indikator}</h5>
-                            <small class="text-primary fw-bold d-block mb-3"><i class="fas fa-calendar-check me-1"></i> Analisis Periode: ${p.periode_analisis}</small>
+                            <h5 class="fw-bold text-dark mb-1 lh-base" style="font-size: 1.05rem;">${esc(p.judul_indikator)}</h5>
+                            <small class="text-primary fw-bold d-block mb-3"><i class="fas fa-calendar-check me-1"></i> Analisis Periode: ${esc(p.periode_analisis)}</small>
                             
                             <div class="bg-light p-2 rounded border mb-3 flex-grow-1" style="font-size: 0.85rem;">
                                 <span class="text-muted fw-bold d-block border-bottom pb-1 mb-1">Masalah Terdentifikasi:</span>
-                                <span class="text-dark d-block mb-2 fst-italic">"${masalahUtama}"</span>
+                                <span class="text-dark d-block mb-2 fst-italic">"${esc(masalahUtama)}"</span>
                                 
                                 <span class="text-muted fw-bold d-block border-bottom pb-1 mb-1">Tujuan Perbaikan (SMART):</span>
-                                <span class="text-success fw-bold d-block">${tujuan}</span>
+                                <span class="text-success fw-bold d-block">${esc(tujuan)}</span>
                             </div>
 
                             <div class="mt-auto">

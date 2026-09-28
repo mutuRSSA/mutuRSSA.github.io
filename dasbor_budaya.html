@@ -536,8 +536,8 @@
                     <tr>
                         <td class="text-center">${index + 1}</td>
                         <td>${waktuSubmit}</td>
-                        <td><span class="badge bg-secondary">${row.unit_kerja || '-'}</span></td>
-                        <td>${row.profesi || '-'}</td>
+                        <td><span class="badge bg-secondary">${esc(row.unit_kerja || '-')}</span></td>
+                        <td>${esc(row.profesi || '-')}</td>
                     </tr>
                 `;
             });

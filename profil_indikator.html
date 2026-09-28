@@ -355,7 +355,7 @@
                 let btnArsipIcon = isAktif ? "fa-archive" : "fa-box-open";
                 let btnArsipColor = isAktif ? "btn-outline-warning text-dark" : "btn-outline-success";
                 let btnArsipTitle = isAktif ? "Arsipkan Indikator" : "Aktifkan Kembali";
-                let judulAman = item.judul_indikator ? item.judul_indikator.replace(/'/g, "\\'") : "Indikator";
+                let judulAman = escJsAttr(item.judul_indikator || "Indikator"); // aman untuk onclick='...'
 
                 let btnDetailUmum = `
                     <button class="btn btn-outline-info w-100 fw-bold mb-2 rounded-pill" onclick="bukaModalDetail('${item.id_indikator}')">
@@ -393,26 +393,26 @@
                 }
 
                 wadah.innerHTML += `
-                    <div class="col-md-6 col-lg-4 item-indikator" data-kategori="${item.kategori_indikator || ''}">
+                    <div class="col-md-6 col-lg-4 item-indikator" data-kategori="${esc(item.kategori_indikator || '')}">
                         <div class="card-custom p-4 h-100 d-flex flex-column ${cardClass}">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <div>
-                                    <span class="badge ${badgeColor} badge-tipe">${item.kategori_indikator || 'UMUM'}</span>
+                                    <span class="badge ${badgeColor} badge-tipe">${esc(item.kategori_indikator || 'UMUM')}</span>
                                     ${arsipBadge}
                                 </div>
                                 <code class="text-danger fw-bold fs-6" title="ID Tabel Form"><i class="fas fa-link me-1"></i>${item.id_form}</code>
                             </div>
-                            <h5 class="fw-bold text-dark mt-2 search-target" style="line-height: 1.4;">${item.judul_indikator}</h5>
-                            <p class="text-muted mb-3 search-target" style="font-size:0.85rem;"><i class="fas fa-hospital me-1"></i> Unit: ${item.unit_pelaksana || 'Semua Unit'}</p>
+                            <h5 class="fw-bold text-dark mt-2 search-target" style="line-height: 1.4;">${esc(item.judul_indikator)}</h5>
+                            <p class="text-muted mb-3 search-target" style="font-size:0.85rem;"><i class="fas fa-hospital me-1"></i> Unit: ${esc(item.unit_pelaksana || 'Semua Unit')}</p>
                             
                             <div class="math-box mb-3 flex-grow-1">
-                                <div class="text-center text-success border-bottom border-success pb-1 mb-1" style="font-size:0.85rem;" title="${item.num_teks || ''}">Numerator (N)</div>
-                                <div class="text-center text-warning text-darken" style="font-size:0.85rem;" title="${item.den_teks || ''}">Denominator (D)</div>
+                                <div class="text-center text-success border-bottom border-success pb-1 mb-1" style="font-size:0.85rem;" title="${esc(item.num_teks || '')}">Numerator (N)</div>
+                                <div class="text-center text-warning text-darken" style="font-size:0.85rem;" title="${esc(item.den_teks || '')}">Denominator (D)</div>
                             </div>
                             
                             <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded mb-3">
                                 <span class="text-muted" style="font-size:0.85rem;">Target Capaian:</span>
-                                <span class="fw-bold fs-5 text-primary">${item.target != null ? item.target : '-'} ${item.satuan || ''}</span>
+                                <span class="fw-bold fs-5 text-primary">${item.target != null ? item.target : '-'} ${esc(item.satuan || '')}</span>
                             </div>
                             
                             <div class="mt-auto pt-2 border-top">
@@ -450,12 +450,12 @@
                 badgeColor = "bg-warning text-dark";
             }
 
-            let jenisArr = item.jenis_indikator ? item.jenis_indikator.split(',').map(s => `<span class="badge bg-secondary me-1">${s.trim()}</span>`).join('') : '-';
+            let jenisArr = item.jenis_indikator ? item.jenis_indikator.split(',').map(s => `<span class="badge bg-secondary me-1">${esc(s.trim())}</span>`).join('') : '-';
 
             const htmlContent = `
                 <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
-                    <h4 class="fw-bold text-dark mb-0">${item.judul_indikator}</h4>
-                    <span class="badge ${badgeColor} fs-6 px-3 py-2">${item.kategori_indikator || '-'}</span>
+                    <h4 class="fw-bold text-dark mb-0">${esc(item.judul_indikator)}</h4>
+                    <span class="badge ${badgeColor} fs-6 px-3 py-2">${esc(item.kategori_indikator || '-')}</span>
                 </div>
                 
                 <div class="row g-4">
@@ -467,10 +467,10 @@
                             <div class="card-body">
                                 <table class="table table-borderless table-detail mb-0">
                                     <tr><td>ID Form Database</td><td><code class="text-danger">${item.id_form}</code></td></tr>
-                                    <tr><td>Unit Pengukur</td><td class="fw-bold">${item.unit_pelaksana || '-'}</td></tr>
-                                    <tr><td>Dimensi Mutu</td><td>${item.dimensi_mutu || '-'}</td></tr>
-                                    <tr><td>Tujuan</td><td>${item.tujuan || '-'}</td></tr>
-                                    <tr><td>Dasar Pemikiran</td><td>${item.dasar_pemikiran || '-'}</td></tr>
+                                    <tr><td>Unit Pengukur</td><td class="fw-bold">${esc(item.unit_pelaksana || '-')}</td></tr>
+                                    <tr><td>Dimensi Mutu</td><td>${esc(item.dimensi_mutu || '-')}</td></tr>
+                                    <tr><td>Tujuan</td><td>${esc(item.tujuan || '-')}</td></tr>
+                                    <tr><td>Dasar Pemikiran</td><td>${esc(item.dasar_pemikiran || '-')}</td></tr>
                                     <tr><td>Jenis Indikator</td><td>${jenisArr}</td></tr>
                                 </table>
                             </div>
@@ -482,15 +482,15 @@
                             </div>
                             <div class="card-body">
                                 <table class="table table-borderless table-detail mb-0">
-                                    <tr><td>Cara Penilaian</td><td>${item.cara_penilaian || '-'}</td></tr>
-                                    <tr><td>Metode Pengumpulan</td><td>${item.metode_pengumpulan || '-'}</td></tr>
-                                    <tr><td>Sumber Data</td><td>${item.sumber_data || '-'}</td></tr>
-                                    <tr><td>Instrumen</td><td>${item.instrumen_pengambilan || '-'}</td></tr>
-                                    <tr><td>Besar Sampel</td><td>${item.besar_sampel || '-'}</td></tr>
-                                    <tr><td>Cara Sampling</td><td>${item.cara_pengambilan_sampel || '-'}</td></tr>
-                                    <tr><td>Periode Kumpul</td><td>${item.periode_pengumpulan || '-'}</td></tr>
-                                    <tr><td>Periode Analisis</td><td>${item.periode_analisis || '-'}</td></tr>
-                                    <tr><td>Penyajian Data</td><td>${item.penyajian_data || '-'}</td></tr>
+                                    <tr><td>Cara Penilaian</td><td>${esc(item.cara_penilaian || '-')}</td></tr>
+                                    <tr><td>Metode Pengumpulan</td><td>${esc(item.metode_pengumpulan || '-')}</td></tr>
+                                    <tr><td>Sumber Data</td><td>${esc(item.sumber_data || '-')}</td></tr>
+                                    <tr><td>Instrumen</td><td>${esc(item.instrumen_pengambilan || '-')}</td></tr>
+                                    <tr><td>Besar Sampel</td><td>${esc(item.besar_sampel || '-')}</td></tr>
+                                    <tr><td>Cara Sampling</td><td>${esc(item.cara_pengambilan_sampel || '-')}</td></tr>
+                                    <tr><td>Periode Kumpul</td><td>${esc(item.periode_pengumpulan || '-')}</td></tr>
+                                    <tr><td>Periode Analisis</td><td>${esc(item.periode_analisis || '-')}</td></tr>
+                                    <tr><td>Penyajian Data</td><td>${esc(item.penyajian_data || '-')}</td></tr>
                                 </table>
                             </div>
                         </div>
@@ -504,32 +504,32 @@
                             <div class="card-body">
                                 <div class="mb-3 p-3 bg-light rounded border-start border-4 border-success">
                                     <span class="d-block text-muted fw-bold mb-1" style="font-size:0.85rem;">Definisi Operasional:</span>
-                                    <p class="mb-0 text-dark" style="font-size:0.95rem; text-align:justify;">${item.definisi_operasional || '-'}</p>
+                                    <p class="mb-0 text-dark" style="font-size:0.95rem; text-align:justify;">${esc(item.definisi_operasional || '-')}</p>
                                 </div>
                                 
                                 <div class="row mb-3 g-2">
                                     <div class="col-md-6">
                                         <div class="p-2 border rounded border-success h-100">
                                             <span class="d-block text-success fw-bold" style="font-size:0.8rem;">Kriteria Inklusi:</span>
-                                            <span style="font-size:0.9rem;">${item.kriteria_inklusi || '-'}</span>
+                                            <span style="font-size:0.9rem;">${esc(item.kriteria_inklusi || '-')}</span>
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <div class="p-2 border rounded border-danger h-100">
                                             <span class="d-block text-danger fw-bold" style="font-size:0.8rem;">Kriteria Eksklusi:</span>
-                                            <span style="font-size:0.9rem;">${item.kriteria_eksklusi || '-'}</span>
+                                            <span style="font-size:0.9rem;">${esc(item.kriteria_eksklusi || '-')}</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div class="math-box mb-3">
-                                    <div class="text-center text-success border-bottom border-success pb-2 mb-2"><b>Numerator (N):</b><br><span class="text-dark fw-normal">${item.num_teks || '-'}</span></div>
-                                    <div class="text-center text-warning text-darken"><b>Denominator (D):</b><br><span class="text-dark fw-normal">${item.den_teks || '-'}</span></div>
+                                    <div class="text-center text-success border-bottom border-success pb-2 mb-2"><b>Numerator (N):</b><br><span class="text-dark fw-normal">${esc(item.num_teks || '-')}</span></div>
+                                    <div class="text-center text-warning text-darken"><b>Denominator (D):</b><br><span class="text-dark fw-normal">${esc(item.den_teks || '-')}</span></div>
                                 </div>
 
                                 <table class="table table-borderless table-detail mb-0 bg-light rounded">
-                                    <tr><td>Formula</td><td class="font-monospace fw-bold text-primary">${item.rumus_kalkulasi || '-'}</td></tr>
-                                    <tr><td>Target Capaian</td><td><span class="badge bg-danger fs-6">${item.target || '-'} ${item.satuan || ''}</span> <small class="text-muted ms-2">(${item.arah_target || 'Positif'})</small></td></tr>
+                                    <tr><td>Formula</td><td class="font-monospace fw-bold text-primary">${esc(item.rumus_kalkulasi || '-')}</td></tr>
+                                    <tr><td>Target Capaian</td><td><span class="badge bg-danger fs-6">${item.target || '-'} ${esc(item.satuan || '')}</span> <small class="text-muted ms-2">(${esc(item.arah_target || 'Positif')})</small></td></tr>
                                 </table>
                             </div>
                         </div>
@@ -545,7 +545,7 @@
             let actionText = currentStatus ? "Mengarsipkan" : "Mengaktifkan kembali";
             Swal.fire({
                 title: `Konfirmasi Tindakan?`,
-                html: `Anda akan <b>${actionText}</b> indikator:<br><br><span class="text-primary fw-bold">${judul}</span>`,
+                html: `Anda akan <b>${actionText}</b> indikator:<br><br><span class="text-primary fw-bold">${esc(judul)}</span>`,
                 icon: 'question', showCancelButton: true, confirmButtonColor: currentStatus ? '#f59f00' : '#198754',
                 confirmButtonText: currentStatus ? 'Ya, Arsipkan!' : 'Ya, Aktifkan!'
             }).then(async (result) => {
@@ -785,7 +785,7 @@
         window.hapusIndikator = function(uuid, namaJudul) {
             Swal.fire({
                 title: 'Hapus Permanen?',
-                html: `Hapus profil panduan <b>${namaJudul}</b>?`,
+                html: `Hapus profil panduan <b>${esc(namaJudul)}</b>?`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',

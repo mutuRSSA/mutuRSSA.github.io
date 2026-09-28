@@ -482,12 +482,12 @@
                         <td style="min-width: 170px;" class="hide-on-pdf">${aksiHtml}</td>
                         <td class="text-center">${badgeWaktu}</td>
                         <td class="fw-bold">${tglInsiden}</td>
-                        <td class="text-center"><span class="badge bg-dark">${row.jenis_insiden}</span></td>
+                        <td class="text-center"><span class="badge bg-dark">${esc(row.jenis_insiden)}</span></td>
                         <td class="text-center">${badgeGrading}</td>
-                        <td>${row.lokasi_kejadian}</td>
-                        <td class="kronologi-text text-primary fw-bold" onclick="lihatDetail('${idInsiden}')" title="Klik untuk membaca kronologi lengkap"><i class="fas fa-hand-pointer me-1 text-warning"></i> ${row.kronologi}</td>
-                        <td>${row.tindakan_segera}</td>
-                        <td>${row.nama_pelapor}<br><small class="text-muted">${row.unit_pelapor}</small></td>
+                        <td>${esc(row.lokasi_kejadian)}</td>
+                        <td class="kronologi-text text-primary fw-bold" onclick="lihatDetail('${idInsiden}')" title="Klik untuk membaca kronologi lengkap"><i class="fas fa-hand-pointer me-1 text-warning"></i> ${esc(row.kronologi)}</td>
+                        <td>${esc(row.tindakan_segera)}</td>
+                        <td>${esc(row.nama_pelapor)}<br><small class="text-muted">${esc(row.unit_pelapor)}</small></td>
                     </tr>
                 `;
             });
@@ -516,7 +516,7 @@
             document.getElementById('dtl_waktu_lapor').innerText = new Date(data.waktu_lapor).toLocaleString('id-ID');
             document.getElementById('dtl_waktu_insiden').innerText = new Date(data.waktu_insiden).toLocaleString('id-ID');
             document.getElementById('dtl_lokasi').innerText = data.lokasi_kejadian;
-            document.getElementById('dtl_jenis').innerHTML = `<span class="badge bg-dark">${data.jenis_insiden}</span>`;
+            document.getElementById('dtl_jenis').innerHTML = `<span class="badge bg-dark">${esc(data.jenis_insiden)}</span>`;
             document.getElementById('dtl_pelapor').innerText = `${data.nama_pelapor} (${data.unit_pelapor})`;
 
             let spesifik = data.detail_spesifik || {};
@@ -562,7 +562,7 @@
 
         window.bukaRCA = function(uuid) {
             localStorage.setItem("targetInvestigasi", uuid);
-            window.location.href = "analisa_rca.html";
+            window.location.href = "analisis_rca.html";
         };
 
         window.bukaSederhana = function(uuid) {

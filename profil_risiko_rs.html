@@ -308,21 +308,21 @@
                     <tr>
                         <td class="text-center fw-bold">${index + 1}</td>
                         <td><select class="form-select input-profil fw-bold text-primary" id="kat_${id}">${opsiKategori}</select></td>
-                        <td class="fw-bold text-dark">${row.risiko_teridentifikasi}</td>
-                        <td><small class="text-muted">${row.dampak_timbul || '-'}</small></td>
+                        <td class="fw-bold text-dark">${esc(row.risiko_teridentifikasi)}</td>
+                        <td><small class="text-muted">${esc(row.dampak_timbul || '-')}</small></td>
                         <td class="text-center">${f}</td>
                         <td class="text-center">${d}</td>
                         <td class="text-center fw-bold fs-6 ${warnaDxF}">${skorDxF}</td>
-                        <td class="text-center fw-bold text-secondary"><small>${row.unit_kerja}</small></td>
+                        <td class="text-center fw-bold text-secondary"><small>${esc(row.unit_kerja)}</small></td>
                         
-                        <td><textarea class="input-profil border-success" id="rencana_${id}" rows="3">${prevRencana}</textarea></td>
+                        <td><textarea class="input-profil border-success" id="rencana_${id}" rows="3">${esc(prevRencana)}</textarea></td>
                         <td><select class="form-select input-profil text-center border-success" id="kontrol_${id}" onchange="kalkulasiSkorAkhir('${id}', ${skorDxF})">${opsiKontrol}</select></td>
                         <td id="skor_akhir_${id}" class="text-center fw-bold fs-6 ${warnaAkhir}">${skorAkhirAwal}</td>
                         
-                        <td><input type="date" class="input-profil border-primary fw-bold" id="periode_${id}" value="${row.periode_program || ''}"></td>
-                        <td><textarea class="input-profil" id="pic_${id}" rows="3">${row.pic_penanganan || ''}</textarea></td>
-                        <td><textarea class="input-profil" id="realisasi_${id}" rows="3">${row.realisasi || ''}</textarea></td>
-                        <td><textarea class="input-profil" id="hasil_${id}" rows="3">${row.hasil_pemantauan || ''}</textarea></td>
+                        <td><input type="date" class="input-profil border-primary fw-bold" id="periode_${id}" value="${esc(row.periode_program || '')}"></td>
+                        <td><textarea class="input-profil" id="pic_${id}" rows="3">${esc(row.pic_penanganan || '')}</textarea></td>
+                        <td><textarea class="input-profil" id="realisasi_${id}" rows="3">${esc(row.realisasi || '')}</textarea></td>
+                        <td><textarea class="input-profil" id="hasil_${id}" rows="3">${esc(row.hasil_pemantauan || '')}</textarea></td>
                         <td>
                             <select class="form-select input-profil status-select mb-2" id="status_${id}" onchange="updateWarnaStatus(this)">
                                 <option value="Belum Ditangani" ${prevStatus === 'Belum Ditangani' ? 'selected' : ''}>Belum Ditangani</option>

@@ -263,9 +263,9 @@
                 tbody.innerHTML += `
                     <tr>
                         <td class="text-center fw-bold">${index + 1}</td>
-                        <td class="fw-bold text-primary">${row.unit_kerja}</td>
-                        <td class="fw-bold text-dark">${row.risiko_teridentifikasi}</td>
-                        <td><small>${row.penyebab}</small></td>
+                        <td class="fw-bold text-primary">${esc(row.unit_kerja)}</td>
+                        <td class="fw-bold text-dark">${esc(row.risiko_teridentifikasi)}</td>
+                        <td><small>${esc(row.penyebab)}</small></td>
                         <td class="text-center">${row.frekuensi}</td>
                         <td class="text-center">${row.dampak}</td>
                         <td class="text-center">${row.kontrol}</td>
