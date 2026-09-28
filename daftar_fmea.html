@@ -170,7 +170,7 @@
         async function muatDaftarFMEA() {
             try {
                 // Tarik SELURUH data (termasuk JSONB tabel_data) untuk dianalisis
-                const { data, error } = await supabaseClient.from('data_fmea').select('*').order('tanggal_dibuat', { ascending: false });
+                const { data, error } = await ambilSemua(() => supabaseClient.from('data_fmea').select('*').order('tanggal_dibuat', { ascending: false }).order('id_proyek'));
                 if (error) throw error;
 
                 semuaProyekFMEA = data || [];

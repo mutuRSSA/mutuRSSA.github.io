@@ -265,7 +265,7 @@
 
     <script>
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        const isAdmin = (sessionMutu.role === "Komite Mutu");
+        const isAdmin = (isAdminMutu(sessionMutu.role));
         let listSemuaInsiden = [];
 
         Chart.register(ChartDataLabels);
@@ -294,12 +294,13 @@
             let endDate = new Date(tahunDipilih, 11, 31, 23, 59, 59).toISOString();
 
             try {
-                const { data, error } = await supabaseClient
+                const { data, error } = await ambilSemua(() => supabaseClient
                     .from('data_insiden')
                     .select('*')
                     .gte('waktu_lapor', startDate)
                     .lte('waktu_lapor', endDate)
-                    .order('waktu_lapor', { ascending: false });
+                    .order('waktu_lapor', { ascending: false })
+                    .order('id_insiden'));
 
                 if (error) throw error;
                 listSemuaInsiden = data || [];

@@ -50,8 +50,14 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "Profil tidak ditemukan atau nonaktif." }, 403);
     }
 
-    if (!["Komite Mutu", "Super Admin"].includes(profil.role)) {
-      return jsonResponse({ error: "Halaman ini khusus untuk Komite Mutu / Super Admin." }, 403);
+    // Role admin diatur di Panel RBAC (role_permissions.is_admin)
+    const { data: rp } = await supabaseAdmin
+      .from("role_permissions")
+      .select("is_admin")
+      .eq("role", profil.role)
+      .maybeSingle();
+    if (!rp?.is_admin) {
+      return jsonResponse({ error: "Fitur ini khusus untuk role administrator." }, 403);
     }
 
     // Ambil ringkasan data yang dikirim dari client (BUKAN data mentah pasien —

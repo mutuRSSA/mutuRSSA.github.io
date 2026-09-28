@@ -123,6 +123,7 @@
     <!-- LIBRARY SUPABASE & CHART.JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="engine_mutu.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
@@ -225,7 +226,7 @@
 
         function aturKunciUnitDanRender() {
             const unitSelect = document.getElementById('filterUnit');
-            if (userUnit && userUnit !== "Non-Unit" && userRole !== "Komite Mutu") {
+            if (userUnit && userUnit !== "Non-Unit" && !isAdminMutu(userRole)) {
                 let optionExists = Array.from(unitSelect.options).some(opt => opt.value === userUnit);
                 if (!optionExists) { unitSelect.add(new Option(userUnit, userUnit)); }
                 
@@ -242,44 +243,14 @@
             kalkulasiDanRenderDashboard();
         }
 
-        function eksekusiRumusEngine(template, rows, colsConfig) {
-            if (!template) return 0;
-            let t = template.toString().trim();
-            if (t.startsWith('{') && t.endsWith('}')) {
-                try {
-                    let rule = JSON.parse(t);
-                    let colIdx = parseInt(rule.target_kolom);
-                    
-                    if (rule.tipe === "COUNTALL") return rows.length;
-                    else if (rule.tipe === "SUM") {
-                        if (isNaN(colIdx)) return 0;
-                        return rows.reduce((acc, r) => acc + (parseFloat(r.data_input[colIdx]) || 0), 0);
-                    } 
-                    else if (rule.tipe === "COUNTIF") {
-                        if (isNaN(colIdx)) return 0;
-                        let kriteria = (rule.nilai_kriteria || "").toString().toLowerCase().trim();
-                        let op = rule.operator || "==";
-                        
-                        return rows.filter(r => {
-                            let val = (r.data_input[colIdx] !== null && r.data_input[colIdx] !== undefined) 
-                                        ? r.data_input[colIdx].toString().toLowerCase().trim() : "";
-                            if (op === "==") return val === kriteria;
-                            if (op === "!=") return val !== kriteria;
-                            if (op === "includes") return val.includes(kriteria);
-                            return false;
-                        }).length;
-                    }
-                } catch(e) {}
-            }
-            return 0; // Legacy string parsing dibuang demi keamanan JSON
-        }
+        // eksekusiRumusEngine() sekarang ada di engine_mutu.js (dipakai bersama dengan Tutup Tahun)
 
         async function kalkulasiDanRenderDashboard() {
             document.getElementById('loadingMessage').style.display = 'block';
             document.getElementById('chartCard').style.display = 'none';
 
             const selectedTahun = parseInt(document.getElementById('filterTahun').value);
-            const selectedUnit = (userRole !== "Komite Mutu" && userUnit) ? userUnit : document.getElementById('filterUnit').value;
+            const selectedUnit = (!isAdminMutu(userRole) && userUnit) ? userUnit : document.getElementById('filterUnit').value;
             const selectedTipe = document.getElementById('filterTipeLaporan').value;
             const selectedDetail = document.getElementById('filterDetailPeriode').value;
             const arrayNamaBulan = kamusWaktu[selectedTipe][selectedDetail];
@@ -290,12 +261,10 @@
             // =======================================================
             try {
                 // Tarik Arsip
-                const resArsip = await supabaseClient.from('arsip_capaian_mutu').select('*').eq('tahun', selectedTahun).in('bulan', arrayAngkaBulan);
-                dbDataArsip = resArsip.data || [];
+                dbDataArsip = await ambilSemuaBaris(() => supabaseClient.from('arsip_capaian_mutu').select('*').eq('tahun', selectedTahun).in('bulan', arrayAngkaBulan).order('id'));
 
                 // Tarik Live
-                const resLive = await supabaseClient.from('data_mutu_harian').select('*').eq('tahun', selectedTahun).in('bulan', arrayAngkaBulan);
-                dbDataHarian = resLive.data || [];
+                dbDataHarian = await ambilSemuaBaris(() => supabaseClient.from('data_mutu_harian').select('*').eq('tahun', selectedTahun).in('bulan', arrayAngkaBulan).order('id'));
             } catch (err) {
                 console.error("Gagal Tarik Hybrid Data", err);
                 return;

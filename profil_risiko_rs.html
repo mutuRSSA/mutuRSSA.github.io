@@ -139,9 +139,7 @@
 
     <script>
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        if (sessionMutu.role !== 'Komite Mutu') {
-            Swal.fire({ title: 'Akses Ditolak', text: 'Halaman ini khusus untuk Admin Komite Mutu.', icon: 'error' }).then(() => { window.location.href = 'index.html'; });
-        }
+        // Akses halaman diatur oleh RBAC (auth.js + role_permissions); akses data oleh RLS.
 
         let databaseRisikoUtuh = [];
 
@@ -157,11 +155,12 @@
 
             try {
                 // PERUBAHAN: Tarik data yang terkirim DAN is_profil_rs = true
-                const { data, error } = await supabaseClient.from('data_risiko')
+                const { data, error } = await ambilSemua(() => supabaseClient.from('data_risiko')
                     .select('*')
                     .eq('status', 'terkirim')
                     .eq('is_profil_rs', true) // <-- INI KUNCI UTAMANYA!
-                    .order('skor_akhir', { ascending: false });
+                    .order('skor_akhir', { ascending: false })
+                    .order('id_risiko'));
                 
                 if (error) throw error;
                 

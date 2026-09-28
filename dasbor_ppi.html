@@ -223,7 +223,8 @@
 
                 // 2. Tarik Data Input Harian (Dibatasi 2 tahun terakhir agar ringan)
                 let currentYear = new Date().getFullYear();
-                const resData = await supabaseClient.from('data_mutu_harian').select('*').gte('tahun', currentYear - 1);
+                const resData = await ambilSemua(() => supabaseClient.from('data_mutu_harian').select('*').gte('tahun', currentYear - 1).order('id'));
+                if (resData.error) throw resData.error;
                 dbDataHarian = resData.data || [];
 
                 // 3. Populate Filter Tahun

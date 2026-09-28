@@ -88,22 +88,20 @@
     <!-- LIBRARY & SCRIPT -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="engine_mutu.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        if (sessionMutu.role !== 'Komite Mutu') {
-            Swal.fire('Akses Ditolak', 'Halaman ini khusus Administrator Komite Mutu.', 'error').then(() => window.location.href = 'index.html');
-        }
+        // Akses halaman diatur oleh RBAC (auth.js + role_permissions); akses data oleh RLS.
 
         document.addEventListener("DOMContentLoaded", function () {
             if (!supabaseClient) return;
             const currentYear = new Date().getFullYear();
             const selTahun = document.getElementById('purge_tahun');
             selTahun.add(new Option(`Tahun Lalu (${currentYear - 1})`, currentYear - 1));
-            selTahun.add(new Option(`Tahun Ini (${currentYear}) - TIDAK DISARANKAN`, currentYear));
             selTahun.add(new Option(`Dua Tahun Lalu (${currentYear - 2})`, currentYear - 2));
         });
 
@@ -122,9 +120,12 @@
             Swal.fire({ title: 'Menyiapkan Excel', text: 'Mengekstrak & Merapikan data dari Supabase...', icon: 'info', showConfirmButton: false });
             
             try {
-                // Menarik data tanpa batas baris (unlimited)
-                const { data, error } = await supabaseClient.from(tabel).select('*');
-                if (error) throw error;
+                // Menarik SEMUA baris (paginasi; tanpa ini terpotong di 1.000 baris)
+                const kolomUrut = { data_mutu_harian: 'id', data_insiden: 'id_insiden', data_risiko: 'id_risiko', data_pdsa: 'id_pdsa' }[tabel];
+                const data = await ambilSemuaBaris(() => {
+                    let q = supabaseClient.from(tabel).select('*');
+                    return kolomUrut ? q.order(kolomUrut) : q;
+                });
                 if (!data || data.length === 0) { Swal.fire('Kosong', 'Tidak ada data di tabel ini.', 'info'); return; }
 
                 // Jika data mengandung JSONB/Array (seperti di data_mutu_harian), kita ratakan (flatten) agar mudah dibaca di Excel
@@ -170,7 +171,7 @@
             
             Swal.fire({
                 title: 'PERINGATAN KERAS!',
-                html: `Anda akan melakukan Proses Tutup Tahun untuk <b>${tahun}</b>.<br><br>Sistem akan merekam angka matang lalu <b>MENGHAPUS PERMANEN</b> seluruh data mentah di tabel data_mutu_harian.<br><br>Pastikan Anda sudah men-download Backup Excel terlebih dahulu! Lanjutkan?`,
+                html: `Anda akan melakukan Proses Tutup Tahun untuk <b>${tahun}</b>.<br><br>Sistem akan menyimpan ringkasan capaian per bulan, lalu <b>memindahkan</b> seluruh data mentah tahun ini dari tabel aktif ke tabel cadangan <code>data_mutu_harian_arsip</code>.<br><br>Data mentah tidak lagi tampil di aplikasi, tetapi masih bisa dipulihkan oleh admin database.<br><br>Sebaiknya download Backup Excel terlebih dahulu. Lanjutkan?`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',
@@ -194,16 +195,13 @@
                 logTerminal(`=== MEMULAI SIKLUS TUTUP TAHUN ${tahun} ===`);
                 
                 logTerminal("1. Memuat Master Kamus Indikator...");
-                const resInd = await supabaseClient.from('master_indikator').select('*');
-                const masterIndikator = resInd.data || [];
+                const masterIndikator = await ambilSemuaBaris(() => supabaseClient.from('master_indikator').select('*').order('id_indikator'));
                 
                 logTerminal("2. Memuat Struktur Parameter Engine (Formulir)...");
-                const resForm = await supabaseClient.from('setup_formulir').select('*');
-                const setupForm = resForm.data || [];
+                const setupForm = await ambilSemuaBaris(() => supabaseClient.from('setup_formulir').select('*').order('id_form'));
 
                 logTerminal(`3. Menarik seluruh raw data transaksi tahun ${tahun}...`);
-                const resMutu = await supabaseClient.from('data_mutu_harian').select('*').eq('tahun', tahun);
-                const rawDataMutu = resMutu.data || [];
+                const rawDataMutu = await ambilSemuaBaris(() => supabaseClient.from('data_mutu_harian').select('*').eq('tahun', tahun).order('id'));
 
                 if (rawDataMutu.length === 0) {
                     logTerminal("Peringatan: Tidak ditemukan data mentah apapun di tahun ini.");
@@ -212,97 +210,33 @@
 
                 logTerminal(`Total data mentah ditarik: ${rawDataMutu.length} baris.`);
 
-                logTerminal("4. Mesin Agregator berjalan: Merekapitulasi angka Capaian, Numerator, Denominator per bulan...");
-                let dataArsip = [];
+                logTerminal("4. Mesin Agregator berjalan: menghitung Numerator, Denominator & Capaian per INDIKATOR x UNIT x BULAN...");
+                logTerminal("   (memakai engine_mutu.js — rumus yang sama persis dengan Laporan Mutu)");
+                const { ringkasan: dataArsip, barisTerangkum } = susunRingkasanTutupTahun(tahun, masterIndikator, setupForm, rawDataMutu);
 
-                masterIndikator.forEach(profil => {
-                    let idForm = profil.id_form;
-                    let dataTransaksiFormIni = rawDataMutu.filter(d => d.id_indikator === idForm);
-                    if (dataTransaksiFormIni.length === 0) return;
+                logTerminal(`Selesai di-compile. ${dataArsip.length} ringkasan (indikator x unit x bulan) siap dibekukan.`);
 
-                    let sf = setupForm.find(f => f.id_form === idForm);
-                    if(!sf) return;
-
-                    let idxNum = -1, idxDen = -1, idxKepatuhan = -1, idxCapaian = -1;
-                    sf.kolom.forEach((k, idx) => {
-                        let j = k.judul.toLowerCase();
-                        if (j === 'numerator' || j === 'n' || j.includes('numer')) idxNum = idx;
-                        else if (j === 'denominator' || j === 'd' || j.includes('denom')) idxDen = idx;
-                        else if (j.includes('kepatuhan') || j.includes('sesuai') || j.includes('patuh')) idxKepatuhan = idx;
-                        else if (j.includes('capaian') || j.includes('hasil') || j.includes('waktu')) idxCapaian = idx;
-                    });
-
-                    let isPercentage = (profil.satuan || "").includes('%');
-                    let target = parseFloat(profil.target) || 0;
-                    let arah = (profil.arah_target || "Positif").toLowerCase();
-
-                    for (let bulan = 1; bulan <= 12; bulan++) {
-                        let dataBulanIni = dataTransaksiFormIni.filter(d => d.bulan === bulan);
-                        if (dataBulanIni.length === 0) continue;
-
-                        let valNum = 0; let valDen = 0; let sumC = 0; let countC = 0;
-
-                        dataBulanIni.forEach(trans => {
-                            let d = trans.data_input;
-                            if (idxNum !== -1 && idxDen !== -1) {
-                                valNum += parseFloat(d[idxNum]) || 0;
-                                valDen += parseFloat(d[idxDen]) || 0;
-                            } else if (idxKepatuhan !== -1) {
-                                valDen += 1;
-                                let val = (d[idxKepatuhan]||"").toString().toLowerCase();
-                                if(val.includes('ya') || val === '1') valNum += 1;
-                            } else {
-                                valDen += 1;
-                                if (idxCapaian !== -1) { sumC += parseFloat(d[idxCapaian]) || 0; countC += 1; }
-                            }
-                        });
-
-                        let avgCapai = 0;
-                        if(valDen > 0) { avgCapai = valNum / valDen; if(isPercentage) avgCapai *= 100; } 
-                        else if(countC > 0) { avgCapai = sumC / countC; }
-                        
-                        avgCapai = Math.round(avgCapai * 100) / 100;
-
-                        let isTercapai = false;
-                        if (arah.includes("kecil") || arah.includes("negatif")) { isTercapai = avgCapai <= target; } 
-                        else { isTercapai = avgCapai >= target; }
-
-                        dataArsip.push({
-                            tahun: tahun,
-                            bulan: bulan,
-                            id_indikator: profil.id_indikator,
-                            judul_indikator: profil.judul_indikator,
-                            kategori_indikator: profil.kategori_indikator,
-                            unit_pelaksana: profil.unit_pelaksana,
-                            numerator: valNum,
-                            denominator: valDen,
-                            capaian: avgCapai,
-                            target: target,
-                            satuan: profil.satuan,
-                            is_tercapai: isTercapai
-                        });
-                    }
-                });
-
-                logTerminal(`Selesai di-compile. Ditemukan ${dataArsip.length} ringkasan bulan yang siap dibekukan.`);
-
-                logTerminal("5. Memasukkan (Freeze) data ringkasan ke tabel arsip_capaian_mutu di Supabase...");
-                if (dataArsip.length > 0) {
-                    const { error: errInsert } = await supabaseClient.from('arsip_capaian_mutu').insert(dataArsip);
-                    if (errInsert) throw errInsert;
+                const tidakTerangkum = rawDataMutu.length - barisTerangkum;
+                if (tidakTerangkum > 0) {
+                    logTerminal(`⚠️ ${tidakTerangkum} baris milik indikator tanpa profil/formulir/template rumus: tidak masuk ringkasan, tetapi tetap disimpan di tabel cadangan.`);
                 }
 
-                logTerminal("6. PROSES PURGE DIMULAI. Menghapus data mentah dari data_mutu_harian...");
-                const { error: errPurge } = await supabaseClient.from('data_mutu_harian').delete().eq('tahun', tahun);
-                if (errPurge) throw errPurge;
+                logTerminal("5. Menyimpan ringkasan & memindahkan data mentah (satu transaksi di database)...");
+                const { data: hasilTutup, error: errTutup } = await supabaseClient.rpc('tutup_tahun_mutu', {
+                    p_tahun: tahun,
+                    p_jumlah_baris: rawDataMutu.length,
+                    p_ringkasan: dataArsip
+                });
+                if (errTutup) throw errTutup;
 
+                logTerminal(`Ringkasan disimpan: ${hasilTutup.ringkasan_disimpan} baris. Data mentah dipindah ke cadangan: ${hasilTutup.data_mentah_dipindah} baris.`);
                 logTerminal("=== SIKLUS TUTUP TAHUN SELESAI DENGAN SUKSES ===");
-                Swal.fire('Tutup Tahun Selesai!', `Seluruh data tahun ${tahun} telah dibekukan dan raw data berhasil dibersihkan dari server.`, 'success');
+                Swal.fire('Tutup Tahun Selesai!', `Data tahun ${tahun} telah dibekukan (${hasilTutup.ringkasan_disimpan} ringkasan). ${hasilTutup.data_mentah_dipindah} baris data mentah dipindah ke tabel cadangan.`, 'success');
 
             } catch (err) {
                 console.error(err);
                 logTerminal("❌ ERROR FATAL: " + (err.message || 'Gagal memproses tutup tahun.'));
-                Swal.fire('Proses Terhenti', 'Terjadi kesalahan sistem. Cek terminal log untuk detail.', 'error');
+                Swal.fire('Proses Terhenti', (err.message || 'Terjadi kesalahan sistem.') + '<br><br><small>Tidak ada data yang berubah.</small>', 'error');
             } finally {
                 btn.disabled = false; btn.innerHTML = '<i class="fas fa-skull-crossbones me-2"></i> Eksekusi Tutup Tahun (Purge Data)';
             }

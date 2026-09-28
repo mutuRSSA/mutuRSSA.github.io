@@ -57,10 +57,11 @@
         
         <form id="formLogin" onsubmit="eksekusiLogin(event)">
             <div class="mb-3 text-start">
-                <label class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">Email</label>
+                <label class="form-label fw-bold text-secondary" style="font-size: 0.85rem;">Username</label>
                 <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-envelope text-muted"></i></span>
-                    <input type="email" class="form-control border-start-0 ps-0 fw-bold" id="inp_user" placeholder="nama@rsuda.local" required autocomplete="username">
+                    <span class="input-group-text bg-light border-end-0"><i class="fas fa-user text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0 ps-0 fw-bold" id="inp_user" placeholder="username" required autocomplete="username" autocapitalize="none" spellcheck="false">
+                    <span class="input-group-text bg-light text-muted" id="suffix_domain" style="font-size: 0.85rem;">@mutu.rssa</span>
                 </div>
             </div>
             
@@ -93,6 +94,9 @@
     <script src="config.js"></script>
 
     <script>
+        // Tampilkan domain login dari config.js
+        document.getElementById('suffix_domain').textContent = '@' + LOGIN_EMAIL_DOMAIN;
+
         // Bersihkan seluruh sisa sesi lama saat halaman login dibuka
         localStorage.removeItem("sessionMutu");
         localStorage.removeItem("menuMutu");
@@ -114,7 +118,7 @@
                 return;
             }
 
-            const inputEmail = document.getElementById('inp_user').value.trim();
+            const inputEmail = keEmailLogin(document.getElementById('inp_user').value);
             const inputPassword = document.getElementById('inp_pass').value;
             const btn = document.getElementById('btnLogin');
 
@@ -129,7 +133,7 @@
                 });
 
                 if (authError || !authData.user) {
-                    Swal.fire('Akses Ditolak', 'Email atau Password salah!', 'error');
+                    Swal.fire('Akses Ditolak', 'Username atau Password salah!', 'error');
                     resetButton();
                     return;
                 }
@@ -142,7 +146,7 @@
                     .single();
 
                 if (profilError || !profil) {
-                    Swal.fire('Profil Tidak Ditemukan', 'Akun berhasil login tapi data profil belum lengkap. Hubungi Super Admin.', 'error');
+                    Swal.fire('Profil Tidak Ditemukan', 'Akun berhasil login tapi data profil belum lengkap. Hubungi Administrator Aplikasi.', 'error');
                     await supabaseClient.auth.signOut();
                     resetButton();
                     return;
@@ -158,11 +162,17 @@
                 // TAHAP 3: Ambil allowed_pages dari role_permissions berdasarkan role user
                 // (per-role, bukan per-user — sesuai desain tabel role_permissions Anda)
                 let allowedPages = ["index.html", "login.html"];
-                const { data: roleData } = await supabaseClient
+                // select('*') supaya tetap jalan walaupun kolom is_admin belum ada
+                // (migrasi role_admin_dinamis belum dijalankan). limit(1) supaya tidak
+                // gagal bila ada baris role ganda.
+                const { data: rolesRows, error: roleError } = await supabaseClient
                     .from('role_permissions')
-                    .select('allowed_pages')
+                    .select('*')
                     .eq('role', profil.role)
-                    .single();
+                    .limit(1);
+                if (roleError) console.error('Gagal membaca hak akses role:', roleError);
+                const roleData = rolesRows && rolesRows[0];
+                if (!roleData) console.warn(`Role "${profil.role}" tidak ditemukan di role_permissions.`);
 
                 if (roleData && roleData.allowed_pages) {
                     allowedPages = roleData.allowed_pages.split(',').map(s => s.trim()).filter(Boolean);
@@ -179,7 +189,9 @@
                     nama_lengkap: profil.nama_lengkap,
                     role: profil.role,
                     unit: profil.unit_kerja,
-                    allowed_pages: allowedPages
+                    allowed_pages: allowedPages,
+                    is_admin: !!(roleData && roleData.is_admin),
+                    wajib_ganti_password: profil.wajib_ganti_password === true
                 };
                 localStorage.setItem("sessionMutu", JSON.stringify(sessionPayload));
 
@@ -190,7 +202,8 @@
                     timer: 1500,
                     showConfirmButton: false
                 }).then(() => {
-                    window.location.href = "index.html";
+                    // Password hasil reset admin -> langsung ke halaman ganti password
+                    window.location.href = profil.wajib_ganti_password === true ? "ganti_password.html" : "index.html";
                 });
 
             } catch (error) {

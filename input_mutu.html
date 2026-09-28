@@ -160,7 +160,7 @@
 
     <script>
         const session = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        const isAdmin = (session.role === "Komite Mutu");
+        const isAdmin = (isAdminMutu(session.role));
 
         let cetakBiruAktif = []; 
         let daftarUnitMaster = []; 
@@ -591,11 +591,12 @@
             document.getElementById('loadingTabel').classList.remove('d-none'); tbody.innerHTML = '';
 
             try {
-                const { data, error } = await supabaseClient
+                const { data, error } = await ambilSemua(() => supabaseClient
                     .from('data_mutu_harian').select('id, data_input, created_at')
                     .eq('unit_kerja', unitKerja).eq('id_indikator', idIndikator)
                     .eq('bulan', bulan).eq('tahun', tahun)
-                    .order('created_at', { ascending: false });
+                    .order('created_at', { ascending: false })
+                    .order('id'));
 
                 if (error) throw error;
                 if(data.length === 0) { tbody.innerHTML = '<tr><td colspan="100%" class="text-center py-4 text-muted">Belum ada data di bulan ini.</td></tr>'; } 

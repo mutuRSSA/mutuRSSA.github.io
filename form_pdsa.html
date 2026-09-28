@@ -276,7 +276,7 @@
                 selUnit.innerHTML = '';
 
                 // Proteksi Hak Akses Unit
-                if (sessionMutu.role === "Komite Mutu" || sessionMutu.role === "Super Admin") {
+                if (isAdminMutu(sessionMutu.role)) {
                     selUnit.add(new Option("== Pilih Unit ==", ""));
                     daftarUnitMaster.forEach(u => selUnit.add(new Option(u.nama_unit, u.nama_unit)));
                 } else {
@@ -362,7 +362,7 @@
             Swal.fire({ title: 'Mengkalkulasi Pareto...', didOpen: () => { Swal.showLoading(); }});
 
             try {
-                const { data, error } = await supabaseClient.from('data_mutu_harian').select('*').eq('id_indikator', idForm).limit(1000);
+                const { data, error } = await ambilSemua(() => supabaseClient.from('data_mutu_harian').select('*').eq('id_indikator', idForm).order('id'));
                 if (error) throw error;
                 
                 let rawData = data || [];

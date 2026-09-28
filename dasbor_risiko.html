@@ -137,9 +137,7 @@
 
     <script>
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        if (sessionMutu.role !== 'Komite Mutu') {
-            Swal.fire({ title: 'Akses Ditolak', text: 'Halaman ini khusus untuk Admin Komite Mutu.', icon: 'error' }).then(() => { window.location.href = 'index.html'; });
-        }
+        // Akses halaman diatur oleh RBAC (auth.js + role_permissions); akses data oleh RLS.
 
         let databaseRisiko = [];
         let chartLvl = null; let chartUnt = null;

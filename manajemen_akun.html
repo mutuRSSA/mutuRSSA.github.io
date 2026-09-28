@@ -35,6 +35,9 @@
                 <button class="btn btn-warning fw-bold shadow-sm px-4 rounded-pill text-dark" onclick="bukaModalRole()">
                     <i class="fas fa-key me-2"></i> Panel Otorisasi (RBAC)
                 </button>
+                <button class="btn btn-outline-secondary fw-bold shadow-sm px-4 rounded-pill" onclick="migrasiAkunLama()" title="Pindahkan akun dari tabel lama 'users' ke Supabase Auth (sekali pakai)">
+                    <i class="fas fa-people-arrows me-2"></i> Migrasi Akun Lama
+                </button>
                 <button class="btn btn-primary fw-bold shadow-sm px-4 rounded-pill" onclick="bukaModalTambah()">
                     <i class="fas fa-user-plus me-2"></i> Tambah Pengguna
                 </button>
@@ -60,9 +63,8 @@
                     <thead>
                         <tr>
                             <th width="5%" class="text-center">No</th>
-                            <th width="15%">ID User</th>
-                            <th width="20%">Nama Lengkap</th>
-                            <th width="15%">Username</th>
+                            <th width="22%">Nama Lengkap</th>
+                            <th width="23%">Username (Login)</th>
                             <th width="12%" class="text-center">Role Akses</th>
                             <th width="15%">Unit Kerja</th>
                             <th width="8%" class="text-center">Status</th>
@@ -94,13 +96,16 @@
                         
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
-                                <label class="fw-bold mb-1 text-dark">Username <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control fw-bold text-primary" id="inp_username" placeholder="Tanpa spasi" required>
+                                <label class="fw-bold mb-1 text-dark">Username (login) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control fw-bold text-primary" id="inp_email" placeholder="tanpa spasi" autocomplete="off" autocapitalize="none" spellcheck="false" required>
+                                    <span class="input-group-text small text-muted" id="suffix_domain_akun">@mutu.rssa</span>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="fw-bold mb-1 text-dark">Password <span class="text-danger" id="req_pass">*</span></label>
-                                <input type="password" class="form-control" id="inp_password" placeholder="Ketik sandi...">
-                                <small class="text-muted" id="hint_pass" style="display:none; font-size: 0.75rem;">Kosongkan jika tidak mereset sandi.</small>
+                                <input type="password" class="form-control" id="inp_password" placeholder="Min. 8 karakter" autocomplete="new-password">
+                                <small class="text-muted" id="hint_pass" style="display:none; font-size: 0.75rem;">Kosongkan jika tidak mereset sandi (min. 8 karakter).</small>
                             </div>
                         </div>
 
@@ -200,7 +205,25 @@
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
         
         let listUsers = [];
-        let listRolesData = []; 
+        let listRolesData = [];
+
+        // Semua operasi akun lewat Edge Function 'admin-manage-users'
+        // (butuh service role — TIDAK BOLEH dilakukan langsung dari browser).
+        async function panggilAdminUsers(action, payload = {}) {
+            const { data, error } = await supabaseClient.functions.invoke('admin-manage-users', {
+                body: { action, ...payload }
+            });
+            if (error) {
+                let pesan = error.message || 'Gagal menghubungi server.';
+                try { const j = await error.context.json(); if (j && j.error) pesan = j.error; } catch (_) {}
+                throw new Error(pesan);
+            }
+            return data;
+        }
+
+        function esc(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        } 
 
         // DAFTAR HALAMAN YANG TELAH DISESUAIKAN (BARU & BERSIH)
         const masterHalaman = [
@@ -238,10 +261,10 @@
         ];
 
         document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById('suffix_domain_akun').textContent = '@' + LOGIN_EMAIL_DOMAIN;
             if (!supabaseClient) { Swal.fire('Error', 'Supabase belum dikonfigurasi', 'error'); return; }
-            loadUsers();
-            loadDaftarUnit(); 
-            loadDaftarRole(); 
+            loadDaftarUnit();
+            loadDaftarRole().then(() => loadUsers()); // role dulu, supaya warna badge admin benar
         });
 
         async function loadDaftarRole(callback) {
@@ -251,6 +274,7 @@
                 
                 listRolesData = data.map(r => ({
                     role_name: r.role,
+                    is_admin: r.is_admin === true,
                     pages: r.allowed_pages ? r.allowed_pages.split(',').map(s=>s.trim()) : []
                 }));
 
@@ -285,7 +309,7 @@
                 const { error } = await supabaseClient.from('role_permissions').insert([{ role: namaRoleBaru, allowed_pages: "index.html,login.html" }]);
                 if (error) throw error;
 
-                listRolesData.push({ role_name: namaRoleBaru, pages: ["index.html", "login.html"] });
+                listRolesData.push({ role_name: namaRoleBaru, is_admin: false, pages: ["index.html", "login.html"] });
                 
                 const selectRole = document.getElementById('select_role_matrix');
                 selectRole.innerHTML = '<option value="">-- Pilih Role untuk Dikonfigurasi --</option>';
@@ -308,8 +332,9 @@
             const roleName = document.getElementById('select_role_matrix').value;
             if (!roleName) return;
 
-            if (roleName === "Komite Mutu") {
-                Swal.fire('Akses Ditolak', 'Role "Komite Mutu" adalah Administrator Utama dan tidak boleh dihapus.', 'error');
+            const dataRoleHapus = listRolesData.find(r => r.role_name === roleName);
+            if (dataRoleHapus && dataRoleHapus.is_admin) {
+                Swal.fire('Akses Ditolak', `Role "${roleName}" adalah role administrator. Hapus centang "Role administrator" terlebih dahulu jika memang ingin menghapusnya.`, 'error');
                 return;
             }
 
@@ -365,15 +390,13 @@
             document.getElementById('tableContainer').classList.add('d-none');
             
             try {
-                const { data, error } = await supabaseClient.from('users').select('*').order('id', { ascending: true });
-                if (error) throw error;
-                
-                listUsers = data;
+                const data = await panggilAdminUsers('list');
+                listUsers = data.users || [];
                 renderTable(listUsers);
                 document.getElementById('tableContainer').classList.remove('d-none');
             } catch (err) {
                 console.error(err);
-                Swal.fire('Gagal!', 'Tidak dapat memuat data pengguna dari Supabase', 'error');
+                Swal.fire('Gagal!', 'Tidak dapat memuat data pengguna: ' + err.message, 'error');
             } finally {
                 document.getElementById('loadingMessage').classList.add('d-none');
             }
@@ -383,26 +406,29 @@
             const tbody = document.getElementById('bodyUsers'); tbody.innerHTML = '';
             data.forEach((user, idx) => {
                 let badgeClass = "bg-secondary";
-                if (user.role === "Komite Mutu") badgeClass = "bg-danger";
+                const roleInfo = listRolesData.find(r => r.role_name === user.role);
+                if (roleInfo && roleInfo.is_admin) badgeClass = "bg-danger";
                 else if (user.role === "Kepala Unit") badgeClass = "bg-warning text-dark";
                 else if (user.role === "Admin PPI") badgeClass = "bg-info text-dark";
                 else if (user.role === "Petugas Input") badgeClass = "bg-success";
                 
-                let isAktif = (user.status === "Aktif" || user.status === "aktif" || user.status === "AKTIF");
+                let isAktif = user.status === "Aktif";
+                const tandaReset = user.wajib_ganti_password ? ' <span class="badge bg-info text-dark" title="Password sudah di-reset ke default; menunggu pengguna membuat password baru.">Wajib ganti password</span>' : '';
+                const peringatanProfil = tandaReset + (user.profil_lengkap ? '' : ' <span class="badge bg-warning text-dark" title="Akun login ada, tetapi profil belum diisi. Klik edit untuk melengkapi.">Profil belum lengkap</span>');
                 let statusBadge = isAktif ? `<span class="badge bg-success rounded-pill px-3"><i class="fas fa-check me-1"></i> Aktif</span>` : `<span class="badge bg-secondary rounded-pill px-3"><i class="fas fa-ban me-1"></i> Diblokir</span>`;
                 
                 tbody.innerHTML += `
                     <tr class="${!isAktif ? "opacity-50 bg-light" : ""} user-row">
                         <td class="text-center fw-bold text-muted">${idx + 1}</td>
-                        <td><code>${user.id}</code></td>
-                        <td class="fw-bold search-target">${user.nama_lengkap}</td>
-                        <td class="text-primary fw-bold">@${user.username}</td>
-                        <td class="text-center"><span class="badge badge-role ${badgeClass}">${user.role}</span></td>
-                        <td class="search-target">${user.unit_kerja || user.unit || '-'}</td>
+                        <td class="fw-bold search-target">${esc(user.nama_lengkap) || '<i class="text-muted">(tanpa nama)</i>'}${peringatanProfil}</td>
+                        <td class="text-primary fw-bold search-target" title="${esc(user.email)}">${esc(keUsernameLogin(user.email))}</td>
+                        <td class="text-center"><span class="badge badge-role ${badgeClass}">${esc(user.role) || '-'}</span></td>
+                        <td class="search-target">${esc(user.unit_kerja) || '-'}</td>
                         <td class="text-center">${statusBadge}</td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-primary rounded-circle me-1" onclick="bukaModalEdit('${user.id}')" title="Edit Akun"><i class="fas fa-pen"></i></button>
-                            <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="hapusUser('${user.id}', '${user.nama_lengkap}')" title="Hapus Permanen"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-sm btn-outline-warning rounded-circle me-1" onclick="resetPasswordDefault('${user.id}')" title="Reset password ke default &amp; wajib ganti saat login"><i class="fas fa-key"></i></button>
+                            <button class="btn btn-sm btn-outline-danger rounded-circle" onclick="hapusUser('${user.id}')" title="Hapus Permanen"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>`;
             });
@@ -428,16 +454,16 @@
             
             document.getElementById('inp_id_user').value = user.id;
             document.getElementById('modalTitle').innerHTML = '<i class="fas fa-user-edit me-2 text-primary"></i> Edit Pengguna';
-            document.getElementById('inp_nama').value = user.nama_lengkap; document.getElementById('inp_username').value = user.username;
+            document.getElementById('inp_nama').value = user.nama_lengkap; document.getElementById('inp_email').value = keUsernameLogin(user.email);
             
             document.getElementById('inp_role').value = user.role;
             let unitSelect = document.getElementById('inp_unit');
-            let unitVal = user.unit_kerja || user.unit;
+            let unitVal = user.unit_kerja;
             if (!Array.from(unitSelect.options).some(opt => opt.value === unitVal) && unitVal) { unitSelect.add(new Option(unitVal + " (Unit Tidak Aktif)", unitVal)); }
             unitSelect.value = unitVal; 
             
             let statVal = user.status;
-            document.getElementById('inp_status').value = (statVal === 'Aktif' || statVal === 'aktif' || statVal === 'AKTIF') ? 'Aktif' : 'Nonaktif';
+            document.getElementById('inp_status').value = statVal === 'Aktif' ? 'Aktif' : 'Nonaktif';
             
             document.getElementById('req_pass').style.display = 'none'; document.getElementById('hint_pass').style.display = 'block'; document.getElementById('inp_password').required = false;
             new bootstrap.Modal(document.getElementById('modalUser')).show();
@@ -446,57 +472,73 @@
         window.simpanUser = async function() {
             const idUser = document.getElementById('inp_id_user').value;
             const nama = document.getElementById('inp_nama').value.trim();
-            const username = document.getElementById('inp_username').value.trim();
+            const email = keEmailLogin(document.getElementById('inp_email').value);
             const password = document.getElementById('inp_password').value;
             const roleAkun = document.getElementById('inp_role').value;
             const unit = document.getElementById('inp_unit').value.trim();
             const status = document.getElementById('inp_status').value;
 
-            if (!nama || !username || !roleAkun || !unit) { Swal.fire('Oops', 'Lengkapi semua field (*)', 'warning'); return; }
+            if (!nama || !email || !roleAkun || !unit) { Swal.fire('Oops', 'Lengkapi semua field (*)', 'warning'); return; }
+            if (!/^[a-z0-9._-]+@[^\s@]+\.[^\s@]+$/.test(email)) { Swal.fire('Oops', 'Username hanya boleh huruf, angka, titik, strip, atau garis bawah.', 'warning'); return; }
             if (!idUser && !password) { Swal.fire('Oops', 'Password wajib untuk pengguna baru!', 'warning'); return; }
+            if (password && password.length < 8) { Swal.fire('Oops', 'Password minimal 8 karakter.', 'warning'); return; }
 
-            const btn = document.getElementById('btnSimpan'); 
+            const btn = document.getElementById('btnSimpan');
             btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
 
-            const payloadData = {
-                username: username,
-                nama_lengkap: nama,
-                role: roleAkun,
-                unit_kerja: unit,
-                status: status
-            };
-
-            if (password) payloadData.password = password;
+            const payload = { email, nama_lengkap: nama, role: roleAkun, unit_kerja: unit, status };
+            if (password) payload.password = password;
 
             try {
-                if (idUser) {
-                    const { data: existing } = await supabaseClient.from('users').select('id').eq('username', username).neq('id', idUser).maybeSingle();
-                    if (existing) { Swal.fire('Oops', 'Username sudah dipakai akun lain!', 'warning'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Data Pengguna'; return; }
-                    
-                    const { error } = await supabaseClient.from('users').update(payloadData).eq('id', idUser);
-                    if (error) throw error;
-                } else {
-                    const { data: existing } = await supabaseClient.from('users').select('id').eq('username', username).maybeSingle();
-                    if (existing) { Swal.fire('Oops', 'Username sudah dipakai akun lain!', 'warning'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Data Pengguna'; return; }
-                    
-                    const { error } = await supabaseClient.from('users').insert([payloadData]);
-                    if (error) throw error;
-                }
+                if (idUser) await panggilAdminUsers('update', { id: idUser, ...payload });
+                else await panggilAdminUsers('create', payload);
 
-                Swal.fire({ title: 'Berhasil!', text: 'Data pengguna tersimpan di Supabase', icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { 
-                    bootstrap.Modal.getInstance(document.getElementById('modalUser')).hide(); 
-                    loadUsers(); 
+                Swal.fire({ title: 'Berhasil!', text: 'Data pengguna tersimpan.', icon: 'success', timer: 1500, showConfirmButton: false }).then(() => {
+                    bootstrap.Modal.getInstance(document.getElementById('modalUser')).hide();
+                    loadUsers();
                 });
-
             } catch (err) {
                 console.error(err);
-                Swal.fire('Gagal!', 'Terjadi kesalahan saat menyimpan ke Supabase.', 'error');
+                Swal.fire('Gagal!', err.message, 'error');
             } finally {
                 btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Data Pengguna';
             }
         };
 
-        window.hapusUser = function(idUser, namaLengkap) {
+        window.resetPasswordDefault = async function(idUser) {
+            const target = listUsers.find(u => u.id === idUser);
+            if (!target) return;
+            if (idUser == sessionMutu.id_user) {
+                Swal.fire('Info', 'Untuk akun Anda sendiri, gunakan menu Ganti Password di pojok kanan atas.', 'info');
+                return;
+            }
+            const nama = esc(target.nama_lengkap || target.email);
+            const konfirmasi = await Swal.fire({
+                title: 'Reset Password?',
+                html: `Password <b>${nama}</b> akan diubah ke <b>password default</b>.<br>` +
+                      `Saat login berikutnya, pengguna <b>wajib membuat password baru</b> dan tidak dapat mengakses data sebelum itu.`,
+                icon: 'warning', showCancelButton: true,
+                confirmButtonColor: '#ffc107', confirmButtonText: 'Ya, Reset', cancelButtonText: 'Batal'
+            });
+            if (!konfirmasi.isConfirmed) return;
+            try {
+                const hasil = await panggilAdminUsers('reset_password_default', { id: idUser });
+                await Swal.fire({
+                    title: 'Password Di-reset',
+                    html: `Sampaikan ke <b>${nama}</b>:<br><br>Username: <code>${esc(keUsernameLogin(target.email))}</code><br>` +
+                          `Password sementara: <code>${esc(hasil.password_default)}</code>`,
+                    icon: 'success'
+                });
+                loadUsers();
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal', err.message, 'error');
+            }
+        };
+
+        window.hapusUser = function(idUser) {
+            const target = listUsers.find(u => u.id === idUser);
+            const namaLengkap = esc(target ? (target.nama_lengkap || target.email) : idUser);
             if (idUser == sessionMutu.id_user) {
                 Swal.fire('Peringatan', 'Anda tidak dapat menghapus akun Anda sendiri saat sedang login.', 'warning');
                 return;
@@ -504,7 +546,7 @@
 
             Swal.fire({
                 title: 'Hapus Permanen?',
-                html: `Anda yakin ingin menghapus akun <b>${namaLengkap}</b>?<br><small class="text-danger">Tindakan ini akan menghapus data selamanya!</small>`,
+                html: `Anda yakin ingin menghapus akun <b>${namaLengkap}</b>?<br><small class="text-danger">Akun login akan dihapus permanen. Jika hanya ingin memblokir sementara, gunakan Edit &rarr; Status Nonaktif.</small>`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545',
@@ -514,17 +556,66 @@
             }).then(async (result) => {
                 if (result.isConfirmed) {
                     try {
-                        const { error } = await supabaseClient.from('users').delete().eq('id', idUser);
-                        if (error) throw error;
-                        
-                        Swal.fire('Terhapus!', `Akun ${namaLengkap} telah dihapus dari database.`, 'success');
+                        await panggilAdminUsers('delete', { id: idUser });
+                        Swal.fire({ title: 'Terhapus!', html: `Akun <b>${namaLengkap}</b> telah dihapus.`, icon: 'success' });
                         loadUsers();
                     } catch (err) {
                         console.error(err);
-                        Swal.fire('Gagal', 'Terjadi kesalahan saat menghapus data. Pastikan Policy DELETE diizinkan.', 'error');
+                        Swal.fire('Gagal', err.message, 'error');
                     }
                 }
             });
+        };
+
+        // =============================================================
+        // MIGRASI SEKALI PAKAI: tabel lama `users` -> Supabase Auth + profiles
+        // Hapus tombol & fungsi ini setelah migrasi selesai.
+        // =============================================================
+        function tabelHasilMigrasi(res) {
+            const warna = { 'akan dibuat': 'primary', 'dibuat': 'success', 'dilewati': 'secondary', 'GAGAL': 'danger' };
+            const ringkas = Object.entries(res.ringkasan).map(([k, v]) => `<span class="badge bg-${warna[k] || 'dark'} me-1">${esc(k)}: ${v}</span>`).join('');
+            const baris = res.hasil.map(b => `<tr>
+                <td>${esc(b.nama)}<br><small class="text-muted">${esc(b.username)}</small></td>
+                <td><small>${esc(b.email)}</small></td>
+                <td><span class="badge bg-${warna[b.hasil] || 'dark'}">${esc(b.hasil)}</span></td>
+                <td><small class="${b.catatan ? 'text-danger' : ''}">${esc(b.catatan)}</small></td></tr>`).join('');
+            return `<div class="text-start"><div class="mb-2">Total ${res.total} akun lama: ${ringkas}</div>
+                <div style="max-height:50vh;overflow:auto"><table class="table table-sm small">
+                <thead><tr><th>Nama / Username</th><th>Email baru</th><th>Hasil</th><th>Catatan</th></tr></thead>
+                <tbody>${baris}</tbody></table></div></div>`;
+        }
+
+        window.migrasiAkunLama = async function() {
+            const { value: domain } = await Swal.fire({
+                title: 'Migrasi Akun Lama',
+                html: 'Username lama yang bukan email akan diubah menjadi <b>username@domain</b>.<br>Password lama tetap berlaku.<br><br>Domain email:',
+                input: 'text', inputValue: LOGIN_EMAIL_DOMAIN, showCancelButton: true,
+                confirmButtonText: 'Lihat Pratinjau', cancelButtonText: 'Batal',
+                inputValidator: v => !v ? 'Domain wajib diisi' : undefined
+            });
+            if (!domain) return;
+
+            try {
+                Swal.fire({ title: 'Menyusun pratinjau...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const pratinjau = await panggilAdminUsers('migrasi_legacy', { domain, jalankan: false });
+                const jumlahBaru = pratinjau.ringkasan['akan dibuat'] || 0;
+
+                const konfirmasi = await Swal.fire({
+                    title: 'Pratinjau Migrasi', width: 900, html: tabelHasilMigrasi(pratinjau),
+                    showCancelButton: jumlahBaru > 0, showConfirmButton: jumlahBaru > 0,
+                    confirmButtonText: `Jalankan (${jumlahBaru} akun)`, cancelButtonText: 'Batal',
+                    confirmButtonColor: '#198754'
+                });
+                if (jumlahBaru === 0 || !konfirmasi.isConfirmed) return;
+
+                Swal.fire({ title: 'Memigrasikan akun...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const hasil = await panggilAdminUsers('migrasi_legacy', { domain, jalankan: true });
+                await Swal.fire({ title: 'Migrasi Selesai', width: 900, html: tabelHasilMigrasi(hasil), icon: hasil.ringkasan['GAGAL'] ? 'warning' : 'success' });
+                loadUsers();
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal', err.message, 'error');
+            }
         };
 
         function bukaModalRole() {
@@ -555,7 +646,17 @@
             const roleData = listRolesData.find(r => r.role_name === roleSelected);
             const activePages = roleData ? roleData.pages : [];
             
-            let html = '';
+            let html = `
+                <div class="col-12">
+                    <div class="perm-item d-flex align-items-center border-danger" style="background:#fff5f5;">
+                        <input class="form-check-input me-3" type="checkbox" id="chk_is_admin" ${roleData && roleData.is_admin ? 'checked' : ''}>
+                        <label class="form-check-label flex-grow-1" for="chk_is_admin" style="cursor:pointer;">
+                            <div class="fw-bold text-danger" style="font-size: 0.9rem;"><i class="fas fa-crown me-1"></i> Role administrator</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">Melihat &amp; mengubah data SEMUA unit, mengelola data master, akun, dan hak akses. Berlaku langsung di database.</div>
+                        </label>
+                    </div>
+                    <hr class="my-2">
+                </div>`;
             masterHalaman.forEach((page, idx) => {
                 let isChecked = activePages.includes(page.url) ? 'checked' : '';
                 let lockIcon = (page.url === 'index.html' || page.url === 'login.html') ? 'disabled checked' : ''; 
@@ -590,15 +691,23 @@
             btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
 
             const strPages = allowedPages.join(',');
+            const isAdminRole = document.getElementById('chk_is_admin').checked;
+            const roleLama = listRolesData.find(r => r.role_name === roleSelected);
+
+            if (roleLama && roleLama.is_admin && !isAdminRole && roleSelected === sessionMutu.role) {
+                Swal.fire('Ditolak', 'Anda tidak dapat mencabut status administrator dari role Anda sendiri.', 'warning');
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Terapkan Hak Akses';
+                return;
+            }
 
             try {
                 const { data: exist } = await supabaseClient.from('role_permissions').select('role').eq('role', roleSelected).maybeSingle();
                 
                 if (exist) {
-                    const { error } = await supabaseClient.from('role_permissions').update({ allowed_pages: strPages }).eq('role', roleSelected);
+                    const { error } = await supabaseClient.from('role_permissions').update({ allowed_pages: strPages, is_admin: isAdminRole }).eq('role', roleSelected);
                     if (error) throw error;
                 } else {
-                    const { error } = await supabaseClient.from('role_permissions').insert([{ role: roleSelected, allowed_pages: strPages }]);
+                    const { error } = await supabaseClient.from('role_permissions').insert([{ role: roleSelected, allowed_pages: strPages, is_admin: isAdminRole }]);
                     if (error) throw error;
                 }
 
@@ -609,7 +718,7 @@
 
             } catch (err) {
                 console.error(err);
-                Swal.fire('Gagal!', 'Gagal menyimpan otorisasi ke Supabase.', 'error');
+                Swal.fire('Gagal!', err.message || 'Gagal menyimpan otorisasi ke Supabase.', 'error');
             } finally {
                 btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Terapkan Hak Akses';
             }

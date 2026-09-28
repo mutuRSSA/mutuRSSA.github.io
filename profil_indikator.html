@@ -284,7 +284,7 @@
 
     <script>
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        const isAdmin = (sessionMutu.role === "Komite Mutu");
+        const isAdmin = (isAdminMutu(sessionMutu.role));
         
         let listIndikator = [];
         let listFormulirMaster = []; 

@@ -78,7 +78,8 @@ function loadNavigation() {
             <ul class="dropdown-menu dropdown-menu-end shadow mt-2">
                 <li class="px-3 py-2 bg-light border-bottom"><small class="text-muted d-block">Hak Akses:</small><span class="fw-bold text-primary"><i class="fas fa-shield-alt me-1"></i> ${role}</span></li>
                 <li class="px-3 py-2 bg-light border-bottom"><small class="text-muted d-block">Unit Tugas:</small><span class="fw-bold text-dark"><i class="fas fa-hospital me-1"></i> ${unit}</span></li>
-                <li><button class="dropdown-item text-danger fw-bold py-2 mt-1" onclick="window.logoutSystem()"><i class="fas fa-sign-out-alt me-2"></i> Logout Sistem</button></li>
+                <li><a class="dropdown-item py-2 mt-1" href="ganti_password.html"><i class="fas fa-key me-2 text-secondary"></i> Ganti Password</a></li>
+                <li><button class="dropdown-item text-danger fw-bold py-2" onclick="window.logoutSystem()"><i class="fas fa-sign-out-alt me-2"></i> Logout Sistem</button></li>
             </ul>
            </div>` 
         : `<a href="login.html" class="btn btn-light btn-sm fw-bold text-primary px-3 rounded-pill shadow-sm"><i class="fas fa-sign-in-alt me-1"></i> Login</a>`;
@@ -267,8 +268,10 @@ window.logoutSystem = function() {
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                localStorage.clear(); 
-                window.location.href = "login.html";
+                const selesai = () => { localStorage.clear(); window.location.href = "login.html"; };
+                if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+                    supabaseClient.auth.signOut().finally(selesai);
+                } else { selesai(); }
             }
         });
     } else {

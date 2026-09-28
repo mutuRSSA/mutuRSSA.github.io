@@ -29,3 +29,59 @@ const API_CONFIG = {
     // GROQ_API_KEY DIHAPUS DARI SINI — sekarang disimpan sebagai secret di
     // Supabase Edge Function 'generate-laporan-ai', tidak pernah dikirim ke browser.
 };
+
+// 3. DOMAIN EMAIL LOGIN
+// Petugas cukup mengetik username; aplikasi menambahkan domain ini otomatis.
+// Akun dengan email lengkap (mengandung '@') tetap bisa login apa adanya.
+const LOGIN_EMAIL_DOMAIN = 'mutu.rssa';
+
+function keEmailLogin(input) {
+    const v = String(input || '').trim().toLowerCase().replace(/\s+/g, '.');
+    if (!v) return '';
+    return v.includes('@') ? v : `${v}@${LOGIN_EMAIL_DOMAIN}`;
+}
+
+function keUsernameLogin(email) {
+    const v = String(email || '').toLowerCase();
+    const akhiran = '@' + LOGIN_EMAIL_DOMAIN;
+    return v.endsWith(akhiran) ? v.slice(0, -akhiran.length) : v;
+}
+
+// 4. ROLE ADMIN APLIKASI
+// Role mana yang "admin" diatur di Manajemen Akun > Panel Otorisasi
+// (centang "Role administrator" -> kolom role_permissions.is_admin).
+// Nilai yang sama dipakai RLS (mutu_is_admin) dan Edge Function, jadi
+// tidak ada lagi daftar role admin yang ditulis di kode.
+// Fungsi ini hanya mengatur TAMPILAN (dropdown unit, tombol hapus, dsb);
+// keamanan data tetap ditegakkan oleh RLS di database.
+function isAdminMutu() {
+    try { return (JSON.parse(localStorage.getItem('sessionMutu')) || {}).is_admin === true; }
+    catch (_) { return false; }
+}
+
+// 5. AMBIL SEMUA BARIS (melewati batas 1.000 baris per request Supabase)
+// Supabase/PostgREST hanya mengembalikan maksimal 1.000 baris per query.
+// Tanpa paginasi, data di atas itu terpotong DIAM-DIAM (tanpa error).
+// Pakai: const rows = await ambilSemuaBaris(() =>
+//            supabaseClient.from('tabel').select('*').eq(...).order('id'));
+// Wajib ada .order() pada kolom unik agar urutan antar-halaman stabil.
+async function ambilSemuaBaris(buatQuery, ukuranHalaman = 1000) {
+    const hasil = [];
+    for (let dari = 0; ; dari += ukuranHalaman) {
+        const { data, error } = await buatQuery().range(dari, dari + ukuranHalaman - 1);
+        if (error) throw error;
+        const halaman = data || [];
+        hasil.push(...halaman);
+        if (halaman.length < ukuranHalaman) break;
+    }
+    return hasil;
+}
+
+// Versi yang mengembalikan { data, error } seperti query Supabase biasa,
+// jadi kode lama cukup diganti:
+//   await supabaseClient.from(...)...            ->
+//   await ambilSemua(() => supabaseClient.from(...)....order('<kolom unik>'))
+async function ambilSemua(buatQuery, ukuranHalaman = 1000) {
+    try { return { data: await ambilSemuaBaris(buatQuery, ukuranHalaman), error: null }; }
+    catch (error) { return { data: null, error }; }
+}

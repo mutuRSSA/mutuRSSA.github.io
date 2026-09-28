@@ -212,7 +212,7 @@
             const dropdownUnit = document.getElementById('pilihUnit');
             const pesanUnit = document.getElementById('pesanUnit');
 
-            if (userUnit && userUnit !== "Non-Unit" && userRole !== "Komite Mutu") {
+            if (userUnit && userUnit !== "Non-Unit" && !isAdminMutu(userRole)) {
                 let optionExists = Array.from(dropdownUnit.options).some(opt => opt.value === userUnit);
                 if (!optionExists) dropdownUnit.add(new Option(userUnit, userUnit));
                 
@@ -221,7 +221,7 @@
                 dropdownUnit.classList.add("bg-light", "text-muted", "border-secondary");
                 pesanUnit.innerHTML = `<span class="text-success fw-bold"><i class="fas fa-user-lock me-1"></i> Terkunci untuk Unit ${userUnit}</span>`;
             } 
-            else if (userRole === "Komite Mutu") {
+            else if (isAdminMutu(userRole)) {
                 pesanUnit.innerHTML = `<span class="text-primary fw-bold"><i class="fas fa-filter me-1"></i> Mode Admin: Melihat semua data.</span>`;
             }
         }
@@ -239,14 +239,14 @@
 
         async function tarikDataServer() {
             try {
-                let query = supabaseClient.from('data_risiko').select('*').eq('status', 'terkirim').order('skor_akhir', { ascending: false });
+                let query = supabaseClient.from('data_risiko').select('*').eq('status', 'terkirim').order('skor_akhir', { ascending: false }).order('id_risiko');
                 
                 // Filter akses unit di sisi server
-                if (userRole !== "Komite Mutu" && userUnit !== "Non-Unit") {
+                if (!isAdminMutu(userRole) && userUnit !== "Non-Unit") {
                     query = query.eq('unit_kerja', userUnit);
                 }
 
-                const { data, error } = await query;
+                const { data, error } = await ambilSemua(() => query);
                 if (error) throw error;
                 
                 daftarRisikoServer = data || [];
@@ -299,7 +299,7 @@
             if (!form.checkValidity()) { form.reportValidity(); return; }
             
             const dropdownUnit = document.getElementById('pilihUnit');
-            if (userRole === "Komite Mutu" && dropdownUnit.value === "") {
+            if (isAdminMutu(userRole) && dropdownUnit.value === "") {
                 Swal.fire('Peringatan', 'Mohon pilih spesifik Unit Pelapor di dropdown filter sebelum menambahkan risiko.', 'warning');
                 return;
             }
@@ -312,7 +312,7 @@
             let dataBaru = {
                 id_risiko: idEdit ? idEdit : 'RSK-' + Date.now(),
                 tahun: new Date().getFullYear(),
-                unit_kerja: userRole === "Komite Mutu" ? dropdownUnit.value : userUnit, 
+                unit_kerja: isAdminMutu(userRole) ? dropdownUnit.value : userUnit, 
                 risiko_teridentifikasi: document.getElementById('inputRisiko').value,
                 penyebab: document.getElementById('inputPenyebab').value,
                 dampak: d,
@@ -408,7 +408,7 @@
             document.getElementById('inputKontrol').value = row.kontrol;
             
             const dropdownUnit = document.getElementById('pilihUnit');
-            if (userRole === "Komite Mutu") dropdownUnit.value = row.unit_kerja;
+            if (isAdminMutu(userRole)) dropdownUnit.value = row.unit_kerja;
 
             hitungSkorLive();
             new bootstrap.Modal(document.getElementById('modalRisiko')).show();
@@ -492,7 +492,7 @@
         window.siapkanCetak = function() {
             const dropdownUnit = document.getElementById('pilihUnit');
             const dropdownTahun = document.getElementById('pilihTahun');
-            let unitCetak = userRole === "Komite Mutu" ? (dropdownUnit.value || "SELURUH UNIT") : userUnit;
+            let unitCetak = isAdminMutu(userRole) ? (dropdownUnit.value || "SELURUH UNIT") : userUnit;
             let tahunCetak = dropdownTahun.value === "SEMUA" ? "Semua Tahun" : dropdownTahun.value;
             
             document.getElementById('printUnitTitle').innerText = unitCetak.toUpperCase();

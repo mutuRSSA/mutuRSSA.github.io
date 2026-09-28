@@ -218,10 +218,10 @@
 
             try {
                 // Tarik Semua Data Survey (Dibatasi 2000 row terakhir agar ringan)
-                const { data, error } = await supabaseClient.from('data_survey_budaya')
+                const { data, error } = await ambilSemua(() => supabaseClient.from('data_survey_budaya')
                     .select('*')
                     .order('timestamp', { ascending: false })
-                    .limit(2000);
+                    .order('id_survey'));
 
                 if (error) throw error;
                 

@@ -50,13 +50,25 @@ async function jagaGerbang() {
         return;
     }
 
+    // Password di-reset admin -> wajib buat password baru dulu
+    if (profil.wajib_ganti_password === true) {
+        window.location.replace('ganti_password.html');
+        return;
+    }
+
     // Ambil allowed_pages dari role_permissions berdasarkan role user (per-role)
     let allowedPages = [];
-    const { data: roleData } = await supabaseClient
+    // select('*') supaya tetap jalan walaupun kolom is_admin belum ada
+    // (migrasi role_admin_dinamis belum dijalankan). limit(1) supaya tidak
+    // gagal bila ada baris role ganda.
+    const { data: rolesRows, error: roleError } = await supabaseClient
         .from('role_permissions')
-        .select('allowed_pages')
+        .select('*')
         .eq('role', profil.role)
-        .single();
+        .limit(1);
+    if (roleError) console.error('Gagal membaca hak akses role:', roleError);
+    const roleData = rolesRows && rolesRows[0];
+    if (!roleData) console.warn(`Role "${profil.role}" tidak ditemukan di role_permissions.`);
 
     if (roleData && roleData.allowed_pages) {
         allowedPages = roleData.allowed_pages.split(',').map(s => s.trim()).filter(Boolean);
@@ -72,7 +84,9 @@ async function jagaGerbang() {
         nama_lengkap: profil.nama_lengkap,
         role: profil.role,
         unit: profil.unit_kerja,
-        allowed_pages: allowedPages
+        allowed_pages: allowedPages,
+        is_admin: !!(roleData && roleData.is_admin),
+        wajib_ganti_password: false
     }));
 
     // 3. CEK OTORISASI HALAMAN INI

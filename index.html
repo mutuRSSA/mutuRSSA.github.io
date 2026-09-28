@@ -209,7 +209,7 @@
                 const sapaan = document.getElementById("teksSapaan");
                 
                 // Cek apakah dia Komite Mutu atau Staf Biasa
-                if(userData.role === "Komite Mutu" || userData.role === "Super Admin") {
+                if(isAdminMutu(userData.role)) {
                     sapaan.innerHTML = `Selamat bertugas, <strong class="text-warning">${userData.username}</strong> (Tim Komite Mutu). Anda memiliki akses penuh ke seluruh dasbor pelaporan.`;
                     
                     // Tampilkan Fitur Khusus Admin
@@ -260,10 +260,11 @@
 
             try {
                 // 1. Cek Insiden Tahun Ini
-                const { data: dataInsiden, error: errInsiden } = await supabaseClient
+                const { data: dataInsiden, error: errInsiden } = await ambilSemua(() => supabaseClient
                     .from('data_insiden')
                     .select('id_insiden, grading_risiko, status_investigasi')
-                    .gte('waktu_insiden', `${currentYear}-01-01T00:00:00Z`);
+                    .gte('waktu_insiden', `${currentYear}-01-01T00:00:00`)
+                    .order('id_insiden'));
 
                 if (!errInsiden && dataInsiden) {
                     let totalKasus = dataInsiden.length;

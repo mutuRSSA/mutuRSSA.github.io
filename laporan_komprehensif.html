@@ -79,15 +79,14 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="engine_mutu.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        if (sessionMutu.role !== 'Komite Mutu') {
-            Swal.fire('Akses Ditolak', 'Halaman ini khusus untuk Pimpinan Komite Mutu.', 'error').then(() => window.location.href = 'index.html');
-        }
+        // Akses halaman diatur oleh RBAC (auth.js + role_permissions); akses data oleh RLS.
 
         // GROQ_API_KEY TIDAK LAGI ADA DI SINI — pemanggilan AI sekarang lewat
         // Edge Function 'generate-laporan-ai' (key disimpan sebagai secret di server).
@@ -144,30 +143,7 @@
             term.scrollTop = term.scrollHeight;
         }
 
-        function eksekusiRumusEngine(template, rows, colsConfig) {
-            if (!template) return 0;
-            let t = template.toString().trim();
-            if (t.startsWith('{') && t.endsWith('}')) {
-                try {
-                    let rule = JSON.parse(t);
-                    let colIdx = parseInt(rule.target_kolom);
-                    if (rule.tipe === "COUNTALL") return rows.length;
-                    if (rule.tipe === "SUM") return rows.reduce((acc, r) => acc + (parseFloat(r.data_input[colIdx]) || 0), 0);
-                    if (rule.tipe === "COUNTIF") {
-                        let kr = (rule.nilai_kriteria || "").toString().toLowerCase().trim();
-                        let op = rule.operator || "==";
-                        return rows.filter(r => {
-                            let val = (r.data_input[colIdx] !== null && r.data_input[colIdx] !== undefined) ? r.data_input[colIdx].toString().toLowerCase().trim() : "";
-                            if (op === "==") return val === kr;
-                            if (op === "!=") return val !== kr;
-                            if (op === "includes") return val.includes(kr);
-                            return false;
-                        }).length;
-                    }
-                } catch(e) {}
-            }
-            return 0; // Legacy string parsing dihapus demi performa karena JSON sudah paten
-        }
+        // eksekusiRumusEngine() sekarang ada di engine_mutu.js (dipakai bersama dengan Tutup Tahun)
 
         window.jalankanProsesIntegrasi = async function() {
             const btn = document.getElementById('btnGenerate');
@@ -196,38 +172,49 @@
                 // HYBRID DATA ROUTING (ARSIP VS LIVE)
                 // ==============================================================
                 logTerminal("Mengecek Gudang Arsip (Capaian Beku)...");
-                const resArsip = await supabaseClient.from('arsip_capaian_mutu').select('*').eq('tahun', tahun).in('bulan', listBulanAngka);
-                rawDataArsip = resArsip.data || [];
+                rawDataArsip = await ambilSemuaBaris(() => supabaseClient.from('arsip_capaian_mutu').select('*').eq('tahun', tahun).in('bulan', listBulanAngka).order('id'));
                 
                 logTerminal("Mengekstrak Data Mentah Harian (Live)...");
-                const resMutu = await supabaseClient.from('data_mutu_harian').select('*').eq('tahun', tahun).in('bulan', listBulanAngka);
-                rawDataMutu = resMutu.data || [];
+                rawDataMutu = await ambilSemuaBaris(() => supabaseClient.from('data_mutu_harian').select('*').eq('tahun', tahun).in('bulan', listBulanAngka).order('id'));
 
                 logTerminal("Mengeksekusi Agregator Hybrid...");
                 kalkulasiCapaianKuantitatif(tahun, listBulanTeks, listBulanAngka);
 
                 logTerminal("Mengekstrak data Insiden Keselamatan Pasien (IKP)...");
-                let startDate = new Date(tahun, listBulanAngka[0] - 1, 1).toISOString();
-                let endDate = new Date(tahun, listBulanAngka[listBulanAngka.length - 1] + 1, 0, 23, 59, 59).toISOString();
-                const resInsiden = await supabaseClient.from('data_insiden').select('*').gte('waktu_insiden', startDate).lte('waktu_insiden', endDate);
+                // waktu_insiden bertipe "timestamp without time zone" (jam lokal WIB),
+                // jadi batasnya ditulis sebagai jam lokal — BUKAN toISOString() (UTC, geser 7 jam).
+                const duaDigit = n => String(n).padStart(2, '0');
+                const blnAwal = listBulanAngka[0], blnAkhir = listBulanAngka[listBulanAngka.length - 1];
+                const hariAkhir = new Date(tahun, blnAkhir, 0).getDate();
+                let startDate = `${tahun}-${duaDigit(blnAwal)}-01T00:00:00`;
+                // (Dulu memakai "+ 1" pada bulan -> periode kelebihan 1 bulan.)
+                let endDate = `${tahun}-${duaDigit(blnAkhir)}-${duaDigit(hariAkhir)}T23:59:59.999`;
+                const resInsiden = await ambilSemua(() => supabaseClient.from('data_insiden').select('*').gte('waktu_insiden', startDate).lte('waktu_insiden', endDate).order('id_insiden'));
+                if (resInsiden.error) throw resInsiden.error;
                 rawDataInsiden = resInsiden.data || [];
                 kalkulasiStatistikInsiden();
 
                 logTerminal("Mengekstrak jejak rekam PDSA...");
-                const resPdsa = await supabaseClient.from('data_pdsa').select('*');
+                const resPdsa = await ambilSemua(() => supabaseClient.from('data_pdsa').select('*').order('id_pdsa'));
                 if(resPdsa.data) rawDataPdsa = resPdsa.data.filter(row => row.periode_analisis && row.periode_analisis.includes(tahun.toString()));
                 else rawDataPdsa = [];
 
                 logTerminal("Mengekstrak data Risiko Korporat & FMEA...");
-                const resRisiko = await supabaseClient.from('data_risiko').select('*').eq('tahun', tahun).eq('is_profil_rs', true);
+                const resRisiko = await ambilSemua(() => supabaseClient.from('data_risiko').select('*').eq('tahun', tahun).eq('is_profil_rs', true).order('id_risiko'));
                 rawDataRisiko = resRisiko.data || [];
                 
-                const resFmea = await supabaseClient.from('data_fmea').select('*').like('tanggal_dibuat', `%${tahun}%`);
+                // Rentang 1 Jan - 31 Des (WIB). Kolom timestamp tidak bisa difilter dengan LIKE.
+                const awalTahun = `${tahun}-01-01T00:00:00+07:00`, awalTahunDepan = `${Number(tahun) + 1}-01-01T00:00:00+07:00`;
+                const resFmea = await ambilSemua(() => supabaseClient.from('data_fmea').select('*').gte('tanggal_dibuat', awalTahun).lt('tanggal_dibuat', awalTahunDepan).order('id_proyek'));
+                if (resFmea.error) console.error('Gagal ambil FMEA:', resFmea.error);
                 rawDataFmea = resFmea.data || [];
 
                 logTerminal("Mengekstrak data Survei Budaya Keselamatan Pasien...");
-                const resBudaya = await supabaseClient.from('data_budaya_keselamatan').select('*').eq('tahun', tahun);
-                rawDataBudaya = resBudaya.data || [];
+                // Tabel survei yang benar adalah data_survey_budaya (kolom waktu: "timestamp")
+                // Cukup hitung jumlahnya (tanpa menarik baris), jadi tidak terkena batas 1.000
+                const resBudaya = await supabaseClient.from('data_survey_budaya').select('id_survey', { count: 'exact', head: true }).gte('timestamp', awalTahun).lt('timestamp', awalTahunDepan);
+                if (resBudaya.error) console.error('Gagal ambil survei budaya:', resBudaya.error);
+                rawDataBudaya = { length: resBudaya.count || 0 };
 
                 logTerminal("Mem-build puluhan grafik statistik indikator (Base64)...");
                 await generateChartsBase64(listBulanTeks);
@@ -306,11 +293,20 @@
                         blnData[b] = { num: 0, den: 0, val: null, isArsip: false };
 
                         // 1. CEK GUDANG ARSIP DULU
-                        let targetUnitPencarian = (unt === "RS_ALL") ? profil.unit_pelaksana : unt;
-                        let adaArsip = arsipIndikatorIni.find(a => a.bulan === blnAngka && (a.unit_pelaksana === targetUnitPencarian || unt === "RS_ALL"));
-                        
-                        if (adaArsip) {
-                            blnData[b].val = adaArsip.capaian;
+                        // Arsip dibuat per unit. Untuk tingkat RS (RS_ALL), N & D semua unit
+                        // dijumlahkan dulu lalu dihitung capaiannya (sama seperti mesin live).
+                        let arsipCocok = (unt === "RS_ALL")
+                            ? arsipIndikatorIni.filter(a => a.bulan === blnAngka)
+                            : arsipIndikatorIni.filter(a => a.bulan === blnAngka && a.unit_pelaksana === unt);
+
+                        if (arsipCocok.length === 1) {
+                            blnData[b].val = arsipCocok[0].capaian;
+                            blnData[b].isArsip = true;
+                        } else if (arsipCocok.length > 1) {
+                            let sumN = arsipCocok.reduce((acc, a) => acc + (parseFloat(a.numerator) || 0), 0);
+                            let sumD = arsipCocok.reduce((acc, a) => acc + (parseFloat(a.denominator) || 0), 0);
+                            blnData[b].num = sumN; blnData[b].den = sumD;
+                            blnData[b].val = hitungCapaianND(sumN, sumD, profil.satuan);
                             blnData[b].isArsip = true;
                         } 
                         // 2. JIKA TIDAK ADA DI ARSIP, JALANKAN MESIN LIVE

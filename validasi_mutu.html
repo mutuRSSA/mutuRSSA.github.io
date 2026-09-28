@@ -324,14 +324,15 @@
                 let query = supabaseClient.from('data_mutu_harian').select('*')
                     .eq('id_indikator', id_form)
                     .eq('bulan', bulan)
-                    .eq('tahun', tahun);
+                    .eq('tahun', tahun)
+                    .order('id');
 
                 // PERBAIKAN: Jika bukan RS_ALL, filter unitnya
                 if (unit !== "RS_ALL") {
                     query = query.eq('unit_kerja', unit);
                 }
 
-                const { data, error } = await query;
+                const { data, error } = await ambilSemua(() => query);
                 if (error) throw error;
 
                 let populasiData = data || [];
