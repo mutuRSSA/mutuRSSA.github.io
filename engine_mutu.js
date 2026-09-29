@@ -228,8 +228,9 @@ function susunRingkasanDariHasil(tahun, masterIndikator, hasilDb) {
             judul_indikator: p.judul_indikator, kategori_indikator: p.kategori_indikator,
             unit_pelaksana: h.unit_kerja,
             numerator: Number(h.numerator) || 0, denominator: Number(h.denominator) || 0, capaian: C,
-            target: parseFloat(p.target) || 0, satuan: p.satuan,
-            is_tercapai: cekTercapaiProfil(p, C)
+            // Target & arah dari versi yang berlaku di bulan itu (hitung_capaian_mutu), bila ada
+            target: parseFloat(h.target ?? p.target) || 0, satuan: p.satuan,
+            is_tercapai: cekTercapaiProfil({ ...p, target: h.target ?? p.target, arah_target: h.arah_target ?? p.arah_target }, C)
         };
     });
 }
@@ -285,8 +286,61 @@ function periksaTemplate(teks, kolomPerForm) {
     return masalah;
 }
 
+// Indikator yang TIDAK tercapai beberapa bulan berturut-turut per unit, beserta status PDSA-nya.
+//   master : profil indikator ({id_indikator, id_form, judul_indikator, target, arah_target, ...})
+//   hasilDb: baris rpc hitung_capaian_mutu (indikator x unit x bulan)
+//   pdsa   : baris data_pdsa ({unit_kerja, id_indikator, judul_indikator, fase_saat_ini, tanggal_dibuat})
+//   opsi   : { tahun, bulanAkhir (bulan terakhir yang dinilai), minBeruntun = 3 }
+// Deret dihitung mundur dari bulan terakhir yang ada capaiannya (paling lambat 1 bulan sebelum
+// bulanAkhir); bulan tanpa data atau bulan tercapai memutus deret.
+function cariTidakTercapaiBeruntun(master, hasilDb, pdsa, opsi) {
+    const minB = opsi.minBeruntun || 3;
+    const profil = new Map(master.map(p => [p.id_indikator, p]));
+    const norm = t => (t || '').toString().trim().toLowerCase();
+    const kelompok = new Map();
+    hasilDb.forEach(h => {
+        if (h.capaian === null || h.capaian === undefined || !profil.has(h.id_indikator)) return;
+        if (h.bulan > opsi.bulanAkhir) return;
+        const k = h.id_indikator + '|' + h.unit_kerja;
+        if (!kelompok.has(k)) kelompok.set(k, { id: h.id_indikator, unit: h.unit_kerja, bulan: new Map(), versi: new Map() });
+        kelompok.get(k).bulan.set(h.bulan, Number(h.capaian));
+        kelompok.get(k).versi.set(h.bulan, { target: h.target, arah_target: h.arah_target });
+    });
+    const hasil = [];
+    kelompok.forEach(g => {
+        const p = profil.get(g.id);
+        if (p.target === null || p.target === undefined || String(p.target).trim() === '' || isNaN(parseFloat(p.target))) return;
+        const akhir = Math.max(...g.bulan.keys());
+        if (akhir < opsi.bulanAkhir - 1) return;           // sudah lama tidak melapor
+        const deret = [];
+        for (let b = akhir; b >= 1 && g.bulan.has(b); b--) {
+            const ver = g.versi.get(b) || {};
+            if (cekTercapaiProfil({ ...p, target: ver.target ?? p.target, arah_target: ver.arah_target ?? p.arah_target }, g.bulan.get(b)) !== false) break;
+            deret.unshift({ bulan: b, capaian: g.bulan.get(b) });
+        }
+        if (deret.length < minB) return;
+        const mulai = deret[0].bulan;
+        const cocok = (pdsa || []).filter(d => d.unit_kerja === g.unit &&
+            (d.id_profil ? d.id_profil === p.id_indikator
+                : (d.id_indikator === p.id_form || d.id_indikator === p.id_indikator || (norm(d.judul_indikator) && norm(d.judul_indikator) === norm(p.judul_indikator)))))
+            .sort((a, b) => String(b.tanggal_dibuat || '').localeCompare(String(a.tanggal_dibuat || '')));
+        const aktif = cocok.find(d => (d.fase_saat_ini || '').toUpperCase() !== 'SELESAI');
+        const batas = `${opsi.tahun}-${String(mulai).padStart(2, '0')}-01`;
+        const selesaiBaru = cocok.find(d => (d.fase_saat_ini || '').toUpperCase() === 'SELESAI' && String(d.tanggal_dibuat || '') >= batas);
+        hasil.push({
+            profil: p, unit: g.unit, deret, panjang: deret.length, bulanMulai: mulai, bulanAkhir: akhir,
+            statusPdsa: aktif ? 'aktif' : selesaiBaru ? 'selesai' : 'belum',
+            pdsa: aktif || selesaiBaru || null
+        });
+    });
+    const urut = { belum: 0, selesai: 1, aktif: 2 };
+    return hasil.sort((a, b) => urut[a.statusPdsa] - urut[b.statusPdsa] || b.panjang - a.panjang
+        || (a.profil.judul_indikator || '').localeCompare(b.profil.judul_indikator || '', 'id') || a.unit.localeCompare(b.unit, 'id'));
+}
+
 if (typeof module !== 'undefined') module.exports = {
     mutuAngka, mutuIndeks, mutuCocok, mutuParseTemplate, mutuSyaratOk, mutuNilaiRumus, mutuBagian,
     eksekusiRumusEngine, indikatorPakaiEngine, mutuPengali, hitungCapaianND, hitungKelompokIndikator,
-    cekTercapaiProfil, susunRingkasanDariHasil, jelaskanTemplate, periksaTemplate, MUTU_OPERATOR
+    cekTercapaiProfil, susunRingkasanDariHasil, jelaskanTemplate, periksaTemplate, MUTU_OPERATOR,
+    cariTidakTercapaiBeruntun, mutuBulat2
 };

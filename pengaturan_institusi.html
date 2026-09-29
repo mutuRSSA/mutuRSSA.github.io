@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pengaturan Institusi - SIM PMKP</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 6px rgba(0,0,0,.05); border-radius: 10px; background: #fff; border: none; }
+        .logo-preview { width: 110px; height: 110px; border: 2px dashed #ced4da; border-radius: 10px; display: flex; align-items: center; justify-content: center; background: #f8f9fa; overflow: hidden; }
+        .logo-preview img { max-width: 100%; max-height: 100%; }
+        #pratinjauKop { border: 1px solid #dee2e6; background: #fff; padding: 16px; font-family: 'Times New Roman', serif; }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container px-4" style="max-width: 1100px;">
+        <h4 class="fw-bold mb-1"><i class="fas fa-landmark text-primary me-2"></i> Pengaturan Institusi</h4>
+        <p class="text-muted small mb-3">Identitas rumah sakit dan pejabat penanda tangan. Dipakai di kop dan tanda tangan semua laporan (laporan triwulan, berita acara validasi, laporan mutu).</p>
+
+        <div class="row g-3">
+            <div class="col-lg-7">
+                <div class="card-custom p-4">
+                    <h6 class="fw-bold text-primary border-bottom pb-1">Identitas rumah sakit</h6>
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-8"><label class="small fw-bold">Nama rumah sakit <span class="text-danger">*</span></label><input id="nama_rs" class="form-control form-control-sm" oninput="pratinjau()"></div>
+                        <div class="col-md-4"><label class="small fw-bold">Nama singkat</label><input id="nama_singkat" class="form-control form-control-sm"></div>
+                        <div class="col-md-8"><label class="small fw-bold">Pemilik / instansi induk</label><input id="pemilik" class="form-control form-control-sm" placeholder="mis. Pemerintah Kabupaten Bantul" oninput="pratinjau()"></div>
+                        <div class="col-md-4"><label class="small fw-bold">Kota (untuk tanggal tanda tangan)</label><input id="kota" class="form-control form-control-sm"></div>
+                        <div class="col-12"><label class="small fw-bold">Alamat</label><input id="alamat" class="form-control form-control-sm" oninput="pratinjau()"></div>
+                        <div class="col-md-4"><label class="small fw-bold">Telepon</label><input id="telepon" class="form-control form-control-sm" oninput="pratinjau()"></div>
+                        <div class="col-md-4"><label class="small fw-bold">Email</label><input id="email" class="form-control form-control-sm" oninput="pratinjau()"></div>
+                        <div class="col-md-4"><label class="small fw-bold">Situs web</label><input id="situs_web" class="form-control form-control-sm" oninput="pratinjau()"></div>
+                    </div>
+                    <div class="d-flex gap-3 align-items-center mb-3">
+                        <div class="logo-preview" id="logoPreview"><span class="small text-muted">Tanpa logo</span></div>
+                        <div>
+                            <label class="small fw-bold d-block">Logo (PNG/JPG)</label>
+                            <input type="file" accept="image/png,image/jpeg" class="form-control form-control-sm mb-1" onchange="pilihLogo(this)">
+                            <div class="small text-muted">Diperkecil otomatis menjadi maks. 300 px. Disimpan di database, tidak mengambil dari situs luar.</div>
+                            <button class="btn btn-sm btn-link text-danger p-0" onclick="hapusLogo()">Hapus logo</button>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-bold text-primary border-bottom pb-1">Pejabat penanda tangan</h6>
+                    <div class="row g-2">
+                        <div class="col-md-8"><label class="small fw-bold">Direktur</label><input id="direktur_nama" class="form-control form-control-sm" placeholder="Nama lengkap dengan gelar"></div>
+                        <div class="col-md-4"><label class="small fw-bold">NIP Direktur</label><input id="direktur_nip" class="form-control form-control-sm"></div>
+                        <div class="col-md-8"><label class="small fw-bold">Ketua Komite Mutu</label><input id="ketua_komite_nama" class="form-control form-control-sm"></div>
+                        <div class="col-md-4"><label class="small fw-bold">NIP Ketua Komite</label><input id="ketua_komite_nip" class="form-control form-control-sm"></div>
+                        <div class="col-md-8"><label class="small fw-bold">Sekretaris Komite Mutu</label><input id="sekretaris_komite_nama" class="form-control form-control-sm"></div>
+                        <div class="col-md-4"><label class="small fw-bold">NIP Sekretaris</label><input id="sekretaris_komite_nip" class="form-control form-control-sm"></div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <small class="text-muted" id="infoPembaru"></small>
+                        <button class="btn btn-primary fw-bold" id="btnSimpan" onclick="simpan()"><i class="fas fa-save me-1"></i> Simpan</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="card-custom p-3">
+                    <h6 class="fw-bold mb-2">Pratinjau kop laporan</h6>
+                    <div id="pratinjauKop"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        const KOLOM = ['nama_rs', 'nama_singkat', 'pemilik', 'kota', 'alamat', 'telepon', 'email', 'situs_web',
+                       'direktur_nama', 'direktur_nip', 'ketua_komite_nama', 'ketua_komite_nip', 'sekretaris_komite_nama', 'sekretaris_komite_nip'];
+        let logoData = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!supabaseClient) return;
+            if (!isAdminMutu(sessionMutu.role)) {
+                document.querySelectorAll('input, button').forEach(e => { if (!e.closest('#navbar-container') && !e.closest('#sidebar-container')) e.disabled = true; });
+            }
+            const { data, error } = await supabaseClient.from('pengaturan_institusi').select('*').eq('id', 1).maybeSingle();
+            if (error) { Swal.fire('Gagal memuat', esc(error.message) + '<br><small>Pastikan migrasi pengaturan institusi sudah dijalankan.</small>', 'error'); return; }
+            const d = data || {};
+            KOLOM.forEach(k => { document.getElementById(k).value = d[k] || ''; });
+            logoData = d.logo_data || null;
+            document.getElementById('infoPembaru').textContent = d.diperbarui_oleh ? `Terakhir diubah ${d.diperbarui_oleh}, ${new Date(d.diperbarui_pada).toLocaleString('id-ID')}` : '';
+            tampilLogo(); pratinjau();
+        });
+
+        function nilai() {
+            const o = {}; KOLOM.forEach(k => { o[k] = document.getElementById(k).value.trim() || null; });
+            o.logo_data = logoData; return o;
+        }
+        function tampilLogo() {
+            document.getElementById('logoPreview').innerHTML = logoData ? `<img src="${esc(logoData)}" alt="Logo">` : '<span class="small text-muted">Tanpa logo</span>';
+        }
+        window.pratinjau = function() { document.getElementById('pratinjauKop').innerHTML = kopLaporanHTML(nilai(), 'LAPORAN TRIWULAN III TAHUN 2026'); };
+
+        window.pilihLogo = function(input) {
+            const f = input.files && input.files[0];
+            if (!f) return;
+            if (!/^image\/(png|jpeg)$/.test(f.type)) { Swal.fire('Format', 'Gunakan gambar PNG atau JPG.', 'warning'); return; }
+            const r = new FileReader();
+            r.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    const skala = Math.min(1, 300 / Math.max(img.width, img.height));
+                    const c = document.createElement('canvas');
+                    c.width = Math.round(img.width * skala); c.height = Math.round(img.height * skala);
+                    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                    logoData = c.toDataURL(f.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.9);
+                    if (logoData.length > 600000) logoData = c.toDataURL('image/jpeg', 0.8);
+                    tampilLogo(); pratinjau();
+                };
+                img.src = r.result;
+            };
+            r.readAsDataURL(f);
+        };
+        window.hapusLogo = function() { logoData = null; tampilLogo(); pratinjau(); };
+
+        window.simpan = async function() {
+            const d = nilai();
+            if (!d.nama_rs) { Swal.fire('Belum lengkap', 'Nama rumah sakit wajib diisi.', 'warning'); return; }
+            const btn = document.getElementById('btnSimpan'); btn.disabled = true;
+            const { error } = await supabaseClient.from('pengaturan_institusi').update(d).eq('id', 1);
+            btn.disabled = false;
+            if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            try { sessionStorage.removeItem('institusiMutu'); } catch (e) {}
+            Swal.fire({ title: 'Tersimpan', icon: 'success', timer: 1500, showConfirmButton: false });
+        };
+    </script>
+</body>
+</html>

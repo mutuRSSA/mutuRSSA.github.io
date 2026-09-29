@@ -49,6 +49,9 @@
                 </div>
                 <div class="d-flex gap-2 align-items-center flex-wrap">
                     <h5 class="mb-0 text-secondary me-3 border-end pe-3">Total Responden: <span class="badge bg-success fs-5 ms-2" id="totalResponden"><i class="fas fa-spinner fa-spin"></i></span></h5>
+                    <button class="btn btn-outline-secondary fw-bold shadow-sm d-none" id="btnKelolaPeriode" onclick="bukaKelolaPeriode()">
+                        <i class="fas fa-calendar-alt me-1"></i> Kelola Periode
+                    </button>
                     <button class="btn btn-info fw-bold text-white shadow-sm" data-bs-toggle="modal" data-bs-target="#modalResponden">
                         <i class="fas fa-users me-1"></i> Daftar Responden
                     </button>
@@ -69,8 +72,8 @@
                     </select>
                 </div>
                 <div class="col-md-3 mb-3 mb-md-0">
-                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;">Tahun Survei:</label>
-                    <select id="filterTahun" class="form-select border-info fw-bold text-dark">
+                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;">Periode Survei:</label>
+                    <select id="filterPeriode" class="form-select border-info fw-bold text-dark">
                         <!-- Populated by JS -->
                     </select>
                 </div>
@@ -138,6 +141,11 @@
 
             <div id="tabelDimensiWrapper"></div>
 
+            <h5 class="section-title"><i class="fas fa-percentage text-success me-2"></i> Tingkat Respons</h5>
+            <div id="wadahRespons" class="mb-4"></div>
+
+            <h5 class="section-title"><i class="fas fa-exchange-alt text-primary me-2"></i> Perbandingan Antar Periode</h5>
+            <div id="wadahPerbandingan" class="mb-4"></div>
             <h5 class="section-title"><i class="fas fa-users text-info me-2"></i> 2. Distribusi & Profil Responden</h5>
             
             <div class="row" id="distributionContainer"></div>
@@ -166,6 +174,49 @@
                         <tbody id="tabelRespondenBody">
                         </tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL KELOLA PERIODE -->
+    <div class="modal fade" id="modalPeriode" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-calendar-alt me-2"></i> Periode Survei & Jumlah Staf</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-lg-5">
+                            <h6 class="fw-bold">Daftar periode</h6>
+                            <div id="daftarPeriode" class="list-group small"></div>
+                            <button class="btn btn-sm btn-outline-primary mt-2" onclick="formPeriode(null)"><i class="fas fa-plus me-1"></i> Periode Baru</button>
+                        </div>
+                        <div class="col-lg-7">
+                            <h6 class="fw-bold" id="judulFormPeriode">Periode baru</h6>
+                            <input type="hidden" id="pr_id">
+                            <div class="row g-2">
+                                <div class="col-12"><label class="small fw-bold">Nama periode <span class="text-danger">*</span></label><input id="pr_nama" class="form-control form-control-sm" placeholder="mis. Survei Budaya Keselamatan 2027"></div>
+                                <div class="col-md-4"><label class="small fw-bold">Dibuka</label><input id="pr_mulai" type="date" class="form-control form-control-sm"></div>
+                                <div class="col-md-4"><label class="small fw-bold">Ditutup</label><input id="pr_selesai" type="date" class="form-control form-control-sm"></div>
+                                <div class="col-md-4"><label class="small fw-bold">Status</label><select id="pr_status" class="form-select form-select-sm"><option value="dibuka">Dibuka</option><option value="ditutup">Ditutup</option></select></div>
+                                <div class="col-md-4"><label class="small fw-bold">Target tingkat respons (%)</label><input id="pr_target" type="number" min="0" max="100" class="form-control form-control-sm" value="60"></div>
+                                <div class="col-md-8"><label class="small fw-bold">Catatan</label><input id="pr_catatan" class="form-control form-control-sm"></div>
+                            </div>
+                            <div class="small text-muted mt-1">Hanya satu periode yang dapat dibuka. Formulir survei menerima jawaban bila periode dibuka dan tanggal hari ini berada di antara tanggal buka-tutup.</div>
+                            <div class="text-end mt-2"><button class="btn btn-sm btn-primary fw-bold" onclick="simpanPeriode()"><i class="fas fa-save me-1"></i> Simpan Periode</button></div>
+
+                            <div id="wadahStaf" class="d-none">
+                                <h6 class="fw-bold mt-3 border-top pt-3">Jumlah staf per unit <small class="text-muted fw-normal">(penyebut tingkat respons)</small></h6>
+                                <div class="table-responsive" style="max-height: 320px; overflow-y: auto;">
+                                    <table class="table table-sm table-bordered mb-0 small"><thead class="table-light" style="position: sticky; top: 0;"><tr><th>Unit</th><th width="30%">Jumlah staf</th></tr></thead><tbody id="tabelStaf"></tbody></table>
+                                </div>
+                                <div class="text-end mt-2"><button class="btn btn-sm btn-success fw-bold" onclick="simpanStaf()"><i class="fas fa-save me-1"></i> Simpan Jumlah Staf</button></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -209,13 +260,24 @@
             { id: "H6", title: "Lama di Profesi", type: "bar" }
         ];
 
+        // Urutan pilihan jawaban (sama dengan survey_budaya.html)
+        const OPSI_LAMA = ["Kurang dari 1 tahun", "1 sampai 5 tahun", "6 sampai 10 tahun", "11 sampai 15 tahun", "16 sampai 20 tahun", "21 tahun atau lebih"];
+        const URUTAN_OPSI = {
+            E1: ["Luar Biasa", "Sangat Baik", "Dapat Diterima", "Buruk", "Gagal"],
+            G1: ["Tidak ada laporan insiden", "1 sampai 2 laporan insiden", "3 sampai 5 laporan insiden", "6 sampai 10 laporan insiden", "11 sampai 20 laporan insiden", "21 atau lebih laporan insiden"],
+            H1: OPSI_LAMA, H2: OPSI_LAMA, H6: OPSI_LAMA,
+            H3: ["Kurang dari 20 jam per minggu", "20 sampai 39 jam per minggu", "40 sampai 59 jam per minggu", "60 sampai 79 jam per minggu", "80 sampai 99 jam per minggu", "100 jam per minggu atau lebih"]
+        };
+
         let rawData = [];
+        let daftarPeriode = [], dataStaf = [];
         let filteredData = [];
         let chartInstances = []; 
 
         document.addEventListener("DOMContentLoaded", async function () {
             if (!supabaseClient) return;
-
+            if (isAdminMutu()) document.getElementById('btnKelolaPeriode').classList.remove('d-none');
+            await muatPeriode();
             try {
                 // Tarik Semua Data Survey (Dibatasi 2000 row terakhir agar ringan)
                 const { data, error } = await ambilSemua(() => supabaseClient.from('data_survey_budaya')
@@ -246,32 +308,50 @@
             // Dropdown Unit
             const unitSelect = document.getElementById('filterUnit');
             const units = [...new Set(rawData.map(item => item.unit_kerja))].filter(Boolean).sort();
+            const unitLama = unitSelect.value;
+            unitSelect.innerHTML = '<option value="SEMUA">-- Tampilkan Semua Unit --</option>';
             units.forEach(unit => { unitSelect.appendChild(new Option(unit, unit)); });
+            if (units.includes(unitLama)) unitSelect.value = unitLama;
 
-            // Dropdown Tahun
-            const tahunSelect = document.getElementById('filterTahun');
-            const tahuns = [...new Set(rawData.map(item => new Date(item.timestamp).getFullYear().toString() ))].sort().reverse();
-            tahuns.forEach(thn => { tahunSelect.appendChild(new Option(thn, thn)); });
-            
-            // Tambahkan opsi Semua Tahun
-            tahunSelect.appendChild(new Option("Semua Tahun", "ALL"));
+            // Dropdown Periode (terbaru dulu); bawaan: periode yang dibuka, atau periode terbaru yang berisi data
+            const sel = document.getElementById('filterPeriode');
+            const periodeLama = sel.value;
+            sel.innerHTML = '';
+            const adaData = new Set(rawData.map(r => r.id_periode || 'NONE'));
+            daftarPeriode.forEach(p => sel.appendChild(new Option(`${p.nama}${p.status === 'dibuka' ? ' (dibuka)' : ''}`, p.id)));
+            if (adaData.has('NONE')) sel.appendChild(new Option('Tanpa periode', 'NONE'));
+            sel.appendChild(new Option('Semua periode', 'ALL'));
+            const bawaan = daftarPeriode.find(p => p.status === 'dibuka' && adaData.has(p.id)) || daftarPeriode.find(p => adaData.has(p.id));
+            sel.value = bawaan ? bawaan.id : 'ALL';
+            if (periodeLama && [...sel.options].some(o => o.value === periodeLama)) sel.value = periodeLama;
         }
+
+        async function muatPeriode() {
+            const [rp, rs] = await Promise.all([
+                supabaseClient.from('survei_budaya_periode').select('*').order('tanggal_mulai', { ascending: false }),
+                supabaseClient.from('survei_budaya_staf').select('*')
+            ]);
+            if (rp.error) { console.warn('Periode survei belum tersedia:', rp.error.message); daftarPeriode = []; dataStaf = []; return; }
+            daftarPeriode = (rp.data || []).sort((a, b) => b.tanggal_mulai.localeCompare(a.tanggal_mulai));
+            dataStaf = rs.data || [];
+        }
+        const cocokPeriode = (row, pid) => pid === 'ALL' || (pid === 'NONE' ? !row.id_periode : row.id_periode === pid);
 
         window.updateDashboard = function() {
             const selectedUnit = document.getElementById('filterUnit').value;
-            const selectedTahun = document.getElementById('filterTahun').value;
+            const selectedPeriode = document.getElementById('filterPeriode').value;
             
             filteredData = rawData.filter(row => {
                 let isUnitMatch = (selectedUnit === 'SEMUA') || (row.unit_kerja === selectedUnit);
-                let isTahunMatch = (selectedTahun === 'ALL') || (new Date(row.timestamp).getFullYear().toString() === selectedTahun);
-                return isUnitMatch && isTahunMatch;
+                return isUnitMatch && cocokPeriode(row, selectedPeriode);
             });
 
             let titleText = selectedUnit === 'SEMUA' ? "RATA-RATA SELURUH UNIT" : "UNIT " + selectedUnit.toUpperCase();
             document.getElementById('printUnitTitle').innerText = titleText;
             document.getElementById('modalUnitTitle').innerText = selectedUnit === 'SEMUA' ? "Seluruh Unit" : selectedUnit;
             
-            let dateText = selectedTahun === 'ALL' ? "Semua Periode Tahun" : `Periode Tahun ${selectedTahun}`;
+            const pTerpilih = daftarPeriode.find(p => p.id === selectedPeriode);
+            let dateText = selectedPeriode === 'ALL' ? 'Semua Periode' : (pTerpilih ? `${pTerpilih.nama} (${tglPendek(pTerpilih.tanggal_mulai)} \u2013 ${tglPendek(pTerpilih.tanggal_selesai)})` : 'Tanpa Periode');
             document.getElementById('printDateTitle').innerText = dateText;
 
             document.getElementById('totalResponden').innerText = filteredData.length + " Orang";
@@ -283,26 +363,28 @@
 
             if(filteredData.length === 0) {
                 document.getElementById('tabelRespondenBody').innerHTML = '<tr><td colspan="4" class="text-center text-muted">Tidak ada data untuk filter yang dipilih.</td></tr>';
+                renderTingkatRespons(selectedPeriode, selectedUnit);
+                renderPerbandingan(selectedUnit);
                 return;
             }
 
             olahDataDimensi(filteredData);
+            renderTingkatRespons(selectedPeriode, selectedUnit);
+            renderPerbandingan(selectedUnit);
             olahDataDistribusi(filteredData);
             buildTabelResponden(filteredData);
         };
 
-        function olahDataDimensi(dataToProcess) {
+        // Skor % positif per dimensi & empat budaya (dipakai dasbor dan perbandingan periode)
+        function hitungSkor(dataToProcess) {
             let skorProporsiItem = {};
             let semuaPertanyaan = Object.values(dimensiBudaya).flat();
-
             semuaPertanyaan.forEach(soal => {
                 let responPositifCount = 0;
                 let totalResponValid = 0;
-                
                 dataToProcess.forEach(row => {
                     let jwbn = row.jawaban_survey || {};
-                    let nilai = parseInt(jwbn[soal]); // Tarik jawaban dari JSONB
-                    
+                    let nilai = parseInt(jwbn[soal]);
                     if (!isNaN(nilai) && nilai >= 1 && nilai <= 5) {
                         totalResponValid++;
                         if (pertanyaanPositif.includes(soal) && (nilai === 4 || nilai === 5)) responPositifCount++;
@@ -311,7 +393,6 @@
                 });
                 skorProporsiItem[soal] = totalResponValid > 0 ? (responPositifCount / totalResponValid) * 100 : 0;
             });
-
             let skorRataRataDimensi = {};
             for (let namaDimensi in dimensiBudaya) {
                 let daftarSoal = dimensiBudaya[namaDimensi];
@@ -319,25 +400,20 @@
                 daftarSoal.forEach(soal => { totalPersentase += skorProporsiItem[soal]; });
                 skorRataRataDimensi[namaDimensi] = (totalPersentase / daftarSoal.length).toFixed(1);
             }
+            const d = (nama) => parseFloat(skorRataRataDimensi[nama]) || 0;
+            const budaya = {
+                "Budaya Lapor": d("Pelaporan Insiden"),
+                "Budaya Adil": d("Respon Tdk Menghakimi"),
+                "Budaya Fleksibel": parseFloat(((d("Kerjasama Antar Unit") + d("Kerjasama dalam Unit") + d("Aspek Ketenagaan") + d("Serah Terima Jaga") + d("Keterbukaan Komunikasi")) / 5).toFixed(1)),
+                "Budaya Belajar": parseFloat(((d("Organisasi Pembelajar") + d("Umpan Balik Komunikasi") + d("Dukungan Manajemen") + d("Harapan Manajer")) / 4).toFixed(1))
+            };
+            return { skorRataRataDimensi, budaya };
+        }
 
-            const getSkorDimensi = (nama) => parseFloat(skorRataRataDimensi[nama]) || 0;
-
-            let budayaLapor = getSkorDimensi("Pelaporan Insiden");
-            let budayaAdil = getSkorDimensi("Respon Tdk Menghakimi");
-            let budayaFleksibel = ((
-                getSkorDimensi("Kerjasama Antar Unit") + 
-                getSkorDimensi("Kerjasama dalam Unit") + 
-                getSkorDimensi("Aspek Ketenagaan") + 
-                getSkorDimensi("Serah Terima Jaga") + 
-                getSkorDimensi("Keterbukaan Komunikasi")
-            ) / 5).toFixed(1);
-            let budayaBelajar = ((
-                getSkorDimensi("Organisasi Pembelajar") + 
-                getSkorDimensi("Umpan Balik Komunikasi") + 
-                getSkorDimensi("Dukungan Manajemen") + 
-                getSkorDimensi("Harapan Manajer")
-            ) / 4).toFixed(1);
-
+        function olahDataDimensi(dataToProcess) {
+            const { skorRataRataDimensi, budaya } = hitungSkor(dataToProcess);
+            let budayaLapor = budaya["Budaya Lapor"], budayaAdil = budaya["Budaya Adil"];
+            let budayaFleksibel = budaya["Budaya Fleksibel"], budayaBelajar = budaya["Budaya Belajar"];
             const labelBudaya = ["Budaya Lapor", "Budaya Adil", "Budaya Fleksibel", "Budaya Belajar"];
             const dataBudaya = [budayaLapor, budayaAdil, parseFloat(budayaFleksibel), parseFloat(budayaBelajar)];
             let radarLabelsWithPercentage = labelBudaya.map((lbl, i) => `${lbl}\n(${dataBudaya[i]}%)`);
@@ -454,11 +530,14 @@
                 dataToProcess.forEach(row => {
                     let jwbn = row.jawaban_survey || {};
                     let jawaban = jwbn[pertanyaan.id];
-                    if (jawaban && jawaban.trim() !== "") frekuensi[jawaban] = (frekuensi[jawaban] || 0) + 1;
+                    if (jawaban !== undefined && jawaban !== null && String(jawaban).trim() !== "") frekuensi[String(jawaban)] = (frekuensi[String(jawaban)] || 0) + 1;
                 });
 
-                let labels = Object.keys(frekuensi);
-                let dataCounts = Object.values(frekuensi);
+                // Urutkan kategori jawaban sesuai urutan pilihan di formulir survei
+                const urutan = URUTAN_OPSI[pertanyaan.id] || [];
+                const posisi = l => { const i = urutan.indexOf(l); return i < 0 ? 999 : i; };
+                let labels = Object.keys(frekuensi).sort((a, b) => posisi(a) - posisi(b) || a.localeCompare(b, 'id', { numeric: true }));
+                let dataCounts = labels.map(l => frekuensi[l]);
                 if (labels.length === 0) return;
 
                 let totalValid = dataCounts.reduce((a, b) => a + b, 0);
@@ -472,7 +551,7 @@
                 `;
                 labels.forEach((lbl, i) => {
                     let pct = totalValid > 0 ? ((dataCounts[i] / totalValid) * 100).toFixed(1) : 0;
-                    htmlTabelDistribusi += `<tr><td>${lbl}</td><td class="text-center fw-bold">${dataCounts[i]}</td><td class="text-center text-primary fw-bold">${pct}%</td></tr>`;
+                    htmlTabelDistribusi += `<tr><td>${esc(lbl)}</td><td class="text-center fw-bold">${dataCounts[i]}</td><td class="text-center text-primary fw-bold">${pct}%</td></tr>`;
                 });
                 htmlTabelDistribusi += `</tbody></table></div>`;
 
@@ -503,7 +582,7 @@
                         responsive: true, maintainAspectRatio: false,
                         plugins: {
                             legend: { display: pertanyaan.type === 'pie', position: 'right', labels: { boxWidth: 10, font: {size: 10} } },
-                            tooltip: { callbacks: { label: ctx => ctx.parsed + (pertanyaan.type === 'bar' ? ctx.parsed.y : '') + " Orang" } }
+                            tooltip: { callbacks: { label: ctx => (pertanyaan.type === 'bar' ? ctx.parsed.y : ctx.parsed) + " Orang" } }
                         }
                     }
                 };
@@ -522,6 +601,149 @@
                 chartInstances.push(new Chart(ctx, item.config));
             });
         }
+
+        const tglPendek = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+        const warnaSkor = v => v >= 75 ? 'bg-success' : (v >= 50 ? 'bg-warning text-dark' : 'bg-danger');
+
+        function renderTingkatRespons(pid, unitDipilih) {
+            const w = document.getElementById('wadahRespons');
+            const p = daftarPeriode.find(x => x.id === pid);
+            if (!p) { w.innerHTML = '<div class="text-muted small">Pilih satu periode survei untuk melihat tingkat respons.</div>'; return; }
+            const staf = {}; dataStaf.filter(s => s.id_periode === pid).forEach(s => { staf[s.unit_kerja] = s.jumlah_staf; });
+            const respons = {}; rawData.filter(r => r.id_periode === pid).forEach(r => { const u = r.unit_kerja || '-'; respons[u] = (respons[u] || 0) + 1; });
+            const unit = [...new Set([...Object.keys(staf), ...Object.keys(respons)])].sort((a, b) => a.localeCompare(b, 'id'));
+            if (!Object.keys(staf).length) {
+                w.innerHTML = `<div class="alert alert-light border small mb-0">Jumlah staf per unit untuk periode ini belum diisi, sehingga tingkat respons belum dapat dihitung. ${isAdminMutu() ? 'Isi di <a href="#" onclick="bukaKelolaPeriode(\'' + pid + '\');return false;">Kelola Periode</a>.' : ''} Total responden: <b>${Object.values(respons).reduce((a, b) => a + b, 0)}</b>.</div>`;
+                return;
+            }
+            const target = p.target_respons != null ? Number(p.target_respons) : null;
+            let totStaf = 0, totResp = 0;
+            const baris = unit.map(u => {
+                const n = respons[u] || 0, N = staf[u];
+                if (N) { totStaf += N; totResp += Math.min(n, N); }
+                const pct = N ? n / N * 100 : null;
+                const kls = pct == null ? 'bg-secondary' : (target != null && pct < target ? 'bg-danger' : 'bg-success');
+                return `<tr class="${unitDipilih === u ? 'table-info' : ''}"><td>${esc(u)}</td><td class="text-center">${N || '<span class="text-muted">belum diisi</span>'}</td><td class="text-center">${n}</td>
+                    <td class="text-center"><span class="badge ${kls}">${pct == null ? '-' : pct.toFixed(1) + '%'}</span>${pct != null && pct > 100 ? ' <small class="text-danger">melebihi jumlah staf</small>' : ''}</td></tr>`;
+            }).join('');
+            const totPct = totStaf ? totResp / totStaf * 100 : 0;
+            w.innerHTML = `<div class="card card-custom p-3 border-0">
+                <div class="d-flex flex-wrap gap-4 mb-2">
+                    <div><div class="small text-muted">Tingkat respons rumah sakit</div><div class="fs-3 fw-bold ${target != null && totPct < target ? 'text-danger' : 'text-success'}">${totPct.toFixed(1)}%</div></div>
+                    <div><div class="small text-muted">Responden / staf</div><div class="fs-5 fw-bold">${totResp} / ${totStaf}</div></div>
+                    ${target != null ? `<div><div class="small text-muted">Target</div><div class="fs-5 fw-bold">${target}%</div></div>` : ''}
+                    <div><div class="small text-muted">Periode</div><div class="fw-bold">${esc(p.nama)}</div><div class="small">${tglPendek(p.tanggal_mulai)} \u2013 ${tglPendek(p.tanggal_selesai)} \u00b7 ${p.status === 'dibuka' ? 'dibuka' : 'ditutup'}</div></div>
+                </div>
+                <div class="table-responsive" style="max-height: 360px; overflow-y: auto;"><table class="table table-sm table-bordered mb-0 small">
+                <thead class="table-light"><tr><th>Unit</th><th class="text-center">Jumlah staf</th><th class="text-center">Responden</th><th class="text-center">Tingkat respons</th></tr></thead>
+                <tbody>${baris}</tbody></table></div>
+                <div class="small text-muted mt-1">Tingkat respons RS dihitung dari unit yang jumlah stafnya sudah diisi.</div></div>`;
+        }
+
+        function renderPerbandingan(unitDipilih) {
+            const w = document.getElementById('wadahPerbandingan');
+            const dataUnit = rawData.filter(r => unitDipilih === 'SEMUA' || r.unit_kerja === unitDipilih);
+            const kol = daftarPeriode.slice().reverse()
+                .map(p => ({ p, data: dataUnit.filter(r => r.id_periode === p.id) }))
+                .filter(x => x.data.length).slice(-4);
+            if (kol.length < 2) { w.innerHTML = '<div class="text-muted small">Perbandingan tampil bila sudah ada data dari minimal dua periode survei' + (unitDipilih === 'SEMUA' ? '' : ' untuk unit ini') + '.</div>'; return; }
+            const skor = kol.map(x => hitungSkor(x.data));
+            const baris = (label, ambil, tebal) => {
+                const v = skor.map(ambil);
+                const delta = v[v.length - 1] - v[v.length - 2];
+                return `<tr${tebal ? ' class="fw-bold table-light"' : ''}><td>${esc(label)}</td>${v.map(x => `<td class="text-center"><span class="badge ${warnaSkor(x)}">${x.toFixed(1)}%</span></td>`).join('')}
+                    <td class="text-center fw-bold ${delta > 0 ? 'text-success' : (delta < 0 ? 'text-danger' : 'text-muted')}">${delta > 0 ? '\u25b2 +' : (delta < 0 ? '\u25bc ' : '')}${delta.toFixed(1)}</td></tr>`;
+            };
+            const html = Object.keys(skor[0].budaya).map(k => baris(k, s => s.budaya[k], true)).join('')
+                + Object.keys(dimensiBudaya).map(k => baris(k, s => parseFloat(s.skorRataRataDimensi[k]) || 0, false)).join('');
+            w.innerHTML = `<div class="card card-custom p-3 border-0"><div class="table-responsive"><table class="table table-sm table-bordered mb-0 small">
+                <thead class="table-dark text-center"><tr><th class="text-start">Budaya / dimensi (% positif)</th>${kol.map(x => `<th>${esc(x.p.nama)}<br><span class="fw-normal">${x.data.length} responden</span></th>`).join('')}<th>Perubahan</th></tr></thead>
+                <tbody>${html}</tbody></table></div>
+                <div class="small text-muted mt-1">${unitDipilih === 'SEMUA' ? 'Seluruh unit' : 'Unit ' + esc(unitDipilih)}. Perubahan = periode terakhir dibanding periode sebelumnya.</div></div>`;
+        }
+
+        // ---------------- Kelola periode (admin) ----------------
+        window.bukaKelolaPeriode = async function(pilih) {
+            await muatPeriode();
+            gambarDaftarPeriode();
+            const terpilih = document.getElementById('filterPeriode').value;
+            formPeriode(pilih || (daftarPeriode.some(p => p.id === terpilih) ? terpilih : null) || (daftarPeriode[0] && daftarPeriode[0].id) || null);
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalPeriode')).show();
+        };
+        function gambarDaftarPeriode() {
+            const jml = {}; rawData.forEach(r => { if (r.id_periode) jml[r.id_periode] = (jml[r.id_periode] || 0) + 1; });
+            document.getElementById('daftarPeriode').innerHTML = daftarPeriode.length ? daftarPeriode.map(p => `
+                <a href="#" class="list-group-item list-group-item-action" onclick="formPeriode('${p.id}');return false;">
+                    <div class="d-flex justify-content-between"><b>${esc(p.nama)}</b><span class="badge ${p.status === 'dibuka' ? 'bg-success' : 'bg-secondary'}">${p.status}</span></div>
+                    <div class="text-muted">${tglPendek(p.tanggal_mulai)} \u2013 ${tglPendek(p.tanggal_selesai)} \u00b7 ${jml[p.id] || 0} responden</div></a>`).join('')
+                : '<div class="text-muted">Belum ada periode.</div>';
+        }
+        let daftarUnitMaster = null;
+        window.formPeriode = async function(id) {
+            const p = daftarPeriode.find(x => x.id === id);
+            document.getElementById('judulFormPeriode').textContent = p ? 'Ubah periode' : 'Periode baru';
+            document.getElementById('pr_id').value = p ? p.id : '';
+            document.getElementById('pr_nama').value = p ? p.nama : '';
+            document.getElementById('pr_mulai').value = p ? p.tanggal_mulai : '';
+            document.getElementById('pr_selesai').value = p ? p.tanggal_selesai : '';
+            document.getElementById('pr_status').value = p ? p.status : 'dibuka';
+            document.getElementById('pr_target').value = p && p.target_respons != null ? p.target_respons : 60;
+            document.getElementById('pr_catatan').value = p ? (p.catatan || '') : '';
+            document.getElementById('wadahStaf').classList.toggle('d-none', !p);
+            if (!p) return;
+            if (!daftarUnitMaster) {
+                const { data } = await supabaseClient.from('master_unit').select('nama_unit').order('nama_unit');
+                daftarUnitMaster = (data || []).map(u => u.nama_unit);
+            }
+            const staf = {}; dataStaf.filter(s => s.id_periode === p.id).forEach(s => { staf[s.unit_kerja] = s.jumlah_staf; });
+            const unit = [...new Set([...daftarUnitMaster, ...Object.keys(staf)])].sort((a, b) => a.localeCompare(b, 'id'));
+            document.getElementById('tabelStaf').innerHTML = unit.map(u => `<tr><td>${esc(u)}</td><td><input type="number" min="1" class="form-control form-control-sm inp-staf" data-unit="${esc(u)}" value="${staf[u] || ''}"></td></tr>`).join('');
+        };
+        window.simpanPeriode = async function() {
+            const id = document.getElementById('pr_id').value;
+            const nilai = {
+                nama: document.getElementById('pr_nama').value.trim(),
+                tanggal_mulai: document.getElementById('pr_mulai').value || null,
+                tanggal_selesai: document.getElementById('pr_selesai').value || null,
+                status: document.getElementById('pr_status').value,
+                target_respons: document.getElementById('pr_target').value === '' ? null : Number(document.getElementById('pr_target').value),
+                catatan: document.getElementById('pr_catatan').value.trim() || null
+            };
+            if (!nilai.nama || !nilai.tanggal_mulai || !nilai.tanggal_selesai) { Swal.fire('Belum lengkap', 'Nama dan tanggal buka-tutup wajib diisi.', 'warning'); return; }
+            if (nilai.tanggal_selesai < nilai.tanggal_mulai) { Swal.fire('Tanggal', 'Tanggal tutup harus setelah tanggal buka.', 'warning'); return; }
+            const q = id ? supabaseClient.from('survei_budaya_periode').update(nilai).eq('id', id)
+                         : supabaseClient.from('survei_budaya_periode').insert(nilai);
+            const { error } = await q;
+            if (error) {
+                const pesan = /satu_dibuka|duplicate/i.test(error.message) ? 'Hanya satu periode yang boleh dibuka. Tutup periode lain terlebih dahulu.' : error.message;
+                Swal.fire('Gagal', esc(pesan), 'error'); return;
+            }
+            await muatPeriode(); gambarDaftarPeriode();
+            const baru = id || (daftarPeriode.find(p => p.nama === nilai.nama && p.tanggal_mulai === nilai.tanggal_mulai) || {}).id;
+            await formPeriode(baru || null);
+            if (rawData.length) { populateFilterDropdown(); updateDashboard(); }
+            Swal.fire({ title: 'Periode tersimpan', icon: 'success', timer: 1200, showConfirmButton: false });
+        };
+        window.simpanStaf = async function() {
+            const id = document.getElementById('pr_id').value;
+            if (!id) return;
+            const isi = [], kosong = [];
+            document.querySelectorAll('.inp-staf').forEach(i => {
+                const n = parseInt(i.value, 10);
+                if (n > 0) isi.push({ id_periode: id, unit_kerja: i.dataset.unit, jumlah_staf: n }); else kosong.push(i.dataset.unit);
+            });
+            if (isi.length) {
+                const { error } = await supabaseClient.from('survei_budaya_staf').upsert(isi, { onConflict: 'id_periode,unit_kerja' });
+                if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            }
+            const lama = dataStaf.filter(s => s.id_periode === id && kosong.includes(s.unit_kerja)).map(s => s.unit_kerja);
+            if (lama.length) {
+                const { error } = await supabaseClient.from('survei_budaya_staf').delete().eq('id_periode', id).in('unit_kerja', lama);
+                if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            }
+            await muatPeriode(); if (rawData.length) updateDashboard();
+            Swal.fire({ title: 'Jumlah staf tersimpan', icon: 'success', timer: 1200, showConfirmButton: false });
+        };
 
         function buildTabelResponden(dataToProcess) {
             const tbody = document.getElementById('tabelRespondenBody');

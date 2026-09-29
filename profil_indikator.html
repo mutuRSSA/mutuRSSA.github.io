@@ -532,9 +532,49 @@
                 </div>
             `;
             
-            document.getElementById('detailBody').innerHTML = htmlContent;
+            document.getElementById('detailBody').innerHTML = htmlContent + '<div id="riwayatVersi" class="mt-3"></div>';
             new bootstrap.Modal(document.getElementById('modalDetailIndikator')).show();
+            muatRiwayatVersi(idIndikator);
         };
+
+        // Riwayat versi rumus & target (tabel master_indikator_versi)
+        const kolomVersi = v => f => { const x = listFormulirMaster.find(d => d.id_form === (f || v.id_form)); return x ? x.kolom : undefined; };
+        async function muatRiwayatVersi(idIndikator) {
+            const w = document.getElementById('riwayatVersi');
+            if (!w) return;
+            const { data, error } = await supabaseClient.from('master_indikator_versi').select('*').eq('id_indikator', idIndikator).order('berlaku_mulai', { ascending: false });
+            if (error || !data) { w.innerHTML = ''; return; }
+            const bln = d => d === '2000-01-01' ? 'Seluruh periode awal' : new Date(d + 'T00:00:00').toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+            w.innerHTML = `<div class="card border-0 shadow-sm"><div class="card-body p-3">
+                <h6 class="fw-bold mb-2"><i class="fas fa-code-branch text-secondary me-2"></i> Riwayat versi rumus & target</h6>
+                <div class="table-responsive"><table class="table table-sm small mb-0"><thead class="table-light"><tr><th>Berlaku mulai</th><th>Target</th><th>Satuan</th><th>Rumus N / D</th><th>Catatan</th><th>Oleh</th></tr></thead><tbody>
+                ${data.map((v, i) => `<tr class="${i === 0 ? 'table-success' : ''}"><td class="text-nowrap">${esc(bln(v.berlaku_mulai))}${i === 0 ? ' <span class="badge bg-success">berlaku</span>' : ''}</td>
+                    <td>${esc(v.target ?? '-')} <span class="text-muted">(${esc(v.arah_target || 'Positif')})</span></td><td>${esc(v.satuan || '')}</td>
+                    <td style="max-width:320px">${esc(jelaskanTemplate(v.template_numerator, kolomVersi(v)) || '-')}<br><span class="text-muted">/ ${esc(jelaskanTemplate(v.template_denominator, kolomVersi(v)) || '-')}</span></td>
+                    <td>${esc(v.catatan || '')}</td><td class="text-nowrap">${esc(v.dibuat_oleh || '')}<br><span class="text-muted">${new Date(v.dibuat_pada).toLocaleDateString('id-ID')}</span></td></tr>`).join('')}
+                </tbody></table></div></div></div>`;
+        }
+
+        // Bila rumus/target berubah: tanya mulai berlaku bulan apa (bulan sebelumnya tetap memakai versi lama)
+        async function tanyaBerlakuMulai() {
+            const kini = new Date(); const opsi = {};
+            const kunci = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+            for (let i = 2; i >= -12; i--) {
+                const d = new Date(kini.getFullYear(), kini.getMonth() + i, 1);
+                opsi[kunci(d)] = 'Mulai ' + d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }) + (i === 0 ? ' (bulan ini)' : '');
+            }
+            opsi['koreksi'] = 'Koreksi: berlaku untuk SELURUH periode (angka bulan lalu ikut berubah)';
+            const r = await Swal.fire({
+                title: 'Rumus / target berubah', icon: 'question', width: 620,
+                html: `<div class="text-start small mb-2">Pilih bulan mulai berlakunya perubahan. Capaian bulan sebelumnya tetap dihitung dengan rumus & target lama, sehingga laporan yang sudah diserahkan tidak berubah.<br>Pilih <b>Koreksi</b> hanya bila rumus lama memang salah.</div>
+                       <select id="sw_berlaku" class="form-select mb-2">${Object.entries(opsi).map(([k, v]) => `<option value="${k}" ${k === kunci(kini) ? 'selected' : ''}>${esc(v)}</option>`).join('')}</select>
+                       <input id="sw_catatan" class="form-control" placeholder="Alasan perubahan (mis. revisi target sesuai SK Direktur No. ...)">`,
+                showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal',
+                preConfirm: () => ({ berlaku: document.getElementById('sw_berlaku').value, catatan: document.getElementById('sw_catatan').value.trim() })
+            });
+            if (!r.isConfirmed) return null;
+            return { berlaku_mulai: r.value.berlaku === 'koreksi' ? null : r.value.berlaku, catatan_perubahan: r.value.catatan || null };
+        }
 
         window.toggleStatus = function(idIndikator, currentStatus, judul) {
             let actionText = currentStatus ? "Mengarsipkan" : "Mengaktifkan kembali";
@@ -715,6 +755,17 @@
 
             try {
                 if (mode === "edit") {
+                    const lama = listIndikator.find(x => String(x.id_indikator) === String(uuid)) || {};
+                    const beda = (a, b) => String(a ?? '').trim() !== String(b ?? '').trim();
+                    const berubah = beda(lama.id_form, payloadData.id_form) || beda(lama.template_numerator, payloadData.template_numerator)
+                        || beda(lama.template_denominator, payloadData.template_denominator) || beda(lama.satuan, payloadData.satuan)
+                        || parseFloat(lama.target) !== payloadData.target || beda(lama.arah_target || 'Positif', payloadData.arah_target)
+                        || beda(lama.unit_pelaksana, payloadData.unit_pelaksana);
+                    if (berubah) {
+                        const versi = await tanyaBerlakuMulai();
+                        if (!versi) return;   // dibatalkan (tombol dipulihkan di finally)
+                        Object.assign(payloadData, versi);
+                    }
                     const { error } = await supabaseClient.from('master_indikator').update(payloadData).eq('id_indikator', uuid);
                     if (error) throw error;
                 } else {

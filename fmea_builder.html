@@ -129,6 +129,11 @@
             return letter;
         };
 
+        function rumusRPN(r, cS, cO, cD) {
+            const S = colToLetter(cS) + (r + 1), O = colToLetter(cO) + (r + 1), D = colToLetter(cD) + (r + 1);
+            return `=IF(OR(${S}="",${O}="",${D}=""),"",${S}*${O}*${D})`;
+        }
+
         function inisialisasiTabelFMEA(existingData) {
             // PERUBAHAN 1: Tambahkan 2 Kolom Baru di Headers
             const headers = [
@@ -144,47 +149,56 @@
                 "Rencana Tindakan / Desain Ulang", 
                 "PIC Anggota", 
                 "Target Tanggal",
-                "Tindak Lanjut / Realisasi",    // <--- BARU
-                "Status"                        // <--- BARU
+                "Tindak Lanjut / Realisasi",
+                "Status",
+                "S sesudah",
+                "O sesudah",
+                "D sesudah",
+                "RPN sesudah"
             ];
+            // Kolom 14-17: skor ulang setelah tindakan dijalankan (menilai efektivitas desain ulang)
 
             // PERUBAHAN 2: Konfigurasi 2 Kolom Baru
             const columnsConfig = [
                 { type: 'text', width: 160 }, 
                 { type: 'text', width: 180 }, 
                 { type: 'text', width: 180 }, 
-                { type: 'dropdown', source: [1,2,3,4,5,6,7,8,9,10], width: 70, className: 'htCenter' }, 
+                { type: 'dropdown', source: [1,2,3,4,5,6,7,8,9,10], strict: true, allowInvalid: false, width: 70, className: 'htCenter' }, 
                 { type: 'text', width: 180 }, 
-                { type: 'dropdown', source: [1,2,3,4,5,6,7,8,9,10], width: 70, className: 'htCenter' }, 
+                { type: 'dropdown', source: [1,2,3,4,5,6,7,8,9,10], strict: true, allowInvalid: false, width: 70, className: 'htCenter' }, 
                 { type: 'text', width: 160 }, 
-                { type: 'dropdown', source: [1,2,3,4,5,6,7,8,9,10], width: 70, className: 'htCenter' }, 
+                { type: 'dropdown', source: [1,2,3,4,5,6,7,8,9,10], strict: true, allowInvalid: false, width: 70, className: 'htCenter' }, 
                 { type: 'text', readOnly: true, width: 90, className: 'htCenter' }, 
                 { type: 'text', width: 220 }, 
                 { type: 'text', width: 130 }, 
                 { type: 'date', dateFormat: 'DD/MM/YYYY', correctFormat: true, width: 110, className: 'htCenter' },
                 { type: 'text', width: 220 }, // <--- BARU: Kolom Teks Tindak Lanjut
-                { type: 'dropdown', source: ['Open', 'Proses', 'Selesai', 'Batal'], width: 100, className: 'htCenter fw-bold text-success' } // <--- BARU: Kolom Status
+                { type: 'dropdown', source: ['Open', 'Proses', 'Selesai', 'Batal'], width: 100, className: 'htCenter fw-bold text-success' },
+                { type: 'dropdown', source: [1,2,3,4,5,6,7,8,9,10], strict: true, allowInvalid: false, width: 75, className: 'htCenter' },
+                { type: 'dropdown', source: [1,2,3,4,5,6,7,8,9,10], strict: true, allowInvalid: false, width: 75, className: 'htCenter' },
+                { type: 'dropdown', source: [1,2,3,4,5,6,7,8,9,10], strict: true, allowInvalid: false, width: 75, className: 'htCenter' },
+                { type: 'text', readOnly: true, width: 90, className: 'htCenter' }
             ];
+            const KOLOM = 18;
 
             let drafData = existingData;
             if (!drafData || drafData.length === 0) {
                 // PERUBAHAN 3: Ubah panjang Array Fill menjadi 14 Kolom
-                drafData = Array.from({ length: 15 }, () => Array(14).fill("")); 
+                drafData = Array.from({ length: 15 }, () => Array(KOLOM).fill("")); 
             } else {
                 // Pastikan data lama menyesuaikan jika panjangnya masih 12
                 drafData = drafData.map(row => {
-                    while (row.length < 14) row.push(""); 
+                    row = Array.isArray(row) ? row.slice() : [];
+                    while (row.length < KOLOM) row.push(""); 
                     return row;
                 });
-                for(let i=0; i<5; i++) { drafData.push(Array(14).fill("")); } 
+                for(let i=0; i<5; i++) { drafData.push(Array(KOLOM).fill("")); } 
             }
 
-            // Suntik rumus RPN otomatis (Kolom index 8 = RPN)
+            // Suntik rumus RPN otomatis (kolom 8 = RPN awal, kolom 17 = RPN sesudah tindakan)
             drafData.forEach((row, rIdx) => {
-                let letterS = colToLetter(3) + (rIdx + 1);
-                let letterO = colToLetter(5) + (rIdx + 1);
-                let letterD = colToLetter(7) + (rIdx + 1);
-                row[8] = `=IF(OR(${letterS}="",${letterO}="",${letterD}=""),"",${letterS}*${letterO}*${letterD})`;
+                row[8] = rumusRPN(rIdx, 3, 5, 7);
+                row[17] = rumusRPN(rIdx, 14, 15, 16);
             });
 
             const container = document.getElementById('spreadsheet');
@@ -207,10 +221,8 @@
                     let updates = [];
                     for (let i = 0; i < amount; i++) {
                         let r = index + i;
-                        let letterS = colToLetter(3) + (r + 1);
-                        let letterO = colToLetter(5) + (r + 1);
-                        let letterD = colToLetter(7) + (r + 1);
-                        updates.push([r, 8, `=IF(OR(${letterS}="",${letterO}="",${letterD}=""),"",${letterS}*${letterO}*${letterD})`]);
+                        updates.push([r, 8, rumusRPN(r, 3, 5, 7)]);
+                        updates.push([r, 17, rumusRPN(r, 14, 15, 16)]);
                     }
                     if(updates.length > 0) setTimeout(() => { this.setDataAtCell(updates, 'autoFMEAMath'); }, 100);
                 },
@@ -231,6 +243,15 @@
                             td.style.backgroundColor = '#ffffff';
                         }
 
+                        // RPN sesudah tindakan: hijau bila turun, merah bila masih >= 80
+                        if (c === 17) {
+                            const akhir = parseInt(value);
+                            if (!isNaN(akhir)) {
+                                td.style.backgroundColor = akhir >= 80 ? '#dc3545' : (rpnValue && akhir < parseInt(rpnValue) ? '#198754' : '#f1f3f5');
+                                td.style.color = akhir >= 80 || (rpnValue && akhir < parseInt(rpnValue)) ? '#ffffff' : '#6f42c1';
+                            }
+                            return;
+                        }
                         // JIKA RPN >= 80, WARNAI MERAH SEBAGAI PERINGATAN!
                         if (rpnValue && !isNaN(rpnValue) && parseInt(rpnValue) >= 80) {
                             if (c === 8) {
@@ -251,6 +272,38 @@
             let namaProses = document.getElementById('fmea_nama_proses').value.trim();
             if (!namaProses) { Swal.fire('Gagal', 'Nama Proses Klinis wajib diisi sebagai identitas proyek!', 'warning'); return; }
 
+            // Nilai S, O, D harus 1-10 pada setiap baris yang berisi mode kegagalan
+            const barisSalah = [];
+            hot.getData().forEach((r, i) => {
+                if (!(r[0] || r[1])) return;
+                const ok = [3, 5, 7].every(c => { const v = Number(r[c]); return Number.isInteger(v) && v >= 1 && v <= 10; });
+                if (!ok) barisSalah.push(i + 1);
+            });
+            if (barisSalah.length) {
+                Swal.fire('Nilai S/O/D Belum Lengkap', 'Nilai Severity, Occurrence, dan Detectability harus 1–10 pada baris: ' + barisSalah.slice(0, 15).join(', ') + (barisSalah.length > 15 ? ', …' : '') + '.', 'warning');
+                return;
+            }
+            // Skor sesudah tindakan boleh kosong, tetapi bila diisi harus lengkap ketiganya
+            const skorUlangSalah = [];
+            hot.getData().forEach((r, i) => {
+                if (!(r[0] || r[1])) return;
+                const isi = [14, 15, 16].filter(c => r[c] !== '' && r[c] !== null && r[c] !== undefined);
+                if (isi.length && isi.length < 3) skorUlangSalah.push(i + 1);
+            });
+            if (skorUlangSalah.length) {
+                Swal.fire('Skor Sesudah Belum Lengkap', 'Isi ketiga nilai S, O, D sesudah tindakan (atau kosongkan semuanya) pada baris: ' + skorUlangSalah.slice(0, 15).join(', ') + '.', 'warning');
+                return;
+            }
+            // RPN >= 80 wajib punya rencana tindakan
+            const tanpaRencana = [];
+            hot.getData().forEach((r, i) => {
+                if ((r[0] || r[1]) && Number(r[3]) * Number(r[5]) * Number(r[7]) >= 80 && !String(r[9] || '').trim()) tanpaRencana.push(i + 1);
+            });
+            if (tanpaRencana.length) {
+                Swal.fire('Rencana Tindakan Belum Diisi', 'Mode kegagalan dengan RPN ≥ 80 wajib memiliki rencana tindakan/desain ulang. Baris: ' + tanpaRencana.slice(0, 15).join(', ') + '.', 'warning');
+                return;
+            }
+
             Swal.fire({
                 title: 'Simpan Proyek FMEA?',
                 text: 'Data tabel akan divalidasi dan disimpan permanen ke database Supabase.',
@@ -270,7 +323,9 @@
                         nama_proses: namaProses,
                         ketua_tim: document.getElementById('fmea_ketua_tim').value.trim(),
                         sumber_risiko: document.getElementById('fmea_sumber_risiko').value.trim(),
-                        tabel_data: tabelDataArray // Injeksi seluruh array spreadsheet ke JSONB!
+                        tabel_data: tabelDataArray, // Injeksi seluruh array spreadsheet ke JSONB!
+                        // Tautan ke risiko asal (dibuka dari Profil Risiko RS)
+                        ...(sumberRisikoId ? { id_risiko: sumberRisikoId } : {})
                     };
 
                     try {
@@ -290,7 +345,7 @@
 
                     } catch(err) {
                         console.error(err);
-                        Swal.fire('Error', 'Gagal menyimpan ke server Supabase.', 'error');
+                        Swal.fire('Error', esc((err && err.message) || 'Gagal menyimpan ke server Supabase.'), 'error');
                     }
                 }
             });

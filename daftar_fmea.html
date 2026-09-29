@@ -185,6 +185,27 @@
             }
         }
 
+        // RPN awal (kolom 3,5,7) dan sesudah tindakan (kolom 14,15,16; null bila belum dinilai ulang)
+        function rpnBaris(row) {
+            const n = c => parseInt(row[c]);
+            const awal = (n(3) || 0) * (n(5) || 0) * (n(7) || 0);
+            const akhir = [14, 15, 16].every(c => n(c) >= 1) ? n(14) * n(15) * n(16) : null;
+            return { awal, akhir };
+        }
+        function ringkasProyek(p) {
+            let mode = 0, kritis = 0, dinilaiUlang = 0, totalAwal = 0, totalAkhir = 0, kritisSisa = 0;
+            (p.tabel_data || []).forEach(row => {
+                if (!(row[0] || row[1])) return;
+                mode++;
+                const { awal, akhir } = rpnBaris(row);
+                if (awal >= 80) kritis++;
+                if (akhir !== null) { dinilaiUlang++; totalAwal += awal; totalAkhir += akhir; }
+                if ((akhir !== null ? akhir : awal) >= 80) kritisSisa++;
+            });
+            return { mode, kritis, dinilaiUlang, totalAwal, totalAkhir, kritisSisa,
+                     turun: totalAwal ? (totalAwal - totalAkhir) / totalAwal * 100 : null };
+        }
+
         function kalkulasiStatistik(dataArray) {
             let totalMode = 0;
             let totalEkstrem = 0;
@@ -209,7 +230,8 @@
 
             document.getElementById('stat_proyek').innerText = dataArray.length;
             document.getElementById('stat_kegagalan').innerText = totalMode;
-            document.getElementById('stat_ekstrem').innerText = totalEkstrem;
+            const sisa = dataArray.reduce((a, p) => a + ringkasProyek(p).kritisSisa, 0);
+            document.getElementById('stat_ekstrem').innerHTML = `${totalEkstrem} <small class="fs-6 fw-normal">(${sisa} masih \u2265 80 setelah tindakan)</small>`;
         }
 
         function tampilkanKartuProyek(dataArray) {
@@ -228,7 +250,7 @@
                 let badgeClass = statusProyek === "Aktif" ? "badge-active" : "badge-closed";
                 
                 wadah.innerHTML += `
-                    <div class="col-12 item-proyek-fmea" data-proses="${(p.nama_proses||'').toLowerCase()}" data-ketua="${(p.ketua_tim||'').toLowerCase()}" data-status="${statusProyek}">
+                    <div class="col-12 item-proyek-fmea" data-proses="${esc((p.nama_proses||'').toLowerCase())}" data-ketua="${esc((p.ketua_tim||'').toLowerCase())}" data-status="${esc(statusProyek)}">
                         <div class="project-card p-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
                             <div>
                                 <div class="d-flex align-items-center gap-2 mb-2">
@@ -238,6 +260,7 @@
                                 <h5 class="fw-bold text-dark mb-1">${esc(p.nama_proses)}</h5>
                                 <small class="text-muted d-block mb-1"><i class="fas fa-user-tie me-1"></i> Ketua Tim: <b>${esc(p.ketua_tim || "-")}</b></small>
                                 <small class="text-muted" style="font-size:0.8rem;"><i class="fas fa-calendar-alt me-1"></i> Tanggal Inisiasi: ${tgl}</small>
+                                ${(() => { const r = ringkasProyek(p); return `<div class="small mt-1">${r.mode} mode kegagalan \u00b7 <span class="${r.kritis ? 'text-danger fw-bold' : ''}">${r.kritis} RPN \u2265 80</span> \u00b7 ${r.dinilaiUlang ? `dinilai ulang ${r.dinilaiUlang}: RPN ${r.totalAwal} \u2192 ${r.totalAkhir} <span class="badge ${r.turun > 0 ? 'bg-success' : 'bg-secondary'}">${r.turun > 0 ? '\u2193 ' : ''}${r.turun.toFixed(0)}%</span>` : '<span class="text-muted">belum dinilai ulang</span>'}</div>`; })()}
                             </div>
                             <div class="text-end">
                                 <small class="d-block mb-2 fw-bold text-uppercase" style="font-size:0.75rem; color:#6f42c1;"><i class="fas fa-link me-1"></i> ${esc(p.sumber_risiko || "Manual")}</small>
@@ -282,6 +305,8 @@
                             <th width="7%">PIC & Target</th>
                             <th width="10%">Tindak Lanjut / Realisasi</th>
                             <th width="3%">Status</th>
+                            <th width="5%">S/O/D sesudah</th>
+                            <th width="4%">RPN sesudah</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -292,11 +317,10 @@
                 // Hanya render baris yang ada isinya
                 if(row[0] || row[1] || row[4]) {
                     
-                    // Kalkulasi RPN
-                    let s = parseInt(row[3]) || 0;
-                    let o = parseInt(row[5]) || 0;
-                    let d = parseInt(row[7]) || 0;
-                    let rpn = s * o * d;
+                    // Kalkulasi RPN awal & sesudah tindakan
+                    const { awal: rpn, akhir: rpnAkhir } = rpnBaris(row);
+                    const badgeAkhir = rpnAkhir === null ? '<span class="text-muted">-</span>'
+                        : `<span class="badge ${rpnAkhir >= 80 ? 'bg-danger' : (rpnAkhir < rpn ? 'bg-success' : 'bg-secondary')} fs-6">${rpnAkhir}</span>`;
 
                     let rpnBadge = rpn >= 80 ? `<span class="badge bg-danger fs-6">${rpn}</span>` : `<b>${rpn || ''}</b>`;
 
@@ -321,14 +345,16 @@
                             <td>${esc(row[9] || '')}</td>
                             <td class="text-center">${picTarget}</td>
                             <td>${esc(tindakLanjut)}</td>
-                            <td class="text-center fw-bold text-success">${statusRealisasi}</td>
+                            <td class="text-center fw-bold text-success">${esc(statusRealisasi)}</td>
+                            <td class="text-center">${rpnAkhir === null ? '-' : `${esc(row[14])}/${esc(row[15])}/${esc(row[16])}`}</td>
+                            <td class="text-center align-middle">${badgeAkhir}</td>
                         </tr>
                     `;
                 }
             });
 
             if (validCount === 1) {
-                htmlTable += `<tr><td colspan="14" class="text-center py-4 text-muted fst-italic">Tabel FMEA masih kosong. Silakan Edit Tabel terlebih dahulu.</td></tr>`;
+                htmlTable += `<tr><td colspan="16" class="text-center py-4 text-muted fst-italic">Tabel FMEA masih kosong. Silakan Edit Tabel terlebih dahulu.</td></tr>`;
             }
 
             htmlTable += `</tbody></table>`;

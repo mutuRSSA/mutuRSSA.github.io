@@ -104,7 +104,7 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label fw-bold">Jenis Insiden <span class="text-danger">*</span></label>
-                        <select class="form-select border-success fw-bold" id="inp_jenis_insiden" required>
+                        <select class="form-select border-success fw-bold" id="inp_jenis_insiden" required onchange="hitungGrading()">
                             <option value="">-- Pilih --</option>
                             <option value="KNC">KNC (Kejadian Nyaris Cedera)</option>
                             <option value="KTC">KTC (Kejadian Tidak Cedera)</option>
@@ -327,12 +327,18 @@
 
             box.classList.remove('grade-biru', 'grade-hijau', 'grade-kuning', 'grade-merah', 'bg-light', 'text-white', 'text-dark');
 
-            let warna = "Biru";
-            if (dampak === 5) { if (prob >= 2) warna = "Merah"; else warna = "Kuning"; } 
-            else if (dampak === 4) { if (prob >= 3) warna = "Merah"; else warna = "Kuning"; } 
-            else if (dampak === 3) { if (prob >= 4) warna = "Merah"; else if (prob === 3) warna = "Kuning"; else warna = "Hijau"; } 
-            else if (dampak === 2) { if (prob === 5) warna = "Kuning"; else if (prob >= 3) warna = "Hijau"; else warna = "Biru"; } 
-            else if (dampak === 1) { if (prob >= 4) warna = "Hijau"; else warna = "Biru"; }
+            // Matriks grading risiko KKP-RS (dampak x probabilitas). Database menghitung ulang dengan matriks yang sama.
+            //            prob:   1        2        3        4        5
+            const MATRIKS = {
+                5: ['Merah',  'Merah',  'Merah',  'Merah',  'Merah'],
+                4: ['Kuning', 'Kuning', 'Merah',  'Merah',  'Merah'],
+                3: ['Hijau',  'Hijau',  'Kuning', 'Kuning', 'Kuning'],
+                2: ['Biru',   'Biru',   'Hijau',  'Hijau',  'Hijau'],
+                1: ['Biru',   'Biru',   'Biru',   'Hijau',  'Hijau']
+            };
+            let warna = (MATRIKS[dampak] && prob >= 1 && prob <= 5) ? MATRIKS[dampak][prob - 1] : "Biru";
+            // Kejadian sentinel selalu diinvestigasi dengan RCA
+            if (document.getElementById('inp_jenis_insiden').value === 'Sentinel') warna = "Merah";
 
             if (warna === "Merah") { box.classList.add('grade-merah', 'text-white'); txtLevel.innerText = "EKSTREM (Merah)"; } 
             else if (warna === "Kuning") { box.classList.add('grade-kuning', 'text-dark'); txtLevel.innerText = "TINGGI (Kuning)"; } 
@@ -394,8 +400,13 @@
                     allowOutsideClick: false
                 }).then(() => {
                     document.getElementById('ikpForm').reset();
-                    hitungGrading();
+                    // Kembalikan isian otomatis & lepas "wajib" di kotak pencegahan yang tersembunyi
+                    const kini = new Date();
+                    kini.setMinutes(kini.getMinutes() - kini.getTimezoneOffset());
+                    document.getElementById('inp_tgl_insiden').value = kini.toISOString().slice(0, 16);
+                    document.getElementById('inp_tindakan_pencegahan').removeAttribute('required');
                     document.getElementById('boxPencegahan').classList.add('d-none');
+                    hitungGrading();
                 });
             } catch (err) {
                 console.error(err);

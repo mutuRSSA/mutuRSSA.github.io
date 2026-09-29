@@ -104,3 +104,49 @@ function escJsAttr(s) {
         .replace(/\r?\n/g, '\\n').replace(/</g, '\\x3c');
     return esc(js);
 }
+
+// 7. IDENTITAS INSTITUSI (tabel pengaturan_institusi) untuk kop & tanda tangan laporan.
+// Disimpan 10 menit di sessionStorage agar tidak dimuat ulang tiap halaman.
+const INSTITUSI_BAWAAN = { nama_rs: 'RSUD Saras Adyatma', nama_singkat: 'RSUD Saras Adyatma', pemilik: 'Pemerintah Kabupaten Bantul', kota: 'Bantul' };
+async function ambilInstitusi() {
+    try {
+        const c = JSON.parse(sessionStorage.getItem('institusiMutu') || 'null');
+        if (c && Date.now() - c.waktu < 10 * 60 * 1000) return c.data;
+    } catch (e) { /* sessionStorage tidak tersedia */ }
+    try {
+        const { data } = await supabaseClient.from('pengaturan_institusi').select('*').eq('id', 1).maybeSingle();
+        const hasil = { ...INSTITUSI_BAWAAN, ...(data || {}) };
+        try { sessionStorage.setItem('institusiMutu', JSON.stringify({ waktu: Date.now(), data: hasil })); } catch (e) {}
+        return hasil;
+    } catch (e) {
+        return { ...INSTITUSI_BAWAAN };
+    }
+}
+
+// Kop laporan (HTML, inline style agar ikut tercetak / diekspor ke Word)
+function kopLaporanHTML(inst, judul, subjudul) {
+    const i = { ...INSTITUSI_BAWAAN, ...(inst || {}) };
+    const kontak = [i.alamat, i.telepon ? 'Telp. ' + i.telepon : '', i.email, i.situs_web].filter(Boolean).map(esc).join(' · ');
+    return `<table style="width:100%;border-bottom:3px double #000;margin-bottom:12px;border-collapse:collapse"><tr>
+        <td style="width:80px;vertical-align:middle;padding:0 8px 6px 0">${i.logo_data ? `<img src="${esc(i.logo_data)}" style="max-width:75px;max-height:75px">` : ''}</td>
+        <td style="text-align:center;vertical-align:middle;padding-bottom:6px">
+            ${i.pemilik ? `<div style="font-size:13px;letter-spacing:.5px">${esc(String(i.pemilik).toUpperCase())}</div>` : ''}
+            <div style="font-size:17px;font-weight:bold">${esc(String(i.nama_rs).toUpperCase())}</div>
+            ${kontak ? `<div style="font-size:10.5px">${kontak}</div>` : ''}
+        </td><td style="width:80px"></td></tr></table>
+        ${judul ? `<div style="text-align:center;font-weight:bold;font-size:14px;margin:6px 0 2px">${esc(judul)}</div>` : ''}
+        ${subjudul ? `<div style="text-align:center;font-size:12px;margin-bottom:10px">${esc(subjudul)}</div>` : ''}`;
+}
+
+// Blok tanda tangan: daftar [{ jabatan, nama, nip }], tanggal opsional (Date / 'YYYY-MM-DD')
+function ttdHTML(inst, penanda, tanggal) {
+    const i = { ...INSTITUSI_BAWAAN, ...(inst || {}) };
+    const t = tanggal ? new Date(String(tanggal).length === 10 ? tanggal + 'T00:00:00' : tanggal) : new Date();
+    const tglTeks = `${esc(i.kota || '')}, ${t.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+    const lebar = Math.floor(100 / Math.max(1, penanda.length));
+    return `<table style="width:100%;margin-top:28px;border-collapse:collapse;text-align:center;font-size:12px"><tr>
+        ${penanda.map((p, k) => `<td style="width:${lebar}%;vertical-align:top;padding:4px">
+            ${k === penanda.length - 1 ? tglTeks : '&nbsp;'}<br>${esc(p.jabatan || '')}<br><br><br><br><br>
+            <b><u>${esc(p.nama || '..............................')}</u></b><br>${p.nip ? 'NIP. ' + esc(p.nip) : ''}</td>`).join('')}
+    </tr></table>`;
+}

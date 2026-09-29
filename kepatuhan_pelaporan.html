@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kepatuhan Pelaporan - SIM PMKP</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        body { background-color: #f0f2f5; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff; }
+        .stat { border-radius: 10px; padding: 14px; }
+        .stat .angka { font-size: 1.6rem; font-weight: 700; line-height: 1.1; }
+        .stat .label { font-size: .75rem; text-transform: uppercase; letter-spacing: .4px; }
+
+        .wadah-grid { overflow: auto; max-height: 70vh; border: 1px solid #dee2e6; border-radius: 8px; }
+        table.grid { border-collapse: separate; border-spacing: 0; width: 100%; font-size: .82rem; }
+        table.grid th, table.grid td { border-bottom: 1px solid #e9ecef; border-right: 1px solid #e9ecef; padding: 6px 4px; text-align: center; white-space: nowrap; }
+        table.grid thead th { position: sticky; top: 0; background: #2c3e50; color: #fff; z-index: 2; font-weight: 600; }
+        table.grid th.kol-unit, table.grid td.kol-unit { position: sticky; left: 0; background: #fff; text-align: left; z-index: 1; min-width: 230px; padding-left: 10px; }
+        table.grid thead th.kol-unit { background: #2c3e50; z-index: 3; }
+        .sel { cursor: pointer; border-radius: 6px; padding: 5px 2px; font-weight: 600; min-width: 54px; display: block; }
+        .sel:hover { outline: 2px solid #0d6efd; }
+        .s-lengkap  { background: #d1e7dd; color: #0f5132; }
+        .s-sebagian { background: #fff3cd; color: #664d03; }
+        .s-kosong   { background: #f8d7da; color: #842029; }
+        .s-berjalan { background: #e7f1ff; color: #084298; }
+        .s-nanti    { background: #f8f9fa; color: #adb5bd; cursor: default; }
+        .s-tanpa    { background: #f8f9fa; color: #adb5bd; cursor: default; }
+        .ikon-kunci { font-size: .7rem; margin-left: 3px; }
+        .ikon-valid { font-size: .7rem; margin-left: 3px; color: #198754; }
+        .ikon-valid.gagal { color: #dc3545; }
+        .btn-kunci-bulan { border: none; background: transparent; color: #ced4da; padding: 0 2px; }
+        .btn-kunci-bulan.terkunci { color: #ffc107; }
+        .btn-kunci-bulan:hover { color: #fff; }
+        .persen-bulan { font-size: .68rem; font-weight: 400; opacity: .85; display: block; }
+        .legenda span { display: inline-block; padding: 2px 8px; border-radius: 4px; margin-right: 6px; font-size: .75rem; }
+    </style>
+</head>
+<body>
+    <div id="navbar-container"></div>
+    <div id="sidebar-container"></div>
+
+    <div class="container-fluid px-4" style="max-width: 1500px;">
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <div>
+                <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-clipboard-check text-primary me-2"></i> Kepatuhan Pelaporan & Kunci Periode</h3>
+                <p class="text-muted mb-0">Formulir wajib tiap unit (dari Pengaturan Unit Kerja) yang sudah / belum diisi per bulan. Bulan yang sudah divalidasi bisa dikunci agar tidak berubah lagi.</p>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <div class="input-group" style="width: 150px;"><span class="input-group-text">Tahun</span><input type="number" id="inpTahun" class="form-control" onchange="muatData()"></div>
+            </div>
+        </div>
+
+        <div class="row g-3 mb-3" id="ringkasan"></div>
+
+        <div class="card-custom p-3">
+            <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                <div class="input-group input-group-sm" style="max-width: 260px;">
+                    <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" class="form-control" id="cariUnit" placeholder="Cari unit..." oninput="render()">
+                </div>
+                <div class="form-check ms-1">
+                    <input class="form-check-input" type="checkbox" id="hanyaBelum" onchange="render()">
+                    <label class="form-check-label small" for="hanyaBelum">Hanya unit yang belum lengkap</label>
+                </div>
+                <div class="ms-auto d-flex gap-2 align-items-center">
+                    <select id="bulanPengingat" class="form-select form-select-sm" style="width: 150px;"></select>
+                    <button class="btn btn-sm btn-outline-success" onclick="salinPengingat()"><i class="fas fa-copy me-1"></i> Salin daftar belum lapor</button>
+                </div>
+            </div>
+            <div class="legenda small text-muted mb-2">
+                <span class="s-lengkap">Lengkap</span><span class="s-sebagian">Sebagian</span><span class="s-kosong">Belum lapor</span>
+                <span class="s-berjalan">Bulan berjalan</span><span class="s-nanti">Belum waktunya / tanpa formulir</span>
+                <i class="fas fa-lock text-warning ms-2"></i> terkunci &nbsp; <i class="fas fa-check-double text-success"></i> sudah divalidasi (<i class="fas fa-check-double text-danger"></i> ada yang tidak valid) &nbsp; · Klik sel untuk rincian.
+            </div>
+            <div id="infoMuat" class="text-center text-muted py-5"><i class="fas fa-spinner fa-spin me-2"></i> Memuat data...</div>
+            <div class="wadah-grid d-none" id="wadahGrid"><table class="grid" id="tabelGrid"></table></div>
+        </div>
+    </div>
+
+    <!-- Modal rincian unit x bulan -->
+    <div class="modal fade" id="modalRinci" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header"><h6 class="modal-title fw-bold" id="judulRinci"></h6><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body" id="isiRinci"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="auth.js"></script>
+    <script src="components.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        const sesi = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        const admin = isAdminMutu(sesi.role);
+        const NAMA_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        const SINGKAT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+        let units = [];            // [{ nama, forms: [id_form] }]
+        let labelForm = new Map(); // id_form -> judul indikator (atau nama formulir)
+        let adaForm = new Set();   // id_form di Form Builder
+        let jumlah = new Map();    // "unit|form|bulan" -> jumlah baris
+        let kunci = [];            // baris kunci_periode_mutu tahun terpilih
+        let validasi = new Map();  // "unit|bulan" -> [baris data_validasi]
+        let tahun = new Date().getFullYear();
+
+        document.getElementById('inpTahun').value = tahun;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!supabaseClient) return;
+            await muatReferensi();
+            await muatData();
+        });
+
+        const labelDari = f => labelForm.get(f) || f.replace(/_/g, ' ');
+
+        async function muatReferensi() {
+            const [resUnit, resForm, resInd] = await Promise.all([
+                supabaseClient.from('master_unit').select('nama_unit, daftar_form').order('nama_unit'),
+                supabaseClient.from('setup_formulir').select('id_form').order('id_form'),
+                supabaseClient.from('master_indikator').select('id_form, judul_indikator, status_aktif').order('judul_indikator')
+            ]);
+            adaForm = new Set((resForm.data || []).map(f => f.id_form));
+            labelForm = new Map();
+            (resInd.data || []).filter(i => i.status_aktif !== false && i.id_form).forEach(i => {
+                labelForm.set(i.id_form, labelForm.has(i.id_form) ? labelForm.get(i.id_form) + ' / ' + i.judul_indikator : i.judul_indikator);
+            });
+            units = (resUnit.data || []).map(u => ({
+                nama: u.nama_unit,
+                forms: (u.daftar_form || '').split(',').map(x => x.trim()).filter(Boolean)
+            }));
+            // Selain admin: hanya unit sendiri
+            if (!admin) units = units.filter(u => u.nama === sesi.unit);
+        }
+
+        async function muatData() {
+            tahun = parseInt(document.getElementById('inpTahun').value, 10) || new Date().getFullYear();
+            document.getElementById('infoMuat').classList.remove('d-none');
+            document.getElementById('wadahGrid').classList.add('d-none');
+            try {
+                const [baris, resKunci, resValidasi] = await Promise.all([
+                    ambilSemuaBaris(() => supabaseClient.rpc('kepatuhan_pelaporan_mutu', { p_tahun: tahun }).order('unit_kerja').order('id_form').order('bulan')),
+                    supabaseClient.from('kunci_periode_mutu').select('*').eq('tahun', tahun),
+                    ambilSemua(() => supabaseClient.from('data_validasi')
+                        .select('id_validasi, unit_kerja, id_indikator, judul_indikator, bulan, status_validasi, akurasi, nama_validator, tanggal_validasi')
+                        .eq('tahun', tahun).order('id_validasi'))
+                ]);
+                if (resKunci.error) throw resKunci.error;
+                jumlah = new Map(baris.map(r => [`${r.unit_kerja}|${r.id_form}|${r.bulan}`, Number(r.jumlah)]));
+                kunci = resKunci.data || [];
+                validasi = new Map();
+                (resValidasi.data || []).forEach(v => {
+                    const b = bulanKeAngka(v.bulan);
+                    if (!b) return;
+                    const k = `${v.unit_kerja}|${b}`;
+                    if (!validasi.has(k)) validasi.set(k, []);
+                    validasi.get(k).push(v);
+                });
+                document.getElementById('infoMuat').classList.add('d-none');
+                document.getElementById('wadahGrid').classList.remove('d-none');
+                isiPilihanPengingat();
+                render();
+            } catch (err) {
+                console.error(err);
+                document.getElementById('infoMuat').innerHTML = `<div class="alert alert-danger mb-0">${esc(err.message || String(err))}</div>`;
+            }
+        }
+
+        // Bulan terakhir yang sudah bisa dinilai (bulan berjalan tahun ini dihitung "berjalan")
+        function bulanSekarang() {
+            const n = new Date();
+            if (tahun < n.getFullYear()) return 13;      // semua bulan sudah lewat
+            if (tahun > n.getFullYear()) return 0;       // belum ada yang lewat
+            return n.getMonth() + 1;
+        }
+
+        // Bulan di data_validasi berupa nama ("Januari") atau angka
+        function bulanKeAngka(v) {
+            const n = parseInt(v, 10);
+            if (n >= 1 && n <= 12) return n;
+            const i = NAMA_BULAN.findIndex(b => b.toLowerCase() === String(v || '').trim().toLowerCase());
+            return i >= 0 ? i + 1 : null;
+        }
+        function ikonValidasi(unit, bulan) {
+            const v = validasi.get(`${unit}|${bulan}`);
+            if (!v || !v.length) return '';
+            const gagal = v.filter(x => x.status_validasi !== 'VALID').length;
+            return `<i class="fas fa-check-double ikon-valid ${gagal ? 'gagal' : ''}" title="${v.length} validasi${gagal ? `, ${gagal} tidak valid` : ''}"></i>`;
+        }
+
+        function kunciBulan(bulan) { return kunci.find(k => k.bulan === bulan && !k.unit_kerja); }
+        function kunciUnit(unit, bulan) { return kunci.find(k => k.bulan === bulan && k.unit_kerja === unit); }
+
+        // Status satu sel unit x bulan
+        function status(u, bulan) {
+            const kini = bulanSekarang();
+            const n = u.forms.length;
+            const terisi = u.forms.filter(f => (jumlah.get(`${u.nama}|${f}|${bulan}`) || 0) > 0).length;
+            const terkunci = !!(kunciBulan(bulan) || kunciUnit(u.nama, bulan));
+            let kelas;
+            if (!n) kelas = 's-tanpa';
+            else if (bulan > kini) kelas = terisi ? 's-berjalan' : 's-nanti';
+            else if (terisi === n) kelas = 's-lengkap';
+            else if (bulan === kini) kelas = 's-berjalan';
+            else if (terisi > 0) kelas = 's-sebagian';
+            else kelas = 's-kosong';
+            return { n, terisi, kelas, terkunci, dinilai: n > 0 && bulan < kini || (bulan === kini && terisi === n && n > 0) };
+        }
+
+        window.render = function() {
+            const kini = bulanSekarang();
+            const cari = document.getElementById('cariUnit').value.toLowerCase();
+            const hanyaBelum = document.getElementById('hanyaBelum').checked;
+
+            // Persentase unit lengkap per bulan (hanya bulan yang sudah lewat)
+            const persenBulan = SINGKAT.map((_, i) => {
+                const b = i + 1;
+                const wajib = units.filter(u => u.forms.length);
+                if (b >= kini || !wajib.length) return null;
+                return Math.round(wajib.filter(u => status(u, b).kelas === 's-lengkap').length / wajib.length * 100);
+            });
+
+            let head = '<thead><tr><th class="kol-unit">Unit / Tim</th>';
+            SINGKAT.forEach((s, i) => {
+                const b = i + 1, kb = kunciBulan(b);
+                const tombol = admin
+                    ? `<button class="btn-kunci-bulan ${kb ? 'terkunci' : ''}" title="${kb ? `Terkunci untuk seluruh unit sejak ${esc(new Date(kb.dikunci_pada).toLocaleDateString('id-ID'))}${kb.dikunci_nama ? ' oleh ' + esc(kb.dikunci_nama) : ''}. Klik untuk membuka.` : 'Kunci bulan ini untuk seluruh unit'}" onclick="aturKunciBulan(${b})"><i class="fas ${kb ? 'fa-lock' : 'fa-lock-open'}"></i></button>`
+                    : (kb ? '<i class="fas fa-lock text-warning ikon-kunci"></i>' : '');
+                head += `<th>${s} ${tombol}<span class="persen-bulan">${persenBulan[i] === null ? (b === kini ? 'berjalan' : '&nbsp;') : persenBulan[i] + '% lengkap'}</span></th>`;
+            });
+            head += '<th>Tahun ini</th></tr></thead>';
+
+            const baris = units.filter(u => !cari || u.nama.toLowerCase().includes(cari)).map(u => {
+                const st = SINGKAT.map((_, i) => status(u, i + 1));
+                const dinilai = st.filter((s, i) => u.forms.length && i + 1 < kini);
+                const lengkap = dinilai.filter(s => s.kelas === 's-lengkap').length;
+                if (hanyaBelum && (!u.forms.length || lengkap === dinilai.length)) return '';
+                const persen = dinilai.length ? Math.round(lengkap / dinilai.length * 100) : null;
+                const sel = st.map((s, i) => {
+                    const b = i + 1;
+                    const isi = !s.n ? '–' : (b > kini && !s.terisi) ? '' : `${s.terisi}/${s.n}`;
+                    const bisaKlik = s.n && !(b > kini && !s.terisi);
+                    return `<td><span class="sel ${s.kelas}" ${bisaKlik ? `onclick="bukaRinci('${escJsAttr(u.nama)}', ${b})"` : ''} title="${esc(u.nama)} — ${NAMA_BULAN[i]}">${isi}${s.terkunci ? '<i class="fas fa-lock ikon-kunci"></i>' : ''}${ikonValidasi(u.nama, b)}</span></td>`;
+                }).join('');
+                return `<tr><td class="kol-unit"><div class="fw-bold">${esc(u.nama)}</div><small class="text-muted">${u.forms.length ? u.forms.length + ' formulir wajib' : '<span class="text-danger">belum ada formulir di Pengaturan Unit Kerja</span>'}</small></td>
+                    ${sel}<td class="fw-bold ${persen === null ? 'text-muted' : persen === 100 ? 'text-success' : persen >= 75 ? 'text-warning' : 'text-danger'}">${persen === null ? '–' : persen + '%'}</td></tr>`;
+            }).join('');
+
+            document.getElementById('tabelGrid').innerHTML = head + `<tbody>${baris || '<tr><td colspan="14" class="text-muted py-4">Tidak ada unit yang cocok.</td></tr>'}</tbody>`;
+            renderRingkasan(kini);
+        };
+
+        function renderRingkasan(kini) {
+            const wajib = units.filter(u => u.forms.length);
+            const bulanLalu = Math.min(kini - 1, 12);
+            let kartuBulanLalu = '';
+            if (bulanLalu >= 1 && wajib.length) {
+                const lengkap = wajib.filter(u => status(u, bulanLalu).kelas === 's-lengkap').length;
+                const kosong = wajib.filter(u => status(u, bulanLalu).kelas === 's-kosong').length;
+                kartuBulanLalu = `
+                    <div class="col-6 col-md-3"><div class="stat bg-success bg-opacity-10 text-success"><div class="angka">${Math.round(lengkap / wajib.length * 100)}%</div><div class="label">Unit lengkap ${NAMA_BULAN[bulanLalu - 1]}</div></div></div>
+                    <div class="col-6 col-md-3"><div class="stat bg-danger bg-opacity-10 text-danger"><div class="angka">${kosong}</div><div class="label">Unit belum lapor ${NAMA_BULAN[bulanLalu - 1]}</div></div></div>`;
+            }
+            const bulanTerkunci = [...new Set(kunci.filter(k => !k.unit_kerja).map(k => k.bulan))].sort((a, b) => a - b);
+            const tanpaForm = units.filter(u => !u.forms.length).length;
+            const tidakAda = [...new Set(units.flatMap(u => u.forms))].filter(f => !adaForm.has(f));
+            document.getElementById('ringkasan').innerHTML = kartuBulanLalu + `
+                <div class="col-6 col-md-3"><div class="stat bg-warning bg-opacity-10 text-dark"><div class="angka">${bulanTerkunci.length}</div><div class="label">Bulan terkunci${bulanTerkunci.length ? ': ' + bulanTerkunci.map(b => SINGKAT[b - 1]).join(', ') : ''}</div></div></div>
+                <div class="col-6 col-md-3"><div class="stat bg-light border text-muted"><div class="angka">${tanpaForm}</div><div class="label">Unit tanpa formulir wajib</div></div></div>
+                ${tidakAda.length ? `<div class="col-12"><div class="alert alert-warning small mb-0 py-2"><i class="fas fa-exclamation-triangle me-1"></i> Formulir di Pengaturan Unit Kerja yang tidak ada di Form Builder: ${tidakAda.map(f => `<code>${esc(f)}</code>`).join(', ')}</div></div>` : ''}
+                ${tahun < new Date().getFullYear() && jumlah.size === 0 ? `<div class="col-12"><div class="alert alert-light border small mb-0 py-2"><i class="fas fa-info-circle me-1"></i> Tidak ada data mentah tahun ${tahun}. Bila tahun ini sudah Tutup Tahun, data mentahnya sudah dipindah ke arsip.</div></div>` : ''}`;
+        }
+
+        // ---------- Rincian unit x bulan ----------
+        window.bukaRinci = function(namaUnit, bulan) {
+            const u = units.find(x => x.nama === namaUnit);
+            if (!u) return;
+            const kini = bulanSekarang();
+            const kb = kunciBulan(bulan), ku = kunciUnit(namaUnit, bulan);
+            const baris = u.forms.map(f => {
+                const n = jumlah.get(`${u.nama}|${f}|${bulan}`) || 0;
+                // Rata-rata bulan lain yang terisi (untuk menandai jumlah yang jauh lebih sedikit)
+                const lain = [];
+                for (let b = 1; b <= 12; b++) { if (b === bulan) continue; const x = jumlah.get(`${u.nama}|${f}|${b}`) || 0; if (x > 0) lain.push(x); }
+                const rata = lain.length ? lain.reduce((a, b) => a + b, 0) / lain.length : null;
+                let ket;
+                if (!adaForm.has(f)) ket = '<span class="badge bg-danger">tidak ada di Form Builder</span>';
+                else if (!n) ket = bulan <= kini ? '<span class="badge bg-danger">belum diisi</span>' : '<span class="badge bg-secondary">belum waktunya</span>';
+                else if (rata && n < rata * 0.5 && bulan < kini) ket = `<span class="badge bg-warning text-dark">jauh lebih sedikit dari biasanya</span>`;
+                else ket = '<span class="badge bg-success">terisi</span>';
+                // Hasil validasi terakhir untuk formulir ini (id_indikator di data_validasi = id formulir)
+                const val = (validasi.get(`${u.nama}|${bulan}`) || []).filter(v => v.id_indikator === f)
+                    .sort((a, b) => String(b.tanggal_validasi || '').localeCompare(String(a.tanggal_validasi || '')));
+                const kolVal = val.length
+                    ? val.map(v => `<span class="badge ${v.status_validasi === 'VALID' ? 'bg-success' : 'bg-danger'}" title="${esc(v.judul_indikator || '')} · ${esc(v.nama_validator || '')}">${esc(v.status_validasi || '-')}${v.akurasi !== null && v.akurasi !== undefined ? ' ' + esc(Number(v.akurasi).toLocaleString('id-ID')) + '%' : ''}</span>`).join(' ')
+                    : '<span class="text-muted">–</span>';
+                return `<tr><td><div class="fw-semibold">${esc(labelDari(f))}</div><code class="small text-muted">${esc(f)}</code></td>
+                    <td class="text-end">${n}</td><td class="text-end text-muted">${rata === null ? '–' : Math.round(rata)}</td><td>${ket}</td><td>${kolVal}</td></tr>`;
+            }).join('');
+
+            let blokKunci = '';
+            if (kb) blokKunci = `<div class="alert alert-warning small py-2"><i class="fas fa-lock me-1"></i> Bulan ini dikunci untuk <b>seluruh unit</b>${kb.dikunci_nama ? ' oleh ' + esc(kb.dikunci_nama) : ''} (${esc(new Date(kb.dikunci_pada).toLocaleString('id-ID'))})${kb.catatan ? ' — ' + esc(kb.catatan) : ''}.${admin ? ' Buka lewat ikon gembok di judul kolom.' : ''}</div>`;
+            else if (ku) blokKunci = `<div class="alert alert-warning small py-2 d-flex justify-content-between align-items-center"><span><i class="fas fa-lock me-1"></i> Dikunci untuk unit ini${ku.dikunci_nama ? ' oleh ' + esc(ku.dikunci_nama) : ''} (${esc(new Date(ku.dikunci_pada).toLocaleString('id-ID'))})${ku.catatan ? ' — ' + esc(ku.catatan) : ''}.</span>
+                ${admin ? `<button class="btn btn-sm btn-outline-dark" onclick="bukaKunci('${escJsAttr(ku.id)}')"><i class="fas fa-lock-open me-1"></i> Buka kunci</button>` : ''}</div>`;
+            else blokKunci = `<div class="alert alert-light border small py-2 d-flex justify-content-between align-items-center"><span><i class="fas fa-lock-open me-1 text-muted"></i> Belum dikunci — unit masih bisa menambah, mengedit, dan menghapus data bulan ini.</span>
+                ${admin ? `<button class="btn btn-sm btn-warning fw-bold" onclick="kunciPeriode(${bulan}, '${escJsAttr(namaUnit)}')"><i class="fas fa-lock me-1"></i> Kunci untuk unit ini</button>` : ''}</div>`;
+            if (admin) blokKunci += `<div class="text-end mb-2"><a class="btn btn-sm btn-outline-success" href="validasi_mutu.html?unit=${encodeURIComponent(namaUnit)}&bulan=${bulan}&tahun=${tahun}"><i class="fas fa-check-double me-1"></i> Validasi data unit ini</a></div>`;
+
+            document.getElementById('judulRinci').textContent = `${namaUnit} — ${NAMA_BULAN[bulan - 1]} ${tahun}`;
+            document.getElementById('isiRinci').innerHTML = blokKunci + `
+                <table class="table table-sm align-middle small mb-0">
+                    <thead class="table-light"><tr><th>Formulir</th><th class="text-end">Baris bulan ini</th><th class="text-end">Rata-rata bulan lain</th><th>Status</th><th>Validasi</th></tr></thead>
+                    <tbody>${baris}</tbody></table>`;
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRinci')).show();
+        };
+
+        // ---------- Kunci / buka kunci ----------
+        window.aturKunciBulan = async function(bulan) {
+            const kb = kunciBulan(bulan);
+            if (kb) return bukaKunci(kb.id, `Buka kunci ${NAMA_BULAN[bulan - 1]} ${tahun} untuk seluruh unit?`);
+            return kunciPeriode(bulan, null);
+        };
+
+        window.kunciPeriode = async function(bulan, unit) {
+            const r = await Swal.fire({
+                title: `Kunci ${NAMA_BULAN[bulan - 1]} ${tahun}?`,
+                html: `${unit ? `Unit <b>${esc(unit)}</b>` : '<b>Seluruh unit</b>'} tidak bisa lagi menambah, mengedit, atau menghapus data bulan ini (admin juga harus membuka kunci dulu).`,
+                input: 'text', inputPlaceholder: 'Catatan (opsional), mis. sudah divalidasi Komite',
+                icon: 'question', showCancelButton: true, confirmButtonText: 'Kunci', cancelButtonText: 'Batal', confirmButtonColor: '#ffc107'
+            });
+            if (!r.isConfirmed) return;
+            const { error } = await supabaseClient.from('kunci_periode_mutu').insert([{ tahun, bulan, unit_kerja: unit, catatan: r.value || null }]);
+            if (error) { Swal.fire('Gagal', /duplicate|unique/i.test(error.message) ? 'Periode ini sudah dikunci.' : esc(error.message), 'error'); return; }
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRinci')).hide();
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Periode dikunci', showConfirmButton: false, timer: 2000 });
+            muatData();
+        };
+
+        window.bukaKunci = async function(id, judul) {
+            const r = await Swal.fire({ title: judul || 'Buka kunci periode ini?', text: 'Unit akan bisa kembali mengubah data periode ini. Tercatat di Log Audit.',
+                icon: 'warning', showCancelButton: true, confirmButtonText: 'Buka kunci', cancelButtonText: 'Batal' });
+            if (!r.isConfirmed) return;
+            const { error } = await supabaseClient.from('kunci_periode_mutu').delete().eq('id', id);
+            if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalRinci')).hide();
+            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Kunci dibuka', showConfirmButton: false, timer: 2000 });
+            muatData();
+        };
+
+        // ---------- Salin daftar unit belum lapor (untuk pengingat) ----------
+        function isiPilihanPengingat() {
+            const sel = document.getElementById('bulanPengingat');
+            const kini = bulanSekarang();
+            const pilihan = [];
+            for (let b = 1; b <= Math.min(kini, 12); b++) pilihan.push(b);
+            sel.innerHTML = pilihan.map(b => `<option value="${b}">${NAMA_BULAN[b - 1]} ${tahun}</option>`).join('');
+            if (pilihan.length) sel.value = Math.max(1, Math.min(kini, 12) - (kini <= 12 && kini > 1 ? 1 : 0));
+        }
+
+        window.salinPengingat = async function() {
+            const b = parseInt(document.getElementById('bulanPengingat').value, 10);
+            if (!b) return;
+            const kurang = units.filter(u => u.forms.length).map(u => ({
+                nama: u.nama, belum: u.forms.filter(f => !(jumlah.get(`${u.nama}|${f}|${b}`) > 0))
+            })).filter(x => x.belum.length);
+            if (!kurang.length) { Swal.fire('Semua lengkap', `Semua unit sudah melapor untuk ${NAMA_BULAN[b - 1]} ${tahun}.`, 'success'); return; }
+            const teks = `Pengingat pelaporan indikator mutu bulan ${NAMA_BULAN[b - 1]} ${tahun}.\nUnit/tim yang laporannya belum lengkap:\n` +
+                kurang.map(x => `- ${x.nama}: ${x.belum.map(labelDari).join('; ')}`).join('\n') +
+                `\n\nMohon segera dilengkapi di aplikasi mutu. Terima kasih.`;
+            try { await navigator.clipboard.writeText(teks); Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: `${kurang.length} unit disalin ke clipboard`, showConfirmButton: false, timer: 2500 }); }
+            catch (e) { Swal.fire({ title: 'Salin teks ini', html: `<textarea class="form-control" rows="10">${esc(teks)}</textarea>` }); }
+        };
+    </script>
+</body>
+</html>

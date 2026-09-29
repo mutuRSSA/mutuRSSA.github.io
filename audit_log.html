@@ -20,6 +20,7 @@
         .aksi-UPDATE { background: #fff3cd; color: #664d03; }
         .aksi-DELETE { background: #f8d7da; color: #842029; }
         .aksi-TUTUP_TAHUN { background: #e2d9f3; color: #432874; }
+        .aksi-GANTI_NAMA_UNIT, .aksi-IMPOR { background: #fff3cd; color: #664d03; }
         .badge-aksi { font-weight: 600; padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; }
         .kolom-chip { display: inline-block; background: #eef; color: #334; border-radius: 4px; padding: 1px 6px; margin: 1px; font-size: 0.75rem; font-family: monospace; }
         .nilai { font-family: ui-monospace, Consolas, monospace; font-size: 0.8rem; white-space: pre-wrap; word-break: break-word; max-width: 420px; }
@@ -55,6 +56,8 @@
                         <option value="UPDATE">Ubah</option>
                         <option value="DELETE">Hapus</option>
                         <option value="TUTUP_TAHUN">Tutup Tahun</option>
+                        <option value="IMPOR">Impor Data</option>
+                        <option value="GANTI_NAMA_UNIT">Ganti Nama Unit</option>
                     </select>
                 </div>
                 <div class="col-12 col-md-3">
@@ -151,7 +154,7 @@
         // Kolom yang paling membantu untuk mengenali sebuah baris
         const KOLOM_JUDUL = ['judul_indikator', 'nama_unit', 'nama_proses', 'risiko_teridentifikasi', 'jenis_insiden',
                              'nama_lengkap', 'role', 'id_form', 'unit_kerja', 'unit_pelapor'];
-        const LABEL_AKSI = { INSERT: 'Tambah', UPDATE: 'Ubah', DELETE: 'Hapus', TUTUP_TAHUN: 'Tutup Tahun' };
+        const LABEL_AKSI = { INSERT: 'Tambah', UPDATE: 'Ubah', DELETE: 'Hapus', TUTUP_TAHUN: 'Tutup Tahun', IMPOR: 'Impor Data', GANTI_NAMA_UNIT: 'Ganti Nama Unit' };
 
         let halaman = 0;
         let totalBaris = 0;
@@ -243,6 +246,7 @@
         function judulBaris(r) {
             const d = r.data_baru || r.data_lama || {};
             if (r.aksi === 'TUTUP_TAHUN') return `Tahun ${r.id_baris}`;
+            if (r.aksi === 'GANTI_NAMA_UNIT') return `${d.lama || r.id_baris} → ${d.baru || ''}${d.gabung ? ' (digabung)' : ''}`;
             for (const k of KOLOM_JUDUL) {
                 if (d[k]) return String(d[k]).slice(0, 80);
             }
@@ -265,7 +269,7 @@
             if (r.aksi === 'UPDATE') kolom = r.kolom_berubah || [];
             else kolom = Object.keys(r.aksi === 'DELETE' ? lama : baru);
 
-            const tampilLama = r.aksi !== 'INSERT' && r.aksi !== 'TUTUP_TAHUN';
+            const tampilLama = !['INSERT', 'TUTUP_TAHUN', 'IMPOR', 'GANTI_NAMA_UNIT'].includes(r.aksi);
             const tampilBaru = r.aksi !== 'DELETE';
 
             let html = `
@@ -290,7 +294,7 @@
             document.getElementById('isiDetail').innerHTML = html;
 
             const btn = document.getElementById('btnRiwayatBaris');
-            btn.classList.toggle('d-none', !r.id_baris || r.aksi === 'TUTUP_TAHUN');
+            btn.classList.toggle('d-none', !r.id_baris || ['TUTUP_TAHUN', 'IMPOR', 'GANTI_NAMA_UNIT'].includes(r.aksi));
             btn.onclick = () => {
                 bootstrap.Modal.getInstance(document.getElementById('modalDetail')).hide();
                 filterRiwayat = { tabel: r.tabel, id_baris: r.id_baris };

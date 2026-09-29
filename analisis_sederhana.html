@@ -111,6 +111,8 @@
                     <div class="col-md-5">
                         <label class="form-label text-success"><i class="fas fa-user-check me-1"></i> Penanggung Jawab (PIC) :</label>
                         <input type="text" class="form-control" id="inp_pic" placeholder="Nama / Jabatan / Bagian Terkait" required>
+                        <label class="form-label text-success mt-2"><i class="fas fa-calendar me-1"></i> Tenggat Tindakan :</label>
+                        <input type="date" class="form-control" id="inp_tenggat">
                     </div>
                 </div>
 
@@ -137,6 +139,7 @@
     <!-- LIBRARY -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="taksonomi_insiden.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -163,6 +166,7 @@
             try {
                 const { data, error } = await supabaseClient.from('data_insiden').select('*').eq('id_insiden', targetUUID).single();
                 if (error) throw error;
+                window.__statusLama = data.status_investigasi;
                 dataInsiden = data;
 
                 // Tampilkan info ke Banner
@@ -194,16 +198,18 @@
                 // JIKA SUDAH PERNAH DIINVESTIGASI, LOAD DATANYA
                 if (data.investigasi_komite) {
                     let inv = data.investigasi_komite;
+                    window.__investigasiLama = inv;
                     
                     document.getElementById('inp_penyebab_langsung').value = inv.penyebab_langsung || '';
                     document.getElementById('inp_akar_masalah').value = inv.akar_masalah || '';
                     document.getElementById('inp_rekomendasi').value = inv.rekomendasi || '';
                     document.getElementById('inp_tindakan').value = inv.tindakan_dilakukan || '';
                     document.getElementById('inp_pic').value = inv.pj_tindakan || '';
+                    document.getElementById('inp_tenggat').value = inv.tenggat_tindakan || '';
 
                     if(inv.tipe_insiden) {
                         let parts = inv.tipe_insiden.split(' | ');
-                        let mainCat = parts[0];
+                        let mainCat = cariKunciTaksonomi(parts[0]) || parts[0];
                         let selUtama = document.getElementById('ui_tipe_insiden');
                         
                         selUtama.value = mainCat;
@@ -230,23 +236,7 @@
         // ==============================================
         // KAMUS TAKSONOMI KEMENKES
         // ==============================================
-        const taksonomiInsiden = {
-            "1. ADMINISTRASI KLINIK": { "a. Proses": ["Serah terima", "Perjanjian", "Daftar tunggu / Antrian", "Rujukan / Konsultasi", "Admisi", "Keluar/Pulang dari Ranap/RS", "Pindah Perawatan (Transfer of care)", "Identifikasi Pasien", "Consent", "Pembagian tugas", "Respons terhadap kegawatdaruratan"], "b. Masalah": ["Tidak performed ketika dibutuhkan/indikasi", "Tidak lengkap / Inadekuat", "Tidak tersedia", "Salah pasien", "Salah proses / pelayanan"] },
-            "2. PROSES / PROSEDUR KLINIS": { "a. Proses": ["Skrining / Pencegahan / Medical check up", "Diagnosis / Assessment", "Prosedur / Pengobatan / Intervensi", "General care / Management", "Test / Investigasi", "Spesimen / Hasil", "Belum dipulangkan (Detention/Restraint)"], "b. Masalah": ["Tidak performance ketika dibutuhkan/ indikasi", "Tidak lengkap / Inadekuat", "Tidak tersedia", "Salah pasien", "Salah proses / pengobatan / prosedur", "Salah bagian tubuh / sisi"] },
-            "3. DOKUMENTASI": { "a. Dokumen Terkait": ["Order / Permintaan", "Chart / Rekam medik / Assessment/ Konsultasi", "Check list", "Form / sertifikat", "Instruksi / Informasi / Kebijakan / SPO /Guideline", "Label / Stiker / Identifikasi Bands / Kartu", "Surat / E-mail / Rekaman Komunikasi", "Laporan / Hasil / Images"], "b. Masalah": ["Dokumen hilang / tidak tersedia", "Terlambat mengakses dokumen", "Salah dokumen / Salah orang", "Tidak jelas / Membingungkan /Illegible"] },
-            "4. INFEKSI NOSOKOMIAL (HAI)": { "a. Tipe organisme": ["Bakteri", "Virus", "Jamur", "Parasit", "Protozoa", "Rickettsia", "Prion (Partikel protein yang infeksius)", "Organisme tidak teridentifikasi"], "b. Tipe / Bagian infeksi": ["Bloodstream", "Bagian yang dioperasi", "Abses", "Pneumonia", "Kanul IV", "Protesis infeksi", "Drain/ tube urin", "Jaringan lunak"] },
-            "5. MEDIKASI/ CAIRAN INFUS": { "a. Medikasi/Cairan terkait": ["Daftar Medikasi", "Daftar Cairan infus"], "b. Proses penggunaan": ["Peresepan", "Persiapan / Dispensing", "Pemaketan", "Pengantaran", "Pemberian", "Supply / pesan", "Penyimpanan", "Monitoring"], "c. Masalah": ["Salah pasien", "Salah obat", "Salah dosis / kekuatan / frekuensi", "Salah formulasi / presentasi", "Salah rute pemberian", "Salah jumlah / kuantitas", "Salah Dispensing Label / Instruksi", "Kontraindikasi", "Salah penyimpanan", "Ommited medicine or dose", "Obat kadaluarsa", "Adverse drug"] },
-            "6. TRANSFUSI DARAH / PRODUK DARAH": { "a. Produk terkait": ["Produk selular", "Faktor pembekuan (clothing)", "Albumin / Plasma protein", "Imunoglobulin"], "b. Proses Transfusi": ["Tes pre transfusi", "Peresepan", "Persiapan / Dispensing", "Pengantaran", "Pemberian", "Penyimpanan", "Monitoring", "Presentasi / Pemaketan", "Suply / Pesan"], "c. Masalah": ["Salah pasien", "Salah Darah / Produk darah", "Salah dosis / Frekuensi", "Salah jumlah", "Salah label dispensing / Instruksi", "Kontraindikasi", "Salah penyimpanan", "Obat atau Dosis yang diabaikan", "Darah kadaluarsa", "Efek samping (Adverse effect)"] },
-            "7. NUTRISI": { "a. Nutrisi terkait": ["Nutrisi umum", "Nutrisi khusus"], "b. Proses nutrisi": ["Peresepan / Permintaan", "Pesiapan / Manufaktur / memasak", "Supply / order", "Penyajian", "Dispensing / Alokasi", "Pengantaran", "Pemberian", "Penyimpanan"], "c. Masalah": ["Salah pasien", "Salah diet", "Salah jumlah", "Salah Frekuensi", "Salah konsistensi"] },
-            "8. OKSIGEN / GAS": { "a. Oksigen / Gas terkait": ["Daftar oksigen /gas terkait"], "b. Proses penggunaan": ["Label silinder / warna kode / Index pin", "Peresepan", "Pemberian", "Pengantaran", "Suply / order"], "c. Masalah": ["Salah pasien", "Salah gas", "Salah rate / flow/ konsentrasi", "Salah mode pengantaran", "Kontraindikasi", "Salah penyimpanan", "Gagal pemberian", "Kontaminasi"] },
-            "9. ALAT MEDIS / ALAT KESEHATAN": { "a. Tipe Alat / Equipment": ["Daftar Alat medis / Alat kesehatan / Equipment property"], "b. Masalah": ["Presentasi / Pemaketan tidak baik", "Ketidaktersediaan", "Inapropiate for task", "Tidak bersih / Tidak steril", "Kegagalan / Malfungsi"] },
-            "10. PASIEN": { "a. Perilaku pasien": ["Tidak kooperatif", "Tidak pantas / Sikap bermusuhan / Kasar", "Berisiko/ Sembrono / Berbahaya", "Masalah dengan penggunaan substansi / Abuse", "Menggangu (Harrassment)", "Diskriminasitif / Berprasangka", "Berkeliaran, Melarikan diri.", "Sengaja mencederai diri, Bunuh diri."], "b. Agresi / Assault": ["Agresi verbal", "Kekerasan fisik", "Ancaman nyawa"] },
-            "11. JATUH": { "a. Tipe Jatuh": ["Tersandung", "Slip", "Kolaps", "Hilang keseimbangan"], "b. Keterlibatan saat jatuh": ["Velbed", "Tempat tidur", "Kursi", "Strecher", "Toilet", "Peralatan terapi", "Tangga", "Dibawa/dibantu oleh orang lain"] },
-            "12. KECELAKAAN": { "a. Benturan tumpul": ["Kontak dengan benda/binatang", "Kontak dengan orang", "Hancur, remuk"], "b. Serangan tajam/ tusukan": ["Cakaran", "Sayatan", "Tusukan", "Gigitan", "Sengatan"], "c. Kejadian mekanik lain": ["Benturan akibat ledakan bom", "Kontak dengan mesin"], "d. Mekanisme Panas": ["Panas yg berlebihan, dingin yg berlebihan"], "e. Ancaman pernafasan": ["Ancaman mekanik pernafasan, tenggelam atau hampir tenggelam, pembatasan oksigen - kekurangan tempat"], "g. Paparan bahan kimia": ["Keracunan bahan kimia atau substansi lain", "Bahan kimia korosif"], "h. Mekanisme spesifik lain": ["Paparan listrik/radiasi", "Paparan suara/ getaran"] },
-            "13. INFRASTRUKTUR / BANGUNAN": { "a. Keterlibatan Struktur": ["Daftar struktur", "Daftar Bangunan", "Daftar Furniture"], "b. Masalah": ["Inadekuat", "Damaged/Faulty/Worn"] },
-            "14. RESOURCE / MANAJEMEN ORGANISASI": { "a. Beban kerja manajemen": ["Ketersediaan/ keadekuatan tempat tidur/ pelayanan", "Sumber Daya Manusia", "Ketersediaan/ keadekuatan staf", "Organisasi/ Tim"], "b. Protocols/ SOP Guideline": ["Tidak Ada SOP", "SOP Inadekuat/Tidak Jelas", "SOP Tidak Dipatuhi"], "c. Ketersediaan / Adequacy": ["Inadekuat", "Tidak Tersedia"] },
-            "15. LABORATORIUM / PATOLOGI": { "a. Proses Lab": ["Pengambilan/ Pick up", "Transport", "Sorting", "Data entry", "Prosesing", "Verifikasi / Validasi Hasil"] }
-        };
+        const taksonomiInsiden = TAKSONOMI_INSIDEN;   // taksonomi_insiden.js (sama untuk Sederhana & RCA)
 
         function initTaksonomi() {
             const selectUtama = document.getElementById('ui_tipe_insiden');
@@ -296,7 +286,9 @@
                 rekomendasi: document.getElementById('inp_rekomendasi').value.trim(),
                 tindakan_dilakukan: document.getElementById('inp_tindakan').value.trim(),
                 pj_tindakan: document.getElementById('inp_pic').value.trim(),
-                tanggal_investigasi: new Date().toISOString()
+                tenggat_tindakan: document.getElementById('inp_tenggat').value || null,
+                tanggal_investigasi: (window.__investigasiLama && window.__investigasiLama.tanggal_investigasi) || new Date().toISOString(),
+                ...(window.__investigasiLama ? { tanggal_diperbarui: new Date().toISOString() } : {})
             };
 
             try {
@@ -304,7 +296,9 @@
                 const { error } = await supabaseClient.from('data_insiden')
                     .update({ 
                         investigasi_komite: payloadInvestigasi,
-                        status_investigasi: 'Selesai' // Mengubah status agar tombol di dasbor terkunci
+                        // Hasil investigasi -> tahap Tindak Lanjut (kasus yang sudah Selesai tetap Selesai)
+                        status_investigasi: window.__statusLama === 'Selesai' ? 'Selesai' : 'Tindak Lanjut',
+                        jenis_investigasi: 'sederhana' 
                     })
                     .eq('id_insiden', targetUUID);
 
@@ -312,7 +306,7 @@
 
                 Swal.fire({
                     title: 'Investigasi Disimpan!',
-                    text: 'Laporan berhasil ditutup dan data telah diamankan ke database.',
+                    text: window.__statusLama === 'Selesai' ? 'Hasil investigasi diperbarui.' : 'Rekomendasi masuk ke daftar Tindak Lanjut.',
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
@@ -322,7 +316,7 @@
 
             } catch (err) {
                 console.error(err);
-                Swal.fire('Gagal!', 'Terjadi kesalahan saat menyimpan ke Supabase.', 'error');
+                Swal.fire('Gagal!', esc((err && err.message) || 'Terjadi kesalahan saat menyimpan ke Supabase.'), 'error');
             } finally {
                 btn.innerHTML = "<i class='fas fa-save me-2'></i> SIMPAN HASIL INVESTIGASI"; 
                 btn.disabled = false; 

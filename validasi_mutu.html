@@ -4,20 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Validasi Indikator Mutu - SIM PMKP</title>
-    
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
+
     <style>
         body { background-color: #f0f2f5; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff;}
-        .table-custom th { background-color: #2c3e50; color: white; font-size: 0.85rem; border: none; padding: 10px; }
-        .table-custom td { vertical-align: middle; font-size: 0.85rem; border-bottom: 1px solid #f1f3f5; padding: 8px 10px; }
-        .info-box { background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); border-radius: 8px; padding: 15px; border-left: 4px solid #6f42c1; }
-        
-        .status-valid { color: #198754; font-weight: 900; font-size: 1.2rem;}
-        .status-invalid { color: #dc3545; font-weight: 900; font-size: 1.2rem;}
+        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff; }
+        .table-custom th { background-color: #2c3e50; color: white; font-size: 0.8rem; border: none; padding: 8px; white-space: nowrap; }
+        .table-custom td { vertical-align: middle; font-size: 0.82rem; border-bottom: 1px solid #f1f3f5; padding: 6px 8px; }
+        .table-custom th.kol-cek { background-color: #6f42c1; }
+        .table-custom td.kol-cek { background-color: #f3eefc; font-weight: 600; }
+        .stat-box { background: #f8f9fa; border-radius: 8px; padding: 10px 12px; text-align: center; height: 100%; }
+        .stat-box .angka { font-size: 1.4rem; font-weight: 800; line-height: 1.2; }
+        .stat-box .label { font-size: .72rem; color: #6c757d; text-transform: uppercase; letter-spacing: .3px; }
+        tr.baris-sesuai td { background-color: #eefaf2; }
+        tr.baris-tidak td { background-color: #fdf0f1; }
+        tr.baris-koreksi td { background-color: #fff8f8 !important; border-top: none; }
+        .btn-hasil { min-width: 34px; }
+        .nilai-salah { text-decoration: line-through; color: #dc3545; }
+        #cetakArea { display: none; }
+        @media print {
+            body { background: #fff; padding: 0; }
+            body > *:not(#cetakArea) { display: none !important; }
+            #cetakArea { display: block !important; font-size: 11px; color: #000; }
+            #cetakArea table { width: 100%; border-collapse: collapse; }
+            #cetakArea th, #cetakArea td { border: 1px solid #555; padding: 3px 5px; vertical-align: top; }
+            #cetakArea th { background: #eee !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .ttd { margin-top: 40px; display: flex; justify-content: space-around; text-align: center; }
+            .ttd div { width: 40%; }
+        }
     </style>
 </head>
 <body>
@@ -28,548 +45,727 @@
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <div>
                 <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-check-double text-success me-2"></i> Validasi Data Indikator Mutu</h3>
-                <p class="text-muted mb-0">Uji akurasi pelaporan data menggunakan metode Random Sampling Slovin.</p>
+                <p class="text-muted mb-0">Pengumpulan ulang data sampel oleh Komite Mutu dan dibandingkan dengan isian petugas. Akurasi = sampel sesuai ÷ jumlah sampel; valid bila ≥ 90%.</p>
             </div>
-            <a href="laporan_mutu.html" class="btn btn-outline-secondary fw-bold shadow-sm rounded-pill px-4">
-                <i class="fas fa-arrow-left me-2"></i> Kembali ke Dasbor Mutu
+            <a href="kepatuhan_pelaporan.html" class="btn btn-outline-secondary fw-bold shadow-sm rounded-pill px-4">
+                <i class="fas fa-arrow-left me-2"></i> Kepatuhan Pelaporan
             </a>
         </div>
 
-        <div class="card-custom p-4 mb-4 border-top border-4 border-success shadow-sm">
-            <h5 class="fw-bold text-dark mb-3"><i class="fas fa-filter text-secondary me-2"></i> Parameter Uji Validasi</h5>
+        <!-- PARAMETER -->
+        <div class="card-custom p-4 mb-4 border-top border-4 border-success shadow-sm" id="kartuParameter">
+            <h5 class="fw-bold text-dark mb-3 khusus-admin"><i class="fas fa-filter text-secondary me-2"></i> Mulai Sesi Validasi</h5>
+            <div class="alert alert-info small d-none" id="infoBukanAdmin"><i class="fas fa-info-circle me-1"></i> Validasi data dilakukan oleh Komite Mutu. Anda dapat melihat riwayat dan hasil validasi unit Anda di bawah.</div>
             <div class="row g-3 align-items-end">
-                <div class="col-md-2">
-                    <label class="form-label fw-bold text-secondary mb-1" style="font-size:0.85rem;">Tahun</label>
-                    <select id="inp_tahun" class="form-select border-primary fw-bold text-dark"></select>
+                <div class="col-6 col-md-1">
+                    <label class="form-label fw-bold text-secondary mb-1 small">Tahun</label>
+                    <select id="inp_tahun" class="form-select border-primary fw-bold"></select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label fw-bold text-secondary mb-1" style="font-size:0.85rem;">Bulan</label>
-                    <select id="inp_bulan" class="form-select border-primary fw-bold text-dark">
-                        <option value="1">Januari</option><option value="2">Februari</option>
-                        <option value="3">Maret</option><option value="4">April</option>
-                        <option value="5">Mei</option><option value="6">Juni</option>
-                        <option value="7">Juli</option><option value="8">Agustus</option>
-                        <option value="9">September</option><option value="10">Oktober</option>
-                        <option value="11">November</option><option value="12">Desember</option>
-                    </select>
+                <div class="khusus-admin col-6 col-md-2">
+                    <label class="form-label fw-bold text-secondary mb-1 small">Bulan</label>
+                    <select id="inp_bulan" class="form-select border-primary fw-bold"></select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-bold text-secondary mb-1" style="font-size:0.85rem;">Unit Kerja</label>
-                    <select id="inp_unit" class="form-select border-primary fw-bold text-dark" onchange="updateFormDropdown()">
+                <div class="khusus-admin col-md-3">
+                    <label class="form-label fw-bold text-secondary mb-1 small">Unit Kerja</label>
+                    <select id="inp_unit" class="form-select border-primary fw-bold" onchange="updateFormDropdown()">
                         <option value="">-- Memuat Unit... --</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label fw-bold text-secondary mb-1" style="font-size:0.85rem;">Indikator Mutu</label>
-                    <select id="inp_form" class="form-select border-primary fw-bold text-dark">
+                <div class="khusus-admin col-md-3">
+                    <label class="form-label fw-bold text-secondary mb-1 small">Indikator Mutu</label>
+                    <select id="inp_form" class="form-select border-primary fw-bold" onchange="tampilkanKolomCek()">
                         <option value="">-- Pilih Unit Dulu --</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <button class="btn btn-success fw-bold w-100 shadow-sm" id="btnTarik" onclick="tarikSampelValidasi()">
-                        <i class="fas fa-magic me-2"></i> Tarik Sampel
+                <div class="khusus-admin col-6 col-md-1">
+                    <label class="form-label fw-bold text-secondary mb-1 small" title="Margin error rumus Slovin">Margin (e)</label>
+                    <select id="inp_margin" class="form-select border-primary fw-bold">
+                        <option value="0.05">5%</option>
+                        <option value="0.10">10%</option>
+                    </select>
+                </div>
+                <div class="khusus-admin col-6 col-md-2">
+                    <button class="btn btn-success fw-bold w-100 shadow-sm" id="btnMulai" onclick="mulaiSesi()">
+                        <i class="fas fa-play me-1"></i> Mulai / Lanjutkan
                     </button>
                 </div>
             </div>
+            <div id="wadahKolomCek" class="mt-3 d-none">
+                <div class="small fw-bold text-dark mb-1"><i class="fas fa-list-check text-primary me-1"></i> Elemen data yang diperiksa
+                    <span class="fw-normal text-muted">(otomatis: kolom yang dipakai rumus N &amp; D; boleh ditambah)</span></div>
+                <div id="daftarKolomCek" class="d-flex flex-wrap gap-2"></div>
+            </div>
+            <div class="khusus-admin small text-muted mt-2"><i class="fas fa-info-circle me-1"></i> Besar sampel memakai rumus Slovin n = N / (1 + N·e²). Sampel diacak sekali dan disimpan; membuka sesi yang sama menampilkan sampel yang sama.</div>
         </div>
 
-        <div id="loadingWorkspace" class="text-center py-5 d-none">
-            <i class="fas fa-circle-notch fa-spin fa-3x text-success mb-3"></i>
-            <h6 class="text-muted">Robot sedang menghitung populasi dan mengacak sampel pasien...</h6>
-        </div>
-
-        <div id="workspaceValidasi" class="d-none">
-            <div class="row g-4 mb-4">
-                <div class="col-md-5">
-                    <div class="card-custom p-4 h-100 border border-info">
-                        <h6 class="fw-bold border-bottom pb-2 mb-3"><i class="fas fa-calculator text-primary me-2"></i> Kalkulasi Sampel (Slovin)</h6>
-                        <div class="row text-center mb-3">
-                            <div class="col-6">
-                                <p class="text-muted mb-0" style="font-size:0.85rem;">Populasi Total (N)</p>
-                                <h2 class="fw-bold text-dark mb-0" id="lbl_N">-</h2>
-                                <small class="text-muted" style="font-size:0.75rem;">Pasien/Data</small>
-                            </div>
-                            <div class="col-6">
-                                <p class="text-muted mb-0" style="font-size:0.85rem;">Target Sampel (n)</p>
-                                <h2 class="fw-bold text-primary mb-0" id="lbl_n">-</h2>
-                                <small class="text-muted" style="font-size:0.75rem;">Margin Error 5%</small>
-                            </div>
-                        </div>
-                        <div class="info-box">
-                            <p class="mb-1" style="font-size:0.85rem;"><strong>Capaian Total Aktual (A) dari Database:</strong></p>
-                            <h3 class="fw-bold text-success mb-0" id="lbl_capaian_A">-</h3>
-                        </div>
+        <!-- RUANG KERJA SESI -->
+        <div id="ruangSesi" class="d-none">
+            <div class="card-custom p-4 mb-3 shadow-sm border border-info">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <div>
+                        <h5 class="fw-bold mb-1" id="sesiJudul"></h5>
+                        <div class="small text-muted" id="sesiSub"></div>
                     </div>
+                    <div class="d-flex gap-2 flex-wrap" id="sesiTombol"></div>
                 </div>
-
-                <div class="col-md-7">
-                    <div class="card-custom p-4 h-100 border border-warning" style="background-color: #fffdf5;">
-                        <h6 class="fw-bold border-bottom pb-2 mb-3"><i class="fas fa-gavel text-warning me-2"></i> Audit & Penilaian Validator</h6>
-                        
-                        <div class="mb-3">
-                            <label class="fw-bold text-dark mb-1" style="font-size:0.85rem;">Nama Petugas Validator</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-white"><i class="fas fa-user-edit text-muted"></i></span>
-                                <input type="text" class="form-control fw-bold text-primary" id="inp_nama_validator" placeholder="Ketik nama pemeriksa...">
-                            </div>
-                        </div>
-
-                        <div class="row align-items-center mt-3">
-                            <div class="col-md-6 mb-3 mb-md-0">
-                                <label class="fw-bold text-dark mb-2">Capaian Sampel Riil (B)</label>
-                                <div class="input-group">
-                                    <input type="number" step="0.01" class="form-control form-control-lg fw-bold text-primary" id="inp_capaian_B" placeholder="0.00" onkeyup="hitungAkurasi()">
-                                    <span class="input-group-text fw-bold">% / ‰</span>
-                                </div>
-                                <small class="text-muted d-block mt-2" style="font-size:0.75rem;">Masukkan capaian riil dari sampel hasil telusur Anda.</small>
-                            </div>
-                            <div class="col-md-6 text-center border-start">
-                                <p class="text-muted mb-1" style="font-size:0.85rem;">Akurasi Data = (B / A) x 100%</p>
-                                <h1 class="fw-bold mb-0" id="lbl_akurasi">0%</h1>
-                                <div class="mt-2" id="lbl_status_validitas"><span class="badge bg-secondary">Menunggu Input</span></div>
-                            </div>
-                        </div>
-
-                        <div class="text-end mt-4 pt-3 border-top">
-                            <button class="btn btn-primary fw-bold px-5 rounded-pill shadow" id="btnSimpan" onclick="simpanHasilValidasi()" disabled>
-                                <i class="fas fa-save me-2"></i> Kunci & Simpan Validasi
-                            </button>
-                        </div>
-                    </div>
+                <div class="row g-2 mb-3" id="sesiStat"></div>
+                <div class="progress mb-2" style="height: 8px;"><div class="progress-bar bg-success" id="barProgres" style="width: 0%"></div></div>
+                <div class="d-flex justify-content-between small text-muted flex-wrap gap-2">
+                    <span id="teksProgres"></span>
+                    <span id="statusSimpan"></span>
                 </div>
+                <div id="peringatanSesi"></div>
             </div>
 
-            <div class="card-custom p-4 shadow-sm mb-5">
-                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                    <h5 class="fw-bold text-dark mb-0"><i class="fas fa-users text-info me-2"></i> Daftar Pasien / Data Terpilih (Acak)</h5>
-                    <span class="badge bg-info text-dark"><i class="fas fa-dice me-1"></i> Fisher-Yates Algorithm</span>
+            <div class="card-custom p-3 shadow-sm mb-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+                    <div class="small"><span class="badge" style="background:#6f42c1">ungu</span> = elemen yang diperiksa terhadap sumber asli (rekam medis/register/observasi). Pilih <b class="text-success">✓ Sesuai</b> bila semua elemen sama; <b class="text-danger">✗ Tidak</b> bila ada yang berbeda, lalu isi nilai yang benar dan penyebabnya.</div>
+                    <select id="saringSampel" class="form-select form-select-sm" style="max-width: 200px;" onchange="renderSampel()">
+                        <option value="">Semua sampel</option>
+                        <option value="belum">Belum diperiksa</option>
+                        <option value="tidak_sesuai">Tidak sesuai</option>
+                    </select>
                 </div>
-                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
-                    <table class="table table-hover table-custom table-bordered" id="tabelSampel">
+                <div class="table-responsive" style="max-height: 620px; overflow-y: auto;">
+                    <table class="table table-hover table-custom table-bordered mb-0">
                         <thead id="theadSampel" style="position: sticky; top: 0; z-index: 1;"></thead>
                         <tbody id="tbodySampel"></tbody>
                     </table>
                 </div>
             </div>
         </div>
+
+        <!-- RIWAYAT -->
+        <div class="card-custom p-4 shadow-sm mb-5">
+            <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2 flex-wrap gap-2">
+                <h5 class="fw-bold text-dark mb-0"><i class="fas fa-history text-secondary me-2"></i> Riwayat Validasi <span id="judulRiwayatTahun"></span> <span id="ringkasRiwayat" class="ms-2 fs-6"></span></h5>
+                <select id="filterRiwayatUnit" class="form-select form-select-sm" style="max-width: 260px;" onchange="renderRiwayat()">
+                    <option value="">Semua unit</option>
+                    <option value="SELURUH RUMAH SAKIT">🏥 Seluruh Rumah Sakit</option>
+                </select>
+            </div>
+            <div id="isiRiwayat"></div>
+        </div>
     </div>
+
+    <div id="cetakArea"></div>
 
     <!-- LIBRARY -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="engine_mutu.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         const session = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        
+        const NAMA_BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        const PENYEBAB = [
+            'Salah input / salah ketik',
+            'Salah memahami definisi operasional',
+            'Data sumber (rekam medis/register) tidak lengkap',
+            'Data bukan periode/pasien yang dimaksud',
+            'Lainnya'
+        ];
+        const RS = 'SELURUH RUMAH SAKIT';
+
         let unitDataCache = [];
-        let formMasterCache = [];
+        let formMasterCache = [];   // profil indikator aktif yang punya rumus
         let setupFormCache = [];
-        
-        // State Validasi Aktif
-        let current_N = 0;
-        let current_n = 0;
-        let current_A = 0;
-        let current_Judul = "";
+        let riwayatSesi = [];       // validasi_sesi tahun terpilih
+        let riwayatLama = [];       // data_validasi tanpa sesi (cara lama)
+
+        let sesi = null;            // baris validasi_sesi aktif
+        let sampel = [];            // baris validasi_sampel
+        let kolomSesi = [];         // [{ i, judul, tipe, opsi, cek }]
+        let kotor = new Set();      // id sampel yang belum tersimpan
+        let timerSimpan = null;
+
+        // Bulan di data_validasi bisa berupa nama ("Januari") atau angka
+        function bulanKeAngka(v) {
+            if (v === null || v === undefined) return null;
+            const n = parseInt(v, 10);
+            if (n >= 1 && n <= 12) return n;
+            const i = NAMA_BULAN.findIndex(b => b.toLowerCase() === String(v).trim().toLowerCase());
+            return i >= 0 ? i + 1 : null;
+        }
+        const angka = v => v === null || v === undefined || v === '' ? '-' : Number(v).toLocaleString('id-ID');
+        const teksNilai = v => v === null || v === undefined || v === '' ? '' : (typeof v === 'object' ? JSON.stringify(v) : String(v));
 
         document.addEventListener("DOMContentLoaded", async function () {
             if (!supabaseClient) return;
 
-            const date = new Date();
-            document.getElementById('inp_bulan').value = date.getMonth() + 1;
-            
-            const dropdownTahun = document.getElementById('inp_tahun');
-            const thn = date.getFullYear();
-            dropdownTahun.add(new Option(thn, thn));
-            dropdownTahun.add(new Option(thn - 1, thn - 1));
-            dropdownTahun.value = thn;
+            const selBulan = document.getElementById('inp_bulan');
+            NAMA_BULAN.forEach((b, i) => selBulan.add(new Option(b, i + 1)));
 
-            document.getElementById('inp_nama_validator').value = session.nama_lengkap || session.username || "Komite Mutu";
+            // Default: bulan lalu
+            const date = new Date();
+            let thn = date.getFullYear(), bln = date.getMonth();
+            if (bln === 0) { bln = 12; thn -= 1; }
+            selBulan.value = bln;
+
+            const dropdownTahun = document.getElementById('inp_tahun');
+            const kini = date.getFullYear();
+            dropdownTahun.add(new Option(kini, kini));
+            dropdownTahun.add(new Option(kini - 1, kini - 1));
+            dropdownTahun.value = thn;
+            dropdownTahun.addEventListener('change', muatRiwayat);
+
+            if (!isAdminMutu(session.role)) {
+                document.querySelectorAll('.khusus-admin').forEach(e => e.classList.add('d-none'));
+                document.getElementById('infoBukanAdmin').classList.remove('d-none');
+            }
 
             await muatDataDasar();
+            window.__institusi = await ambilInstitusi();
+
+            // Dibuka dari Kepatuhan Pelaporan: ?unit=..&bulan=..&tahun=..  |  atau ?sesi=<id>
+            const q = new URLSearchParams(location.search);
+            if (q.get('tahun') && [...dropdownTahun.options].some(o => o.value === q.get('tahun'))) dropdownTahun.value = q.get('tahun');
+            if (q.get('bulan')) selBulan.value = q.get('bulan');
+            const selUnit = document.getElementById('inp_unit');
+            if (q.get('unit') && selUnit.options && [...selUnit.options].some(o => o.value === q.get('unit'))) {
+                selUnit.value = q.get('unit');
+                document.getElementById('filterRiwayatUnit').value = q.get('unit');
+                updateFormDropdown();
+            }
+            await muatRiwayat();
+            if (q.get('sesi')) bukaSesi(q.get('sesi'));
         });
 
         async function muatDataDasar() {
             try {
-                // 1. Tarik Unit
-                const resUnit = await supabaseClient.from('master_unit').select('*');
-                unitDataCache = resUnit.data || [];
-                
-                const selUnit = document.getElementById('inp_unit');
-                selUnit.innerHTML = '<option value="">-- Pilih Unit Kerja --</option>';
-                // PERBAIKAN: Tambahkan opsi SELURUH RS untuk validasi IMP RS
-                selUnit.add(new Option("🏥 SELURUH RUMAH SAKIT", "RS_ALL"));
-                
-                unitDataCache.sort((a,b) => a.nama_unit.localeCompare(b.nama_unit)).forEach(u => selUnit.add(new Option(u.nama_unit, u.nama_unit)));
-
-                // 2. Tarik Kamus Indikator
-                const resIndikator = await supabaseClient.from('master_indikator').select('*');
-                formMasterCache = resIndikator.data || [];
-
-                // 3. Tarik Setup Form (Kolom)
-                const resSetup = await supabaseClient.from('setup_formulir').select('*');
+                const [resUnit, resIndikator, resSetup] = await Promise.all([
+                    supabaseClient.from('master_unit').select('*'),
+                    supabaseClient.from('master_indikator').select('*').neq('status_aktif', false),
+                    supabaseClient.from('setup_formulir').select('*')
+                ]);
+                unitDataCache = (resUnit.data || []).sort((a, b) => a.nama_unit.localeCompare(b.nama_unit));
+                formMasterCache = (resIndikator.data || []).filter(i => i.id_form && indikatorPakaiEngine(i))
+                    .sort((a, b) => (a.judul_indikator || '').localeCompare(b.judul_indikator || '', 'id'));
                 setupFormCache = resSetup.data || [];
 
+                const selUnit = document.getElementById('inp_unit');
+                if (selUnit) {
+                    selUnit.innerHTML = '<option value="">-- Pilih Unit Kerja --</option>';
+                    selUnit.add(new Option("🏥 SELURUH RUMAH SAKIT", "RS_ALL"));
+                    unitDataCache.forEach(u => selUnit.add(new Option(u.nama_unit, u.nama_unit)));
+                }
+                const selRiwayat = document.getElementById('filterRiwayatUnit');
+                unitDataCache.forEach(u => selRiwayat.add(new Option(u.nama_unit, u.nama_unit)));
             } catch (err) {
                 Swal.fire('Error', 'Gagal memuat database dasar dari Supabase.', 'error');
             }
         }
 
-        // PERBAIKAN: Fungsi Update Dropdown berdasarkan hak milik form unit
         window.updateFormDropdown = function() {
             const unit = document.getElementById('inp_unit').value;
             const selForm = document.getElementById('inp_form');
             selForm.innerHTML = '<option value="">-- Pilih Indikator --</option>';
-            
-            if(!unit) return;
+            document.getElementById('wadahKolomCek').classList.add('d-none');
+            if (!unit) return;
 
-            if (unit === "RS_ALL") {
-                // Tampilkan SEMUA indikator yang ada di master_indikator
-                formMasterCache.forEach(f => {
-                    selForm.add(new Option(f.judul_indikator, f.id_form));
-                });
-            } else {
-                // Filter hanya indikator yang dimiliki oleh unit tersebut
-                let unitObj = unitDataCache.find(u => u.nama_unit === unit);
-                if(unitObj && unitObj.daftar_form) {
-                    let forms = unitObj.daftar_form.split(',').map(s => s.trim()).filter(Boolean);
-                    forms.forEach(f => {
-                        let master = formMasterCache.find(x => x.id_form === f);
-                        let judulAsli = master ? master.judul_indikator : f.replace(/_/g, ' ');
-                        selForm.add(new Option(judulAsli, f));
-                    });
-                }
-            }
-        }
-
-        // ==========================================
-        // SMART AGGREGATOR ENGINE (Diambil dari Laporan Mutu)
-        // ==========================================
-        function eksekusiRumusEngine(template, rows, colsConfig) {
-            if (!template) return 0;
-            let t = template.toString().trim();
-            
-            if (t.startsWith('{') && t.endsWith('}')) {
-                try {
-                    let rule = JSON.parse(t);
-                    let colIdx = parseInt(rule.target_kolom);
-                    
-                    if (rule.tipe === "COUNTALL") return rows.length;
-                    else if (rule.tipe === "SUM") {
-                        if (isNaN(colIdx)) return 0;
-                        return rows.reduce((acc, r) => acc + (parseFloat(r.data_input[colIdx]) || 0), 0);
-                    } 
-                    else if (rule.tipe === "COUNTIF") {
-                        if (isNaN(colIdx)) return 0;
-                        let kriteria = (rule.nilai_kriteria || "").toString().toLowerCase().trim();
-                        let op = rule.operator || "==";
-                        
-                        return rows.filter(r => {
-                            let val = (r.data_input[colIdx] !== null && r.data_input[colIdx] !== undefined) 
-                                        ? r.data_input[colIdx].toString().toLowerCase().trim() : "";
-                            
-                            if (op === "==") return val === kriteria;
-                            if (op === "!=") return val !== kriteria;
-                            if (op === "includes") return val.includes(kriteria);
-                            return false;
-                        }).length;
-                    }
-                } catch(e) {}
-            }
-
-            let matchCountIf = t.match(/COUNTIF\s*\(\s*\[?(.*?)\]?\s*,\s*['"]?(.*?)['"]?\s*\)/i);
-            if (matchCountIf) {
-                let colName = matchCountIf[1].trim().toLowerCase(); 
-                let crit = matchCountIf[2].trim().toLowerCase().replace(/\*/g,'');
-                let cIdx = colsConfig.findIndex(c => c.judul.toLowerCase().includes(colName));
-                if (cIdx === -1) return 0;
-                return rows.filter(r => (r.data_input[cIdx]||"").toString().toLowerCase().includes(crit)).length;
-            }
-            
-            let matchSum = t.match(/SUM\s*\(\s*\[?(.*?)\]?\s*\)/i);
-            if (matchSum) {
-                let colName = matchSum[1].trim().toLowerCase();
-                let cIdx = colsConfig.findIndex(c => c.judul.toLowerCase().includes(colName));
-                if (cIdx === -1) return 0;
-                return rows.reduce((acc, r) => acc + (parseFloat(r.data_input[cIdx])||0), 0);
-            }
-            
-            if (t.toUpperCase().includes("COUNTALL") || t.toUpperCase().includes("COUNTA")) return rows.length;
-            return 0;
-        }
-
-        // ==========================================
-        // MESIN SLOVIN & RANDOM SAMPLING PADA SISI KLIEN
-        // ==========================================
-        window.tarikSampelValidasi = async function() {
-            const unit = document.getElementById('inp_unit').value;
-            const id_form = document.getElementById('inp_form').value;
-            const bulan = parseInt(document.getElementById('inp_bulan').value);
-            const tahun = parseInt(document.getElementById('inp_tahun').value);
-
-            if(!unit || !id_form) {
-                Swal.fire('Oops', 'Silakan pilih Unit dan Indikator Mutu terlebih dahulu.', 'warning'); return;
-            }
-
-            document.getElementById('workspaceValidasi').classList.add('d-none');
-            document.getElementById('loadingWorkspace').classList.remove('d-none');
-
-            const selForm = document.getElementById('inp_form');
-            current_Judul = selForm.options[selForm.selectedIndex].text;
-
-            try {
-                // 1. Tarik Data Harian (Populasi)
-                let query = supabaseClient.from('data_mutu_harian').select('*')
-                    .eq('id_indikator', id_form)
-                    .eq('bulan', bulan)
-                    .eq('tahun', tahun)
-                    .order('id');
-
-                // PERBAIKAN: Jika bukan RS_ALL, filter unitnya
-                if (unit !== "RS_ALL") {
-                    query = query.eq('unit_kerja', unit);
-                }
-
-                const { data, error } = await ambilSemua(() => query);
-                if (error) throw error;
-
-                let populasiData = data || [];
-                current_N = populasiData.length;
-
-                if (current_N === 0) {
-                    Swal.fire('Info', 'Tidak ada data laporan harian yang ditemukan untuk kriteria ini.', 'info');
-                    document.getElementById('loadingWorkspace').classList.add('d-none');
+            let daftar = formMasterCache;
+            if (unit !== "RS_ALL") {
+                const unitObj = unitDataCache.find(u => u.nama_unit === unit);
+                const forms = (unitObj && unitObj.daftar_form ? unitObj.daftar_form.split(',') : []).map(s => s.trim()).filter(Boolean);
+                daftar = formMasterCache.filter(i => forms.includes(i.id_form));
+                if (!daftar.length) {
+                    selForm.innerHTML = '<option value="">(tidak ada indikator berumus untuk unit ini)</option>';
                     return;
                 }
+            }
+            daftar.forEach(i => selForm.add(new Option(i.judul_indikator, i.id_indikator)));
+        };
 
-                // 2. Kalkulasi Sampel (Rumus Slovin: n = N / (1 + (N * e^2)), e = 5% = 0.05)
-                let e = 0.05;
-                current_n = Math.ceil(current_N / (1 + (current_N * Math.pow(e, 2))));
-                if(current_N <= 10) current_n = current_N; 
+        // Kolom formulir (tanpa yang disembunyikan, kecuali dipakai rumus)
+        function kolomFormulir(idForm) {
+            const setup = setupFormCache.find(f => f.id_form === idForm);
+            return setup && Array.isArray(setup.kolom) ? setup.kolom.map((k, i) => ({ i, judul: k.judul || `Kolom ${i + 1}`, tipe: k.tipe || '', opsi: k.opsi || '', sembunyi: !!k.sembunyi })) : [];
+        }
 
-                // 3. PERBAIKAN: KALKULASI CAPAIAN AKTUAL (A) MENGGUNAKAN SMART ENGINE
-                let setup = setupFormCache.find(f => f.id_form === id_form);
-                let indikatorMaster = formMasterCache.find(f => f.id_form === id_form) || {};
-                
-                let N_total = 0, D_total = 0, sumC = 0, countC = 0;
+        // Pilihan elemen yang diperiksa (default: kolom rumus)
+        window.tampilkanKolomCek = async function() {
+            const wadah = document.getElementById('wadahKolomCek');
+            const ind = formMasterCache.find(i => String(i.id_indikator) === document.getElementById('inp_form').value);
+            if (!ind) { wadah.classList.add('d-none'); return; }
+            let rumus = [];
+            try {
+                const { data } = await supabaseClient.rpc('kolom_rumus_indikator', { p_id_indikator: ind.id_indikator });
+                rumus = Array.isArray(data) ? data : [];
+            } catch (e) { /* biarkan kosong */ }
+            const kolom = kolomFormulir(ind.id_form).filter(k => !k.sembunyi || rumus.includes(k.i));
+            document.getElementById('daftarKolomCek').innerHTML = kolom.length ? kolom.map(k => `
+                <label class="border rounded px-2 py-1 small bg-light" style="cursor:pointer">
+                    <input type="checkbox" class="form-check-input me-1 kolom-cek" value="${k.i}" ${rumus.includes(k.i) ? 'checked' : ''}>
+                    ${esc(k.judul)}${rumus.includes(k.i) ? ' <span class="badge bg-primary">rumus</span>' : ''}
+                </label>`).join('') : '<span class="small text-muted">Formulir tidak ditemukan di Form Builder.</span>';
+            wadah.classList.remove('d-none');
+        };
 
-                if(setup && populasiData.length > 0) {
-                    let tmplNum = (indikatorMaster.template_numerator || "").toString().trim();
-                    let tmplDen = (indikatorMaster.template_denominator || "").toString().trim();
+        // ================= SESI =================
+        window.mulaiSesi = async function() {
+            const unit = document.getElementById('inp_unit').value;
+            const idInd = document.getElementById('inp_form').value;
+            const bulan = parseInt(document.getElementById('inp_bulan').value, 10);
+            const tahun = parseInt(document.getElementById('inp_tahun').value, 10);
+            const margin = parseFloat(document.getElementById('inp_margin').value);
+            if (!unit || !idInd) { Swal.fire('Oops', 'Pilih Unit dan Indikator Mutu terlebih dahulu.', 'warning'); return; }
+            const kolom = [...document.querySelectorAll('.kolom-cek:checked')].map(c => parseInt(c.value, 10));
+            if (!kolom.length) { Swal.fire('Elemen Data', 'Pilih minimal satu elemen data yang akan diperiksa.', 'warning'); return; }
+            if (!(await konfirmasiTinggalkan())) return;
 
-                    // Cek jika pakai JSON/Teks Custom
-                    if (tmplNum.startsWith('{') || tmplNum.match(/(COUNTIF|SUM|COUNTALL|COUNTA)/i) || tmplDen.startsWith('{') || tmplDen.match(/(COUNTIF|SUM|COUNTALL|COUNTA)/i)) {
-                        N_total = eksekusiRumusEngine(tmplNum, populasiData, setup.kolom);
-                        D_total = eksekusiRumusEngine(tmplDen, populasiData, setup.kolom);
-                    } 
-                    // Auto Detect Kolom Biasa
-                    else {
-                        let idxNum = -1, idxDen = -1, idxCapaian = -1, idxKepatuhan = -1;
-                        setup.kolom.forEach((k, idx) => {
-                            let j = k.judul.toLowerCase();
-                            if (j === 'numerator' || j === 'n' || j === 'jumlah tindakan' || j.includes('numer')) idxNum = idx;
-                            else if (j === 'denominator' || j === 'd' || j === 'jumlah peluang' || j.includes('denom')) idxDen = idx;
-                            else if (j.includes('kepatuhan') || j.includes('kesesuaian') || j.includes('patuh')) idxKepatuhan = idx;
-                            else if (j.includes('capaian') || j.includes('hasil') || j.includes('waktu') || j.includes('nilai')) idxCapaian = idx;
-                        });
-
-                        populasiData.forEach(r => {
-                            let d = r.data_input;
-                            if (idxNum !== -1 && idxDen !== -1) {
-                                N_total += parseFloat(d[idxNum]) || 0;
-                                D_total += parseFloat(d[idxDen]) || 0;
-                            } else if (idxKepatuhan !== -1) {
-                                D_total += 1;
-                                let val = (d[idxKepatuhan]||"").toString().toLowerCase();
-                                if(val.includes('ya') || val.includes('patuh') || val.includes('sesuai') || val === '1') N_total += 1;
-                            } else {
-                                D_total += 1;
-                                if (idxCapaian !== -1) {
-                                    sumC += parseFloat(d[idxCapaian]) || 0;
-                                    countC += 1;
-                                }
-                            }
-                        });
-                    }
+            const btn = document.getElementById('btnMulai');
+            btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Menyiapkan...';
+            try {
+                const { data, error } = await supabaseClient.rpc('buat_sesi_validasi', {
+                    p_id_indikator: idInd, p_unit: unit, p_tahun: tahun, p_bulan: bulan, p_margin: margin, p_kolom: kolom
+                });
+                if (error) throw error;
+                await bukaSesi(data.id);
+                if (!data.baru) {
+                    Swal.fire({ title: 'Melanjutkan Sesi', html: 'Sesi validasi untuk indikator, unit, dan bulan ini sudah ada, jadi sampel yang <b>sama</b> dilanjutkan.<br><small class="text-muted">Pengaturan margin dan elemen data mengikuti sesi yang ada. Untuk mengacak ulang, batalkan sesi itu terlebih dahulu.</small>', icon: 'info' });
                 }
-
-                let isPercentage = (indikatorMaster.satuan || "").includes('%');
-                current_A = 0;
-                
-                if (unit === "RS_ALL") {
-                    // Logic Aggregation Khusus RS
-                    if (D_total > 0) {
-                        current_A = (N_total / D_total);
-                        if (isPercentage) current_A *= 100;
-                    } else if (countC > 0) {
-                        current_A = sumC / countC;
-                    }
-                } else {
-                    // Logic Normal per Unit
-                    if (D_total > 0) {
-                        current_A = (N_total / D_total);
-                        if (isPercentage) current_A *= 100;
-                    } else if (countC > 0) {
-                        current_A = sumC / countC;
-                    }
-                }
-                
-                current_A = Math.round(current_A * 100) / 100;
-
-                // 4. Pengacakan Array (Fisher-Yates Shuffle)
-                for (let i = populasiData.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [populasiData[i], populasiData[j]] = [populasiData[j], populasiData[i]];
-                }
-                
-                let sampelTerpilih = populasiData.slice(0, current_n);
-
-                // 5. Update UI
-                document.getElementById('lbl_N').innerText = current_N;
-                document.getElementById('lbl_n').innerText = current_n;
-                document.getElementById('lbl_capaian_A').innerText = current_A;
-
-                document.getElementById('inp_capaian_B').value = "";
-                document.getElementById('lbl_akurasi').innerText = "0%";
-                document.getElementById('lbl_status_validitas').innerHTML = '<span class="badge bg-secondary">Menunggu Input</span>';
-                document.getElementById('btnSimpan').disabled = true;
-
-                // Render tabel sampel, tambahkan Kolom Unit di depan jika itu RS_ALL
-                let headersTabel = setup ? setup.kolom.map(k => k.judul) : ["Data Input"];
-                if(unit === "RS_ALL") headersTabel.unshift("Unit Pelapor");
-                
-                renderTabelSampel(headersTabel, sampelTerpilih, unit === "RS_ALL");
-                
-                document.getElementById('loadingWorkspace').classList.add('d-none');
-                document.getElementById('workspaceValidasi').classList.remove('d-none');
-                
-                Swal.fire({ title: 'Sampel Didapatkan!', text: `Berhasil menarik ${current_n} sampel acak dari total ${current_N} data.`, icon: 'success', timer: 2000, showConfirmButton: false });
-
+                await muatRiwayat();
             } catch (err) {
                 console.error(err);
-                document.getElementById('loadingWorkspace').classList.add('d-none');
-                Swal.fire('Error', 'Gagal memproses data dari Supabase.', 'error');
+                Swal.fire('Tidak Dapat Memulai', esc(err.message || err), 'error');
+            } finally {
+                btn.disabled = false; btn.innerHTML = '<i class="fas fa-play me-1"></i> Mulai / Lanjutkan';
             }
-        }
+        };
 
-        function renderTabelSampel(headers, dataSampel, isAllRS) {
-            const thead = document.getElementById('theadSampel');
-            const tbody = document.getElementById('tbodySampel');
-            
-            let thHtml = '<tr><th class="text-center" width="5%">No Acak</th>';
-            headers.forEach(h => { thHtml += `<th>${esc(h)}</th>`; });
-            thHtml += '</tr>';
-            thead.innerHTML = thHtml;
-
-            let tbHtml = '';
-            dataSampel.forEach((item, idx) => {
-                tbHtml += `<tr><td class="text-center fw-bold text-primary">#${idx + 1}</td>`;
-                
-                // Tampilkan nama unit jika validasi RS ALL
-                if(isAllRS) tbHtml += `<td class="fw-bold">${esc(item.unit_kerja)}</td>`;
-                
-                (item.data_input || []).forEach(cellVal => { tbHtml += `<td>${cellVal || '-'}</td>`; });
-                tbHtml += `</tr>`;
-            });
-            tbody.innerHTML = tbHtml;
-        }
-
-        window.hitungAkurasi = function() {
-            const strB = document.getElementById('inp_capaian_B').value;
-            const btnSimpan = document.getElementById('btnSimpan');
-            
-            if (strB === "") {
-                document.getElementById('lbl_akurasi').innerText = "0%";
-                document.getElementById('lbl_status_validitas').innerHTML = '<span class="badge bg-secondary">Menunggu Input</span>';
-                btnSimpan.disabled = true; return;
-            }
-
-            const B = parseFloat(strB);
-            const A = current_A;
-            let akurasi = 0;
-
-            if (A === 0) {
-                if (B === 0) akurasi = 100; else akurasi = 0;
-            } else {
-                akurasi = (B / A) * 100;
-            }
-
-            akurasi = Math.round(akurasi * 100) / 100;
-            document.getElementById('lbl_akurasi').innerText = akurasi + "%";
-
-            if (akurasi >= 90) {
-                document.getElementById('lbl_akurasi').className = "fw-bold mb-0 status-valid";
-                document.getElementById('lbl_status_validitas').innerHTML = '<span class="badge bg-success px-3 py-2 fs-6"><i class="fas fa-check-circle me-1"></i> Data VALID</span>';
-            } else {
-                document.getElementById('lbl_akurasi').className = "fw-bold mb-0 status-invalid";
-                document.getElementById('lbl_status_validitas').innerHTML = '<span class="badge bg-danger px-3 py-2 fs-6"><i class="fas fa-exclamation-triangle me-1"></i> TIDAK VALID</span>';
-            }
-
-            btnSimpan.disabled = false;
-        }
-
-        window.simpanHasilValidasi = async function() {
-            const B = document.getElementById('inp_capaian_B').value;
-            const namaValidator = document.getElementById('inp_nama_validator').value.trim();
-
-            if (B === "" || !namaValidator) { Swal.fire('Perhatian', 'Capaian Sampel dan Nama Validator wajib diisi.', 'warning'); return; }
-
-            const unitSelect = document.getElementById('inp_unit');
-            const unit = unitSelect.value === "RS_ALL" ? "SELURUH RUMAH SAKIT" : unitSelect.value;
-            const tahun = document.getElementById('inp_tahun').value;
-            const selectBulan = document.getElementById('inp_bulan');
-            const namaBulan = selectBulan.options[selectBulan.selectedIndex].text;
-            
-            const akurasiStr = document.getElementById('lbl_akurasi').innerText.replace('%', '');
-            const akurasi = parseFloat(akurasiStr);
-            const statusValiditas = akurasi >= 90 ? "VALID" : "TIDAK VALID";
-
-            Swal.fire({
-                title: 'Kunci Hasil Validasi?',
-                html: `Hasil validasi untuk indikator ini akan dicatat ke <b>Database Master</b> dengan status: <br><br><b class="${akurasi >= 90 ? 'text-success' : 'text-danger'} fs-4">${statusValiditas}</b>`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#6f42c1',
-                confirmButtonText: 'Ya, Simpan',
-            }).then(async (result) => {
-                if (result.isConfirmed) {
-                    const btn = document.getElementById('btnSimpan');
-                    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
-
-                    const payloadData = {
-                        unit_kerja: unit,
-                        id_indikator: document.getElementById('inp_form').value,
-                        judul_indikator: current_Judul,
-                        bulan: namaBulan,
-                        tahun: parseInt(tahun),
-                        populasi_n_besar: current_N,
-                        sampel_n_kecil: current_n,
-                        capaian_a: current_A,
-                        capaian_b: parseFloat(B),
-                        akurasi: akurasi,
-                        status_validasi: statusValiditas,
-                        nama_validator: namaValidator
-                    };
-
-                    try {
-                        const { error } = await supabaseClient.from('data_validasi').insert([payloadData]);
-                        if (error) throw error;
-
-                        Swal.fire('Tersimpan!', 'Berita Acara Validasi telah terekam di sistem.', 'success').then(() => {
-                            window.location.href = 'laporan_validasi.html';
-                        });
-
-                    } catch (err) {
-                        console.error(err);
-                        Swal.fire('Gagal!', 'Terjadi kesalahan saat menyimpan ke Supabase.', 'error');
-                    } finally {
-                        btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Kunci & Simpan Validasi';
-                    }
+        window.bukaSesi = async function(id) {
+            if (!(await konfirmasiTinggalkan())) return;
+            try {
+                const [resSesi, resSampel] = await Promise.all([
+                    supabaseClient.from('validasi_sesi').select('*').eq('id', id).single(),
+                    ambilSemua(() => supabaseClient.from('validasi_sampel').select('*').eq('sesi_id', id).order('urutan'))
+                ]);
+                if (resSesi.error) throw resSesi.error;
+                if (resSampel.error) throw resSampel.error;
+                sesi = resSesi.data;
+                sampel = (resSampel.data || []).map(s => ({ ...s, nilai_validator: s.nilai_validator || {} }));
+                kotor.clear();
+                const cek = new Set(sesi.kolom_cek || []);
+                kolomSesi = kolomFormulir(sesi.id_form).filter(k => !k.sembunyi || cek.has(k.i)).map(k => ({ ...k, cek: cek.has(k.i) }));
+                if (!kolomSesi.length) {
+                    const lebar = Math.max(0, ...sampel.map(s => Array.isArray(s.data_petugas) ? s.data_petugas.length : 0));
+                    kolomSesi = Array.from({ length: lebar }, (_, i) => ({ i, judul: `Kolom ${i + 1}`, tipe: '', opsi: '', cek: cek.has(i) }));
                 }
-            });
+                document.getElementById('ruangSesi').classList.remove('d-none');
+                renderSesi();
+                document.getElementById('ruangSesi').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal Membuka Sesi', esc(err.message || err), 'error');
+            }
+        };
+
+        const bisaUbah = () => sesi && sesi.status === 'draft' && isAdminMutu(session.role);
+
+        function hitungRingkas() {
+            const total = sampel.length;
+            const sesuai = sampel.filter(s => s.hasil === 'sesuai').length;
+            const tidak = sampel.filter(s => s.hasil === 'tidak_sesuai').length;
+            const dicek = sesuai + tidak;
+            return { total, sesuai, tidak, dicek, akurasi: total ? Math.round(sesuai / total * 10000) / 100 : 0 };
         }
+
+        function renderSesi() {
+            const r = hitungRingkas();
+            const periode = `${NAMA_BULAN[sesi.bulan - 1]} ${sesi.tahun}`;
+            const selesai = sesi.status === 'selesai';
+            document.getElementById('sesiJudul').innerHTML = `${esc(sesi.judul_indikator)} <span class="badge ${selesai ? (sesi.status_validasi === 'VALID' ? 'bg-success' : 'bg-danger') : 'bg-warning text-dark'} ms-1">${selesai ? esc(sesi.status_validasi) : 'DRAFT'}</span>`;
+            document.getElementById('sesiSub').innerHTML = `<i class="fas fa-hospital me-1"></i>${esc(sesi.unit_kerja)} · <i class="fas fa-calendar me-1"></i>${periode} · Validator: <b>${esc(sesi.validator_nama || '-')}</b>${sesi.ulang_dari ? ' · <span class="badge bg-secondary">validasi ulang</span>' : ''}`;
+
+            let tombol = `<button class="btn btn-sm btn-outline-secondary" onclick="cetakLembarKerja()"><i class="fas fa-print me-1"></i> Lembar kerja</button>`;
+            if (selesai) tombol += `<button class="btn btn-sm btn-primary" onclick="cetakBeritaAcara()"><i class="fas fa-file-signature me-1"></i> Berita acara</button>`;
+            if (bisaUbah()) tombol += `<button class="btn btn-sm btn-outline-danger" onclick="batalkanSesi()"><i class="fas fa-trash me-1"></i> Batalkan sesi</button>
+                <button class="btn btn-sm btn-success fw-bold" onclick="selesaikanSesi()"><i class="fas fa-flag-checkered me-1"></i> Selesaikan</button>`;
+            tombol += `<button class="btn btn-sm btn-light border" onclick="tutupSesi()" title="Tutup"><i class="fas fa-times"></i></button>`;
+            document.getElementById('sesiTombol').innerHTML = tombol;
+
+            const kotak = (angkaHtml, label, kelas = '') => `<div class="col-6 col-md-2"><div class="stat-box ${kelas}"><div class="angka">${angkaHtml}</div><div class="label">${label}</div></div></div>`;
+            const akurasi = selesai ? sesi.akurasi : r.akurasi;
+            const warnaAk = r.dicek === 0 && !selesai ? '' : (Number(akurasi) >= 90 ? 'text-success' : 'text-danger');
+            document.getElementById('sesiStat').innerHTML =
+                kotak(angka(sesi.populasi), 'Populasi (N)') +
+                kotak(angka(sesi.jumlah_sampel), `Sampel (n) · e ${Math.round(sesi.margin_error * 100)}%`) +
+                kotak(sesi.capaian_populasi === null ? '-' : angka(sesi.capaian_populasi), `Capaian populasi ${esc(sesi.satuan || '')}`) +
+                kotak(`<span class="text-success">${r.sesuai}</span> / <span class="text-danger">${r.tidak}</span>`, 'Sesuai / Tidak sesuai') +
+                kotak(`<span class="${warnaAk}">${r.dicek || selesai ? angka(akurasi) + '%' : '-'}</span>`, selesai ? 'Akurasi' : 'Akurasi sementara') +
+                kotak(selesai
+                    ? `${angka(sesi.capaian_sampel_petugas)} <i class="fas fa-arrow-right small text-muted"></i> ${angka(sesi.capaian_sampel_validator)}`
+                    : `${r.dicek}/${r.total}`, selesai ? 'Capaian sampel: petugas → validator' : 'Sudah diperiksa');
+
+            document.getElementById('barProgres').style.width = (r.total ? r.dicek / r.total * 100 : 0) + '%';
+            document.getElementById('teksProgres').textContent = selesai
+                ? `Selesai ${new Date(sesi.selesai_pada).toLocaleString('id-ID')} · ${sesi.jumlah_sesuai} dari ${sesi.jumlah_sampel} sampel sesuai`
+                : `${r.dicek} dari ${r.total} sampel sudah diperiksa`;
+
+            // Peringatan: validator sama dengan petugas pengumpul data
+            let peringatan = '';
+            const namaValidator = (sesi.validator_nama || '').trim().toLowerCase();
+            const samaPetugas = namaValidator ? sampel.filter(s => (s.petugas_input || '').trim().toLowerCase() === namaValidator).length : 0;
+            if (samaPetugas) peringatan += `<div class="alert alert-warning small py-2 mt-2 mb-0"><i class="fas fa-user-slash me-1"></i> ${samaPetugas} sampel diinput oleh validator sendiri. Validasi sebaiknya dilakukan oleh orang yang tidak ikut mengumpulkan data.</div>`;
+            if (selesai && sesi.status_validasi === 'TIDAK VALID') {
+                const adaUlang = riwayatSesi.some(x => x.ulang_dari === sesi.id);
+                peringatan += `<div class="alert alert-danger small py-2 mt-2 mb-0"><b>Analisis penyebab:</b> ${esc(sesi.analisis_penyebab || '-')}<br><b>Rencana perbaikan:</b> ${esc(sesi.rencana_perbaikan || '-')}
+                    ${!adaUlang && isAdminMutu(session.role) ? `<div class="mt-2"><button class="btn btn-sm btn-danger" onclick="validasiUlang('${escJsAttr(sesi.id)}')"><i class="fas fa-redo me-1"></i> Validasi ulang dengan sampel baru</button></div>` : ''}</div>`;
+            }
+            document.getElementById('peringatanSesi').innerHTML = peringatan;
+            renderSampel();
+        }
+
+        window.renderSampel = function() {
+            const rs = sesi.unit_kerja === RS;
+            const ubah = bisaUbah();
+            const saring = document.getElementById('saringSampel').value;
+            let th = '<tr><th class="text-center">#</th>' + (rs ? '<th>Unit</th>' : '') + '<th>Petugas</th>';
+            th += kolomSesi.map(k => `<th class="${k.cek ? 'kol-cek' : ''}">${esc(k.judul)}</th>`).join('');
+            th += '<th class="text-center" style="min-width:110px">Hasil</th></tr>';
+            document.getElementById('theadSampel').innerHTML = th;
+            const lebar = kolomSesi.length + (rs ? 4 : 3);
+
+            const html = sampel.filter(s => !saring || (saring === 'belum' ? !s.hasil : s.hasil === saring)).map(s => {
+                const d = Array.isArray(s.data_petugas) ? s.data_petugas : [];
+                const kelas = s.hasil === 'sesuai' ? 'baris-sesuai' : s.hasil === 'tidak_sesuai' ? 'baris-tidak' : '';
+                const sel = kolomSesi.map(k => {
+                    const asli = teksNilai(d[k.i]);
+                    const koreksi = s.hasil === 'tidak_sesuai' && Object.prototype.hasOwnProperty.call(s.nilai_validator, String(k.i)) && teksNilai(s.nilai_validator[String(k.i)]) !== asli;
+                    return `<td class="${k.cek ? 'kol-cek' : ''}">${koreksi ? `<span class="nilai-salah">${esc(asli || '-')}</span> <b class="text-success">${esc(teksNilai(s.nilai_validator[String(k.i)]) || '(kosong)')}</b>` : esc(asli || '-')}</td>`;
+                }).join('');
+                const tombol = ubah ? `<div class="btn-group btn-group-sm">
+                        <button class="btn btn-hasil ${s.hasil === 'sesuai' ? 'btn-success' : 'btn-outline-success'}" onclick="aturHasil('${s.id}','sesuai')" title="Semua elemen sesuai sumber">✓</button>
+                        <button class="btn btn-hasil ${s.hasil === 'tidak_sesuai' ? 'btn-danger' : 'btn-outline-danger'}" onclick="aturHasil('${s.id}','tidak_sesuai')" title="Ada elemen yang berbeda">✗</button>
+                        ${s.hasil ? `<button class="btn btn-outline-secondary" onclick="aturHasil('${s.id}',null)" title="Kosongkan"><i class="fas fa-undo"></i></button>` : ''}
+                    </div>`
+                    : (s.hasil === 'sesuai' ? '<span class="badge bg-success">Sesuai</span>' : s.hasil === 'tidak_sesuai' ? '<span class="badge bg-danger">Tidak sesuai</span>' : '<span class="badge bg-secondary">Belum</span>');
+                let baris = `<tr class="${kelas}" id="baris_${s.id}"><td class="text-center fw-bold text-primary">${s.urutan}</td>${rs ? `<td class="fw-bold">${esc(s.unit_kerja)}</td>` : ''}<td class="text-muted">${esc(s.petugas_input || '-')}</td>${sel}<td class="text-center">${tombol}</td></tr>`;
+                if (s.hasil === 'tidak_sesuai') baris += `<tr class="baris-koreksi"><td colspan="${lebar}">${ubah ? formKoreksi(s, d) : ringkasKoreksi(s)}</td></tr>`;
+                return baris;
+            }).join('');
+            document.getElementById('tbodySampel').innerHTML = html || `<tr><td colspan="${lebar}" class="text-center text-muted py-3">Tidak ada sampel untuk saringan ini.</td></tr>`;
+        };
+
+        function formKoreksi(s, d) {
+            const isian = kolomSesi.filter(k => k.cek).map(k => {
+                const kunci = String(k.i);
+                const nilai = Object.prototype.hasOwnProperty.call(s.nilai_validator, kunci) ? teksNilai(s.nilai_validator[kunci]) : teksNilai(d[k.i]);
+                const opsi = k.opsi ? k.opsi.split(',').map(x => x.trim()).filter(Boolean) : [];
+                const idList = `dl_${s.id}_${k.i}`;
+                return `<div class="col-md-3 col-6">
+                    <label class="small fw-bold mb-0">${esc(k.judul)} <span class="fw-normal text-muted">(petugas: ${esc(teksNilai(d[k.i]) || '-')})</span></label>
+                    <input class="form-control form-control-sm" value="${esc(nilai)}" ${opsi.length ? `list="${idList}"` : ''} oninput="ubahKoreksi('${s.id}', ${k.i}, this.value)" placeholder="nilai yang benar">
+                    ${opsi.length ? `<datalist id="${idList}">${opsi.map(o => `<option value="${esc(o)}">`).join('')}</datalist>` : ''}
+                </div>`;
+            }).join('');
+            return `<div class="row g-2 align-items-end">
+                <div class="col-12 small text-danger fw-bold"><i class="fas fa-pen me-1"></i> Nilai menurut sumber asli (dicatat saja, data petugas tidak diubah):</div>
+                ${isian}
+                <div class="col-md-3 col-6"><label class="small fw-bold mb-0">Penyebab <span class="text-danger">*</span></label>
+                    <select class="form-select form-select-sm" onchange="ubahSampel('${s.id}','penyebab',this.value)">
+                        <option value="">-- pilih --</option>${PENYEBAB.map(p => `<option ${s.penyebab === p ? 'selected' : ''}>${esc(p)}</option>`).join('')}
+                    </select></div>
+                <div class="col-md-6 col-12"><label class="small fw-bold mb-0">Catatan</label>
+                    <input class="form-control form-control-sm" value="${esc(s.catatan || '')}" oninput="ubahSampel('${s.id}','catatan',this.value)" placeholder="mis. di RM tertulis jam 10.15"></div>
+            </div>`;
+        }
+
+        function ringkasKoreksi(s) {
+            const d = Array.isArray(s.data_petugas) ? s.data_petugas : [];
+            const beda = kolomSesi.filter(k => Object.prototype.hasOwnProperty.call(s.nilai_validator, String(k.i)) && teksNilai(s.nilai_validator[String(k.i)]) !== teksNilai(d[k.i]))
+                .map(k => `${esc(k.judul)}: <span class="nilai-salah">${esc(teksNilai(d[k.i]) || '-')}</span> → <b>${esc(teksNilai(s.nilai_validator[String(k.i)]) || '(kosong)')}</b>`);
+            return `<span class="small"><b>Penyebab:</b> ${esc(s.penyebab || '-')}${beda.length ? ' · ' + beda.join(' · ') : ''}${s.catatan ? ' · <i>' + esc(s.catatan) + '</i>' : ''}</span>`;
+        }
+
+        // ---------- Perubahan & simpan otomatis ----------
+        window.aturHasil = function(id, hasil) {
+            const s = sampel.find(x => x.id === id);
+            if (!s || !bisaUbah()) return;
+            s.hasil = hasil;
+            if (hasil !== 'tidak_sesuai') { s.nilai_validator = {}; s.penyebab = null; }
+            tandaiKotor(id);
+            renderSesi();
+        };
+        window.ubahKoreksi = function(id, kolom, nilai) {
+            const s = sampel.find(x => x.id === id);
+            if (!s) return;
+            s.nilai_validator = { ...s.nilai_validator, [String(kolom)]: nilai };
+            tandaiKotor(id);
+        };
+        window.ubahSampel = function(id, field, nilai) {
+            const s = sampel.find(x => x.id === id);
+            if (!s) return;
+            s[field] = nilai;
+            tandaiKotor(id);
+        };
+        function tandaiKotor(id) {
+            kotor.add(id);
+            document.getElementById('statusSimpan').innerHTML = '<i class="fas fa-circle text-warning me-1" style="font-size:.5rem"></i> Belum tersimpan...';
+            clearTimeout(timerSimpan);
+            timerSimpan = setTimeout(simpanPerubahan, 800);
+        }
+        async function simpanPerubahan() {
+            clearTimeout(timerSimpan);
+            if (!kotor.size || !sesi) return true;
+            const ids = [...kotor];
+            kotor.clear();
+            const rows = ids.map(id => sampel.find(s => s.id === id)).filter(Boolean).map(s => {
+                // Simpan hanya koreksi yang benar-benar berbeda dari isian petugas
+                const d = Array.isArray(s.data_petugas) ? s.data_petugas : [];
+                const nv = {};
+                Object.entries(s.nilai_validator || {}).forEach(([k, v]) => { if (teksNilai(v) !== teksNilai(d[k])) nv[k] = v; });
+                return { id: s.id, hasil: s.hasil || '', nilai_validator: nv, penyebab: s.penyebab || '', catatan: s.catatan || '' };
+            });
+            try {
+                const { error } = await supabaseClient.rpc('simpan_sampel_validasi', { p_sesi: sesi.id, p_rows: rows });
+                if (error) throw error;
+                document.getElementById('statusSimpan').innerHTML = `<i class="fas fa-check-circle text-success me-1"></i> Tersimpan ${new Date().toLocaleTimeString('id-ID')}`;
+                return true;
+            } catch (err) {
+                ids.forEach(id => kotor.add(id));
+                document.getElementById('statusSimpan').innerHTML = `<span class="text-danger"><i class="fas fa-exclamation-triangle me-1"></i> Gagal menyimpan: ${esc(err.message || err)}</span>`;
+                return false;
+            }
+        }
+        window.addEventListener('beforeunload', e => { if (kotor.size) { e.preventDefault(); e.returnValue = ''; } });
+
+        async function konfirmasiTinggalkan() {
+            if (!kotor.size) return true;
+            return await simpanPerubahan();
+        }
+
+        window.tutupSesi = async function() {
+            if (!(await konfirmasiTinggalkan())) return;
+            sesi = null; sampel = [];
+            document.getElementById('ruangSesi').classList.add('d-none');
+        };
+
+        window.batalkanSesi = async function() {
+            const r = await Swal.fire({
+                title: 'Batalkan Sesi?', icon: 'warning',
+                html: 'Sesi draft dan seluruh hasil pemeriksaan sampelnya akan dihapus. Pembatalan tercatat di Log Audit.',
+                showCancelButton: true, confirmButtonText: 'Ya, batalkan', cancelButtonText: 'Kembali', confirmButtonColor: '#dc3545'
+            });
+            if (!r.isConfirmed) return;
+            kotor.clear();
+            const { error } = await supabaseClient.from('validasi_sesi').delete().eq('id', sesi.id);
+            if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            sesi = null; sampel = [];
+            document.getElementById('ruangSesi').classList.add('d-none');
+            await muatRiwayat();
+        };
+
+        window.selesaikanSesi = async function() {
+            if (!(await simpanPerubahan())) return;
+            const r = hitungRingkas();
+            const belum = r.total - r.dicek;
+            if (belum > 0) {
+                document.getElementById('saringSampel').value = 'belum'; renderSampel();
+                Swal.fire('Belum Lengkap', `Masih ada <b>${belum}</b> sampel yang belum diperiksa.`, 'warning'); return;
+            }
+            const tanpaPenyebab = sampel.filter(s => s.hasil === 'tidak_sesuai' && !s.penyebab).length;
+            if (tanpaPenyebab) {
+                document.getElementById('saringSampel').value = 'tidak_sesuai'; renderSampel();
+                Swal.fire('Penyebab Belum Diisi', `${tanpaPenyebab} sampel tidak sesuai belum diberi penyebab.`, 'warning'); return;
+            }
+            const valid = r.akurasi >= 90;
+            let analisis = null, rencana = null;
+            if (!valid) {
+                // Ringkasan penyebab sebagai bahan analisis
+                const hit = {}; sampel.filter(s => s.hasil === 'tidak_sesuai').forEach(s => { hit[s.penyebab] = (hit[s.penyebab] || 0) + 1; });
+                const daftar = Object.entries(hit).sort((a, b) => b[1] - a[1]).map(([p, n]) => `<li>${esc(p)}: <b>${n}</b></li>`).join('');
+                const hasil = await Swal.fire({
+                    title: `Akurasi ${angka(r.akurasi)}% — TIDAK VALID`, icon: 'error', width: 640,
+                    html: `<div class="text-start small">Penyebab ketidaksesuaian:<ul>${daftar}</ul>
+                        <label class="fw-bold">Analisis penyebab <span class="text-danger">*</span></label>
+                        <textarea id="sw_analisis" class="form-control mb-2" rows="3" placeholder="Mengapa data petugas berbeda dengan sumber?"></textarea>
+                        <label class="fw-bold">Rencana perbaikan <span class="text-danger">*</span></label>
+                        <textarea id="sw_rencana" class="form-control" rows="3" placeholder="Tindakan, penanggung jawab, target waktu. Setelah itu lakukan validasi ulang dengan sampel baru."></textarea></div>`,
+                    showCancelButton: true, confirmButtonText: 'Simpan hasil', cancelButtonText: 'Kembali',
+                    preConfirm: () => {
+                        const a = document.getElementById('sw_analisis').value.trim(), p = document.getElementById('sw_rencana').value.trim();
+                        if (!a || !p) { Swal.showValidationMessage('Analisis penyebab dan rencana perbaikan wajib diisi'); return false; }
+                        return { a, p };
+                    }
+                });
+                if (!hasil.isConfirmed) return;
+                analisis = hasil.value.a; rencana = hasil.value.p;
+            } else {
+                const k = await Swal.fire({ title: `Akurasi ${angka(r.akurasi)}% — VALID`, icon: 'success',
+                    html: `${r.sesuai} dari ${r.total} sampel sesuai dengan sumber. Simpan hasil validasi?<br><small class="text-muted">Setelah disimpan, sesi tidak dapat diubah lagi.</small>`,
+                    showCancelButton: true, confirmButtonText: 'Simpan hasil', cancelButtonText: 'Kembali' });
+                if (!k.isConfirmed) return;
+            }
+            try {
+                const { error } = await supabaseClient.rpc('selesaikan_sesi_validasi', { p_sesi: sesi.id, p_analisis: analisis, p_rencana: rencana });
+                if (error) throw error;
+                const unit = sesi.unit_kerja, tahun = sesi.tahun, bulan = sesi.bulan, judul = sesi.judul_indikator;
+                await muatRiwayat();
+                await bukaSesi(sesi.id);
+                if (valid && unit !== RS) await tawarkanKunci(unit, tahun, bulan, judul);
+                else if (!valid) Swal.fire({ title: 'Tersimpan', icon: 'info', html: 'Hasil TIDAK VALID tercatat. Setelah perbaikan dijalankan, lakukan <b>validasi ulang dengan sampel baru</b> (tombol di ruang sesi atau Riwayat).' });
+                else Swal.fire('Tersimpan', 'Hasil validasi tercatat.', 'success');
+            } catch (err) {
+                console.error(err);
+                Swal.fire('Gagal Menyimpan', esc(err.message || err), 'error');
+            }
+        };
+
+        window.validasiUlang = async function(idSesi) {
+            const lama = riwayatSesi.find(x => x.id === idSesi) || (sesi && sesi.id === idSesi ? sesi : null);
+            if (!lama) return;
+            const r = await Swal.fire({ title: 'Validasi Ulang?', icon: 'question',
+                html: `Sampel baru diacak untuk <b>${esc(lama.judul_indikator)}</b> — ${esc(lama.unit_kerja)}, ${NAMA_BULAN[lama.bulan - 1]} ${lama.tahun}. Data yang sudah pernah menjadi sampel diutamakan tidak terpilih lagi.<br><small class="text-muted">Pastikan perbaikan data sudah dilakukan oleh unit.</small>`,
+                showCancelButton: true, confirmButtonText: 'Mulai', cancelButtonText: 'Batal' });
+            if (!r.isConfirmed) return;
+            try {
+                const { data, error } = await supabaseClient.rpc('buat_sesi_validasi', {
+                    p_id_indikator: lama.id_indikator, p_unit: lama.unit_kerja, p_tahun: lama.tahun, p_bulan: lama.bulan,
+                    p_margin: Number(lama.margin_error), p_kolom: lama.kolom_cek, p_ulang_dari: lama.id
+                });
+                if (error) throw error;
+                await muatRiwayat();
+                await bukaSesi(data.id);
+            } catch (err) {
+                Swal.fire('Gagal', esc(err.message || err), 'error');
+            }
+        };
+
+        // Setelah VALID: tawarkan mengunci data unit bulan itu
+        async function tawarkanKunci(unit, tahun, bulan, judul) {
+            const namaBulan = NAMA_BULAN[bulan - 1];
+            let sudahKunci = false;
+            try {
+                const { data } = await supabaseClient.from('kunci_periode_mutu').select('id, unit_kerja').eq('tahun', tahun).eq('bulan', bulan);
+                sudahKunci = (data || []).some(k => !k.unit_kerja || k.unit_kerja === unit);
+            } catch (e) { sudahKunci = true; }
+
+            const unitObj = unitDataCache.find(u => u.nama_unit === unit);
+            const forms = (unitObj && unitObj.daftar_form ? unitObj.daftar_form.split(',') : []).map(s => s.trim()).filter(Boolean);
+            const wajib = formMasterCache.filter(i => forms.includes(i.id_form));
+            const sudah = new Set(riwayatSesi.filter(s => s.unit_kerja === unit && s.bulan === bulan && s.status_validasi === 'VALID').map(s => s.id_indikator));
+            const tervalidasi = wajib.filter(i => sudah.has(i.id_indikator)).length;
+            const kemajuan = wajib.length ? `<div class="small text-muted mt-2">Indikator ${esc(unit)} yang sudah VALID untuk ${namaBulan}: <b>${tervalidasi} dari ${wajib.length}</b>.</div>` : '';
+
+            if (sudahKunci) { Swal.fire({ title: 'Tersimpan — VALID', html: `Hasil validasi tercatat.${kemajuan}`, icon: 'success' }); return; }
+            const r = await Swal.fire({
+                title: 'VALID! Kunci data periode ini?',
+                html: `Agar data <b>${esc(unit)}</b> bulan <b>${namaBulan} ${tahun}</b> tidak berubah lagi setelah divalidasi, kunci periodenya sekarang.${kemajuan}
+                       <div class="small text-muted mt-2">Kunci bisa dibuka lagi oleh admin di halaman Kepatuhan Pelaporan.</div>`,
+                icon: 'success', showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-lock me-1"></i> Kunci sekarang', cancelButtonText: 'Nanti saja', confirmButtonColor: '#ffc107'
+            });
+            if (!r.isConfirmed) return;
+            const { error } = await supabaseClient.from('kunci_periode_mutu').insert([{ tahun, bulan, unit_kerja: unit, catatan: `Dikunci setelah validasi ${judul}`.slice(0, 300) }]);
+            if (error) Swal.fire('Gagal Mengunci', esc(error.message), 'error');
+            else Swal.fire({ title: 'Terkunci', text: `Data ${unit} ${namaBulan} ${tahun} sudah dikunci.`, icon: 'success', timer: 1800, showConfirmButton: false });
+        }
+
+        // ================= CETAK =================
+        function kepalaCetak(judul) {
+            return kopLaporanHTML(window.__institusi, judul, 'Komite Mutu dan Keselamatan Pasien') + `
+                <table style="margin-bottom:8px"><tr><td style="width:18%"><b>Indikator</b></td><td>${esc(sesi.judul_indikator)}</td><td style="width:15%"><b>Periode</b></td><td>${NAMA_BULAN[sesi.bulan - 1]} ${sesi.tahun}</td></tr>
+                <tr><td><b>Unit</b></td><td>${esc(sesi.unit_kerja)}</td><td><b>Validator</b></td><td>${esc(sesi.validator_nama || '')}</td></tr>
+                <tr><td><b>Populasi (N)</b></td><td>${angka(sesi.populasi)}</td><td><b>Sampel (n)</b></td><td>${angka(sesi.jumlah_sampel)} (Slovin, e = ${Math.round(sesi.margin_error * 100)}%)</td></tr></table>`;
+        }
+        function jalankanCetak(html) {
+            document.getElementById('cetakArea').innerHTML = html;
+            window.print();
+        }
+        window.cetakLembarKerja = function() {
+            const rs = sesi.unit_kerja === RS;
+            const cek = kolomSesi.filter(k => k.cek);
+            const lain = kolomSesi.filter(k => !k.cek).slice(0, 4);   // kolom pengenal (mis. tanggal, No RM)
+            let html = kepalaCetak('LEMBAR KERJA VALIDASI DATA') + `<p style="margin:4px 0">Tulis nilai menurut sumber asli pada kolom "Sumber"; beri tanda ✓ bila sama dengan isian petugas.</p>
+                <table><thead><tr><th>#</th>${rs ? '<th>Unit</th>' : ''}${lain.map(k => `<th>${esc(k.judul)}</th>`).join('')}${cek.map(k => `<th>${esc(k.judul)} (petugas)</th><th>Sumber</th>`).join('')}<th>✓/✗</th></tr></thead><tbody>`;
+            sampel.forEach(s => {
+                const d = Array.isArray(s.data_petugas) ? s.data_petugas : [];
+                html += `<tr><td>${s.urutan}</td>${rs ? `<td>${esc(s.unit_kerja)}</td>` : ''}${lain.map(k => `<td>${esc(teksNilai(d[k.i]))}</td>`).join('')}${cek.map(k => `<td>${esc(teksNilai(d[k.i]))}</td><td style="width:70px"></td>`).join('')}<td style="width:35px"></td></tr>`;
+            });
+            html += `</tbody></table><div class="ttd"><div>Validator<br><br><br><br>( ${esc(sesi.validator_nama || '..................')} )</div></div>`;
+            jalankanCetak(html);
+        };
+        window.cetakBeritaAcara = function() {
+            const tidak = sampel.filter(s => s.hasil === 'tidak_sesuai');
+            const hit = {}; tidak.forEach(s => { hit[s.penyebab || '-'] = (hit[s.penyebab || '-'] || 0) + 1; });
+            let html = kepalaCetak('BERITA ACARA VALIDASI DATA INDIKATOR MUTU') + `
+                <table style="margin-bottom:8px"><tr><td style="width:30%"><b>Sampel sesuai / tidak sesuai</b></td><td>${sesi.jumlah_sesuai} / ${sesi.jumlah_sampel - sesi.jumlah_sesuai}</td></tr>
+                <tr><td><b>Akurasi</b></td><td><b>${angka(sesi.akurasi)}%</b> (sesuai ÷ sampel × 100%; valid bila ≥ 90%)</td></tr>
+                <tr><td><b>Kesimpulan</b></td><td><b>${esc(sesi.status_validasi)}</b></td></tr>
+                <tr><td><b>Capaian populasi</b></td><td>${angka(sesi.capaian_populasi)} ${esc(sesi.satuan || '')}</td></tr>
+                <tr><td><b>Capaian sampel (petugas → validator)</b></td><td>${angka(sesi.capaian_sampel_petugas)} → ${angka(sesi.capaian_sampel_validator)}</td></tr>
+                <tr><td><b>Tanggal selesai</b></td><td>${sesi.selesai_pada ? new Date(sesi.selesai_pada).toLocaleString('id-ID') : '-'}</td></tr></table>`;
+            if (tidak.length) {
+                html += `<p style="margin:6px 0 2px"><b>Ringkasan penyebab:</b> ${Object.entries(hit).map(([p, n]) => `${esc(p)} (${n})`).join('; ')}</p>
+                    <table><thead><tr><th>#</th>${sesi.unit_kerja === RS ? '<th>Unit</th>' : ''}<th>Petugas</th><th>Elemen berbeda (petugas → sumber)</th><th>Penyebab</th><th>Catatan</th></tr></thead><tbody>`;
+                tidak.forEach(s => {
+                    const d = Array.isArray(s.data_petugas) ? s.data_petugas : [];
+                    const beda = kolomSesi.filter(k => Object.prototype.hasOwnProperty.call(s.nilai_validator, String(k.i)))
+                        .map(k => `${esc(k.judul)}: ${esc(teksNilai(d[k.i]) || '-')} → ${esc(teksNilai(s.nilai_validator[String(k.i)]) || '(kosong)')}`).join('<br>');
+                    html += `<tr><td>${s.urutan}</td>${sesi.unit_kerja === RS ? `<td>${esc(s.unit_kerja)}</td>` : ''}<td>${esc(s.petugas_input || '')}</td><td>${beda || '-'}</td><td>${esc(s.penyebab || '')}</td><td>${esc(s.catatan || '')}</td></tr>`;
+                });
+                html += '</tbody></table>';
+            }
+            if (sesi.status_validasi === 'TIDAK VALID') html += `<p style="margin-top:8px"><b>Analisis penyebab:</b> ${esc(sesi.analisis_penyebab || '')}</p><p><b>Rencana perbaikan:</b> ${esc(sesi.rencana_perbaikan || '')}</p><p><i>Validasi ulang dengan sampel baru dilakukan setelah perbaikan.</i></p>`;
+            html += `<div class="ttd"><div>Validator (Komite Mutu)<br><br><br><br>( ${esc(sesi.validator_nama || '..................')} )</div><div>Kepala / PIC ${esc(sesi.unit_kerja === RS ? 'Unit' : sesi.unit_kerja)}<br><br><br><br>( .................................. )</div></div>`;
+            jalankanCetak(html);
+        };
+
+        // ================= RIWAYAT =================
+        window.muatRiwayat = async function() {
+            const tahun = parseInt(document.getElementById('inp_tahun').value, 10);
+            document.getElementById('judulRiwayatTahun').textContent = tahun;
+            const wadah = document.getElementById('isiRiwayat');
+            wadah.innerHTML = '<div class="text-center text-muted py-3"><i class="fas fa-spinner fa-spin me-2"></i> Memuat riwayat...</div>';
+            try {
+                const [resSesi, resLama] = await Promise.all([
+                    ambilSemua(() => supabaseClient.from('validasi_sesi').select('*').eq('tahun', tahun).order('dibuat_pada').order('id')),
+                    ambilSemua(() => supabaseClient.from('data_validasi').select('*').eq('tahun', tahun).order('id_validasi'))
+                ]);
+                if (resSesi.error) throw resSesi.error;
+                riwayatSesi = resSesi.data || [];
+                riwayatLama = (resLama.data || []).filter(r => !r.id_sesi);
+                renderRiwayat();
+            } catch (err) {
+                wadah.innerHTML = `<div class="alert alert-danger small mb-0">Gagal memuat riwayat: ${esc(err.message || err)}</div>`;
+            }
+        };
+
+        window.renderRiwayat = function() {
+            const unit = document.getElementById('filterRiwayatUnit').value;
+            const admin = isAdminMutu(session.role);
+            const baris = [
+                ...riwayatSesi.map(s => ({ jenis: 'sesi', bulan: s.bulan, unit: s.unit_kerja, judul: s.judul_indikator, N: s.populasi, n: s.jumlah_sampel,
+                    akurasi: s.akurasi, status: s.status === 'draft' ? 'DRAFT' : s.status_validasi, validator: s.validator_nama, tanggal: s.selesai_pada || s.dibuat_pada, s })),
+                ...riwayatLama.map(r => ({ jenis: 'lama', bulan: bulanKeAngka(r.bulan), unit: r.unit_kerja, judul: r.judul_indikator || r.id_indikator, N: r.populasi_n_besar, n: r.sampel_n_kecil,
+                    akurasi: r.akurasi, status: r.status_validasi, validator: r.nama_validator, tanggal: r.tanggal_validasi, r }))
+            ].filter(b => !unit || b.unit === unit)
+             .sort((a, b) => (b.bulan || 0) - (a.bulan || 0) || String(b.tanggal || '').localeCompare(String(a.tanggal || '')));
+
+            const valid = baris.filter(b => b.status === 'VALID').length, tidak = baris.filter(b => b.status === 'TIDAK VALID').length, draft = baris.filter(b => b.status === 'DRAFT').length;
+            document.getElementById('ringkasRiwayat').innerHTML = baris.length ? `<span class="badge bg-success me-1">${valid} valid</span><span class="badge bg-danger me-1">${tidak} tidak valid</span>${draft ? `<span class="badge bg-warning text-dark">${draft} draft</span>` : ''}` : '';
+            const wadah = document.getElementById('isiRiwayat');
+            if (!baris.length) { wadah.innerHTML = '<div class="text-center text-muted py-3">Belum ada validasi yang tercatat untuk pilihan ini.</div>'; return; }
+
+            const badge = st => st === 'VALID' ? '<span class="badge bg-success">VALID</span>' : st === 'DRAFT' ? '<span class="badge bg-warning text-dark">DRAFT</span>' : `<span class="badge bg-danger">${esc(st || '-')}</span>`;
+            wadah.innerHTML = `<div class="table-responsive" style="max-height: 460px; overflow-y: auto;"><table class="table table-sm table-hover table-custom mb-0">
+                <thead style="position: sticky; top: 0;"><tr><th>Bulan</th><th>Unit</th><th>Indikator</th><th class="text-end">N</th><th class="text-end">n</th><th class="text-end">Akurasi</th><th>Status</th><th>Validator</th><th>Tanggal</th><th></th></tr></thead>
+                <tbody>${baris.map(b => {
+                    let aksi = '';
+                    if (b.jenis === 'sesi') {
+                        aksi = `<button class="btn btn-sm btn-outline-primary py-0" onclick="bukaSesi('${escJsAttr(b.s.id)}')">${b.status === 'DRAFT' ? 'Lanjutkan' : 'Buka'}</button>`;
+                        if (admin && b.status === 'TIDAK VALID' && !riwayatSesi.some(x => x.ulang_dari === b.s.id))
+                            aksi += ` <button class="btn btn-sm btn-danger py-0" onclick="validasiUlang('${escJsAttr(b.s.id)}')">Validasi ulang</button>`;
+                    } else aksi = '<span class="badge bg-light text-muted border" title="Dicatat dengan cara lama (capaian sampel ÷ capaian populasi)">cara lama</span>';
+                    return `<tr><td>${esc(b.bulan ? NAMA_BULAN[b.bulan - 1] : '-')}</td><td class="fw-bold">${esc(b.unit)}</td><td>${esc(b.judul)}${b.jenis === 'sesi' && b.s.ulang_dari ? ' <span class="badge bg-secondary">ulang</span>' : ''}</td>
+                        <td class="text-end">${angka(b.N)}</td><td class="text-end">${angka(b.n)}</td><td class="text-end fw-bold">${b.akurasi === null || b.akurasi === undefined ? '-' : angka(b.akurasi) + '%'}</td>
+                        <td>${badge(b.status)}</td><td>${esc(b.validator || '-')}</td><td class="text-muted">${b.tanggal ? esc(new Date(b.tanggal).toLocaleDateString('id-ID')) : '-'}</td><td class="text-nowrap">${aksi}</td></tr>`;
+                }).join('')}</tbody></table></div>`;
+        };
     </script>
 </body>
 </html>

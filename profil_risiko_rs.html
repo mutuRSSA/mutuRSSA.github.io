@@ -9,35 +9,18 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        .card-custom { box-shadow: 0 4px 6px rgba(0,0,0,.05); border-radius: 8px; border-top: 4px solid #ffc107; background: #fff;}
-        
-        #tabelProfil { min-width: 2200px; }
-        .table-responsive { overflow-x: auto; }
-        
-        .table-custom { font-size: 0.8rem; }
-        .table-custom th { background-color: #2c3e50; color: white; vertical-align: middle; text-align: center; border: 1px solid #455a64; padding: 10px 5px;}
-        .table-custom td { vertical-align: middle; border: 1px solid #dee2e6; }
-        
-        .input-profil { font-size: 0.8rem; border-radius: 4px; border: 1px solid #ccc; width: 100%; padding: 6px; box-sizing: border-box; }
-        .input-profil:focus { border-color: #6f42c1; outline: none; box-shadow: 0 0 0 0.2rem rgba(111,66,193,.25); }
-
-        .bg-ekstrem { background-color: #dc3545 !important; color: white; font-weight: bold; } 
-        .bg-tinggi { background-color: #fd7e14 !important; color: white; font-weight: bold; } 
-        .bg-sedang { background-color: #ffc107 !important; color: black; font-weight: bold; } 
-        .bg-rendah { background-color: #198754 !important; color: white; font-weight: bold; } 
-
-        .status-select { font-weight: bold; cursor: pointer; }
-        .status-belum { background-color: #f8d7da; color: #842029; }
-        .status-proses { background-color: #fff3cd; color: #664d03; }
-        .status-selesai { background-color: #d1e7dd; color: #0f5132; }
-        .status-batal { background-color: #e2e3e5; color: #41464b; }
-
+        .card-custom { box-shadow: 0 4px 6px rgba(0,0,0,.05); border-radius: 10px; background: #fff; border: none; }
+        .table-custom th { background-color: #2c3e50; color: white; vertical-align: middle; font-size: 0.8rem; white-space: nowrap; }
+        .table-custom td { vertical-align: middle; font-size: 0.84rem; }
+        tr.kategori td { background: #fff3cd !important; font-weight: 700; font-size: .8rem; letter-spacing: .3px; }
+        .merah { color: #dc3545; font-weight: 700; }
+        .progress { height: 7px; }
         @media print {
-            body { background-color: #fff !important; padding-top: 0 !important; }
+            body { background: #fff !important; padding-top: 0 !important; }
             #navbar-container, #sidebar-container, .d-print-none, .btn { display: none !important; }
-            .card-custom { border: none !important; box-shadow: none !important; padding: 0 !important; }
-            .input-profil, .status-select { border: none !important; background: transparent !important; resize: none; overflow: hidden; -webkit-appearance: none; appearance: none;}
-            @page { margin: 1cm; size: landscape; }
+            .card-custom { box-shadow: none !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            @page { size: landscape; margin: 1cm; }
         }
     </style>
 </head>
@@ -45,346 +28,233 @@
     <div id="navbar-container"></div>
     <div id="sidebar-container"></div>
 
-    <div class="container-fluid px-4">
-        <div class="bg-white p-4 mb-4 card-custom">
-            
-            <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3 d-print-none flex-wrap gap-2">
-                <div>
-                    <h4 class="mb-1 text-dark fw-bold"><i class="fas fa-crown text-warning me-2"></i> Profil Risiko RSUD Saras Adyatma</h4>
-                    <p class="text-muted mb-0">Pengelompokan, rencana penanganan, dan pemantauan risiko tingkat korporat.</p>
+    <div class="container-fluid px-4" style="max-width: 1500px;">
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+            <div>
+                <h4 class="fw-bold mb-1"><i class="fas fa-crown text-warning me-2"></i> Profil Risiko RS <span id="judulTahun"></span></h4>
+                <p class="text-muted small mb-0">Maksimal 20 risiko Tinggi dan Ekstrem lintas unit, dikelompokkan per kategori, ditetapkan dengan SK Direktur.</p>
+            </div>
+            <div class="d-flex gap-2 align-items-center d-print-none">
+                <select id="pilihTahun" class="form-select form-select-sm" style="width:110px" onchange="muat()"></select>
+                <a href="dasbor_risiko.html" class="btn btn-outline-secondary btn-sm fw-bold"><i class="fas fa-broadcast-tower me-1"></i> Supervisi Risiko</a>
+                <button class="btn btn-outline-dark btn-sm" onclick="window.print()"><i class="fas fa-print me-1"></i> Cetak</button>
+            </div>
+        </div>
+
+        <div id="infoMuat" class="text-center text-muted py-5"><i class="fas fa-spinner fa-spin me-2"></i> Memuat...</div>
+
+        <div id="isi" class="d-none">
+            <div class="card-custom p-3 mb-3" id="kartuSK"></div>
+
+            <div class="card-custom p-3 mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                    <h6 class="fw-bold mb-0"><i class="fas fa-list-ol text-danger me-2"></i> Daftar profil risiko <span id="jmlProfil" class="badge bg-dark"></span></h6>
+                    <small class="text-muted" id="ketProfil"></small>
                 </div>
-                <div class="d-flex gap-2 flex-wrap">
-                    <a href="risk_register.html" class="btn btn-outline-secondary fw-bold shadow-sm">
-                        <i class="fas fa-arrow-left me-1"></i> Kembali ke Risk Register
-                    </a>
-                    <button class="btn btn-danger fw-bold shadow-sm" onclick="window.print()"><i class="fas fa-file-pdf me-1"></i> Cetak PDF</button>
-                    <button class="btn btn-success fw-bold shadow-sm ms-2" id="btnSimpanPemantauan" onclick="simpanProfilRS()">
-                        <i class="fas fa-save me-1"></i> Update & Simpan Tabel
-                    </button>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered table-hover table-custom mb-0">
+                        <thead><tr><th class="text-center">#</th><th>Unit</th><th style="min-width:260px">Risiko</th><th class="text-center">Tingkat (awal → kini)</th><th style="min-width:180px">Penanganan</th><th>Review terakhir</th><th class="text-center">FMEA</th><th class="text-center d-print-none">Aksi</th></tr></thead>
+                        <tbody id="tbodyProfil"></tbody>
+                    </table>
                 </div>
             </div>
 
-            <div class="row bg-light p-3 rounded border align-items-center mb-4 d-print-none" id="filterContainer">
-                <div class="col-md-3">
-                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;"><i class="fas fa-calendar-alt me-1"></i> Filter Tahun:</label>
-                    <select id="filterTahun" class="form-select border-info fw-bold text-dark" onchange="renderTabelProfil()">
-                        <option value="SEMUA">-- Semua Tahun --</option>
-                    </select>
-                </div>
-                <div class="col-md-4 mt-3 mt-md-0">
-                    <label class="form-label mb-1 fw-bold text-secondary" style="font-size: 0.85rem;"><i class="fas fa-sort-amount-down me-1"></i> Urutkan Berdasarkan:</label>
-                    <select id="sortData" class="form-select border-info fw-bold text-dark" onchange="renderTabelProfil()">
-                        <option value="skor_desc">Skor Akhir Tertinggi (Prioritas RCA/FMEA)</option>
-                        <option value="kategori_skor">Kategori (A-Z) & Skor Tertinggi</option>
-                        <option value="pemilik_asc" class="fw-bold">Pemilik Risiko (Unit A-Z)</option> 
-                        <option value="skor_asc">Skor Akhir Terendah</option>
-                        <option value="status_asc" class="text-primary fw-bold">Status Penanganan (Belum -> Selesai)</option>
-                    </select>
-                </div>
-                <div class="col-md-5 text-md-end mt-3 mt-md-0">
-                    <small class="text-muted"><i class="fas fa-info-circle me-1"></i> Tabel bisa digeser (scroll) ke kanan untuk mengisi hasil pemantauan.</small>
+            <div class="card-custom p-3 mb-3 d-print-none" id="kartuKandidat">
+                <h6 class="fw-bold mb-1"><i class="fas fa-plus-circle text-success me-2"></i> Kandidat (risiko Tinggi dan Ekstrem yang Aktif, belum masuk profil)</h6>
+                <p class="small text-muted mb-2">Gabungkan risiko yang serupa dari beberapa unit dengan memilih satu yang paling mewakili; unit lain tetap memantau risikonya di Risk Register.</p>
+                <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
+                    <table class="table table-sm table-hover table-custom mb-0">
+                        <thead style="position:sticky;top:0"><tr><th>Kategori</th><th>Unit</th><th>Risiko</th><th class="text-center">Tingkat</th><th>Tindakan</th><th class="text-center"></th></tr></thead>
+                        <tbody id="tbodyKandidat"></tbody>
+                    </table>
                 </div>
             </div>
-
-            <div class="d-none d-print-block text-center mb-4 pb-2 border-bottom border-dark border-3" id="printHeader">
-                <h3 class="fw-bold mb-1">PROFIL RISIKO (RISK REGISTER) KORPORAT</h3>
-                <h4 class="text-uppercase mb-1">RUMAH SAKIT UMUM DAERAH (RSUD) SARAS ADYATMA</h4>
-                <h5 class="mb-0">TAHUN <span id="printYearTitle"></span></h5>
-            </div>
-
-            <div id="loadingMessage" class="alert alert-info text-center shadow-sm fw-bold d-print-none">
-                <i class="fas fa-spinner fa-spin me-2"></i> Sinkronisasi database pemantauan dari Supabase...
-            </div>
-
-            <div class="table-responsive" id="tabelContainer" style="display: none;">
-                <table class="table table-bordered table-hover table-custom mb-0" id="tabelProfil">
-                    <thead>
-                        <tr>
-                            <th rowspan="2" style="min-width: 40px;">No</th>
-                            <th rowspan="2" style="min-width: 200px;">Kategori Risiko</th>
-                            <th rowspan="2" style="min-width: 200px;">Risiko Teridentifikasi</th>
-                            <th rowspan="2" style="min-width: 200px;">Dampak Yang Ditimbulkan</th>
-                            <th rowspan="2" style="min-width: 40px;">F</th>
-                            <th rowspan="2" style="min-width: 40px;">D</th>
-                            <th rowspan="2" style="min-width: 60px;">Skor<br>(DxF)</th>
-                            <th rowspan="2" style="min-width: 150px;">Pemilik (Unit)</th>
-                            <th colspan="3" class="bg-success text-white">Evaluasi Komite Mutu & Penanganan Lanjutan</th>
-                            <th colspan="5" class="bg-primary text-white">Pemantauan Terhadap Rencana</th>
-                        </tr>
-                        <tr>
-                            <th style="min-width: 200px;">Rencana Penanganan Lanjutan</th>
-                            <th style="min-width: 70px;">Kontrol Baru</th>
-                            <th style="min-width: 60px;">Skor Akhir<br>(Sisa)</th>
-                            <th style="min-width: 130px;">Periode Program</th>
-                            <th style="min-width: 130px;">PIC Penanganan</th>
-                            <th style="min-width: 160px;">Realisasi Pelaksanaan</th>
-                            <th style="min-width: 160px;">Hasil Pemantauan / Tindak Lanjut</th>
-                            <th style="min-width: 160px;">Status Penanganan</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabelProfilBody">
-                    </tbody>
-                </table>
-            </div>
-            
         </div>
     </div>
 
-    <!-- LIBRARY -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="risiko_skala.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        // Akses halaman diatur oleh RBAC (auth.js + role_permissions); akses data oleh RLS.
+        const admin = isAdminMutu(sessionMutu.role);
+        const MAKS = 20;
+        let tahun, profil = [], sk = null, risiko = new Map(), tindakan = new Map(), review = new Map(), fmea = new Map();
 
-        let databaseRisikoUtuh = [];
+        const tgl = s => s ? new Date(s + (String(s).length === 10 ? 'T00:00:00' : '')).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+        const st = r => r && r.status === 'terkirim' ? 'aktif' : (r ? r.status : null);
+        const terlambat = t => t.tenggat && t.tenggat < risikoHariIni() && !['selesai', 'batal'].includes(t.status);
+        const urutKat = k => { const i = RISIKO_KATEGORI.indexOf(k); return i < 0 ? 99 : i; };
 
-        const kategoriOptions = [
-            "A. RISIKO KLINIS", "B. RISIKO KESELAMATAN PASIEN", "C. RISIKO FASILITAS DAN PERALATAN MEDIS",
-            "D. RISIKO KEAMANAN", "E. RISIKO KESEHATAN KERJA STAF (K3RS)", "F. RISIKO INFEKSI",
-            "G. RISIKO KEUANGAN", "H. RISIKO HUKUM", "I. RISIKO REPUTASI",
-            "J. RISIKO TEKNOLOGI INFORMASI", "K. RISIKO BENCANA", "L. LAINNYA (BELUM DIKATEGORIKAN)"
-        ];
+        (function() {
+            const kini = new Date().getFullYear(), sel = document.getElementById('pilihTahun');
+            for (let t = kini + 1; t >= kini - 2; t--) sel.add(new Option(t, t));
+            sel.value = kini;
+        })();
+        document.addEventListener('DOMContentLoaded', () => muat());
 
-        document.addEventListener("DOMContentLoaded", async function () {
+        window.muat = async function() {
             if (!supabaseClient) return;
-
+            tahun = parseInt(document.getElementById('pilihTahun').value, 10);
+            document.getElementById('judulTahun').textContent = tahun;
             try {
-                // PERUBAHAN: Tarik data yang terkirim DAN is_profil_rs = true
-                const { data, error } = await ambilSemua(() => supabaseClient.from('data_risiko')
-                    .select('*')
-                    .eq('status', 'terkirim')
-                    .eq('is_profil_rs', true) // <-- INI KUNCI UTAMANYA!
-                    .order('skor_akhir', { ascending: false })
-                    .order('id_risiko'));
-                
-                if (error) throw error;
-                
-                databaseRisikoUtuh = data || [];
-
-                document.getElementById('loadingMessage').style.display = 'none';
-
-                if (databaseRisikoUtuh.length === 0) {
-                    document.getElementById('tabelContainer').innerHTML = '<div class="alert alert-warning text-center fw-bold">Belum ada risiko yang dilaporkan oleh unit. (Tabel Supabase kosong)</div>';
-                    document.getElementById('tabelContainer').style.display = 'block';
-                    return;
-                }
-
-                populateDropdownTahun();
-                document.getElementById('tabelContainer').style.display = 'block';
-                renderTabelProfil();
-
-            } catch(err) {
-                console.error(err);
-                document.getElementById('loadingMessage').classList.replace('alert-info', 'alert-danger');
-                document.getElementById('loadingMessage').innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i> Gagal menyambungkan ke Supabase Database.';
-            }
-        });
-
-        function populateDropdownTahun() {
-            const tahunSelect = document.getElementById('filterTahun');
-            let currentYear = new Date().getFullYear();
-            
-            let uniqueYears = [...new Set(databaseRisikoUtuh.map(item => item.tahun))].filter(Boolean).sort().reverse();
-            if (!uniqueYears.includes(currentYear)) uniqueYears.unshift(currentYear);
-
-            tahunSelect.innerHTML = '<option value="SEMUA">-- Semua Tahun --</option>';
-            uniqueYears.forEach(y => { tahunSelect.add(new Option(y, y)); });
-            tahunSelect.value = currentYear.toString();
-        }
-
-        function penentuWarnaSkor(skor) {
-            if (skor >= 15) return 'bg-ekstrem';  
-            if (skor >= 10) return 'bg-tinggi';   
-            if (skor >= 4) return 'bg-sedang';
-            return 'bg-rendah';                  
-        }
-
-        window.kalkulasiSkorAkhir = function(id, skorDxF) {
-            let kontrolVal = document.getElementById(`kontrol_${id}`).value;
-            let akhir = skorDxF * parseInt(kontrolVal || 0);
-            
-            let elemenSkorAkhir = document.getElementById(`skor_akhir_${id}`);
-            elemenSkorAkhir.innerText = akhir;
-            elemenSkorAkhir.className = "text-center fw-bold fs-6 " + penentuWarnaSkor(akhir);
-            
-            // Tampilkan tombol FMEA jika Residual Merah
-            let tombolFmea = document.getElementById(`btn_fmea_${id}`);
-            if (tombolFmea) {
-                if (akhir >= 15) tombolFmea.classList.remove('d-none');
-                else tombolFmea.classList.add('d-none');
-            }
-        }
-
-        window.updateWarnaStatus = function(selectElement) {
-            selectElement.className = "form-select input-profil status-select mb-2"; 
-            let val = selectElement.value;
-            if(val === "Belum Ditangani") selectElement.classList.add("status-belum");
-            else if(val === "On Proses") selectElement.classList.add("status-proses");
-            else if(val === "Selesai Ditangani") selectElement.classList.add("status-selesai");
-            else if(val === "Dibatalkan") selectElement.classList.add("status-batal");
-        }
-
-        function renderTabelProfil() {
-            const selectedTahun = document.getElementById('filterTahun').value;
-            const sortBy = document.getElementById('sortData').value;
-            const tbody = document.getElementById('tabelProfilBody');
-            tbody.innerHTML = '';
-
-            let dataTampil = [...databaseRisikoUtuh]; 
-
-            if (selectedTahun !== 'SEMUA') {
-                dataTampil = dataTampil.filter(item => item.tahun.toString() === selectedTahun);
-            }
-
-            const weightStatus = { "Belum Ditangani": 1, "On Proses": 2, "Selesai Ditangani": 3, "Dibatalkan": 4 };
-
-            // LOGIKA PENGURUTAN MENGGUNAKAN ATRIBUT (REAL-TIME DOM VALUE) AGAR TIDAK HILANG SAAT KETIK LALU SORT
-            dataTampil.sort((a, b) => {
-                let catA = a.kategori_risiko || "L. LAINNYA"; let catB = b.kategori_risiko || "L. LAINNYA";
-                let statA = a.status_penanganan || "Belum Ditangani"; let statB = b.status_penanganan || "Belum Ditangani";
-                let skorA = parseInt(a.skor_akhir || 0); let skorB = parseInt(b.skor_akhir || 0);
-                let unitA = a.unit_kerja || "Z"; let unitB = b.unit_kerja || "Z";
-
-                if (sortBy === 'kategori_skor') {
-                    if (catA < catB) return -1;
-                    if (catA > catB) return 1;
-                    return skorB - skorA; 
-                } 
-                else if (sortBy === 'pemilik_asc') {
-                    if (unitA < unitB) return -1;
-                    if (unitA > unitB) return 1;
-                    return skorB - skorA;
-                }
-                else if (sortBy === 'skor_desc') return skorB - skorA; 
-                else if (sortBy === 'skor_asc') return skorA - skorB; 
-                else if (sortBy === 'status_asc') {
-                    let wA = weightStatus[statA] || 0; let wB = weightStatus[statB] || 0;
-                    if (wA !== wB) return wA - wB;
-                    return skorB - skorA; 
-                }
-            });
-
-            document.getElementById('printYearTitle').innerText = selectedTahun === 'SEMUA' ? 'SEMUA TAHUN' : selectedTahun;
-
-            if (dataTampil.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="16" class="text-center text-muted py-4">Tidak ada data Profil RS pada tahun yang dipilih.</td></tr>';
-                return;
-            }
-
-            dataTampil.forEach((row, index) => {
-                let id = row.id_risiko;
-                let f = row.frekuensi || '-';
-                let d = row.dampak || '-';
-                let skorDxF = parseInt(row.skor_risiko || 0);
-                let warnaDxF = penentuWarnaSkor(skorDxF);
-                
-                let prevKat = row.kategori_risiko || "L. LAINNYA (BELUM DIKATEGORIKAN)";
-                let prevRencana = row.rencana_penanganan || '';
-                let prevKontrol = row.kontrol || 1; // Default
-                let skorAkhirAwal = skorDxF * parseInt(prevKontrol);
-                let warnaAkhir = penentuWarnaSkor(skorAkhirAwal);
-
-                let prevStatus = row.status_penanganan || 'Belum Ditangani';
-
-                let opsiKategori = kategoriOptions.map(opt => `<option value="${opt}" ${prevKat === opt ? 'selected' : ''}>${opt}</option>`).join('');
-                let opsiKontrol = [1,2,3,4].map(num => `<option value="${num}" ${parseInt(prevKontrol) === num ? 'selected' : ''}>${num}</option>`).join('');
-
-                // Tombol Eskalasi FMEA muncul khusus untuk yang Skor Residual nya Merah (>= 15)
-                let dNoneClass = skorAkhirAwal >= 15 ? '' : 'd-none';
-                let tombolFmeaHtml = `
-                    <a href="fmea_builder.html?eskalasi_id=${id}&deskripsi_risiko=${encodeURIComponent(row.risiko_teridentifikasi)}" 
-                       class="btn btn-sm btn-danger w-100 fw-bold shadow-sm d-print-none mt-1 ${dNoneClass}" 
-                       id="btn_fmea_${id}" title="Risiko Ekstrem: Buat Proyek Analisis FMEA">
-                        <i class="fas fa-project-diagram me-1"></i> Tim FMEA
-                    </a>
-                `;
-
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="text-center fw-bold">${index + 1}</td>
-                        <td><select class="form-select input-profil fw-bold text-primary" id="kat_${id}">${opsiKategori}</select></td>
-                        <td class="fw-bold text-dark">${esc(row.risiko_teridentifikasi)}</td>
-                        <td><small class="text-muted">${esc(row.dampak_timbul || '-')}</small></td>
-                        <td class="text-center">${f}</td>
-                        <td class="text-center">${d}</td>
-                        <td class="text-center fw-bold fs-6 ${warnaDxF}">${skorDxF}</td>
-                        <td class="text-center fw-bold text-secondary"><small>${esc(row.unit_kerja)}</small></td>
-                        
-                        <td><textarea class="input-profil border-success" id="rencana_${id}" rows="3">${esc(prevRencana)}</textarea></td>
-                        <td><select class="form-select input-profil text-center border-success" id="kontrol_${id}" onchange="kalkulasiSkorAkhir('${id}', ${skorDxF})">${opsiKontrol}</select></td>
-                        <td id="skor_akhir_${id}" class="text-center fw-bold fs-6 ${warnaAkhir}">${skorAkhirAwal}</td>
-                        
-                        <td><input type="date" class="input-profil border-primary fw-bold" id="periode_${id}" value="${esc(row.periode_program || '')}"></td>
-                        <td><textarea class="input-profil" id="pic_${id}" rows="3">${esc(row.pic_penanganan || '')}</textarea></td>
-                        <td><textarea class="input-profil" id="realisasi_${id}" rows="3">${esc(row.realisasi || '')}</textarea></td>
-                        <td><textarea class="input-profil" id="hasil_${id}" rows="3">${esc(row.hasil_pemantauan || '')}</textarea></td>
-                        <td>
-                            <select class="form-select input-profil status-select mb-2" id="status_${id}" onchange="updateWarnaStatus(this)">
-                                <option value="Belum Ditangani" ${prevStatus === 'Belum Ditangani' ? 'selected' : ''}>Belum Ditangani</option>
-                                <option value="On Proses" ${prevStatus === 'On Proses' ? 'selected' : ''}>On Proses</option>
-                                <option value="Selesai Ditangani" ${prevStatus === 'Selesai Ditangani' ? 'selected' : ''}>Selesai Ditangani</option>
-                                <option value="Dibatalkan" ${prevStatus === 'Dibatalkan' ? 'selected' : ''}>Dibatalkan</option>
-                            </select>
-                            ${tombolFmeaHtml}
-                        </td>
-                    </tr>
-                `;
-            });
-
-            document.querySelectorAll('.status-select').forEach(select => updateWarnaStatus(select));
-        }
-
-        window.simpanProfilRS = async function() {
-            const btnSubmit = document.getElementById('btnSimpanPemantauan');
-            btnSubmit.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan Pemantauan...';
-            btnSubmit.disabled = true;
-
-            // Kita harus mengambil DOM value secara live lalu update tabel Supabase
-            let bulkUpdates = databaseRisikoUtuh.map(row => {
-                let id = row.id_risiko;
-                // Jika elemen tampil di layar (sesuai filter), ambil dari DOM
-                let elKat = document.getElementById(`kat_${id}`);
-                if (elKat) {
-                    row.kategori_risiko = elKat.value;
-                    row.rencana_penanganan = document.getElementById(`rencana_${id}`).value;
-                    row.kontrol = parseInt(document.getElementById(`kontrol_${id}`).value);
-                    row.skor_akhir = parseInt(document.getElementById(`skor_akhir_${id}`).innerText);
-                    row.periode_program = document.getElementById(`periode_${id}`).value;
-                    row.pic_penanganan = document.getElementById(`pic_${id}`).value;
-                    row.realisasi = document.getElementById(`realisasi_${id}`).value;
-                    row.hasil_pemantauan = document.getElementById(`hasil_${id}`).value;
-                    row.status_penanganan = document.getElementById(`status_${id}`).value;
-                }
-                return row; 
-            });
-
-            try {
-                // Upsert seluruh array sekalian
-                const { error } = await supabaseClient.from('data_risiko').upsert(bulkUpdates, { onConflict: 'id_risiko' });
-                if (error) throw error;
-
-                Swal.fire({
-                    title: 'Tersimpan!',
-                    text: 'Pembaruan Pemantauan Risiko telah diamankan ke Server Supabase.',
-                    icon: 'success',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-
+                const [resP, resS, resR, resT, resV, resF] = await Promise.all([
+                    supabaseClient.from('profil_risiko_item').select('*').eq('tahun', tahun).order('dibuat_pada'),
+                    supabaseClient.from('profil_risiko_sk').select('*').eq('tahun', tahun),
+                    ambilSemua(() => supabaseClient.from('data_risiko').select('*').order('id_risiko')),
+                    ambilSemua(() => supabaseClient.from('risiko_tindakan').select('*').order('dibuat_pada').order('id')),
+                    ambilSemua(() => supabaseClient.from('risiko_review').select('*').order('tanggal').order('dibuat_pada')),
+                    ambilSemua(() => supabaseClient.from('data_fmea').select('id_proyek, nama_proses, id_risiko').order('id_proyek'))
+                ]);
+                for (const r of [resP, resS, resR, resT, resV]) if (r.error) throw r.error;
+                profil = resP.data || [];
+                sk = (resS.data || [])[0] || null;
+                risiko = new Map((resR.data || []).map(r => [r.id_risiko, r]));
+                const kelompok = (rows) => { const m = new Map(); (rows || []).forEach(x => { if (!m.has(x.id_risiko)) m.set(x.id_risiko, []); m.get(x.id_risiko).push(x); }); return m; };
+                tindakan = kelompok(resT.data); review = kelompok(resV.data);
+                fmea = kelompok((resF.data || []).filter(f => f.id_risiko));
+                document.getElementById('infoMuat').classList.add('d-none');
+                document.getElementById('isi').classList.remove('d-none');
+                render();
             } catch (err) {
                 console.error(err);
-                Swal.fire('Gagal!', 'Terjadi kesalahan saat menyinkronkan data dengan Supabase.', 'error');
-            } finally {
-                btnSubmit.innerHTML = '<i class="fas fa-save me-1"></i> Update & Simpan Tabel';
-                btnSubmit.disabled = false;
+                document.getElementById('infoMuat').innerHTML = `<div class="alert alert-danger">Gagal memuat: ${esc(err.message || err)}<br><small>Pastikan migrasi manajemen risiko sudah dijalankan.</small></div>`;
             }
         };
 
+        function render() {
+            renderSK();
+            renderProfil();
+            renderKandidat();
+        }
+
+        // ---------- SK ----------
+        function renderSK() {
+            const w = document.getElementById('kartuSK');
+            if (sk) {
+                w.innerHTML = `<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div><span class="badge bg-success me-2"><i class="fas fa-stamp me-1"></i> Ditetapkan</span>
+                        <b>SK Direktur No. ${esc(sk.nomor_sk)}</b> tanggal ${tgl(sk.tanggal_sk)}${sk.catatan ? ` <span class="text-muted">— ${esc(sk.catatan)}</span>` : ''}
+                        <div class="small text-muted">Diinput ${esc(sk.diinput_oleh || '')} ${tgl(sk.diinput_pada)}</div></div>
+                    ${admin ? `<div class="d-print-none"><button class="btn btn-sm btn-outline-primary" onclick="isiSK()"><i class="fas fa-pen me-1"></i> Ubah SK</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="hapusSK()"><i class="fas fa-times me-1"></i> Batalkan penetapan</button></div>` : ''}</div>`;
+            } else {
+                w.innerHTML = `<div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div><span class="badge bg-warning text-dark me-2">Usulan</span> Profil risiko ${tahun} belum ditetapkan. Setelah Direktur menandatangani SK, Komite menginput nomor dan tanggalnya di sini.</div>
+                    ${admin ? `<button class="btn btn-sm btn-success fw-bold d-print-none" onclick="isiSK()" ${profil.length ? '' : 'disabled title="Isi daftar profil terlebih dahulu"'}><i class="fas fa-stamp me-1"></i> Input SK Direktur</button>` : ''}</div>`;
+            }
+        }
+
+        window.isiSK = async function() {
+            const { value: v } = await Swal.fire({ title: `SK Profil Risiko ${tahun}`, showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal',
+                html: `<div class="text-start small"><label class="fw-bold">Nomor SK</label><input id="sw_nomor" class="form-control mb-2" value="${esc(sk ? sk.nomor_sk : '')}">
+                       <label class="fw-bold">Tanggal SK</label><input id="sw_tanggal" type="date" class="form-control mb-2" value="${esc(sk ? sk.tanggal_sk : '')}">
+                       <label class="fw-bold">Catatan Direktur (opsional)</label><textarea id="sw_catatan" class="form-control" rows="2">${esc(sk ? (sk.catatan || '') : '')}</textarea>
+                       <div class="text-muted mt-2">Semua risiko di daftar tahun ${tahun} berstatus <b>ditetapkan</b>.</div></div>`,
+                preConfirm: () => {
+                    const nomor = document.getElementById('sw_nomor').value.trim(), tanggal = document.getElementById('sw_tanggal').value;
+                    if (!nomor || !tanggal) { Swal.showValidationMessage('Nomor dan tanggal SK wajib diisi'); return false; }
+                    return { nomor_sk: nomor, tanggal_sk: tanggal, catatan: document.getElementById('sw_catatan').value.trim() || null };
+                } });
+            if (!v) return;
+            const payload = { tahun, ...v, diinput_oleh: sessionMutu.nama_lengkap || sessionMutu.username || 'Komite Mutu' };
+            const { error } = sk ? await supabaseClient.from('profil_risiko_sk').update(payload).eq('tahun', tahun)
+                                 : await supabaseClient.from('profil_risiko_sk').insert([payload]);
+            if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            await muat();
+        };
+        window.hapusSK = async function() {
+            const k = await Swal.fire({ title: 'Batalkan penetapan?', text: 'Data SK dihapus dan daftar kembali berstatus usulan.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Batalkan penetapan', cancelButtonText: 'Kembali', confirmButtonColor: '#dc3545' });
+            if (!k.isConfirmed) return;
+            const { error } = await supabaseClient.from('profil_risiko_sk').delete().eq('tahun', tahun);
+            if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            await muat();
+        };
+
+        // ---------- Daftar profil ----------
+        function renderProfil() {
+            document.getElementById('jmlProfil').textContent = `${profil.length}/${MAKS}`;
+            document.getElementById('ketProfil').textContent = profil.length >= MAKS ? 'Batas maksimal tercapai.' : `Sisa ${MAKS - profil.length} tempat.`;
+            const tbody = document.getElementById('tbodyProfil');
+            if (!profil.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Belum ada risiko di profil tahun ini. Pilih dari daftar kandidat di bawah.</td></tr>'; return; }
+            const baris = profil.map(p => ({ p, r: risiko.get(p.id_risiko) }))
+                .sort((a, b) => urutKat(a.p.kategori) - urutKat(b.p.kategori)
+                    || ((RISIKO_TINGKAT[b.r && b.r.tingkat_risiko] || {}).urut || 0) - ((RISIKO_TINGKAT[a.r && a.r.tingkat_risiko] || {}).urut || 0)
+                    || ((b.r && b.r.skor_risiko) || 0) - ((a.r && a.r.skor_risiko) || 0));
+            let html = '', kat = null, no = 0;
+            baris.forEach(({ p, r }) => {
+                const k = p.kategori || 'L. LAINNYA (BELUM DIKATEGORIKAN)';
+                if (k !== kat) { kat = k; html += `<tr class="kategori"><td colspan="8">${esc(k)}</td></tr>`; }
+                no++;
+                if (!r) { html += `<tr><td class="text-center">${no}</td><td colspan="7" class="text-muted">Risiko ${esc(p.id_risiko)} tidak ditemukan.</td></tr>`; return; }
+                const t = (tindakan.get(r.id_risiko) || []).filter(x => x.status !== 'batal');
+                const selesai = t.filter(x => x.status === 'selesai').length, telat = t.filter(terlambat);
+                const pct = t.length ? Math.round(selesai / t.length * 100) : 0;
+                const v = (review.get(r.id_risiko) || []).slice().sort((a, b) => String(b.tanggal).localeCompare(String(a.tanggal)));
+                const awal = v.length ? v[v.length - 1] : null;
+                const f = fmea.get(r.id_risiko) || [];
+                html += `<tr>
+                    <td class="text-center fw-bold">${no}</td>
+                    <td class="small fw-bold">${esc(r.unit_kerja)}</td>
+                    <td><div class="fw-semibold">${esc(r.risiko_teridentifikasi || '-')}</div><small class="text-muted">${r.penyebab ? 'Penyebab: ' + esc(r.penyebab) : ''}${r.pemilik_risiko ? ' · Pemilik: ' + esc(r.pemilik_risiko) : ''}</small>
+                        ${st(r) !== 'aktif' ? `<div>${risikoStatusBadge(st(r))}</div>` : ''}</td>
+                    <td class="text-center text-nowrap">${awal && (awal.dampak !== r.dampak || awal.probabilitas !== r.frekuensi) ? risikoBadge(awal.tingkat, awal.dampak * awal.probabilitas) + ' <i class="fas fa-arrow-right text-muted small"></i> ' : ''}${risikoBadge(r.tingkat_risiko, r.skor_risiko)}</td>
+                    <td class="small">${t.length ? `<div class="d-flex justify-content-between"><span>${selesai}/${t.length} tindakan selesai</span><span>${pct}%</span></div><div class="progress mb-1"><div class="progress-bar bg-success" style="width:${pct}%"></div></div>` : '<span class="merah">Belum ada rencana tindakan</span>'}
+                        ${telat.length ? `<div class="merah">${telat.length} lewat tenggat</div>` : ''}</td>
+                    <td class="small">${v.length ? `${tgl(v[0].tanggal)}<div class="text-muted">${esc((v[0].progres || '').slice(0, 80))}</div>` : '<span class="text-muted">Belum pernah</span>'}
+                        ${risikoJatuhTempo({ ...r, status: st(r) }) ? '<div class="merah">review jatuh tempo</div>' : ''}</td>
+                    <td class="text-center small">${f.length ? f.map(x => `<div><i class="fas fa-project-diagram text-primary"></i> ${esc(x.nama_proses || 'FMEA')}</div>`).join('')
+                        : (admin ? `<a class="btn btn-sm btn-outline-danger d-print-none" href="fmea_builder.html?eskalasi_id=${encodeURIComponent(r.id_risiko)}&deskripsi_risiko=${encodeURIComponent(r.risiko_teridentifikasi || '')}"><i class="fas fa-project-diagram"></i> Buat</a>` : '-')}</td>
+                    <td class="text-center d-print-none">${admin ? `<button class="btn btn-sm btn-outline-secondary" onclick="keluarkan('${escJsAttr(p.id)}')" title="Keluarkan dari profil"><i class="fas fa-minus-circle"></i></button>` : ''}</td>
+                </tr>`;
+            });
+            tbody.innerHTML = html;
+        }
+
+        window.keluarkan = async function(idItem) {
+            const k = await Swal.fire({ title: 'Keluarkan dari profil?', html: sk ? 'Profil tahun ini sudah <b>ditetapkan dengan SK</b>. Mengubah daftar sebaiknya sesuai revisi SK.' : 'Risiko tetap aktif di Risk Register unit.',
+                icon: 'warning', showCancelButton: true, confirmButtonText: 'Keluarkan', cancelButtonText: 'Batal' });
+            if (!k.isConfirmed) return;
+            const { error } = await supabaseClient.from('profil_risiko_item').delete().eq('id', idItem);
+            if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            await muat();
+        };
+
+        // ---------- Kandidat ----------
+        function renderKandidat() {
+            const kartu = document.getElementById('kartuKandidat');
+            if (!admin) { kartu.classList.add('d-none'); return; }
+            const sudah = new Set(profil.map(p => p.id_risiko));
+            const kand = [...risiko.values()].filter(r => st(r) === 'aktif' && ['Tinggi', 'Ekstrem'].includes(r.tingkat_risiko) && !sudah.has(r.id_risiko))
+                .sort((a, b) => urutKat(a.kategori_risiko) - urutKat(b.kategori_risiko) || (b.skor_risiko || 0) - (a.skor_risiko || 0));
+            const penuh = profil.length >= MAKS;
+            document.getElementById('tbodyKandidat').innerHTML = kand.length ? kand.map(r => {
+                const t = (tindakan.get(r.id_risiko) || []).filter(x => x.status !== 'batal');
+                return `<tr><td class="small">${esc(r.kategori_risiko || 'L. LAINNYA (BELUM DIKATEGORIKAN)')}</td><td class="small fw-bold">${esc(r.unit_kerja)}</td>
+                    <td>${esc(r.risiko_teridentifikasi || '-')}</td><td class="text-center">${risikoBadge(r.tingkat_risiko, r.skor_risiko)}</td>
+                    <td class="small">${t.length} tindakan</td>
+                    <td class="text-center"><button class="btn btn-sm btn-success" ${penuh ? 'disabled title="Profil sudah berisi 20 risiko"' : ''} onclick="masukkan('${escJsAttr(r.id_risiko)}')"><i class="fas fa-plus"></i> Masukkan</button></td></tr>`;
+            }).join('') : '<tr><td colspan="6" class="text-center text-muted py-3">Tidak ada kandidat. Hanya risiko Tinggi dan Ekstrem berstatus Aktif yang bisa masuk profil.</td></tr>';
+        }
+
+        window.masukkan = async function(id) {
+            const r = risiko.get(id);
+            if (r && !r.kategori_risiko) {
+                const { value } = await Swal.fire({ title: 'Kategori belum diisi', input: 'select', inputOptions: Object.fromEntries(RISIKO_KATEGORI.map(k => [k, k])),
+                    inputPlaceholder: '-- pilih kategori profil --', showCancelButton: true, confirmButtonText: 'Masukkan', cancelButtonText: 'Batal', inputValidator: v => !v && 'Pilih kategori' });
+                if (!value) return;
+                const { error } = await supabaseClient.from('profil_risiko_item').insert([{ tahun, id_risiko: id, kategori: value }]);
+                if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            } else {
+                const { error } = await supabaseClient.from('profil_risiko_item').insert([{ tahun, id_risiko: id }]);
+                if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            }
+            await muat();
+        };
     </script>
 </body>
 </html>

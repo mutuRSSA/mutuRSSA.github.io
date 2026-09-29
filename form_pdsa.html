@@ -67,8 +67,11 @@
                     </select>
                 </div>
                 <div class="col-md-2">
-                    <label class="form-label text-secondary mb-1">Periode (Bln/Thn)</label>
-                    <input type="text" class="form-control border-info text-dark" id="inp_periode" placeholder="Maret 2026" required>
+                    <label class="form-label text-secondary mb-1">Periode capaian yang dianalisis</label>
+                    <div class="input-group">
+                        <select id="inp_periode_bulan" class="form-select border-info text-dark" required></select>
+                        <select id="inp_periode_tahun" class="form-select border-info text-dark" style="max-width:90px" required></select>
+                    </div>
                 </div>
                 <div class="col-md-3">
                     <label class="form-label text-secondary mb-1">Ketua Tim / PJ</label>
@@ -250,6 +253,41 @@
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
         const urlParams = new URLSearchParams(window.location.search);
         const urlIdPdsa = urlParams.get('id_pdsa'); 
+        const NAMA_BULAN_PDSA = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+        // Periode: pilihan bulan & tahun (bawaan: bulan lalu)
+        (function() {
+            const sb = document.getElementById('inp_periode_bulan'), st = document.getElementById('inp_periode_tahun');
+            NAMA_BULAN_PDSA.forEach((b, i) => sb.add(new Option(b, i + 1)));
+            const kini = new Date();
+            for (let t = kini.getFullYear() + 1; t >= kini.getFullYear() - 3; t--) st.add(new Option(t, t));
+            const lalu = new Date(kini.getFullYear(), kini.getMonth() - 1, 1);
+            sb.value = lalu.getMonth() + 1; st.value = lalu.getFullYear();
+        })();
+        // Baca teks periode lama / dari URL: "Agustus 2026", "08/2026", "2026-08"
+        function aturPeriodeDariTeks(teks) {
+            const t = String(teks || '').toLowerCase();
+            let m = t.match(/(\d{4})\D+(\d{1,2})(\D|$)/), th = null, bl = null;
+            if (m && +m[2] >= 1 && +m[2] <= 12) { th = +m[1]; bl = +m[2]; }
+            else if ((m = t.match(/(^|\D)(\d{1,2})\D+(\d{4})/)) && +m[2] >= 1 && +m[2] <= 12) { th = +m[3]; bl = +m[2]; }
+            else {
+                m = t.match(/(\d{4})/); if (m) th = +m[1];
+                const i = NAMA_BULAN_PDSA.findIndex(b => t.includes(b.slice(0, 3).toLowerCase())); if (i >= 0) bl = i + 1;
+            }
+            const st = document.getElementById('inp_periode_tahun');
+            if (th && ![...st.options].some(o => +o.value === th)) st.add(new Option(th, th));
+            if (th) st.value = th;
+            if (bl) document.getElementById('inp_periode_bulan').value = bl;
+        }
+        // Nilai opsi indikator: uuid profil, atau "form:<id formulir>" bila formulir belum punya profil
+        const idFormDariPilihan = v => !v ? '' : v.startsWith('form:') ? v.slice(5) : ((dbMasterIndikator.find(i => i.id_indikator === v) || {}).id_form || '');
+        function pilihIndikatorDari(nilai) {
+            const sel = document.getElementById('inp_id_indikator');
+            if (!nilai) return;
+            if ([...sel.options].some(o => o.value === nilai)) { sel.value = nilai; return; }
+            const opsiForm = [...sel.options].find(o => o.dataset.form === nilai);   // id formulir lama
+            if (opsiForm) sel.value = opsiForm.value;
+        }
         
         let dbMasterIndikator = [];
         let dbSetupFormulir = [];
@@ -265,7 +303,7 @@
                 dbSetupFormulir = resForm.data || [];
 
                 // 2. Tarik Kamus Indikator
-                const resInd = await supabaseClient.from('master_indikator').select('id_form, judul_indikator');
+                const resInd = await supabaseClient.from('master_indikator').select('id_indikator, id_form, judul_indikator, status_aktif');
                 dbMasterIndikator = resInd.data || [];
 
                 // 3. Tarik Master Unit (Untuk filter hak akses)
@@ -279,6 +317,12 @@
                 if (isAdminMutu(sessionMutu.role)) {
                     selUnit.add(new Option("== Pilih Unit ==", ""));
                     daftarUnitMaster.forEach(u => selUnit.add(new Option(u.nama_unit, u.nama_unit)));
+                    // Dibuka dari Beranda / Laporan: ?unit=...
+                    const unitUrl = urlParams.get('unit');
+                    if (unitUrl && !urlIdPdsa && daftarUnitMaster.some(u => u.nama_unit === unitUrl)) {
+                        selUnit.value = unitUrl;
+                        loadIndikatorUnit();
+                    }
                 } else {
                     selUnit.add(new Option(sessionMutu.unit, sessionMutu.unit));
                     selUnit.disabled = true; // Kunci jika bukan admin
@@ -286,7 +330,8 @@
                 }
 
                 // 4. Logika Penarik Data Lama (Update)
-                const autoIdIndikator = urlParams.get('id_indikator');
+                // id_indikator di URL bisa id formulir atau id profil (uuid, dari Laporan Mutu)
+                let autoIdIndikator = urlParams.get('id_indikator');
                 const autoPeriode = urlParams.get('periode');
 
                 if (urlIdPdsa) {
@@ -296,11 +341,11 @@
                     
                     if(autoIdIndikator) {
                         setTimeout(() => {
-                            document.getElementById('inp_id_indikator').value = autoIdIndikator;
+                            pilihIndikatorDari(autoIdIndikator);
                             muatOpsiPareto(); 
                         }, 500); // Beri jeda agar list dropdown termuat dulu
                     }
-                    if(autoPeriode) document.getElementById('inp_periode').value = autoPeriode;
+                    if(autoPeriode) aturPeriodeDariTeks(autoPeriode);
                 }
 
             } catch (err) {
@@ -321,12 +366,12 @@
             const unitData = daftarUnitMaster.find(u => u.nama_unit === namaUnit);
             
             if (unitData && unitData.daftar_form) {
-                let forms = unitData.daftar_form.split(',').map(s => s.trim());
+                let forms = unitData.daftar_form.split(',').map(s => s.trim()).filter(Boolean);
                 forms.forEach(f => {
-                    // Cari judul aslinya dari master_indikator agar cantik dilihat
-                    let cariJudul = dbMasterIndikator.find(i => i.id_form === f);
-                    let displayTeks = cariJudul ? cariJudul.judul_indikator : f;
-                    selIndikator.add(new Option(displayTeks, f));
+                    // Satu opsi per profil indikator (satu formulir bisa dipakai beberapa indikator)
+                    const profil = dbMasterIndikator.filter(i => i.id_form === f && i.status_aktif !== false);
+                    if (profil.length) profil.forEach(p => { const o = new Option(p.judul_indikator || f, p.id_indikator); o.dataset.form = f; selIndikator.add(o); });
+                    else { const o = new Option(f.replace(/_/g, ' ') + ' (formulir tanpa profil)', 'form:' + f); o.dataset.form = f; selIndikator.add(o); }
                 });
             }
         }
@@ -335,7 +380,7 @@
         // MESIN PARETO GENERATOR
         // ==========================================
         window.muatOpsiPareto = function() {
-            let idForm = document.getElementById('inp_id_indikator').value;
+            let idForm = idFormDariPilihan(document.getElementById('inp_id_indikator').value);
             let selPareto = document.getElementById('pareto_kolom');
             selPareto.innerHTML = '<option value="">-- Pilih Kolom Faktor / Hambatan --</option>';
             
@@ -352,7 +397,7 @@
         };
 
         window.generatePareto = async function() {
-            let idForm = document.getElementById('inp_id_indikator').value;
+            let idForm = idFormDariPilihan(document.getElementById('inp_id_indikator').value);
             let idxKolom = document.getElementById('pareto_kolom').value;
 
             if(!idForm || idxKolom === "") {
@@ -457,9 +502,12 @@
         window.simpanPDSA = async function() {
             let selUnit = document.getElementById('inp_unit').value;
             let selIndikator = document.getElementById('inp_id_indikator');
-            let idIndikator = selIndikator.value;
-            let namaIndikator = selIndikator.options[selIndikator.selectedIndex].text;
-            let periode = document.getElementById('inp_periode').value.trim();
+            let pilihan = selIndikator.value;
+            let idIndikator = idFormDariPilihan(pilihan);
+            let namaIndikator = pilihan ? selIndikator.options[selIndikator.selectedIndex].text.replace(' (formulir tanpa profil)', '') : '';
+            const periodeBulan = parseInt(document.getElementById('inp_periode_bulan').value, 10);
+            const periodeTahun = parseInt(document.getElementById('inp_periode_tahun').value, 10);
+            let periode = periodeBulan && periodeTahun ? NAMA_BULAN_PDSA[periodeBulan - 1] + ' ' + periodeTahun : '';
 
             if (!selUnit || !idIndikator || !periode) {
                 Swal.fire('Gagal', 'Identitas Unit, Indikator, dan Periode wajib diisi.', 'warning'); return;
@@ -490,7 +538,10 @@
                 unit_kerja: selUnit, // <-- SEKARANG MENGAMBIL DARI PILIHAN DROPDOWN
                 judul_indikator: namaIndikator,
                 id_indikator: idIndikator,
+                id_profil: pilihan && !pilihan.startsWith('form:') ? pilihan : null,
                 periode_analisis: periode,
+                periode_tahun: periodeTahun,
+                periode_bulan: periodeBulan,
                 fase_saat_ini: faseCurrent,
                 plan_data: planData,
                 do_data: doData,
@@ -509,6 +560,8 @@
                     if (error) throw error;
                 }
 
+                // Daftar "Perlu Tindakan" di Beranda dihitung ulang
+                try { Object.keys(sessionStorage).filter(k => k.startsWith('perluTindakan|')).forEach(k => sessionStorage.removeItem(k)); } catch (e) {}
                 Swal.fire('Tersimpan!', 'Data siklus perbaikan telah diamankan ke database.', 'success').then(() => {
                     window.location.href = "daftar_pdsa.html"; // KEMBALIKAN KE PAPAN KENDALI
                 });
@@ -531,8 +584,12 @@
                 loadIndikatorUnit(); // Pancing dropdown indikator agar terisi sesuai unitnya
 
                 setTimeout(() => {
-                    document.getElementById('inp_id_indikator').value = data.id_indikator;
-                    document.getElementById('inp_periode').value = data.periode_analisis;
+                    pilihIndikatorDari(data.id_profil || data.id_indikator);
+                    if (data.periode_tahun && data.periode_bulan) {
+                        const st = document.getElementById('inp_periode_tahun');
+                        if (![...st.options].some(o => +o.value === data.periode_tahun)) st.add(new Option(data.periode_tahun, data.periode_tahun));
+                        st.value = data.periode_tahun; document.getElementById('inp_periode_bulan').value = data.periode_bulan;
+                    } else aturPeriodeDariTeks(data.periode_analisis);
                     muatOpsiPareto();
                 }, 500); // Beri waktu agar loadIndikatorUnit selesai
                 
@@ -541,15 +598,16 @@
                     document.getElementById('plan_masalah').value = data.plan_data.masalah || "";
                     document.getElementById('plan_akar').value = data.plan_data.akar || "";
                     document.getElementById('plan_tujuan').value = data.plan_data.tujuan || "";
-                    if(data.plan_data.action[0]) {
-                        document.getElementById('plan_act_1').value = data.plan_data.action[0].act;
-                        document.getElementById('plan_pic_1').value = data.plan_data.action[0].pic;
-                        document.getElementById('plan_tgl_1').value = data.plan_data.action[0].tgl;
+                    const aksi = Array.isArray(data.plan_data.action) ? data.plan_data.action : [];
+                    if(aksi[0]) {
+                        document.getElementById('plan_act_1').value = aksi[0].act;
+                        document.getElementById('plan_pic_1').value = aksi[0].pic;
+                        document.getElementById('plan_tgl_1').value = aksi[0].tgl;
                     }
-                    if(data.plan_data.action[1]) {
-                        document.getElementById('plan_act_2').value = data.plan_data.action[1].act;
-                        document.getElementById('plan_pic_2').value = data.plan_data.action[1].pic;
-                        document.getElementById('plan_tgl_2').value = data.plan_data.action[1].tgl;
+                    if(aksi[1]) {
+                        document.getElementById('plan_act_2').value = aksi[1].act;
+                        document.getElementById('plan_pic_2').value = aksi[1].pic;
+                        document.getElementById('plan_tgl_2').value = aksi[1].tgl;
                     }
                 }
                 if(data.do_data) {

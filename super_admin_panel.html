@@ -32,9 +32,14 @@
                 <h3 class="mb-1 text-dark fw-bold"><i class="fas fa-hospital text-primary me-2"></i> Manajemen Unit Kerja</h3>
                 <p class="text-muted mb-0">Kelola daftar ruangan/unit dan alokasi indikator mutu wajib.</p>
             </div>
-            <button class="btn btn-primary fw-bold shadow-sm px-4 rounded-pill" onclick="bukaModalTambah()">
-                <i class="fas fa-plus-circle me-2"></i> Tambah Unit Baru
-            </button>
+            <div class="d-flex gap-2 flex-wrap">
+                <button class="btn btn-outline-warning text-dark fw-bold shadow-sm px-3 rounded-pill" onclick="bukaUnitTakTerdaftar()" title="Nama unit yang dipakai di data tetapi tidak ada di daftar unit">
+                    <i class="fas fa-unlink me-2"></i> Nama Unit Tak Terdaftar
+                </button>
+                <button class="btn btn-primary fw-bold shadow-sm px-4 rounded-pill" onclick="bukaModalTambah()">
+                    <i class="fas fa-plus-circle me-2"></i> Tambah Unit Baru
+                </button>
+            </div>
         </div>
 
         <div class="card-custom p-4">
@@ -68,6 +73,23 @@
         </div>
     </div>
 
+    <!-- MODAL NAMA UNIT TAK TERDAFTAR -->
+    <div class="modal fade" id="modalYatim" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-warning p-3">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-unlink me-2"></i> Nama Unit Tak Terdaftar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-3">Nama unit di bawah ini dipakai di data (data mutu, insiden, akun, dll.) tetapi <b>tidak ada</b> di daftar unit, biasanya karena salah ketik, data lama, atau unit yang pernah diganti namanya tanpa memperbarui datanya.
+                        Data dengan nama ini tidak ikut laporan unit mana pun. <b>Gabungkan</b> ke unit yang benar, atau <b>daftarkan</b> sebagai unit baru.</p>
+                    <div id="isiYatim"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL FORM UNIT -->
     <div class="modal fade" id="modalUnit" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -79,6 +101,7 @@
                 <div class="modal-body bg-light p-4">
                     <form id="formUnit">
                         <input type="hidden" id="inp_id">
+                        <div class="alert alert-info small py-2 d-none" id="infoGantiNama"><i class="fas fa-info-circle me-1"></i> Mengganti nama unit akan ikut memperbarui <b>semua data</b> unit ini (data mutu, insiden, risiko, PDSA, akun, dll.). Bila nama baru sudah dipakai unit lain, kedua unit bisa digabung.</div>
                         
                         <div class="row g-3 mb-3">
                             <div class="col-md-6">
@@ -111,7 +134,7 @@
                                 </select>
                             </div>
                             <div class="daftar-opsi-form" id="daftarOpsiForm"></div>
-                            <small class="text-muted" style="font-size: 0.8rem;">Daftar diambil dari Form Builder. Formulir yang dicentang muncul di halaman Input Mutu unit ini (selain formulir dari indikator yang unit pelaksananya unit ini).</small>
+                            <small class="text-muted" style="font-size: 0.8rem;">Daftar diambil dari Form Builder. Hanya formulir yang dicentang yang muncul di halaman Input Mutu unit ini.</small>
                         </div>
 
                         <div class="d-grid mt-2 border-top pt-3">
@@ -304,6 +327,7 @@
         function bukaModalTambah() {
             document.getElementById('formUnit').reset(); 
             document.getElementById('inp_id').value = "";
+            document.getElementById('infoGantiNama').classList.add('d-none');
             document.getElementById('modalTitle').innerHTML = '<i class="fas fa-plus-circle me-2 text-primary"></i> Tambah Unit Baru';
             siapkanPilihanForm('');
             new bootstrap.Modal(document.getElementById('modalUnit')).show();
@@ -317,6 +341,7 @@
             document.getElementById('modalTitle').innerHTML = '<i class="fas fa-edit me-2 text-warning"></i> Edit Konfigurasi Unit';
             document.getElementById('inp_nama_unit').value = unit.nama_unit;
             document.getElementById('inp_kepala_unit').value = unit.kepala_unit || '';
+            document.getElementById('infoGantiNama').classList.remove('d-none');
             siapkanPilihanForm(unit.daftar_form || '');
             
             new bootstrap.Modal(document.getElementById('modalUnit')).show();
@@ -340,8 +365,24 @@
                 daftar_form: daftarForm
             };
 
+            let pesanSukses = 'Konfigurasi unit tersimpan.';
             try {
                 if (idUnit) {
+                    // Nama berubah: ganti di SEMUA data lewat database (bukan hanya di master_unit)
+                    const asal = listUnits.find(u => u.id == idUnit);
+                    if (asal && asal.nama_unit !== namaUnit) {
+                        const hasil = await prosesGantiNama(asal.nama_unit, namaUnit);
+                        if (!hasil) return;   // dibatalkan pengguna (tombol dipulihkan di finally)
+                        if (hasil.gabung) {
+                            // Unit lama sudah dilebur ke unit tujuan; formulir sudah disatukan
+                            Swal.fire({ title: 'Unit Digabung', html: `<b>${esc(asal.nama_unit)}</b> digabung ke <b>${esc(hasil.baru)}</b>.<br>${Number(hasil.total || 0).toLocaleString('id-ID')} data ikut dipindahkan.`, icon: 'success' });
+                            bootstrap.Modal.getInstance(document.getElementById('modalUnit')).hide();
+                            loadUnits();
+                            return;
+                        }
+                        payloadData.nama_unit = hasil.baru;
+                        pesanSukses = `Nama unit diganti. ${Number(hasil.total || 0).toLocaleString('id-ID')} data ikut diperbarui.`;
+                    }
                     // UPDATE
                     const { error } = await supabaseClient.from('master_unit').update(payloadData).eq('id', idUnit);
                     if (error) throw error;
@@ -355,21 +396,179 @@
                     if (error) throw error;
                 }
 
-                Swal.fire({ title: 'Berhasil!', text: 'Konfigurasi unit tersimpan.', icon: 'success', timer: 1500, showConfirmButton: false }).then(() => { 
+                Swal.fire({ title: 'Berhasil!', text: pesanSukses, icon: 'success', timer: 1800, showConfirmButton: false }).then(() => { 
                     bootstrap.Modal.getInstance(document.getElementById('modalUnit')).hide(); 
                     loadUnits(); 
                 });
 
             } catch (err) {
                 console.error(err);
-                Swal.fire('Gagal!', 'Terjadi kesalahan saat menyimpan ke Supabase.', 'error');
+                Swal.fire('Gagal!', 'Terjadi kesalahan saat menyimpan: ' + esc(err.message || err), 'error');
             } finally {
                 btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-2"></i> Simpan Data Unit';
             }
         };
 
+        // ================= GANTI NAMA / GABUNG UNIT =================
+        const LABEL_PEMAKAIAN = {
+            'data_mutu_harian.unit_kerja': 'Data mutu',
+            'data_mutu_harian_arsip.unit_kerja': 'Arsip data mutu (tutup tahun)',
+            'arsip_capaian_mutu.unit_pelaksana': 'Ringkasan capaian (arsip)',
+            'master_indikator.unit_pelaksana': 'Profil indikator (unit pelaksana)',
+            'data_insiden.unit_pelapor': 'Laporan insiden (unit pelapor)',
+            'data_insiden.unit_terkait': 'Laporan insiden (unit terkait)',
+            'data_insiden.detail_spesifik.unit_penyebab': 'Laporan insiden (unit penyebab)',
+            'data_pdsa.unit_kerja': 'PDSA',
+            'data_risiko.unit_kerja': 'Risk register',
+            'data_survey_budaya.unit_kerja': 'Survei budaya',
+            'data_validasi.unit_kerja': 'Validasi mutu',
+            'validasi_sesi.unit_kerja': 'Sesi validasi',
+            'validasi_sampel.unit_kerja': 'Sampel validasi',
+            'profiles.unit_kerja': 'Akun pengguna',
+            'kunci_periode_mutu.unit_kerja': 'Kunci periode'
+        };
+        function rincianPemakaian(jumlah) {
+            const baris = Object.entries(jumlah || {}).sort((a, b) => b[1] - a[1])
+                .map(([k, n]) => `<li>${esc(LABEL_PEMAKAIAN[k] || k)}: <b>${Number(n).toLocaleString('id-ID')}</b></li>`).join('');
+            return baris ? `<ul class="text-start small my-2">${baris}</ul>` : '<div class="small text-muted my-2">(belum ada data yang memakai nama ini)</div>';
+        }
+
+        // Ganti nama lama -> baru di semua tabel. Mengembalikan hasil RPC, atau null bila dibatalkan.
+        async function prosesGantiNama(lama, baru, paksaGabung = false) {
+            const rpc = (gabung, uji) => supabaseClient.rpc('ganti_nama_unit', { p_lama: lama, p_baru: baru, p_gabung: gabung, p_uji: uji });
+            let gabung = paksaGabung;
+            let { data: uji, error } = await rpc(gabung, true);
+            if (error) throw error;
+            if (uji.status === 'sama') return { status: 'sama', baru, total: 0, gabung: false };
+            if (uji.status === 'sudah_ada') {
+                const k = await Swal.fire({
+                    title: 'Nama Sudah Dipakai',
+                    html: `Unit <b>${esc(uji.nama_ada)}</b> sudah ada.<br>Gabungkan <b>${esc(lama)}</b> ke <b>${esc(uji.nama_ada)}</b>?`,
+                    icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, lanjut gabungkan', cancelButtonText: 'Batal'
+                });
+                if (!k.isConfirmed) return null;
+                gabung = true;
+                ({ data: uji, error } = await rpc(true, true));
+                if (error) throw error;
+            }
+            const konfirmasi = await Swal.fire({
+                title: gabung ? 'Gabungkan Unit?' : 'Ganti Nama Unit?',
+                html: `<div class="fs-6 mb-2"><b>${esc(lama)}</b> <i class="fas fa-arrow-right mx-1 text-primary"></i> <b>${esc(uji.baru)}</b></div>
+                       <div class="text-start small">Data yang ikut diperbarui:${rincianPemakaian(uji.jumlah)}
+                       ${gabung && uji.unit_terdaftar ? `Daftar formulir kedua unit disatukan dan unit <b>${esc(lama)}</b> dihapus dari daftar.` : ''}
+                       Periode yang terkunci tetap terkunci. Perubahan tercatat di Log Audit.</div>`,
+                icon: 'warning', showCancelButton: true,
+                confirmButtonText: gabung ? 'Ya, gabungkan' : 'Ya, ganti nama', cancelButtonText: 'Batal'
+            });
+            if (!konfirmasi.isConfirmed) return null;
+            const { data: hasil, error: e2 } = await rpc(gabung, false);
+            if (e2) throw e2;
+            return hasil;
+        }
+
+        // Pilih unit tujuan lalu gabungkan (dari tombol hapus)
+        async function pilihTujuanGabung(namaUnit) {
+            const opsi = {};
+            listUnits.filter(u => u.nama_unit !== namaUnit).forEach(u => { opsi[u.nama_unit] = u.nama_unit; });
+            const { value: tujuan } = await Swal.fire({
+                title: 'Gabungkan ke Unit', input: 'select', inputOptions: opsi, inputPlaceholder: '-- Pilih unit tujuan --',
+                html: `Semua data <b>${esc(namaUnit)}</b> akan dipindah ke unit yang dipilih.`,
+                showCancelButton: true, confirmButtonText: 'Lanjut', cancelButtonText: 'Batal',
+                inputValidator: v => !v && 'Pilih unit tujuan'
+            });
+            if (!tujuan) return;
+            try {
+                const hasil = await prosesGantiNama(namaUnit, tujuan, true);
+                if (!hasil) return;
+                Swal.fire('Berhasil', `<b>${esc(namaUnit)}</b> digabung ke <b>${esc(hasil.baru)}</b>. ${Number(hasil.total || 0).toLocaleString('id-ID')} data dipindahkan.`, 'success');
+                loadUnits();
+            } catch (e) {
+                Swal.fire('Gagal', esc(e.message || e), 'error');
+            }
+        }
+
+        // Nama unit yang dipakai di data tetapi tidak ada di master_unit
+        let daftarYatim = [];
+        window.bukaUnitTakTerdaftar = async function() {
+            const isi = document.getElementById('isiYatim');
+            isi.innerHTML = '<div class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Memeriksa data...</div>';
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalYatim')).show();
+            try {
+                const { data, error } = await supabaseClient.rpc('daftar_unit_tak_terdaftar');
+                if (error) throw error;
+                daftarYatim = data || [];
+                renderYatim();
+            } catch (e) {
+                isi.innerHTML = `<div class="alert alert-danger small">Gagal memeriksa: ${esc(e.message || e)}</div>`;
+            }
+        };
+
+        function renderYatim() {
+            const isi = document.getElementById('isiYatim');
+            if (!daftarYatim.length) {
+                isi.innerHTML = '<div class="alert alert-success small mb-0"><i class="fas fa-check-circle me-1"></i> Semua nama unit di data sudah terdaftar. Tidak ada yang perlu dirapikan.</div>';
+                return;
+            }
+            const opsi = listUnits.map(u => `<option value="${esc(u.nama_unit)}">${esc(u.nama_unit)}</option>`).join('');
+            isi.innerHTML = `<div class="table-responsive"><table class="table table-sm table-hover align-middle">
+                <thead class="table-light"><tr><th>Nama di data</th><th class="text-end">Jumlah</th><th>Dipakai di</th><th style="min-width:300px">Tindakan</th></tr></thead><tbody>
+                ${daftarYatim.map((r, i) => `<tr>
+                    <td class="fw-bold">${esc(r.nama)}</td>
+                    <td class="text-end">${Number(r.total).toLocaleString('id-ID')}</td>
+                    <td class="small text-muted">${Object.entries(r.rincian || {}).map(([k, n]) => `${esc(LABEL_PEMAKAIAN[k] || k)} (${Number(n).toLocaleString('id-ID')})`).join(', ')}</td>
+                    <td><div class="input-group input-group-sm">
+                        <select class="form-select" id="tujuanYatim_${i}">
+                            <option value="">-- Gabungkan ke unit... --</option>${opsi}
+                            <option value="__baru__">+ Daftarkan sebagai unit baru</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="prosesYatim(${i})">Proses</button>
+                    </div></td></tr>`).join('')}
+                </tbody></table></div>`;
+        }
+
+        window.prosesYatim = async function(i) {
+            const r = daftarYatim[i];
+            const tujuan = document.getElementById('tujuanYatim_' + i).value;
+            if (!r || !tujuan) { Swal.fire('Pilih Tindakan', 'Pilih unit tujuan atau "Daftarkan sebagai unit baru".', 'info'); return; }
+            try {
+                if (tujuan === '__baru__') {
+                    const { error } = await supabaseClient.from('master_unit').insert([{ nama_unit: r.nama, kepala_unit: '', daftar_form: '' }]);
+                    if (error) throw error;
+                    Swal.fire({ title: 'Terdaftar', html: `<b>${esc(r.nama)}</b> ditambahkan ke daftar unit. Atur formulirnya lewat tombol edit.`, icon: 'success' });
+                } else {
+                    const hasil = await prosesGantiNama(r.nama, tujuan, true);
+                    if (!hasil) return;
+                    Swal.fire({ title: 'Berhasil', html: `<b>${esc(r.nama)}</b> digabung ke <b>${esc(hasil.baru)}</b>. ${Number(hasil.total || 0).toLocaleString('id-ID')} data dipindahkan.`, icon: 'success' });
+                }
+                daftarYatim.splice(i, 1);
+                await loadUnits();
+                renderYatim();
+            } catch (e) {
+                Swal.fire('Gagal', esc(e.message || e), 'error');
+            }
+        };
+
         // 3. DELETE: HAPUS DATA DARI master_unit
-        window.hapusUnit = function(idUnit, namaUnit) {
+        window.hapusUnit = async function(idUnit, namaUnit) {
+            // Masih dipakai data? Tawarkan gabung ke unit lain agar data tidak "yatim"
+            try {
+                const { data: pakai, error } = await supabaseClient.rpc('pemakaian_unit', { p_nama: namaUnit });
+                if (error) throw error;
+                if (pakai && pakai.total > 0) {
+                    const r = await Swal.fire({
+                        title: 'Unit Masih Dipakai',
+                        html: `<div class="text-start small">Nama <b>${esc(namaUnit)}</b> masih dipakai di:${rincianPemakaian(pakai.jumlah)}
+                               Menghapus unit <b>tidak</b> menghapus data tersebut, tetapi datanya jadi tidak terhubung ke unit mana pun.
+                               Bila unit ini dilebur ke unit lain, pilih <b>Gabungkan</b>.</div>`,
+                        icon: 'warning', showCancelButton: true, showDenyButton: true,
+                        confirmButtonText: 'Gabungkan ke unit lain', denyButtonText: 'Tetap hapus', cancelButtonText: 'Batal',
+                        confirmButtonColor: '#0d6efd', denyButtonColor: '#dc3545'
+                    });
+                    if (r.isConfirmed) { await pilihTujuanGabung(namaUnit); return; }
+                    if (!r.isDenied) return;
+                }
+            } catch (e) { console.warn('Cek pemakaian unit:', e); }
+
             Swal.fire({
                 title: 'Hapus Permanen?',
                 html: `Anda yakin ingin menghapus unit <b>${esc(namaUnit)}</b>?<br><small class="text-danger">Akses unit ini ke form akan hilang.</small>`,

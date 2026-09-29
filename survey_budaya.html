@@ -45,6 +45,8 @@
                 <p class="text-muted mt-3 px-md-5">Kuesioner ini bersifat <strong>ANONIM</strong>. Mohon isi sesuai dengan kondisi nyata yang Anda rasakan di unit kerja Anda. Partisipasi Anda sangat berharga untuk meningkatkan mutu layanan rumah sakit.</p>
             </div>
 
+            <div id="infoPeriode" class="alert alert-secondary text-center small py-2 mb-3"><i class="fas fa-spinner fa-spin me-1"></i> Memeriksa periode survei...</div>
+
             <form id="formSurveyBudaya">
                 <div class="row g-3 mb-4 mt-2 px-2">
                     <div class="col-md-6">
@@ -107,7 +109,31 @@
             
             // Gambar Formulir Kuesioner
             gambarKuesioner();
+            await cekPeriodeSurvei();
         });
+
+        // Survei hanya diterima saat ada periode yang dibuka Komite Mutu
+        async function cekPeriodeSurvei() {
+            const info = document.getElementById('infoPeriode');
+            const btn = document.getElementById('btnSubmitSurvey');
+            try {
+                const { data, error } = await supabaseClient.rpc('survei_budaya_periode_publik');
+                if (error) throw error;
+                const p = (data || [])[0];
+                if (!p) {
+                    info.className = 'alert alert-warning text-center mb-3';
+                    info.innerHTML = '<i class="fas fa-lock me-1"></i> Survei budaya keselamatan <b>sedang tidak dibuka</b>. Silakan kembali saat periode survei berikutnya diumumkan.';
+                    btn.disabled = true;
+                    return;
+                }
+                const tgl = d => new Date(d + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                info.className = 'alert alert-info text-center small py-2 mb-3';
+                info.innerHTML = `<i class="fas fa-calendar-check me-1"></i> <b>${esc(p.nama)}</b> \u2014 dibuka sampai ${tgl(p.tanggal_selesai)}`;
+                btn.disabled = false;
+            } catch (e) {
+                info.classList.add('d-none');   // fungsi belum tersedia: biarkan server yang memutuskan
+            }
+        }
 
         // 1. DATABASE PERTANYAAN SUPER KOMPLEKS
         const dataSurvei = [
@@ -255,7 +281,7 @@
 
                         tbodyHtml += `
                             <tr class="question-row">
-                                <td class="question-text py-3 pe-3">${i + 1}. ${soal.text}</td>
+                                <td class="question-text py-3 pe-3">${/^\d+\.\s/.test(soal.text) ? soal.text : (i + 1) + '. ' + soal.text}</td>
                                 ${tdRadios}
                             </tr>
                         `;

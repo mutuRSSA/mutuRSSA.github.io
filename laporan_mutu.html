@@ -164,6 +164,8 @@
             'semester': { '1': ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni'], '2': ['Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] },
             'tahunan': { '1': ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] }
         };
+        // Bulan awal laporan: bulan terakhir yang sudah lewat & ada datanya (diatur di initDataDasar)
+        let bulanAwalLaporan = new Date().getMonth() + 1;
         const intToBulanStr = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
 
         document.addEventListener("DOMContentLoaded", async function () {
@@ -179,7 +181,7 @@
                     detailDiv.style.display = 'block';
                     const listBulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
                     listBulan.forEach((bln, idx) => detailSelect.add(new Option(bln, (idx + 1).toString())));
-                    detailSelect.value = (new Date().getMonth() + 1).toString(); 
+                    detailSelect.value = String(bulanAwalLaporan); 
                 } else if (tipe === 'triwulan') {
                     detailDiv.style.display = 'block';
                     detailSelect.add(new Option('Triwulan 1', '1')); detailSelect.add(new Option('Triwulan 2', '2'));
@@ -199,6 +201,7 @@
 
         async function initDataDasar() {
             try {
+                window.__institusi = await ambilInstitusi();
                 // Tampilkan Indikator yang Aktif (Soft Delete Support)
                 const resInd = await supabaseClient.from('master_indikator').select('*').neq('status_aktif', false).order('judul_indikator', { ascending: true });
                 dbMasterIndikator = resInd.data || [];
@@ -226,11 +229,31 @@
                 unitSelect.innerHTML = '<option value="RS_ALL" class="fw-bold text-primary">🏥 SELURUH RUMAH SAKIT</option>';
                 if(resUnit.data) resUnit.data.forEach(u => { unitSelect.appendChild(new Option(u.nama_unit, u.nama_unit)); });
 
+                // Buka di bulan terakhir yang sudah lewat dan ada datanya (bulan berjalan biasanya belum lengkap)
+                await pilihPeriodeAwal(currentYear);
+
                 aturKunciUnitDanRender();
 
             } catch (err) {
                 console.error(err);
                 document.getElementById('loadingMessage').innerHTML = "<i class='fas fa-exclamation-triangle text-danger me-2'></i> Gagal memuat struktur data.";
+            }
+        }
+
+        async function pilihPeriodeAwal(currentYear) {
+            const kini = new Date();
+            let th = currentYear, bl = kini.getMonth(); // bulan lalu (0 = Desember tahun lalu)
+            if (bl === 0) { th = currentYear - 1; bl = 12; }
+            try {
+                const { data } = await supabaseClient.from('data_mutu_harian').select('bulan')
+                    .eq('tahun', th).lte('bulan', bl).order('bulan', { ascending: false }).limit(1);
+                if (data && data.length) bl = data[0].bulan;
+            } catch (e) { console.warn('Periode awal:', e); }
+            bulanAwalLaporan = bl;
+            const tahunSelect = document.getElementById('filterTahun');
+            if (Array.from(tahunSelect.options).some(o => o.value == th)) tahunSelect.value = String(th);
+            if (document.getElementById('filterTipeLaporan').value === 'bulanan') {
+                document.getElementById('filterDetailPeriode').value = String(bl);
             }
         }
 
@@ -336,19 +359,25 @@
                     arrayAngkaBulan.forEach((blnAngka, idxA) => {
                         let namaBlnStr = arrayNamaBulan[idxA];
                         let N = 0; let D = 0; let C = null; let sumC = 0; let countC = 0;
+                        // Target versi yang berlaku di bulan ini (riwayat versi rumus & target)
+                        let tBulan = target;
+                        const angkaSah = v => v !== null && v !== undefined && String(v).trim() !== '' && !isNaN(parseFloat(v));
 
                         // CEK GUDANG ARSIP
                         let adaArsip = arsipInd.find(a => a.bulan === blnAngka && (a.unit_pelaksana === unt || unt === 'Semua Unit (Hospital Wide)'));
                         
                         if (adaArsip) {
                             N = adaArsip.numerator; D = adaArsip.denominator; C = adaArsip.capaian;
+                            if (angkaSah(adaArsip.target)) tBulan = parseFloat(adaArsip.target);
                         } 
                         // JIKA TIDAK ADA ARSIP, JALANKAN ENGINE LIVE
                         else if (mapLiveUnitBulan[unt] && mapLiveUnitBulan[unt][blnAngka]) {
                             let h = mapLiveUnitBulan[unt][blnAngka];
                             N = Number(h.numerator) || 0;
                             D = Number(h.denominator) || 0;
-                            C = hitungCapaianND(N, D, satuan);
+                            // Capaian dari database (sudah memakai satuan versi yang berlaku)
+                            C = angkaSah(h.capaian) ? Number(h.capaian) : hitungCapaianND(N, D, satuan);
+                            if (angkaSah(h.target)) tBulan = parseFloat(h.target);
                         }
 
                         if (C !== null) C = Math.round(C * 100) / 100;
@@ -362,7 +391,7 @@
                             }
                             if (C !== null) {
                                 let pointer = unitGroupedData[unt][judul].bulans[namaBlnStr];
-                                pointer.target = target; pointer.capai = C; pointer.num = N; pointer.den = D;
+                                pointer.target = tBulan; pointer.capai = C; pointer.num = N; pointer.den = D;
                             }
                         } else {
                             if (!groupedData[jenis]) groupedData[jenis] = {};
@@ -372,7 +401,7 @@
                             }
                             if (C !== null || N > 0 || D > 0) {
                                 let pointer = groupedData[jenis][judul].bulans[namaBlnStr];
-                                pointer.target = target;
+                                pointer.target = tBulan;
                                 
                                 if (selectedUnit === "RS_ALL") {
                                     pointer.num += N; pointer.den += D;
@@ -394,7 +423,7 @@
                             hasilAgregasi.push({
                                 'Tahun': selectedTahun, 'Bulan': namaBlnStr, 'Unit': unt,
                                 'Judul indikator': judul, 'id_indikator': idIndikatorAsli,
-                                'Kategori Indikator': jenis, 'Satuan': satuan, 'Target': target,
+                                'Kategori Indikator': jenis, 'Satuan': satuan, 'Target': tBulan,
                                 'Numerator': N, 'Denominator': D, 'Pencapaian': C
                             });
                         }
@@ -435,11 +464,10 @@
                 return;
             }
 
-            let fullHtml = "<div class='d-none d-print-block text-center mb-4 pb-2 border-bottom border-dark border-3'>" +
-                "<h3 class='fw-bold mb-1'>LAPORAN CAPAIAN INDIKATOR MUTU RSUD SARAS ADYATMA</h3>" +
-                "<h5 class='text-uppercase mb-0'>" + activePeriodeTitle + " - UNIT " + selectedUnit + "</h5></div>" +
+            let fullHtml = "<div class='d-none d-print-block mb-4'>" +
+                kopLaporanHTML(window.__institusi, 'LAPORAN CAPAIAN INDIKATOR MUTU', String(activePeriodeTitle).toUpperCase() + ' - ' + (selectedUnit === 'RS_ALL' ? 'SELURUH RUMAH SAKIT' : 'UNIT ' + String(selectedUnit).toUpperCase())) + "</div>" +
                 "<div class='d-flex justify-content-between align-items-center mb-4 border-bottom pb-3 d-print-none'>" +
-                "<h5 class='fw-bold text-secondary mb-0'><i class='fas fa-hospital me-2'></i> " + selectedUnit + " (" + activePeriodeTitle + ")</h5><div>";
+                "<h5 class='fw-bold text-secondary mb-0'><i class='fas fa-hospital me-2'></i> " + esc(selectedUnit === 'RS_ALL' ? 'Seluruh Rumah Sakit' : selectedUnit) + " (" + esc(activePeriodeTitle) + ")</h5><div>";
             fullHtml += "<button class='btn btn-danger fw-bold px-3' onclick='window.print()'><i class='fas fa-print me-1'></i> Cetak Dokumen</button></div></div>";
 
             let chartConfigs = []; let chartIdCounter = 0;
@@ -557,7 +585,7 @@
 
                         let tombolPdsa = "";
                         if (!isTercapai) {
-                            let urlPDSA = `form_pdsa.html?id_indikator=${encodeURIComponent(item.id_indikator)}&periode=${encodeURIComponent(b + ' ' + selectedTahun)}`;
+                            let urlPDSA = `form_pdsa.html?id_indikator=${encodeURIComponent(item.id_indikator)}&periode=${encodeURIComponent(b + ' ' + selectedTahun)}${selectedUnit !== 'RS_ALL' ? '&unit=' + encodeURIComponent(selectedUnit) : ''}`;
                             tombolPdsa = `<br><a href="${urlPDSA}" class="btn btn-sm btn-danger px-2 py-0 mt-1 d-print-none shadow-sm" style="font-size:0.7rem;" target="_blank" title="Buat rencana perbaikan (PDSA) untuk capaian ini"><i class="fas fa-stethoscope"></i> PDSA</a>`;
                         }
 
@@ -625,7 +653,7 @@
                             
                             let tombolPdsaU = "";
                             if (!isTercapaiU) {
-                                let urlPDSA = `form_pdsa.html?id_indikator=${encodeURIComponent(uItem.id_indikator)}&periode=${encodeURIComponent(b + ' ' + selectedTahun)}`;
+                                let urlPDSA = `form_pdsa.html?id_indikator=${encodeURIComponent(uItem.id_indikator)}&periode=${encodeURIComponent(b + ' ' + selectedTahun)}&unit=${encodeURIComponent(uName)}`;
                                 tombolPdsaU = `<br><a href="${urlPDSA}" class="btn btn-sm btn-danger px-2 py-0 mt-1 d-print-none shadow-sm" style="font-size:0.7rem;" target="_blank" title="Buat rencana perbaikan (PDSA)"><i class="fas fa-stethoscope"></i> PDSA</a>`;
                             }
 

@@ -201,6 +201,10 @@
                                     <label class="sub-label text-dark mt-0">Penanggung Jawab (PIC)</label>
                                     <input type="text" class="form-control form-control-sm border-secondary" id="inp_pj_tindakan" placeholder="Nama / Bagian Terkait">
                                 </div>
+                                <div class="col-md-5">
+                                    <label class="sub-label text-dark mt-0">Tenggat Tindakan</label>
+                                    <input type="date" class="form-control form-control-sm border-secondary" id="inp_tenggat_tindakan">
+                                </div>
                             </div>
                         </div>
 
@@ -257,6 +261,7 @@
     <!-- LIBRARY & SCRIPT -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
+    <script src="taksonomi_insiden.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -280,6 +285,7 @@
                 const { data, error } = await supabaseClient.from('data_insiden').select('*').eq('id_insiden', targetUUID).single();
                 if (error) throw error;
                 dataInsiden = data;
+                window.__statusLama = data.status_investigasi;
 
                 // Load Info Banner
                 let tgl = new Date(data.waktu_insiden).toLocaleString('id-ID');
@@ -307,6 +313,7 @@
 
                 // Auto-fill jika pernah diinvestigasi
                 if (data.investigasi_komite) {
+                    window.__investigasiLama = data.investigasi_komite;
                     fillDataDariDatabase(data.investigasi_komite);
                 }
 
@@ -318,13 +325,7 @@
         // ==============================================
         // KAMUS TAKSONOMI KEMENKES 
         // ==============================================
-        const taksonomiInsiden = {
-            "1. ADMINISTRASI KLINIK": { "a. Proses": ["Serah terima", "Perjanjian", "Admisi", "Identifikasi Pasien"], "b. Masalah": ["Tidak tersedia", "Salah pasien", "Salah proses"] },
-            "2. PROSES / PROSEDUR KLINIS": { "a. Proses": ["Diagnosis / Assessment", "Prosedur / Pengobatan", "Test / Investigasi"], "b. Masalah": ["Tidak lengkap", "Salah pasien", "Salah prosedur"] },
-            "3. DOKUMENTASI": { "a. Dokumen Terkait": ["Order / Permintaan", "Rekam medik", "Check list"], "b. Masalah": ["Dokumen hilang", "Salah dokumen", "Tidak jelas"] },
-            "4. MEDIKASI/ CAIRAN INFUS": { "a. Proses penggunaan": ["Peresepan", "Persiapan", "Pemberian"], "b. Masalah": ["Salah pasien", "Salah obat", "Salah dosis"] },
-            "5. JATUH": { "a. Tipe Jatuh": ["Tersandung", "Slip", "Hilang keseimbangan"], "b. Keterlibatan": ["Tempat tidur", "Kursi", "Toilet"] }
-        };
+        const taksonomiInsiden = TAKSONOMI_INSIDEN;   // taksonomi_insiden.js (sama untuk Sederhana & RCA)
 
         const taksonomiRootCause = {
             "1. Faktor Komunikasi": ["Gangguan Komunikasi Staf", "Saat serah terima", "Salah tafsir informasi"],
@@ -356,12 +357,13 @@
                 contTipe.innerHTML = '';
                 if(this.value && taksonomiInsiden[this.value]) {
                     contTipe.classList.remove('d-none');
+                    contTipe.style.display = '';
                     for (let sk in taksonomiInsiden[this.value]) {
                         let h = `<label class="sub-label text-dark">${sk}</label><select class="form-select form-select-sm ui-subtipe" data-label="${sk}"><option value="">-- Pilih --</option>`;
                         taksonomiInsiden[this.value][sk].forEach(i => h += `<option value="${i}">${i}</option>`);
                         contTipe.innerHTML += h + `</select>`;
                     }
-                } else { contTipe.classList.add('d-none'); }
+                } else { contTipe.classList.add('d-none'); contTipe.style.display = 'none'; }
             });
 
             const selRC = document.getElementById('ui_rc_utama');
@@ -423,6 +425,7 @@
             document.getElementById('inp_rekomendasi').value = inv.rekomendasi || '';
             document.getElementById('inp_tindakan_dilakukan').value = inv.tindakan_dilakukan || '';
             document.getElementById('inp_pj_tindakan').value = inv.pj_tindakan || '';
+            document.getElementById('inp_tenggat_tindakan').value = inv.tenggat_tindakan || '';
             document.getElementById('inp_pembelajaran').value = inv.pembelajaran || '';
             document.getElementById('inp_safety_alert').value = inv.safety_alert || '';
 
@@ -450,7 +453,7 @@
 
             if(inv.tipe_insiden) {
                 let parts = inv.tipe_insiden.split(' | ');
-                document.getElementById('ui_tipe_insiden').value = parts[0];
+                document.getElementById('ui_tipe_insiden').value = cariKunciTaksonomi(parts[0]);
                 document.getElementById('ui_tipe_insiden').dispatchEvent(new Event('change'));
                 setTimeout(() => {
                     parts.slice(1).forEach(p => {
@@ -459,6 +462,14 @@
                         if(sel) sel.value = sp[1];
                     });
                 }, 150);
+            }
+
+            // Tipe harm disimpan sebagai "Akibat: ... | Kausa: ..."
+            if(inv.tipe_harm) {
+                const mAk = /Akibat:\s*(.*?)\s*(\||$)/.exec(inv.tipe_harm);
+                const mKa = /Kausa:\s*(.*)$/.exec(inv.tipe_harm);
+                document.getElementById('ui_akibat_harm').value = mAk ? mAk[1] : '';
+                document.getElementById('ui_kausa_harm').value = mKa ? mKa[1].trim() : '';
             }
 
             if(inv.root_cause_select) {
@@ -501,6 +512,11 @@
         document.getElementById('formAnalisis').addEventListener('submit', async function(e) {
             e.preventDefault();
 
+            // RCA tidak boleh ditutup kosong
+            const wajib = [['textarea_akar_masalah', 'Akar masalah'], ['inp_rekomendasi', 'Rekomendasi'], ['inp_tindakan_dilakukan', 'Tindakan yang akan dilakukan'], ['inp_pj_tindakan', 'Penanggung jawab']]
+                .filter(([id]) => !(document.getElementById(id).value || '').trim()).map(([, nama]) => nama);
+            if (wajib.length) { Swal.fire('Belum Lengkap', 'Isi terlebih dahulu: ' + wajib.join(', ') + '.', 'warning'); return; }
+
             const btn = document.getElementById('btnSimpanAnalisis');
             btn.innerHTML = "<i class='fas fa-spinner fa-spin me-2'></i> Menyimpan..."; 
             btn.disabled = true;
@@ -538,24 +554,29 @@
                 rekomendasi: document.getElementById('inp_rekomendasi').value,
                 tindakan_dilakukan: document.getElementById('inp_tindakan_dilakukan').value,
                 pj_tindakan: document.getElementById('inp_pj_tindakan').value,
+                tenggat_tindakan: document.getElementById('inp_tenggat_tindakan').value || null,
                 pembelajaran: document.getElementById('inp_pembelajaran').value,
                 safety_alert: document.getElementById('inp_safety_alert').value,
-                tanggal_investigasi: new Date().toISOString()
+                // Tanggal investigasi pertama dipertahankan; perubahan berikutnya dicatat terpisah
+                tanggal_investigasi: (window.__investigasiLama && window.__investigasiLama.tanggal_investigasi) || new Date().toISOString(),
+                ...(window.__investigasiLama ? { tanggal_diperbarui: new Date().toISOString() } : {})
             };
 
             try {
                 const { error } = await supabaseClient.from('data_insiden')
                     .update({ 
                         investigasi_komite: payloadInvestigasi,
-                        status_investigasi: 'Selesai' 
+                        // Hasil investigasi -> tahap Tindak Lanjut (kasus yang sudah Selesai tetap Selesai)
+                        status_investigasi: window.__statusLama === 'Selesai' ? 'Selesai' : 'Tindak Lanjut',
+                        jenis_investigasi: 'rca' 
                     })
                     .eq('id_insiden', targetUUID);
 
                 if (error) throw error;
 
                 Swal.fire({
-                    title: 'RCA Selesai!',
-                    text: 'Dokumen Root Cause Analysis berhasil diamankan.',
+                    title: 'RCA Tersimpan!',
+                    text: window.__statusLama === 'Selesai' ? 'Dokumen RCA diperbarui.' : 'Rekomendasi masuk ke daftar Tindak Lanjut.',
                     icon: 'success',
                     timer: 2000,
                     showConfirmButton: false
@@ -565,7 +586,7 @@
 
             } catch (err) {
                 console.error(err);
-                Swal.fire('Gagal!', 'Terjadi kesalahan saat menyimpan ke Supabase.', 'error');
+                Swal.fire('Gagal!', esc((err && err.message) || 'Terjadi kesalahan saat menyimpan ke Supabase.'), 'error');
             } finally {
                 btn.innerHTML = "<i class='fas fa-save me-2'></i> SIMPAN DOKUMEN RCA"; 
                 btn.disabled = false; 

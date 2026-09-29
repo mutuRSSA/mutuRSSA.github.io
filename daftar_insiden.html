@@ -184,7 +184,7 @@
                     <!-- HEADER KHUSUS PRINT -->
                     <div class="d-none d-print-block text-center mb-4 border-bottom border-dark border-3 pb-2">
                         <h4 class="fw-bold mb-1">LAPORAN INSIDEN KESELAMATAN PASIEN AWAL</h4>
-                        <h5>RUMAH SAKIT UMUM DAERAH SARAS ADYATMA</h5>
+                        <h5 id="cetakNamaRS">RUMAH SAKIT UMUM DAERAH SARAS ADYATMA</h5>
                     </div>
 
                     <div id="modalBanner" class="p-3 mb-3 rounded text-center fw-bold shadow-sm text-white"></div>
@@ -198,6 +198,7 @@
                                 <tr><td class="text-muted fw-bold">Lokasi Kejadian</td><td id="dtl_lokasi"></td></tr>
                                 <tr><td class="text-muted fw-bold">Jenis Laporan</td><td id="dtl_jenis"></td></tr>
                                 <tr><td class="text-muted fw-bold">Pelapor</td><td id="dtl_pelapor"></td></tr>
+                                <tr><td class="text-muted fw-bold">Status Penanganan</td><td id="dtl_status"></td></tr>
                             </table>
                         </div>
                     </div>
@@ -252,6 +253,39 @@
         </div>
     </div>
 
+    <!-- MODAL TINDAK LANJUT -->
+    <div class="modal fade" id="modalTL" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-warning p-3">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-tasks me-2"></i> Tindak Lanjut Rekomendasi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body bg-light">
+                    <div id="tlInfo" class="small mb-3"></div>
+                    <div id="tlDaftar"></div>
+                    <div id="tlForm" class="card border-0 shadow-sm mt-3 d-none">
+                        <div class="card-body">
+                            <h6 class="fw-bold text-primary mb-2"><i class="fas fa-plus me-1"></i> Tambah tindak lanjut</h6>
+                            <div class="row g-2">
+                                <div class="col-md-6"><label class="small fw-bold">Tindakan <span class="text-danger">*</span></label><textarea id="tl_tindakan" class="form-control form-control-sm" rows="2"></textarea></div>
+                                <div class="col-md-6"><label class="small fw-bold">Rekomendasi yang ditindaklanjuti</label><textarea id="tl_rekomendasi" class="form-control form-control-sm" rows="2"></textarea></div>
+                                <div class="col-md-5"><label class="small fw-bold">Penanggung jawab (PIC)</label><input id="tl_pic" class="form-control form-control-sm"></div>
+                                <div class="col-md-3"><label class="small fw-bold">Tenggat</label><input id="tl_tenggat" type="date" class="form-control form-control-sm"></div>
+                                <div class="col-md-4 d-flex align-items-end"><button class="btn btn-sm btn-primary fw-bold w-100" onclick="tambahTL()"><i class="fas fa-plus me-1"></i> Tambah</button></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <small class="text-muted me-auto">Kasus ditutup otomatis bila semua tindak lanjut berstatus selesai/batal.</small>
+                    <button type="button" class="btn btn-success fw-bold d-none" id="btnTutupKasus" onclick="tutupKasus()"><i class="fas fa-check-double me-1"></i> Tutup Kasus</button>
+                    <button type="button" class="btn btn-secondary fw-bold" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- LIBRARY SUPABASE & DATATABLES -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
@@ -271,6 +305,60 @@
         Chart.register(ChartDataLabels);
         let chartJenisInsiden = null;
         let chartLokasiInsiden = null;
+        let ringkasTL = {};          // id_insiden -> {total, selesai, lewat}
+        let tlAktif = null, perluMuatUlang = false;
+
+        // ---------------- Alur penanganan insiden ----------------
+        const STATUS_IKP = {
+            'Baru':          ['bg-secondary', 'fa-inbox', 'Baru \u2013 belum diverifikasi'],
+            'Investigasi':   ['bg-primary', 'fa-search', 'Investigasi'],
+            'Tindak Lanjut': ['bg-warning text-dark', 'fa-tasks', 'Tindak lanjut'],
+            'Selesai':       ['bg-success', 'fa-check-double', 'Selesai'],
+            'Ditolak':       ['bg-dark', 'fa-ban', 'Ditolak']
+        };
+        const STATUS_TL = { rencana: ['bg-secondary', 'Rencana'], berjalan: ['bg-primary', 'Berjalan'], selesai: ['bg-success', 'Selesai'], batal: ['bg-dark', 'Batal'] };
+        const statusIkp = r => STATUS_IKP[r.status_investigasi] ? r.status_investigasi : 'Baru';
+        // Kuning/Merah (selain KPC) & Sentinel wajib RCA (sama dengan aturan database)
+        const wajibRCA = r => r.jenis_insiden === 'Sentinel' || (r.jenis_insiden !== 'KPC' && (r.grading_risiko === 'Merah' || r.grading_risiko === 'Kuning'));
+        const jenisInv = r => r.jenis_investigasi || (r.investigasi_komite ? (r.investigasi_komite.masalah_cmp !== undefined ? 'rca' : 'sederhana') : (wajibRCA(r) ? 'rca' : 'sederhana'));
+        function batasInv(r) {
+            if (r.batas_investigasi) return new Date(r.batas_investigasi + 'T23:59:59');
+            const hari = jenisInv(r) === 'rca' ? 45 : (r.grading_risiko === 'Hijau' ? 14 : 7);
+            const d = new Date(r.waktu_insiden || r.waktu_lapor); d.setHours(23, 59, 59);
+            return new Date(d.getTime() + hari * 864e5);
+        }
+        // Laporan internal wajib masuk 2x24 jam setelah insiden
+        function jamTerlambatLapor(r) {
+            if (!r.waktu_insiden || !r.waktu_lapor) return 0;
+            const jam = (new Date(r.waktu_lapor) - new Date(r.waktu_insiden)) / 36e5;
+            return jam > 48 ? jam : 0;
+        }
+        const tglID = d => d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+        function sisaHariBadge(batas) {
+            const sisa = Math.ceil((batas - new Date()) / 864e5);
+            if (sisa < 0) return `<span class="badge bg-danger p-1 w-100 mt-1">Lewat batas ${Math.abs(sisa)} hari</span>`;
+            if (sisa <= 3) return `<span class="badge bg-warning text-dark p-1 w-100 mt-1"><i class="fas fa-hourglass-half me-1"></i>Sisa ${sisa} hari</span>`;
+            return `<span class="badge bg-light text-dark border p-1 w-100 mt-1"><i class="fas fa-hourglass-start me-1"></i>Sisa ${sisa} hari (s.d. ${tglID(batas)})</span>`;
+        }
+        function catatanStatus(row) {
+            const st = statusIkp(row);
+            let h = '';
+            if (st === 'Baru' || st === 'Investigasi') h += sisaHariBadge(batasInv(row));
+            if (st === 'Investigasi') h += `<div class="small text-muted mt-1">${jenisInv(row) === 'rca' ? 'RCA' : 'Investigasi sederhana'}</div>`;
+            if (st === 'Tindak Lanjut' || st === 'Selesai') {
+                const t = ringkasTL[row.id_insiden];
+                if (t && t.total) h += `<div class="small mt-1">${t.selesai}/${t.total} tindakan selesai${t.lewat ? ` \u00b7 <span class="text-danger fw-bold">${t.lewat} lewat tenggat</span>` : ''}</div>`;
+            }
+            if (st === 'Ditolak' && row.alasan_ditolak) h += `<div class="small text-muted mt-1">${esc(row.alasan_ditolak)}</div>`;
+            const jt = jamTerlambatLapor(row);
+            if (jt) h += `<div class="small text-danger mt-1" title="Laporan internal wajib masuk paling lambat 2x24 jam setelah kejadian"><i class="fas fa-clock me-1"></i>Dilaporkan ${Math.floor(jt / 24)} hari setelah kejadian</div>`;
+            if (st !== 'Ditolak' && row.jenis_insiden === 'Sentinel') {
+                h += row.lapor_eksternal_pada
+                    ? `<div class="small text-success mt-1"><i class="fas fa-paper-plane me-1"></i>Dilaporkan ke KNKP ${tglID(row.lapor_eksternal_pada)}</div>`
+                    : `<div class="small text-danger fw-bold mt-1"><i class="fas fa-paper-plane me-1"></i>Belum dilaporkan ke KNKP (maks. 2x24 jam)</div>`;
+            }
+            return h;
+        }
 
         document.addEventListener("DOMContentLoaded", async function () {
             if (!supabaseClient) { Swal.fire('Error', 'Supabase belum dikonfigurasi', 'error'); return; }
@@ -281,6 +369,7 @@
                 filterTahun.add(new Option(`Tahun ${i}`, i));
             }
             filterTahun.value = currentYear;
+            ambilInstitusi().then(inst => { if (inst && inst.nama_rs) document.getElementById('cetakNamaRS').textContent = inst.nama_rs.toUpperCase(); }).catch(() => {});
 
             await loadDaftarInsiden();
         });
@@ -304,6 +393,7 @@
 
                 if (error) throw error;
                 listSemuaInsiden = data || [];
+                await muatRingkasTL(startDate);
                 
                 kalkulasiDanRenderStatistik();
                 renderTabel(listSemuaInsiden);
@@ -314,6 +404,22 @@
                 console.error(err);
                 document.getElementById('loadingMessage').innerHTML = `<h5 class="text-danger"><i class="fas fa-wifi me-2"></i>Gagal terhubung ke Database.</h5>`;
             }
+        }
+
+        async function muatRingkasTL(startDate) {
+            ringkasTL = {};
+            // Tindak lanjut dibuat setelah insiden, jadi cukup ambil yang dibuat sejak awal tahun terpilih
+            const { data, error } = await ambilSemua(() => supabaseClient.from('insiden_tindak_lanjut')
+                .select('id, id_insiden, status, tenggat').gte('dibuat_pada', startDate).order('id'));
+            if (error) { console.warn('Tindak lanjut insiden belum tersedia:', error.message); return; }
+            const hariIni = new Date().toISOString().slice(0, 10);
+            (data || []).forEach(t => {
+                const r = ringkasTL[t.id_insiden] || (ringkasTL[t.id_insiden] = { total: 0, selesai: 0, lewat: 0 });
+                if (t.status === 'batal') return;
+                r.total++;
+                if (t.status === 'selesai') r.selesai++;
+                else if (t.tenggat && t.tenggat < hariIni) r.lewat++;
+            });
         }
 
         function kalkulasiDanRenderStatistik() {
@@ -329,7 +435,8 @@
                 let jenis = row.jenis_insiden || 'Lainnya';
                 if(countJenis[jenis]) countJenis[jenis]++; else countJenis[jenis] = 1;
 
-                let unit = row.unit_terkait || 'Tidak Diketahui';
+                // Unit terkait: unit penyebab (detail IKP) -> unit_terkait -> unit pelapor
+                let unit = (row.detail_spesifik && row.detail_spesifik.unit_penyebab) || row.unit_terkait || row.unit_pelapor || 'Tidak Diketahui';
                 if(countLokasi[unit]) countLokasi[unit]++; else countLokasi[unit] = 1;
             });
 
@@ -438,40 +545,33 @@
                 else if(row.grading_risiko === 'Hijau') badgeGrading = `<span class="badge bg-success p-2 w-100">Sedang (Hijau)</span>`;
                 else badgeGrading = `<span class="badge bg-info text-dark p-2 w-100">Rendah (Biru)</span>`;
 
-                let badgeWaktu = '';
-                let statusInv = row.status_investigasi || 'Menunggu Review';
+                const st = statusIkp(row);
+                const [kls, ikon, label] = STATUS_IKP[st];
+                let badgeWaktu = `<span class="badge ${kls} p-2 w-100"><i class="fas ${ikon} me-1"></i> ${label}</span>` + catatanStatus(row);
 
-                if (statusInv === 'Selesai') {
-                    badgeWaktu = `<span class="badge bg-success p-2 w-100"><i class="fas fa-check-double me-1"></i> Ditutup (Selesai)</span>`;
-                } else {
-                    let tglKejadian = new Date(row.waktu_insiden);
-                    let batasHari = (row.grading_risiko === 'Merah' || row.grading_risiko === 'Kuning') ? 45 : (row.grading_risiko === 'Hijau' ? 14 : 7);
-                    
-                    let batasTgl = new Date(tglKejadian.getTime() + (batasHari * 24 * 60 * 60 * 1000));
-                    let sisaHari = Math.ceil((batasTgl - new Date()) / (1000 * 60 * 60 * 24));
-
-                    if (sisaHari < 0) { badgeWaktu = `<span class="badge bg-danger shadow-sm p-2 w-100">OVERDUE ${Math.abs(sisaHari)} HR</span>`; } 
-                    else if (sisaHari <= 3) { badgeWaktu = `<span class="badge bg-warning text-dark shadow-sm p-2 w-100"><i class="fas fa-hourglass-half me-1"></i> Sisa ${sisaHari} Hari</span>`; } 
-                    else { badgeWaktu = `<span class="badge bg-secondary shadow-sm p-2 w-100"><i class="fas fa-hourglass-start me-1"></i> Sisa ${sisaHari} Hari</span>`; }
-                }
-
+                const jenis = jenisInv(row);
+                const fnInv = jenis === 'rca' ? 'bukaRCA' : 'bukaSederhana';
                 let aksiHtml = '';
-                let isRCA = (row.jenis_insiden !== 'KPC' && (row.grading_risiko === 'Merah' || row.grading_risiko === 'Kuning'));
-
-                if(statusInv === 'Selesai') {
-                    aksiHtml = `<button class="btn btn-sm btn-primary shadow-sm w-100 fw-bold text-white mb-1" onclick="${isRCA ? `bukaRCA('${idInsiden}')` : `bukaSederhana('${idInsiden}')`}"><i class="fas fa-print me-1"></i> Lihat Laporan Investigasi</button>`;
-                } else {
-                    if(!isAdmin) {
-                        aksiHtml = `<span class="text-muted" style="font-size:0.75rem;">Akses Terbatas: Menunggu Review Komite</span>`;
-                    } else {
-                        if(isRCA) {
-                            aksiHtml = `<button class="btn btn-sm btn-danger shadow-sm w-100 fw-bold text-white mb-1" onclick="bukaRCA('${idInsiden}')"><i class="fas fa-search-plus me-1"></i> Mulai Tim RCA</button>`;
-                        } else {
-                            aksiHtml = `<button class="btn btn-sm btn-success shadow-sm w-100 fw-bold text-white mb-1" onclick="bukaSederhana('${idInsiden}')"><i class="fas fa-search me-1"></i> Buat Investigasi Sederhana</button>`;
-                        }
-                    }
+                if (st === 'Baru') {
+                    aksiHtml = isAdmin
+                        ? `<button class="btn btn-sm btn-primary shadow-sm w-100 fw-bold mb-1" onclick="verifikasiInsiden('${idInsiden}')"><i class="fas fa-user-check me-1"></i> Verifikasi</button>`
+                        : `<span class="text-muted" style="font-size:0.75rem;">Menunggu verifikasi Komite</span>`;
+                } else if (st === 'Investigasi') {
+                    aksiHtml = isAdmin
+                        ? (jenis === 'rca'
+                            ? `<button class="btn btn-sm btn-danger shadow-sm w-100 fw-bold mb-1" onclick="bukaRCA('${idInsiden}')"><i class="fas fa-search-plus me-1"></i> Kerjakan RCA</button>`
+                            : `<button class="btn btn-sm btn-success shadow-sm w-100 fw-bold mb-1" onclick="bukaSederhana('${idInsiden}')"><i class="fas fa-search me-1"></i> Kerjakan Investigasi Sederhana</button>`)
+                        : `<span class="text-muted" style="font-size:0.75rem;">Sedang diinvestigasi Komite</span>`;
+                } else if (st === 'Tindak Lanjut' || st === 'Selesai') {
+                    aksiHtml = `<button class="btn btn-sm ${st === 'Selesai' ? 'btn-outline-warning text-dark' : 'btn-warning'} shadow-sm w-100 fw-bold mb-1" onclick="bukaTindakLanjut('${idInsiden}')"><i class="fas fa-tasks me-1"></i> Tindak Lanjut</button>`
+                             + `<button class="btn btn-sm btn-outline-primary w-100 fw-bold mb-1" onclick="${fnInv}('${idInsiden}')"><i class="fas fa-file-alt me-1"></i> Laporan Investigasi</button>`;
+                } else if (st === 'Ditolak' && isAdmin) {
+                    aksiHtml = `<button class="btn btn-sm btn-outline-dark w-100 fw-bold mb-1" onclick="bukaKembali('${idInsiden}')"><i class="fas fa-undo me-1"></i> Buka Kembali</button>`;
                 }
-                
+                if (isAdmin && st !== 'Ditolak' && row.jenis_insiden !== 'KPC') {
+                    aksiHtml += `<button class="btn btn-sm btn-outline-dark w-100 mb-1" onclick="catatLaporEksternal('${idInsiden}')"><i class="fas fa-paper-plane me-1"></i> ${row.lapor_eksternal_pada ? 'Laporan KNKP \u2713' : 'Catat Laporan KNKP'}</button>`;
+                }
+
                 if (isAdmin) {
                     aksiHtml += `<button class="btn btn-sm btn-outline-secondary w-100 fw-bold" onclick="hapusLaporan('${idInsiden}')"><i class="fas fa-trash me-1"></i> Hapus Kasus</button>`;
                 }
@@ -508,7 +608,8 @@
 
             let banner = document.getElementById('modalBanner');
             banner.className = 'p-3 mb-3 rounded text-center fw-bold shadow-sm text-white';
-            if(data.grading_risiko === 'Merah') { banner.classList.add('bg-danger'); banner.innerHTML = 'RISIKO EKSTREM (MERAH) - Wajib RCA Maksimal 45 Hari'; }
+            if(data.jenis_insiden === 'Sentinel') { banner.classList.add('bg-danger'); banner.innerHTML = 'KEJADIAN SENTINEL - Wajib RCA Maksimal 45 Hari & Lapor KNKP 2x24 Jam'; }
+            else if(data.grading_risiko === 'Merah') { banner.classList.add('bg-danger'); banner.innerHTML = 'RISIKO EKSTREM (MERAH) - Wajib RCA Maksimal 45 Hari'; }
             else if(data.grading_risiko === 'Kuning') { banner.classList.add('bg-warning', 'text-dark'); banner.classList.remove('text-white'); banner.innerHTML = 'RISIKO TINGGI (KUNING) - Wajib RCA Maksimal 45 Hari'; }
             else if(data.grading_risiko === 'Hijau') { banner.classList.add('bg-success'); banner.innerHTML = 'RISIKO SEDANG (HIJAU) - Investigasi Sederhana Maksimal 14 Hari'; }
             else { banner.classList.add('bg-info', 'text-dark'); banner.classList.remove('text-white'); banner.innerHTML = 'RISIKO RENDAH (BIRU) - Investigasi Sederhana Maksimal 7 Hari'; }
@@ -518,6 +619,13 @@
             document.getElementById('dtl_lokasi').innerText = data.lokasi_kejadian;
             document.getElementById('dtl_jenis').innerHTML = `<span class="badge bg-dark">${esc(data.jenis_insiden)}</span>`;
             document.getElementById('dtl_pelapor').innerText = `${data.nama_pelapor} (${data.unit_pelapor})`;
+            const stD = statusIkp(data);
+            let infoStatus = `<span class="badge ${STATUS_IKP[stD][0]}">${STATUS_IKP[stD][2]}</span>`;
+            if (data.diverifikasi_pada) infoStatus += ` <small class="text-muted">diverifikasi ${esc(data.diverifikasi_oleh || '')} ${tglID(data.diverifikasi_pada)}</small>`;
+            if (data.batas_investigasi) infoStatus += `<br><small>Batas investigasi (${jenisInv(data) === 'rca' ? 'RCA' : 'sederhana'}): <b>${tglID(data.batas_investigasi)}</b></small>`;
+            if (data.selesai_pada) infoStatus += `<br><small>Ditutup ${tglID(data.selesai_pada)}</small>`;
+            if (data.lapor_eksternal_pada) infoStatus += `<br><small>Dilaporkan ke KNKP ${tglID(data.lapor_eksternal_pada)}${data.lapor_eksternal_nomor ? ' (No. ' + esc(data.lapor_eksternal_nomor) + ')' : ''}</small>`;
+            document.getElementById('dtl_status').innerHTML = infoStatus + `<div>${catatanStatus(data)}</div>`;
 
             let spesifik = data.detail_spesifik || {};
             
@@ -539,7 +647,8 @@
             } else {
                 cardPasien.classList.add('d-none');
                 
-                if(spesifik.foto_bukti && spesifik.foto_bukti !== "") {
+                // Hanya tautan http(s) yang ditampilkan (isian datang dari formulir publik)
+                if(spesifik.foto_bukti && /^https?:\/\//i.test(String(spesifik.foto_bukti).trim())) {
                     wadahFoto.classList.remove('d-none');
                     document.getElementById('dtl_foto').src = spesifik.foto_bukti;
                     document.getElementById('link_foto').href = spesifik.foto_bukti;
@@ -568,6 +677,153 @@
         window.bukaSederhana = function(uuid) {
             localStorage.setItem("targetInvestigasi", uuid);
             window.location.href = "analisis_sederhana.html";
+        };
+
+        const pesanGagal = err => esc((err && err.message) || String(err));
+
+        window.verifikasiInsiden = async function(uuid) {
+            const r = listSemuaInsiden.find(x => x.id_insiden === uuid);
+            if (!r) return;
+            const opsi = wajibRCA(r)
+                ? { rca: 'RCA \u2013 batas 45 hari (wajib untuk ' + (r.jenis_insiden === 'Sentinel' ? 'Sentinel' : 'grading ' + r.grading_risiko) + ')' }
+                : { sederhana: `Investigasi sederhana \u2013 batas ${r.grading_risiko === 'Hijau' ? 14 : 7} hari`, rca: 'RCA \u2013 batas 45 hari' };
+            const hasil = await Swal.fire({
+                title: 'Verifikasi Laporan',
+                html: `<div class="small text-start">${esc(r.jenis_insiden || '-')} \u00b7 grading <b>${esc(r.grading_risiko || '-')}</b> \u00b7 ${esc(r.unit_pelapor || '')}<br>Pilih jenis investigasi, atau tolak bila bukan insiden / laporan ganda.</div>`,
+                input: 'select', inputOptions: opsi, inputValue: Object.keys(opsi)[0],
+                showCancelButton: true, showDenyButton: true,
+                confirmButtonText: 'Mulai Investigasi', denyButtonText: 'Tolak Laporan', cancelButtonText: 'Batal'
+            });
+            if (hasil.isDenied) {
+                const t = await Swal.fire({ title: 'Alasan penolakan', input: 'textarea', inputPlaceholder: 'mis. laporan ganda dengan laporan tgl ..., bukan insiden keselamatan pasien',
+                    showCancelButton: true, confirmButtonText: 'Tolak', inputValidator: v => (!v || !v.trim()) ? 'Alasan wajib diisi' : undefined });
+                if (!t.isConfirmed) return;
+                return ubahInsiden(uuid, { status_investigasi: 'Ditolak', alasan_ditolak: t.value.trim() }, 'Laporan ditolak');
+            }
+            if (!hasil.isConfirmed) return;
+            await ubahInsiden(uuid, { status_investigasi: 'Investigasi', jenis_investigasi: hasil.value }, 'Investigasi dimulai');
+        };
+
+        window.bukaKembali = async function(uuid) {
+            const t = await Swal.fire({ title: 'Buka kembali laporan?', text: 'Status kembali menjadi Baru untuk diverifikasi ulang.', icon: 'question', showCancelButton: true, confirmButtonText: 'Buka Kembali' });
+            if (t.isConfirmed) await ubahInsiden(uuid, { status_investigasi: 'Baru', jenis_investigasi: null }, 'Laporan dibuka kembali');
+        };
+
+        window.catatLaporEksternal = async function(uuid) {
+            const r = listSemuaInsiden.find(x => x.id_insiden === uuid);
+            if (!r) return;
+            const t = await Swal.fire({
+                title: 'Laporan ke KNKP (e-reporting)',
+                html: `<div class="text-start small">
+                    <label class="fw-bold">Tanggal dilaporkan</label><input id="sw_tgl_ext" type="date" class="form-control form-control-sm mb-2" value="${esc(r.lapor_eksternal_pada || new Date().toISOString().slice(0, 10))}">
+                    <label class="fw-bold">Nomor / kode laporan</label><input id="sw_no_ext" class="form-control form-control-sm" value="${esc(r.lapor_eksternal_nomor || '')}">
+                    ${r.jenis_insiden === 'Sentinel' ? '<div class="text-danger mt-2">Kejadian sentinel wajib dilaporkan paling lambat 2x24 jam.</div>' : ''}</div>`,
+                showCancelButton: true, showDenyButton: !!r.lapor_eksternal_pada, denyButtonText: 'Hapus Catatan', confirmButtonText: 'Simpan',
+                preConfirm: () => {
+                    const tgl = document.getElementById('sw_tgl_ext').value;
+                    if (!tgl) { Swal.showValidationMessage('Tanggal wajib diisi'); return false; }
+                    return { tgl, no: document.getElementById('sw_no_ext').value.trim() };
+                }
+            });
+            if (t.isDenied) return ubahInsiden(uuid, { lapor_eksternal_pada: null, lapor_eksternal_nomor: null }, 'Catatan dihapus');
+            if (!t.isConfirmed) return;
+            await ubahInsiden(uuid, { lapor_eksternal_pada: t.value.tgl, lapor_eksternal_nomor: t.value.no || null }, 'Tersimpan');
+        };
+
+        async function ubahInsiden(uuid, nilai, judul) {
+            const { error } = await supabaseClient.from('data_insiden').update(nilai).eq('id_insiden', uuid);
+            if (error) { Swal.fire('Gagal', pesanGagal(error), 'error'); return false; }
+            Swal.fire({ title: judul, icon: 'success', timer: 1300, showConfirmButton: false });
+            await loadDaftarInsiden();
+            return true;
+        }
+
+        // ---------------- Tindak lanjut ----------------
+        window.bukaTindakLanjut = async function(uuid) {
+            tlAktif = uuid;
+            await muatTL();
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('modalTL')).show();
+        };
+        document.getElementById('modalTL').addEventListener('hidden.bs.modal', () => { if (perluMuatUlang) { perluMuatUlang = false; loadDaftarInsiden(); } });
+
+        async function muatTL() {
+            const r = listSemuaInsiden.find(x => x.id_insiden === tlAktif) || {};
+            const inv = r.investigasi_komite || {};
+            const st = statusIkp(r);
+            document.getElementById('tlInfo').innerHTML = `<div class="d-flex flex-wrap gap-2 align-items-center"><span class="badge bg-dark">${esc(r.jenis_insiden || '-')}</span>
+                <span class="badge ${STATUS_IKP[st][0]}">${STATUS_IKP[st][2]}</span><span class="text-muted">${tglID(r.waktu_insiden)} \u00b7 ${esc(r.unit_pelapor || '')}</span></div>
+                ${inv.akar_masalah ? `<div class="mt-2"><b>Akar masalah:</b> ${esc(inv.akar_masalah)}</div>` : ''}
+                ${inv.rekomendasi ? `<div><b>Rekomendasi:</b> ${esc(inv.rekomendasi)}</div>` : ''}`;
+            const wadah = document.getElementById('tlDaftar');
+            wadah.innerHTML = '<div class="text-muted small"><i class="fas fa-spinner fa-spin me-1"></i> Memuat...</div>';
+            const { data, error } = await supabaseClient.from('insiden_tindak_lanjut').select('*').eq('id_insiden', tlAktif).order('dibuat_pada');
+            if (error) { wadah.innerHTML = `<div class="text-danger small">${pesanGagal(error)}</div>`; return; }
+            const hariIni = new Date().toISOString().slice(0, 10);
+            const terbuka = (data || []).filter(t => t.status === 'rencana' || t.status === 'berjalan').length;
+            wadah.innerHTML = (data || []).length ? (data || []).map(t => {
+                const lewat = t.tenggat && t.tenggat < hariIni && (t.status === 'rencana' || t.status === 'berjalan');
+                const kontrol = isAdmin ? `<div class="row g-2 mt-1 align-items-end">
+                        <div class="col-md-3"><label class="small fw-bold">Status</label><select id="tl_st_${t.id}" class="form-select form-select-sm">${Object.keys(STATUS_TL).map(k => `<option value="${k}" ${k === t.status ? 'selected' : ''}>${STATUS_TL[k][1]}</option>`).join('')}</select></div>
+                        <div class="col-md-3"><label class="small fw-bold">Tenggat</label><input id="tl_tg_${t.id}" type="date" class="form-control form-control-sm" value="${esc(t.tenggat || '')}"></div>
+                        <div class="col-md-4"><label class="small fw-bold">Bukti / keterangan</label><input id="tl_bk_${t.id}" class="form-control form-control-sm" value="${esc(t.bukti || '')}" placeholder="no. SPO/memo, tautan dokumen, dsb."></div>
+                        <div class="col-md-2 d-flex gap-1"><button class="btn btn-sm btn-primary w-100" onclick="simpanTL('${t.id}')" title="Simpan"><i class="fas fa-save"></i></button><button class="btn btn-sm btn-outline-danger" onclick="hapusTL('${t.id}')" title="Hapus"><i class="fas fa-trash"></i></button></div>
+                    </div>` : (t.bukti ? `<div class="small mt-1"><b>Bukti:</b> ${esc(t.bukti)}</div>` : '');
+                return `<div class="card border-0 shadow-sm mb-2 ${lewat ? 'border-start border-danger border-4' : ''}"><div class="card-body py-2">
+                    <div class="d-flex justify-content-between flex-wrap gap-2"><div class="fw-bold">${esc(t.tindakan)}</div>
+                    <div><span class="badge ${STATUS_TL[t.status][0]}">${STATUS_TL[t.status][1]}</span></div></div>
+                    ${t.rekomendasi ? `<div class="small text-muted">Rekomendasi: ${esc(t.rekomendasi)}</div>` : ''}
+                    <div class="small">PIC: <b>${esc(t.pic || '-')}</b> \u00b7 Tenggat: <b class="${lewat ? 'text-danger' : ''}">${tglID(t.tenggat)}</b>${lewat ? ' (lewat)' : ''}${t.selesai_pada ? ' \u00b7 selesai ' + tglID(t.selesai_pada) : ''}</div>
+                    ${kontrol}</div></div>`;
+            }).join('') : '<div class="text-muted small">Belum ada tindak lanjut.</div>';
+            document.getElementById('tlForm').classList.toggle('d-none', !isAdmin || st === 'Ditolak');
+            document.getElementById('btnTutupKasus').classList.toggle('d-none', !isAdmin || st !== 'Tindak Lanjut' || terbuka > 0);
+        }
+
+        async function setelahUbahTL(error) {
+            if (error) { Swal.fire('Gagal', pesanGagal(error), 'error'); return; }
+            perluMuatUlang = true;
+            // status kasus bisa berubah otomatis (ditutup) -> ambil ulang baris insiden
+            const { data } = await supabaseClient.from('data_insiden').select('*').eq('id_insiden', tlAktif).maybeSingle();
+            if (data) { const i = listSemuaInsiden.findIndex(x => x.id_insiden === tlAktif); if (i >= 0) listSemuaInsiden[i] = data; }
+            await muatTL();
+        }
+
+        window.tambahTL = async function() {
+            const tindakan = document.getElementById('tl_tindakan').value.trim();
+            if (!tindakan) { Swal.fire('Belum lengkap', 'Tindakan wajib diisi.', 'warning'); return; }
+            const { error } = await supabaseClient.from('insiden_tindak_lanjut').insert({
+                id_insiden: tlAktif, tindakan,
+                rekomendasi: document.getElementById('tl_rekomendasi').value.trim() || null,
+                pic: document.getElementById('tl_pic').value.trim() || null,
+                tenggat: document.getElementById('tl_tenggat').value || null
+            });
+            if (!error) ['tl_tindakan', 'tl_rekomendasi', 'tl_pic', 'tl_tenggat'].forEach(id => { document.getElementById(id).value = ''; });
+            await setelahUbahTL(error);
+        };
+
+        window.simpanTL = async function(id) {
+            const status = document.getElementById('tl_st_' + id).value;
+            const bukti = document.getElementById('tl_bk_' + id).value.trim() || null;
+            if (status === 'selesai' && !bukti) { Swal.fire('Bukti diperlukan', 'Isi bukti/keterangan penyelesaian (mis. nomor SPO, memo, tautan dokumen).', 'warning'); return; }
+            const { error } = await supabaseClient.from('insiden_tindak_lanjut')
+                .update({ status, bukti, tenggat: document.getElementById('tl_tg_' + id).value || null }).eq('id', id);
+            await setelahUbahTL(error);
+            if (!error) Swal.fire({ title: 'Tersimpan', icon: 'success', timer: 1000, showConfirmButton: false });
+        };
+
+        window.hapusTL = async function(id) {
+            const t = await Swal.fire({ title: 'Hapus tindak lanjut ini?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Hapus', confirmButtonColor: '#dc3545' });
+            if (!t.isConfirmed) return;
+            const { error } = await supabaseClient.from('insiden_tindak_lanjut').delete().eq('id', id);
+            await setelahUbahTL(error);
+        };
+
+        window.tutupKasus = async function() {
+            const t = await Swal.fire({ title: 'Tutup kasus?', text: 'Kasus dinyatakan selesai.', icon: 'question', showCancelButton: true, confirmButtonText: 'Tutup Kasus' });
+            if (!t.isConfirmed) return;
+            const { error } = await supabaseClient.from('data_insiden').update({ status_investigasi: 'Selesai' }).eq('id_insiden', tlAktif);
+            await setelahUbahTL(error);
+            if (!error) Swal.fire({ title: 'Kasus ditutup', icon: 'success', timer: 1300, showConfirmButton: false });
         };
 
         window.hapusLaporan = function(uuid) {

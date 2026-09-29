@@ -89,6 +89,7 @@ function loadNavigation() {
     if (isLoggedIn) {
         if (allowedPages.includes("input_mutu.html")) htmlSubMenuMutu += `<a href="input_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-0" id="menu-input-mutu" style="font-size: 0.95rem;"><i class="fas fa-edit me-2"></i> Input Laporan Mutu</a>`;
         if (allowedPages.includes("profil_indikator.html")) htmlSubMenuMutu += `<a href="profil_indikator.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-0" id="menu-kamus-indikator" style="font-size: 0.95rem;"><i class="fas fa-book-medical me-2"></i> Kamus Indikator Mutu</a>`;
+        if (allowedPages.includes("kepatuhan_pelaporan.html")) htmlSubMenuMutu += `<a href="kepatuhan_pelaporan.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-0" id="menu-kepatuhan" style="font-size: 0.95rem;"><i class="fas fa-clipboard-check me-2"></i> Kepatuhan Pelaporan</a>`;
         if (allowedPages.includes("laporan_mutu.html")) htmlSubMenuMutu += `<a href="laporan_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-0" id="menu-laporan-mutu" style="font-size: 0.95rem;"><i class="fas fa-chart-pie me-2"></i> Dasbor Capaian Mutu</a>`;
         if (allowedPages.includes("form_pdsa.html")) htmlSubMenuMutu += `<a href="form_pdsa.html" class="list-group-item list-group-item-action py-2 ps-5 sidebar-link border-0" id="menu-form-pdsa" style="font-size: 0.95rem;"><i class="fas fa-clipboard-list me-2"></i> Ruang Kerja PDSA</a>`;
     }
@@ -151,6 +152,7 @@ function loadNavigation() {
                 <div class="list-group list-group-flush" style="background-color: #fdfdfd;">
                     <a href="manajemen_akun.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0" id="menu-manajemen-akun" style="font-size: 0.95rem;"><i class="fas fa-users-cog me-2"></i> Manajemen Akun</a>
                     <a href="super_admin_panel.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0 mt-1" id="menu-super-admin" style="font-size: 0.95rem;"><i class="fas fa-hospital me-2"></i> Pengaturan Unit</a>
+                    <a href="pengaturan_institusi.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0 mt-1" id="menu-institusi" style="font-size: 0.95rem;"><i class="fas fa-landmark me-2"></i> Pengaturan Institusi</a>
                     <a href="form_builder.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0 mt-1" id="menu-form-builder" style="font-size: 0.95rem;"><i class="fas fa-cubes me-2"></i> Form Builder</a>
                     <a href="database_admin.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0 mt-1" style="font-size: 0.95rem;"><i class="fas fa-server me-2"></i> Backup & Database</a>
                     ${allowedPages.includes("audit_log.html") ? `<a href="audit_log.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-primary border-0 mt-1" id="menu-audit-log" style="font-size: 0.95rem;"><i class="fas fa-history me-2"></i> Log Audit</a>` : ''}
@@ -232,6 +234,7 @@ function loadNavigation() {
     else if (page === 'buku_panduan.html') { document.getElementById('menu-panduan')?.classList.add('active'); }
     else if (page === 'input_mutu.html') { document.getElementById('menu-input-mutu')?.classList.add('active'); document.getElementById('collapseMutu')?.classList.add('show'); }
     else if (page === 'profil_indikator.html') { document.getElementById('menu-kamus-indikator')?.classList.add('active'); document.getElementById('collapseMutu')?.classList.add('show'); }
+    else if (page === 'kepatuhan_pelaporan.html') { document.getElementById('menu-kepatuhan')?.classList.add('active'); document.getElementById('collapseMutu')?.classList.add('show'); }
     else if (page === 'laporan_mutu.html') { document.getElementById('menu-laporan-mutu')?.classList.add('active'); document.getElementById('collapseMutu')?.classList.add('show'); }
     else if (page === 'form_pdsa.html') { document.getElementById('menu-form-pdsa')?.classList.add('active'); document.getElementById('collapseMutu')?.classList.add('show'); }
     else if (page === 'risk_register.html') { document.getElementById('menu-risk-register')?.classList.add('active'); document.getElementById('collapseRisiko')?.classList.add('show'); } 
@@ -249,6 +252,7 @@ function loadNavigation() {
     else if (page === 'dasbor_risiko.html') { document.getElementById('menu-dasbor-risiko')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'profil_risiko_rs.html') { document.getElementById('menu-profil-risiko')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'daftar_fmea.html' || page === 'fmea_builder.html') { document.getElementById('menu-daftar-fmea')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
+    else if (page === 'pengaturan_institusi.html') { document.getElementById('menu-institusi')?.classList.add('active'); document.getElementById('collapseSystem')?.classList.add('show'); }
     else if (page === 'super_admin_panel.html') { document.getElementById('menu-super-admin')?.classList.add('active'); document.getElementById('collapseSystem')?.classList.add('show'); }
     else if (page === 'form_builder.html') { document.getElementById('menu-form-builder')?.classList.add('active'); document.getElementById('collapseSystem')?.classList.add('show'); }
     else if (page === 'manajemen_akun.html') { document.getElementById('menu-manajemen-akun')?.classList.add('active'); document.getElementById('collapseSystem')?.classList.add('show'); }
