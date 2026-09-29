@@ -3,640 +3,706 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Report Generator - SIM PMKP</title>
-    
+    <title>Laporan Terintegrasi - SIM PMKP</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
-
     <style>
         body { background-color: #f4f6f9; padding-top: 80px; padding-bottom: 40px; font-family: 'Segoe UI', Tahoma, sans-serif; }
-        .card-custom { box-shadow: 0 4px 15px rgba(0,0,0,.05); border-radius: 12px; border-top: 4px solid #d35400; background: #fff;}
-        .ai-banner { background: linear-gradient(135deg, #d35400 0%, #e67e22 100%); color: white; border-radius: 8px; padding: 20px; margin-bottom: 25px; }
-        .step-box { background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; height: 100%; }
-        .loader-ai { display: inline-block; width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 10px; background: #fff; border: none; }
+        .nav-tabs .nav-link { font-weight: 600; color: #495057; }
+        .nav-tabs .nav-link.active { color: #6f42c1; }
+        .kotak-angka { border: 1px solid #e9ecef; border-radius: 8px; padding: 10px 14px; background: #fff; height: 100%; }
+        .kotak-angka .nilai { font-size: 1.4rem; font-weight: 700; }
+        .bagian textarea { font-size: .88rem; }
+        #terminalLog { height: 150px; overflow-y: auto; font-size: .8rem; }
+        .chip { display: inline-block; font-size: .72rem; background: #fdecea; color: #842029; border-radius: 10px; padding: 1px 8px; margin: 1px 2px 1px 0; }
+        .unit-baris { cursor: pointer; }
+        .unit-baris:hover { background: #f8f9fa; }
+        .terkunci textarea, .terkunci input { background: #f8f9fa; }
     </style>
 </head>
 <body>
     <div id="navbar-container"></div>
     <div id="sidebar-container"></div>
 
-    <div class="container-fluid px-4" style="max-width: 1000px;">
-        <div class="bg-white p-4 mb-4 card-custom">
-            
-            <div class="ai-banner d-flex justify-content-between align-items-center flex-wrap gap-3">
+    <div class="container-fluid px-4" style="max-width: 1300px;">
+        <div class="card-custom p-3 mb-3">
+            <div class="d-flex justify-content-between flex-wrap gap-2 align-items-end">
                 <div>
-                    <h4 class="fw-bold mb-1"><i class="fas fa-robot text-warning me-2"></i> Agentic AI Report Generator</h4>
-                    <p class="mb-0 text-white-50" style="font-size:0.9rem;">Penyusunan otomatis Laporan Terintegrasi PMKP (Mutu Terpadu PDSA, Insiden, Risiko & FMEA, Budaya) menggunakan Qwen AI via Groq.</p>
+                    <h4 class="fw-bold mb-1"><i class="fas fa-file-contract text-primary me-2" style="color:#6f42c1 !important"></i> Laporan PMKP Terintegrasi</h4>
+                    <div class="text-muted small">Mutu, keselamatan pasien (IKP, KPC, budaya), manajemen risiko & FMEA — pembahasan dibantu AI, dokumen Word untuk Direksi dan umpan balik unit.</div>
+                </div>
+                <div class="d-flex gap-2 align-items-end flex-wrap">
+                    <div><label class="small fw-bold">Jenis</label><select id="pilihJenis" class="form-select form-select-sm" onchange="isiNomor()"><option value="triwulan">Triwulan</option><option value="semester">Semester</option><option value="tahunan">Tahunan</option></select></div>
+                    <div><label class="small fw-bold">Periode</label><select id="pilihNomor" class="form-select form-select-sm"></select></div>
+                    <div><label class="small fw-bold">Tahun</label><select id="pilihTahun" class="form-select form-select-sm"></select></div>
+                    <button class="btn btn-sm btn-primary fw-bold" onclick="bukaLaporan()"><i class="fas fa-folder-open me-1"></i> Buka</button>
                 </div>
             </div>
-
-            <div class="row g-4 mb-4 justify-content-center">
-                <div class="col-md-6">
-                    <div class="step-box border-primary">
-                        <h6 class="fw-bold text-primary border-bottom pb-2 mb-3">1. Parameter Laporan</h6>
-                        <label class="form-label text-secondary fw-bold" style="font-size: 0.85rem;">Pilih Tahun</label>
-                        <select id="filterTahun" class="form-select border-primary mb-3 fw-bold"></select>
-                        
-                        <label class="form-label text-secondary fw-bold" style="font-size: 0.85rem;">Periode Laporan</label>
-                        <select id="filterPeriode" class="form-select border-primary fw-bold" onchange="updateDetailPeriode()">
-                            <option value="triwulan">Laporan Triwulan</option>
-                            <option value="semester">Laporan Semester</option>
-                            <option value="tahunan">Laporan Tahunan</option>
-                        </select>
-                        <select id="filterDetailPeriode" class="form-select border-primary fw-bold mt-2"></select>
-                    </div>
-                </div>
-
-                <div class="col-md-6">
-                    <div class="step-box border-success text-center d-flex flex-column justify-content-center">
-                        <h6 class="fw-bold text-success border-bottom pb-2 mb-3">2. Eksekusi Engine Terpadu</h6>
-                        <p class="text-muted" style="font-size: 0.85rem;">Sistem akan mengkompilasi data (Hybrid Live/Archive) dan merender puluhan grafik otomatis untuk dokumen Word.</p>
-                        <button class="btn btn-success fw-bold py-3 shadow mt-auto" id="btnGenerate" onclick="jalankanProsesIntegrasi()">
-                            <i class="fas fa-magic me-2"></i> Ekstrak & Buat Laporan MS Word
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-dark p-3 rounded" id="terminalBox" style="display: none;">
-                <h6 class="text-white fw-bold mb-2"><i class="fas fa-terminal text-success me-2"></i> Status Sistem:</h6>
-                <div id="terminalLog" class="text-success font-monospace" style="font-size: 0.85rem; height: 150px; overflow-y: auto;">
-                </div>
-            </div>
-
+            <div id="infoLaporan" class="mt-2 small"></div>
         </div>
-    </div>
 
-    <!-- WADAH RENDER GRAFIK TERSEMBUNYI (PENTING UNTUK WORD) -->
-    <div id="hiddenChartContainer" style="position: absolute; top: -9999px; left: -9999px; width: 600px; height: 400px;">
-        <canvas id="chartMutu" width="600" height="400"></canvas>
-        <canvas id="chartInsiden" width="600" height="400"></canvas>
-        <canvas id="chartIndividual" width="600" height="300"></canvas>
+        <div id="wadahUtama" class="d-none">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabData" type="button">1. Kesiapan & Data</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabNarasi" type="button">2. Pembahasan</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabUnit" type="button">3. Umpan Balik Unit</button></li>
+                <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabSetuju" type="button">4. Persetujuan & Unduh</button></li>
+            </ul>
+            <div class="tab-content card-custom p-3" style="border-top-left-radius:0">
+                <!-- TAB 1 -->
+                <div class="tab-pane fade show active" id="tabData">
+                    <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
+                        <div class="small text-muted" style="max-width:720px">Kompilasi mengambil data dari database dan menyimpannya sebagai <b>snapshot</b>: angka laporan tidak berubah walau data harian dikoreksi, sampai dikompilasi ulang (versi baru). Kunci periode dan tuntaskan validasi terlebih dahulu agar angka final.</div>
+                        <button class="btn btn-success fw-bold btn-edit" id="btnKompilasi" onclick="kompilasi()"><i class="fas fa-database me-1"></i> Kompilasi data</button>
+                    </div>
+                    <div class="bg-dark rounded p-2 mb-3 d-none" id="terminalBox"><div id="terminalLog" class="text-success font-monospace"></div></div>
+                    <div id="isiData"><div class="text-muted small">Laporan belum dikompilasi.</div></div>
+                </div>
+                <!-- TAB 2 -->
+                <div class="tab-pane fade" id="tabNarasi">
+                    <div class="d-flex justify-content-between flex-wrap gap-2 mb-2 align-items-center">
+                        <div class="small text-muted" style="max-width:700px">Analis AI menyusun pembahasan per komponen, lalu pembahasan terintegrasi dan ringkasan eksekutif dari hasil tersebut. Hanya data agregat (tanpa identitas pasien/pelapor) yang dikirim. Angka yang tidak ditemukan di data ditandai kuning — periksa sebelum disimpan.</div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-sm btn-outline-secondary btn-edit" onclick="isiSemuaAturan()"><i class="fas fa-list-ul me-1"></i> Isi otomatis tanpa AI</button>
+                            <button class="btn btn-sm btn-primary fw-bold btn-edit" onclick="susunSemuaAI()"><i class="fas fa-robot me-1"></i> Susun semua dengan AI</button>
+                            <button class="btn btn-sm btn-success fw-bold btn-edit" onclick="simpanNarasi()"><i class="fas fa-save me-1"></i> Simpan pembahasan</button>
+                        </div>
+                    </div>
+                    <div id="progresAI" class="small mb-2"></div>
+                    <div id="daftarBagian"></div>
+                </div>
+                <!-- TAB 3 -->
+                <div class="tab-pane fade" id="tabUnit">
+                    <div class="d-flex justify-content-between flex-wrap gap-2 mb-2 align-items-center">
+                        <div class="small text-muted" style="max-width:640px">Umpan balik berisi capaian indikator unit, kepatuhan pelaporan, insiden, risiko, apresiasi, hal yang perlu diperhatikan, dan saran. Unit dapat membacanya di Beranda setelah laporan disetujui Direktur.</div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-sm btn-outline-secondary btn-edit" onclick="isiUnitAturan(false)"><i class="fas fa-list-ul me-1"></i> Isi otomatis (yang kosong)</button>
+                            <button class="btn btn-sm btn-primary fw-bold btn-edit" onclick="susunUnitAI()"><i class="fas fa-robot me-1"></i> Susun saran dengan AI</button>
+                            <button class="btn btn-sm btn-outline-primary" onclick="unduhSemuaUnit()"><i class="fas fa-file-word me-1"></i> Word semua unit</button>
+                        </div>
+                    </div>
+                    <div id="progresUnit" class="small mb-2"></div>
+                    <div class="table-responsive"><table class="table table-sm align-middle small mb-0">
+                        <thead class="table-light"><tr><th>Unit</th><th>Sinyal</th><th class="text-center">Indikator tercapai</th><th class="text-center">Kepatuhan</th><th class="text-center">Insiden</th><th class="text-center">Risiko T/E</th><th>Umpan balik</th><th></th></tr></thead>
+                        <tbody id="tabelUnit"></tbody></table></div>
+                </div>
+                <!-- TAB 4 -->
+                <div class="tab-pane fade" id="tabSetuju">
+                    <div class="row g-3">
+                        <div class="col-lg-6">
+                            <h6 class="fw-bold">Unduh dokumen</h6>
+                            <div class="d-flex gap-2 flex-wrap mb-3">
+                                <button class="btn btn-primary fw-bold" onclick="unduhDireksi()"><i class="fas fa-file-word me-1"></i> Laporan untuk Direksi (.docx)</button>
+                                <button class="btn btn-outline-primary" onclick="unduhSemuaUnit()"><i class="fas fa-file-word me-1"></i> Umpan balik semua unit</button>
+                            </div>
+                            <div class="small text-muted mb-3">Dokumen dapat disimpan sebagai PDF dari Word (File → Save As → PDF). Sebelum disetujui, sampul memuat tanda DRAF.</div>
+                            <h6 class="fw-bold">Status & disposisi Direktur</h6>
+                            <div id="panelStatus"></div>
+                        </div>
+                        <div class="col-lg-6">
+                            <h6 class="fw-bold">Tindak lanjut dari laporan ini</h6>
+                            <div class="small text-muted mb-1">Rekomendasi strategis dan disposisi Direktur yang dipantau; tampil di laporan periode berikutnya.</div>
+                            <div id="daftarTL"></div>
+                            <div class="card border-0 bg-light p-2 mt-2 btn-edit-tl">
+                                <div class="row g-1">
+                                    <div class="col-12"><textarea id="tl_uraian" class="form-control form-control-sm" rows="2" placeholder="Uraian tindak lanjut"></textarea></div>
+                                    <div class="col-md-4"><select id="tl_sumber" class="form-select form-select-sm"><option value="disposisi">Disposisi Direktur</option><option value="rekomendasi">Rekomendasi</option></select></div>
+                                    <div class="col-md-4"><input id="tl_pic" class="form-control form-control-sm" placeholder="PIC / unit"></div>
+                                    <div class="col-md-4"><input id="tl_tenggat" type="date" class="form-control form-control-sm"></div>
+                                </div>
+                                <div class="d-flex gap-2 mt-1">
+                                    <button class="btn btn-sm btn-primary" onclick="tambahTL()"><i class="fas fa-plus me-1"></i> Tambah</button>
+                                    <button class="btn btn-sm btn-outline-secondary" onclick="imporRekomendasi()">Ambil dari rekomendasi strategis</button>
+                                </div>
+                            </div>
+                            <h6 class="fw-bold mt-3">Tindak lanjut laporan sebelumnya yang masih terbuka</h6>
+                            <div id="daftarTLLama" class="small"></div>
+                            <h6 class="fw-bold mt-3">Riwayat</h6>
+                            <div id="riwayat" class="small"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
-    <script src="engine_mutu.js"></script>
     <script src="auth.js"></script>
     <script src="components.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/docx@9.6.1/dist/index.iife.js"></script>
+    <script src="engine_mutu.js"></script>
+    <script src="laporan_data.js"></script>
+    <script src="laporan_grafik.js"></script>
+    <script src="laporan_docx.js"></script>
     <script>
-        const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        // Akses halaman diatur oleh RBAC (auth.js + role_permissions); akses data oleh RLS.
+        const BAGIAN = [
+            { k: 'eksekutif', judul: 'Ringkasan Eksekutif', poin: 'Sorotan utama (satu per baris)', rek: false },
+            { k: 'mutu', judul: 'Pembahasan Komponen Mutu', poin: 'Temuan kunci (satu per baris)', rek: true },
+            { k: 'keselamatan', judul: 'Pembahasan Keselamatan Pasien (IKP & KPC)', poin: 'Temuan kunci (satu per baris)', rek: true },
+            { k: 'budaya', judul: 'Pembahasan Budaya Keselamatan', poin: 'Temuan kunci (satu per baris)', rek: true },
+            { k: 'risiko', judul: 'Pembahasan Manajemen Risiko & FMEA', poin: 'Temuan kunci (satu per baris)', rek: true },
+            { k: 'integrasi', judul: 'Pembahasan Terintegrasi & Rekomendasi Strategis', poin: 'Keterkaitan utama (satu per baris)', rek: true }
+        ];
+        const URUT_AI = ['mutu', 'keselamatan', 'budaya', 'risiko', 'integrasi', 'eksekutif'];
+        let inst = null, lap = null, snap = null, narasi = {}, umpan = {}, tlIni = [], tlLama = [], angkaSah = null;
 
-        // GROQ_API_KEY TIDAK LAGI ADA DI SINI — pemanggilan AI sekarang lewat
-        // Edge Function 'generate-laporan-ai' (key disimpan sebagai secret di server).
+        const tgl = d => d ? new Date(String(d).length === 10 ? d + 'T00:00:00' : d).toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', ...(String(d).length > 10 ? { hour: '2-digit', minute: '2-digit' } : {}) }) : '-';
+        const tunda = ms => new Promise(r => setTimeout(r, ms));
+        const bisaUbah = () => lap && lap.status === 'draf';
+        const baris = t => String(t || '').split('\n').map(s => s.replace(/^\s*[-•*]\s*/, '').trim()).filter(Boolean);
 
-        let masterIndikator = []; let setupForm = [];
-        let rawDataMutu = []; let hasilAgregasi = []; 
-        let rawDataInsiden = []; let rawDataRisiko = []; let rawDataPdsa = []; let rawDataFmea = []; let rawDataBudaya = [];
-        
-        let rawDataArsip = []; // WADAH BARU UNTUK GUDANG ARSIP
-
-        let statDataMutu = { total: 0, tercapai: 0, gagal: 0, avgInm: 0 };
-        let statDataInsiden = { total: 0, merah: 0, kuning: 0, hijau: 0, biru: 0 };
-
-        const kamusWaktu = {
-            'triwulan': { '1': ['Januari', 'Februari', 'Maret'], '2': ['April', 'Mei', 'Juni'], '3': ['Juli', 'Agustus', 'September'], '4': ['Oktober', 'November', 'Desember'] },
-            'semester': { '1': ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni'], '2': ['Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] },
-            'tahunan': { '1': ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] }
-        };
-        const intToBulanStr = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-
-        document.addEventListener("DOMContentLoaded", async function () {
+        document.addEventListener('DOMContentLoaded', async () => {
             if (!supabaseClient) return;
-            const currentYear = new Date().getFullYear();
-            const filterTahun = document.getElementById('filterTahun');
-            // Ditambahkan tahun-tahun sebelumnya agar bisa mengecek arsip
-            for(let i = currentYear - 2; i <= currentYear; i++) {
-                filterTahun.add(new Option(i, i));
-            }
-            filterTahun.value = currentYear;
-            updateDetailPeriode();
+            if (!isAdminMutu()) { document.querySelector('.container-fluid').innerHTML = '<div class="alert alert-warning">Halaman ini khusus Komite Mutu (role administrator).</div>'; return; }
+            const kini = new Date(), th = kini.getFullYear();
+            const selT = document.getElementById('pilihTahun');
+            for (let t = th - 3; t <= th; t++) selT.add(new Option(t, t));
+            // Bawaan: triwulan terakhir yang sudah berakhir
+            let tw = Math.floor(kini.getMonth() / 3); let thTw = th;
+            if (tw === 0) { tw = 4; thTw = th - 1; }
+            selT.value = thTw; isiNomor(); document.getElementById('pilihNomor').value = tw;
+            try { inst = await ambilInstitusi(); } catch (e) { inst = { ...INSTITUSI_BAWAAN }; }
         });
 
-        window.updateDetailPeriode = function() {
-            const tipe = document.getElementById('filterPeriode').value;
-            const selDetail = document.getElementById('filterDetailPeriode');
-            selDetail.innerHTML = '';
-            
-            if (tipe === 'triwulan') {
-                selDetail.add(new Option('Triwulan 1 (Jan-Mar)', '1')); selDetail.add(new Option('Triwulan 2 (Apr-Jun)', '2'));
-                selDetail.add(new Option('Triwulan 3 (Jul-Sep)', '3')); selDetail.add(new Option('Triwulan 4 (Okt-Des)', '4'));
-            } else if (tipe === 'semester') {
-                selDetail.add(new Option('Semester 1 (Jan-Jun)', '1')); selDetail.add(new Option('Semester 2 (Jul-Des)', '2'));
-            } else {
-                selDetail.add(new Option('Satu Tahun Penuh', '1'));
-                selDetail.style.display = 'none';
-            }
-            if(tipe !== 'tahunan') selDetail.style.display = 'block';
+        window.isiNomor = function() {
+            const j = document.getElementById('pilihJenis').value, s = document.getElementById('pilihNomor');
+            s.innerHTML = '';
+            const op = j === 'triwulan' ? ['I (Jan–Mar)', 'II (Apr–Jun)', 'III (Jul–Sep)', 'IV (Okt–Des)'] : j === 'semester' ? ['I (Jan–Jun)', 'II (Jul–Des)'] : ['Satu tahun'];
+            op.forEach((t, i) => s.add(new Option(t, i + 1)));
         };
 
-        function logTerminal(pesan) {
-            const term = document.getElementById('terminalLog');
-            const time = new Date().toLocaleTimeString('id-ID');
-            term.innerHTML += "[" + time + "] > " + pesan + "<br>";
-            term.scrollTop = term.scrollHeight;
+        function logTerminal(p) {
+            const t = document.getElementById('terminalLog');
+            t.innerHTML += `[${new Date().toLocaleTimeString('id-ID')}] ${esc(p)}<br>`; t.scrollTop = t.scrollHeight;
         }
 
-        // Rumus N/D dihitung di database (fungsi hitung_capaian_mutu); engine_mutu.js dipakai untuk hitungCapaianND.
+        // =============================================================
+        // BUKA / MUAT
+        // =============================================================
+        window.bukaLaporan = async function() {
+            const jenis = document.getElementById('pilihJenis').value, nomor = Number(document.getElementById('pilihNomor').value), tahun = Number(document.getElementById('pilihTahun').value);
+            const { data, error } = await supabaseClient.from('laporan_periodik').select('*').eq('jenis', jenis).eq('tahun', tahun).eq('nomor', nomor).maybeSingle();
+            if (error) { Swal.fire('Gagal', esc(error.message) + '<br><small>Pastikan migrasi laporan periodik sudah dijalankan.</small>', 'error'); return; }
+            lap = data || { id: null, jenis, tahun, nomor, status: 'draf', versi: 0, narasi: {}, data: null };
+            await muatLaporan();
+        };
 
-        window.jalankanProsesIntegrasi = async function() {
-            const btn = document.getElementById('btnGenerate');
-            btn.disabled = true; btn.innerHTML = '<div class="loader-ai me-2"></div> Sistem Sedang Bekerja...';
-            document.getElementById('terminalBox').style.display = 'block';
-            document.getElementById('terminalLog').innerHTML = '';
+        async function muatLaporan() {
+            snap = lap.data || null; narasi = JSON.parse(JSON.stringify(lap.narasi || {})); umpan = {}; tlIni = []; tlLama = [];
+            angkaSah = snap ? lapAngkaDalam(snap) : null;
+            if (lap.id) {
+                const [u, t, l] = await Promise.all([
+                    supabaseClient.from('laporan_umpan_balik_unit').select('*').eq('id_laporan', lap.id).order('unit_kerja'),
+                    supabaseClient.from('laporan_tindak_lanjut').select('*').eq('id_laporan', lap.id).order('dibuat_pada'),
+                    supabaseClient.from('laporan_tindak_lanjut').select('*').neq('id_laporan', lap.id).in('status', ['rencana', 'berjalan']).order('dibuat_pada')
+                ]);
+                if (l.data && l.data.length) {
+                    const { data: lp } = await supabaseClient.from('laporan_periodik').select('id, judul').in('id', [...new Set(l.data.map(x => x.id_laporan))]);
+                    const judul = new Map((lp || []).map(x => [x.id, x.judul]));
+                    l.data.forEach(x => { x.judul_laporan = judul.get(x.id_laporan) || ''; });
+                }
+                (u.data || []).forEach(r => { umpan[r.unit_kerja] = r; });
+                tlIni = t.data || []; tlLama = l.data || [];
+            }
+            document.getElementById('wadahUtama').classList.remove('d-none');
+            gambarInfo(); gambarData(); gambarBagian(); gambarUnit(); gambarSetuju();
+        }
 
-            const tahun = parseInt(document.getElementById('filterTahun').value);
-            const tipePeriode = document.getElementById('filterPeriode').value;
-            const detailPeriode = document.getElementById('filterDetailPeriode').value;
-            const listBulanTeks = kamusWaktu[tipePeriode][detailPeriode];
-            const listBulanAngka = listBulanTeks.map(b => intToBulanStr.indexOf(b) + 1);
+        function gambarInfo() {
+            const P = lapPeriode(lap.jenis, lap.nomor, lap.tahun);
+            const warna = { draf: 'bg-secondary', diajukan: 'bg-warning text-dark', disetujui: 'bg-success' }[lap.status];
+            const nama = { draf: 'Draf', diajukan: 'Diajukan ke Direktur', disetujui: 'Disetujui Direktur' }[lap.status];
+            document.getElementById('infoLaporan').innerHTML = `<span class="fw-bold">${esc(P.label)}</span> <span class="badge ${warna} ms-1">${nama}</span>
+                ${lap.id ? `<span class="text-muted ms-2">versi data ${lap.versi} · dikompilasi ${tgl(lap.dikompilasi_pada)} oleh ${esc(lap.dikompilasi_oleh || '-')}${lap.ai_model ? ` · AI: ${esc(lap.ai_model)}` : ''}</span>` : '<span class="text-muted ms-2">belum dibuat — klik Kompilasi data</span>'}
+                ${lap.status !== 'draf' ? '<div class="text-warning-emphasis mt-1"><i class="fas fa-lock me-1"></i>Isi laporan terkunci. Kembalikan ke draf di tab Persetujuan untuk mengubah.</div>' : ''}`;
+            document.querySelectorAll('.btn-edit').forEach(b => { b.disabled = !bisaUbah(); });
+        }
 
-            let judulPeriodeRaw = tipePeriode === "tahunan" ? "TAHUNAN TAHUN " + tahun : tipePeriode.toUpperCase() + " " + detailPeriode + " TAHUN " + tahun;
-
+        // =============================================================
+        // KOMPILASI
+        // =============================================================
+        window.kompilasi = async function() {
+            if (!bisaUbah()) return;
+            if (lap.id && lap.data) {
+                const t = await Swal.fire({ title: 'Kompilasi ulang?', html: 'Angka laporan diganti dengan data terbaru (versi baru). Pembahasan yang sudah ditulis tetap ada; periksa ulang angkanya setelah ini.', icon: 'question', showCancelButton: true, confirmButtonText: 'Kompilasi ulang' });
+                if (!t.isConfirmed) return;
+            }
+            const btn = document.getElementById('btnKompilasi'); btn.disabled = true;
+            document.getElementById('terminalBox').classList.remove('d-none'); document.getElementById('terminalLog').innerHTML = '';
             try {
-                logTerminal("Memulai koneksi ke Supabase Database...");
-
-                logTerminal("Mengekstrak data Indikator Mutu (Status Aktif)...");
-                const resInd = await supabaseClient.from('master_indikator').select('*').neq('status_aktif', false); 
-                masterIndikator = resInd.data || [];
-                const resForm = await supabaseClient.from('setup_formulir').select('*'); 
-                setupForm = resForm.data || [];
-
-                // ==============================================================
-                // HYBRID DATA ROUTING (ARSIP VS LIVE)
-                // ==============================================================
-                logTerminal("Mengecek Gudang Arsip (Capaian Beku)...");
-                rawDataArsip = await ambilSemuaBaris(() => supabaseClient.from('arsip_capaian_mutu').select('*').eq('tahun', tahun).in('bulan', listBulanAngka).order('id'));
-                
-                logTerminal("Menghitung capaian live di database...");
-                rawDataMutu = await ambilSemuaBaris(() => supabaseClient.rpc('hitung_capaian_mutu', { p_tahun: tahun, p_bulan: listBulanAngka }).order('id_indikator').order('unit_kerja').order('bulan'));
-
-                logTerminal("Mengeksekusi Agregator Hybrid...");
-                kalkulasiCapaianKuantitatif(tahun, listBulanTeks, listBulanAngka);
-
-                logTerminal("Mengekstrak data Insiden Keselamatan Pasien (IKP)...");
-                // waktu_insiden bertipe "timestamp without time zone" (jam lokal WIB),
-                // jadi batasnya ditulis sebagai jam lokal — BUKAN toISOString() (UTC, geser 7 jam).
-                const duaDigit = n => String(n).padStart(2, '0');
-                const blnAwal = listBulanAngka[0], blnAkhir = listBulanAngka[listBulanAngka.length - 1];
-                const hariAkhir = new Date(tahun, blnAkhir, 0).getDate();
-                let startDate = `${tahun}-${duaDigit(blnAwal)}-01T00:00:00`;
-                // (Dulu memakai "+ 1" pada bulan -> periode kelebihan 1 bulan.)
-                let endDate = `${tahun}-${duaDigit(blnAkhir)}-${duaDigit(hariAkhir)}T23:59:59.999`;
-                const resInsiden = await ambilSemua(() => supabaseClient.from('data_insiden').select('*').gte('waktu_insiden', startDate).lte('waktu_insiden', endDate).order('id_insiden'));
-                if (resInsiden.error) throw resInsiden.error;
-                rawDataInsiden = resInsiden.data || [];
-                kalkulasiStatistikInsiden();
-
-                logTerminal("Mengekstrak jejak rekam PDSA...");
-                const resPdsa = await ambilSemua(() => supabaseClient.from('data_pdsa').select('*').order('id_pdsa'));
-                if(resPdsa.data) rawDataPdsa = resPdsa.data.filter(row => row.periode_analisis && row.periode_analisis.includes(tahun.toString()));
-                else rawDataPdsa = [];
-
-                logTerminal("Mengekstrak data Risiko Korporat & FMEA...");
-                const resRisiko = await ambilSemua(() => supabaseClient.from('data_risiko').select('*').eq('tahun', tahun).eq('is_profil_rs', true).order('id_risiko'));
-                rawDataRisiko = resRisiko.data || [];
-                
-                // Rentang 1 Jan - 31 Des (WIB). Kolom timestamp tidak bisa difilter dengan LIKE.
-                const awalTahun = `${tahun}-01-01T00:00:00+07:00`, awalTahunDepan = `${Number(tahun) + 1}-01-01T00:00:00+07:00`;
-                const resFmea = await ambilSemua(() => supabaseClient.from('data_fmea').select('*').gte('tanggal_dibuat', awalTahun).lt('tanggal_dibuat', awalTahunDepan).order('id_proyek'));
-                if (resFmea.error) console.error('Gagal ambil FMEA:', resFmea.error);
-                rawDataFmea = resFmea.data || [];
-
-                logTerminal("Mengekstrak data Survei Budaya Keselamatan Pasien...");
-                // Tabel survei yang benar adalah data_survey_budaya (kolom waktu: "timestamp")
-                // Cukup hitung jumlahnya (tanpa menarik baris), jadi tidak terkena batas 1.000
-                const resBudaya = await supabaseClient.from('data_survey_budaya').select('id_survey', { count: 'exact', head: true }).gte('timestamp', awalTahun).lt('timestamp', awalTahunDepan);
-                if (resBudaya.error) console.error('Gagal ambil survei budaya:', resBudaya.error);
-                rawDataBudaya = { length: resBudaya.count || 0 };
-
-                logTerminal("Mem-build puluhan grafik statistik indikator (Base64)...");
-                await generateChartsBase64(listBulanTeks);
-
-                logTerminal("Merumuskan Prompt Khusus untuk Qwen AI...");
-                let narasiAI = await callGroqAPI(judulPeriodeRaw);
-
-                logTerminal("Menyusun struktur dokumen MS Word (Tata Naskah Dinas)...");
-                buildWordDocument(judulPeriodeRaw, narasiAI, listBulanTeks);
-
-                logTerminal("✅ BERHASIL! Dokumen sedang diunduh...");
-                Swal.fire('Selesai!', 'Laporan Terintegrasi berhasil dibuat dan diekspor ke MS Word.', 'success');
-
-            } catch (err) {
-                console.error(err);
-                logTerminal("❌ ERROR: " + (err.message || 'Terjadi kesalahan sistem'));
-                Swal.fire('Gagal', 'Proses pembuatan laporan gagal. Periksa koneksi atau API Key.', 'error');
-            } finally {
-                btn.disabled = false; btn.innerHTML = '<i class="fas fa-magic me-2"></i> Ekstrak & Buat Laporan MS Word';
-            }
+                const P = lapPeriode(lap.jenis, lap.nomor, lap.tahun);
+                const S = await lapKumpulkanSumber(P, logTerminal);
+                logTerminal('Menyusun snapshot (mutu, keselamatan, budaya, risiko, FMEA, keterkaitan, unit)...');
+                const s = lapSusunSnapshot(S);
+                const baru = { data: s, judul: `Laporan PMKP Terintegrasi ${P.label}` };
+                let res;
+                if (lap.id) res = await supabaseClient.from('laporan_periodik').update(baru).eq('id', lap.id).select().single();
+                else res = await supabaseClient.from('laporan_periodik').insert({ jenis: lap.jenis, tahun: lap.tahun, nomor: lap.nomor, ...baru }).select().single();
+                if (res.error) throw res.error;
+                lap = res.data;
+                logTerminal(`Selesai. Versi data ${lap.versi}, ukuran ${Math.round(JSON.stringify(s).length / 1024)} KB.`);
+                await muatLaporan();
+                Swal.fire({ title: 'Data terkompilasi', icon: 'success', timer: 1400, showConfirmButton: false });
+            } catch (e) {
+                console.error(e); logTerminal('GAGAL: ' + (e.message || e));
+                Swal.fire('Gagal', esc(e.message || String(e)), 'error');
+            } finally { btn.disabled = !bisaUbah(); }
         };
 
-        // ==============================================
-        // AGREGASI HYBRID (CERDAS MEMBACA ARSIP/LIVE)
-        // ==============================================
-        function kalkulasiCapaianKuantitatif(tahun, namaBulanArr, listBulanAngka) {
-            hasilAgregasi = [];
-            statDataMutu = { total: 0, tercapai: 0, gagal: 0, avgInm: 0 };
-            let sumInm = 0, countInm = 0;
-
-            masterIndikator.forEach(profil => {
-                let idForm = profil.id_form;
-                let idIndikatorAsli = profil.id_indikator;
-                
-                let kat = (profil.kategori_indikator || "").toLowerCase();
-                let jenis = "IMP-Unit"; 
-                if (kat.includes("nasional") || kat.includes("inm")) jenis = "INM";
-                else if (kat.includes("imp-rs") || kat.includes("imp rs") || (kat.includes("prioritas") && (/\brs\b/.test(kat) || kat.includes("rumah sakit")))) jenis = "IMP-RS";
-
-                let sf = setupForm.find(f => f.id_form === idForm);
-                if(!sf) return;
-                // Indikator tanpa rumus & tanpa arsip tidak dilaporkan (mis. surveilans PPI)
-                if (!indikatorPakaiEngine(profil) && !rawDataArsip.some(a => a.id_indikator === idIndikatorAsli)) return;
-
-                let dataTransaksiFormIni = rawDataMutu.filter(d => d.id_indikator === idIndikatorAsli);
-                
-                let tempBulanData = {};
-                dataTransaksiFormIni.forEach(trans => {
-                    let blnStr = intToBulanStr[trans.bulan - 1];
-                    let unitRow = (jenis === 'INM' || jenis === 'IMP-RS') ? "RS_ALL" : trans.unit_kerja;
-                    if(!tempBulanData[unitRow]) tempBulanData[unitRow] = {};
-                    if(!tempBulanData[unitRow][blnStr]) tempBulanData[unitRow][blnStr] = [];
-                    tempBulanData[unitRow][blnStr].push(trans);
-                });
-
-                let unitsToProcess = Object.keys(tempBulanData);
-                
-                // Tambahkan Unit dari Arsip jika ada tapi tidak ada di data Live
-                let arsipIndikatorIni = rawDataArsip.filter(a => a.id_indikator === idIndikatorAsli);
-                arsipIndikatorIni.forEach(a => {
-                    let uArsip = (jenis === 'INM' || jenis === 'IMP-RS') ? "RS_ALL" : a.unit_pelaksana;
-                    if(!unitsToProcess.includes(uArsip)) unitsToProcess.push(uArsip);
-                });
-
-                if(unitsToProcess.length === 0) {
-                    unitsToProcess = [(jenis === 'INM' || jenis === 'IMP-RS') ? "RS_ALL" : "Unit Belum Lapor"];
-                    tempBulanData[unitsToProcess[0]] = {};
-                }
-
-                let tmplNum = (profil.template_numerator || "").toString().trim();
-                let tmplDen = (profil.template_denominator || "").toString().trim();
-                let isEngine = (tmplNum.startsWith('{') || tmplDen.startsWith('{'));
-
-                unitsToProcess.forEach(unt => {
-                    let blnData = {};
-                    namaBulanArr.forEach((b, idxArr) => {
-                        let blnAngka = listBulanAngka[idxArr];
-                        blnData[b] = { num: 0, den: 0, val: null, isArsip: false };
-
-                        // 1. CEK GUDANG ARSIP DULU
-                        // Arsip dibuat per unit. Untuk tingkat RS (RS_ALL), N & D semua unit
-                        // dijumlahkan dulu lalu dihitung capaiannya (sama seperti mesin live).
-                        let arsipCocok = (unt === "RS_ALL")
-                            ? arsipIndikatorIni.filter(a => a.bulan === blnAngka)
-                            : arsipIndikatorIni.filter(a => a.bulan === blnAngka && a.unit_pelaksana === unt);
-
-                        if (arsipCocok.length === 1) {
-                            blnData[b].val = arsipCocok[0].capaian;
-                            blnData[b].isArsip = true;
-                        } else if (arsipCocok.length > 1) {
-                            let sumN = arsipCocok.reduce((acc, a) => acc + (parseFloat(a.numerator) || 0), 0);
-                            let sumD = arsipCocok.reduce((acc, a) => acc + (parseFloat(a.denominator) || 0), 0);
-                            blnData[b].num = sumN; blnData[b].den = sumD;
-                            blnData[b].val = hitungCapaianND(sumN, sumD, profil.satuan);
-                            blnData[b].isArsip = true;
-                        } 
-                        // 2. JIKA TIDAK ADA DI ARSIP, JALANKAN MESIN LIVE
-                        else if (tempBulanData[unt] && tempBulanData[unt][b]) {
-                            // Hasil hitung database per unit; untuk RS_ALL, N & D semua unit dijumlahkan.
-                            let rows = tempBulanData[unt][b];
-                            blnData[b].num += rows.reduce((acc, r) => acc + (Number(r.numerator) || 0), 0);
-                            blnData[b].den += rows.reduce((acc, r) => acc + (Number(r.denominator) || 0), 0);
-                        }
-                    });
-
-                    let isPercentage = (profil.satuan || "").includes('%');
-                    let validBulanCount = 0; let sumCapaianBulan = 0;
-
-                    namaBulanArr.forEach(b => {
-                        // Jika bukan data arsip, kalkulasi num/den
-                        if (!blnData[b].isArsip) {
-                            blnData[b].val = hitungCapaianND(blnData[b].num, blnData[b].den, profil.satuan);
-                        }
-
-                        if(blnData[b].val !== null) {
-                            sumCapaianBulan += blnData[b].val;
-                            validBulanCount++;
-                        }
-                    });
-
-                    let avgCapai = validBulanCount > 0 ? (sumCapaianBulan / validBulanCount) : 0;
-                    avgCapai = Math.round(avgCapai * 100) / 100;
-                    let target = parseFloat(profil.target) || 0;
-                    
-                    let arah = (profil.arah_target || "Positif").toLowerCase();
-                    let isTercapai = false;
-                    if (arah.includes("kecil") || arah.includes("negatif") || arah.includes("≤")) { isTercapai = avgCapai <= target; } 
-                    else { isTercapai = avgCapai >= target; }
-
-                    statDataMutu.total++;
-                    if(isTercapai) statDataMutu.tercapai++; else statDataMutu.gagal++;
-
-                    if(jenis === 'INM') { sumInm += avgCapai; countInm++; }
-
-                    hasilAgregasi.push({
-                        id_indikator: idIndikatorAsli,
-                        judul: profil.judul_indikator,
-                        kategori_jenis: jenis,
-                        unit: unt,
-                        satuan: profil.satuan || '',
-                        target: target,
-                        capaian_bulan: blnData,
-                        rata_rata: avgCapai,
-                        isTercapai: isTercapai,
-                        chartBase64: ""
-                    });
-                });
-            });
-
-            if(countInm > 0) statDataMutu.avgInm = (sumInm/countInm).toFixed(1);
+        function kartuAngka(judul, nilai, ket, warna) {
+            return `<div class="col-6 col-md-3"><div class="kotak-angka"><div class="small text-muted">${judul}</div><div class="nilai ${warna || ''}">${nilai}</div><div class="small text-muted">${ket || ''}</div></div></div>`;
+        }
+        function gambarData() {
+            const w = document.getElementById('isiData');
+            if (!snap) { w.innerHTML = '<div class="text-muted small">Laporan belum dikompilasi.</div>'; return; }
+            const m = snap.mutu, ins = snap.insiden, r = snap.risiko, b = snap.budaya, f = snap.fmea;
+            const kes = (snap.kesiapan || []).map(k => `<li class="list-group-item d-flex gap-2 py-1"><i class="fas ${k.status === 'ok' ? 'fa-check-circle text-success' : 'fa-exclamation-triangle text-warning'} mt-1"></i><div><b>${esc(k.judul)}</b><div class="text-muted">${esc(k.detail)}</div></div></li>`).join('');
+            const tidak = m.indikator.filter(i => i.tercapai === false && i.jenis !== 'IMP-Unit');
+            const prio = lapUnitPrioritas(snap, 8);
+            const tema = snap.tema.filter(t => t.komponen >= 2).slice(0, 8);
+            w.innerHTML = `<div class="row g-2 mb-3">
+                    ${kartuAngka('Indikator tercapai', `${m.ringkasan.total.tercapai}/${m.ringkasan.total.total}`, lapFmt(m.ringkasan.total.persen, '%'))}
+                    ${kartuAngka('Laporan insiden', ins.total, `${ins.grading.Merah + ins.grading.Kuning} merah/kuning · ${ins.jenis.Sentinel || 0} sentinel`)}
+                    ${kartuAngka('Risiko terbuka', r.jumlah, `${r.perTingkat.Ekstrem + r.perTingkat.Tinggi} tinggi/ekstrem · ${r.tindakan.terlambat} tindakan terlambat`)}
+                    ${kartuAngka('Budaya keselamatan', b.ada && b.utama ? `${b.utama.responden} responden` : '-', b.ada && b.utama ? esc(b.utama.nama) : 'belum ada survei')}
+                </div>
+                <div class="row g-3">
+                    <div class="col-lg-5"><h6 class="fw-bold">Kesiapan data</h6><ul class="list-group small">${kes}</ul>
+                        <div class="small text-muted mt-1">Peringatan tidak menghalangi penyusunan, tetapi sebaiknya dituntaskan sebelum laporan diajukan.</div></div>
+                    <div class="col-lg-7">
+                        <h6 class="fw-bold">Indikator INM/IMP-RS tidak tercapai (${tidak.length})</h6>
+                        <div class="table-responsive mb-3" style="max-height:220px"><table class="table table-sm small mb-0"><thead class="table-light"><tr><th>Indikator</th><th class="text-center">Capaian</th><th class="text-center">Target</th><th class="text-center">Sebelumnya</th><th>PDSA</th></tr></thead><tbody>
+                        ${tidak.map(i => `<tr><td>${esc(i.judul)}</td><td class="text-center text-danger fw-bold">${lapFmt(i.nilai, i.satuan)}</td><td class="text-center">${lapArahKecil(i.arah) ? '≤' : '≥'} ${lapFmt(i.target, i.satuan)}</td><td class="text-center">${lapFmt(i.sebelumnya, i.satuan)}</td><td>${i.pdsa ? esc(i.pdsa.status) : '-'}</td></tr>`).join('') || '<tr><td colspan="5" class="text-muted">Semua tercapai.</td></tr>'}</tbody></table></div>
+                        <h6 class="fw-bold">Keterkaitan antarkomponen</h6>
+                        <div class="table-responsive mb-3"><table class="table table-sm small mb-0"><thead class="table-light"><tr><th>Tema</th><th class="text-center">Indikator tdk tercapai</th><th class="text-center">Insiden (berat)</th><th class="text-center">Risiko (T/E)</th><th>FMEA</th></tr></thead><tbody>
+                        ${tema.map(t => `<tr><td>${esc(t.tema)}</td><td class="text-center">${t.indikatorTidakTercapai.length}</td><td class="text-center">${t.insiden} (${t.insidenBerat})</td><td class="text-center">${t.risiko} (${t.risikoTinggi})</td><td>${esc(t.fmea.join(', ') || '-')}</td></tr>`).join('') || '<tr><td colspan="5" class="text-muted">Tidak ada tema lintas komponen.</td></tr>'}</tbody></table></div>
+                        <h6 class="fw-bold">Unit prioritas pendampingan</h6>
+                        ${prio.map(u => `<div class="small mb-1"><b>${esc(u.unit)}</b>: ${u.sinyal.map(x => `<span class="chip">${esc(x)}</span>`).join('')}</div>`).join('') || '<div class="text-muted small">Tidak ada.</div>'}
+                    </div>
+                </div>
+                ${(snap.catatan || []).length ? `<div class="alert alert-warning small mt-3 mb-0">${snap.catatan.map(esc).join('<br>')}</div>` : ''}`;
         }
 
-        function kalkulasiStatistikInsiden() {
-            statDataInsiden = { total: rawDataInsiden.length, merah: 0, kuning: 0, hijau: 0, biru: 0 };
-            rawDataInsiden.forEach(row => {
-                if(row.grading_risiko === 'Merah') statDataInsiden.merah++;
-                else if(row.grading_risiko === 'Kuning') statDataInsiden.kuning++;
-                else if(row.grading_risiko === 'Hijau') statDataInsiden.hijau++;
-                else statDataInsiden.biru++;
-            });
+        // =============================================================
+        // PEMBAHASAN (AI / aturan / suntingan)
+        // =============================================================
+        function kartuBagian(b) {
+            const n = narasi[b.k] || {};
+            const rekTeks = (n.rekomendasi || []).map(r => [r.uraian, r.penanggung_jawab || '', r.prioritas || '', r.tenggat || ''].join(' | ')).join('\n');
+            const sumber = n.sumber ? (n.sumber.startsWith('ai') ? `<span class="badge bg-primary">AI ${esc(n.sumber.slice(3))}</span>` : n.sumber === 'aturan' ? '<span class="badge bg-secondary">otomatis</span>' : '<span class="badge bg-success">disunting</span>') : '<span class="badge bg-light text-dark border">kosong</span>';
+            return `<div class="card border mb-3 bagian" id="bag_${b.k}"><div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-1"><div class="fw-bold">${b.judul} ${sumber}</div>
+                    <div class="d-flex gap-1"><button class="btn btn-sm btn-outline-secondary btn-edit" onclick="isiAturan('${b.k}')" title="Isi dari data tanpa AI"><i class="fas fa-list-ul"></i></button>
+                    <button class="btn btn-sm btn-outline-primary btn-edit" onclick="susunAI('${b.k}')"><i class="fas fa-robot me-1"></i> AI</button></div></div>
+                <label class="small text-muted">Pembahasan (paragraf dipisah baris kosong)</label>
+                <textarea class="form-control mb-1" rows="${b.k === 'eksekutif' ? 5 : 8}" id="teks_${b.k}" oninput="tandaiSunting('${b.k}')">${esc(n.teks || '')}</textarea>
+                <label class="small text-muted">${b.poin}</label>
+                <textarea class="form-control mb-1" rows="3" id="poin_${b.k}" oninput="tandaiSunting('${b.k}')">${esc(n.poin || '')}</textarea>
+                ${b.rek ? `<label class="small text-muted">Rekomendasi — satu per baris: uraian | penanggung jawab | prioritas${b.k === 'integrasi' ? ' | tenggat' : ''}</label>
+                <textarea class="form-control mb-1" rows="3" id="rek_${b.k}" oninput="tandaiSunting('${b.k}')">${esc(rekTeks)}</textarea>` : ''}
+                <div id="cek_${b.k}" class="small"></div></div></div>`;
+        }
+        function gambarBagian() {
+            const w = document.getElementById('daftarBagian');
+            if (!snap) { w.innerHTML = '<div class="text-muted small">Kompilasi data terlebih dahulu.</div>'; return; }
+            w.innerHTML = BAGIAN.map(kartuBagian).join('');
+            document.getElementById('daftarBagian').classList.toggle('terkunci', !bisaUbah());
+            document.querySelectorAll('#daftarBagian textarea').forEach(t => { t.readOnly = !bisaUbah(); });
+            document.querySelectorAll('#daftarBagian .btn-edit').forEach(b => { b.disabled = !bisaUbah(); });
+            BAGIAN.forEach(b => periksaBagian(b.k));
+        }
+        window.tandaiSunting = function(k) {
+            ambilDariForm(k);
+            if (narasi[k] && narasi[k].sumber !== 'disunting') narasi[k].sumber = 'disunting';
+            clearTimeout(window['_cek' + k]); window['_cek' + k] = setTimeout(() => periksaBagian(k), 500);
+        };
+        function ambilDariForm(k) {
+            const t = document.getElementById('teks_' + k); if (!t) return;
+            const n = narasi[k] = narasi[k] || {};
+            n.teks = t.value; n.poin = document.getElementById('poin_' + k).value;
+            const r = document.getElementById('rek_' + k);
+            if (r) n.rekomendasi = baris(r.value).map(l => { const [uraian, pj, pr, tg] = l.split('|').map(x => (x || '').trim()); return { uraian, penanggung_jawab: pj || '', prioritas: pr || '', tenggat: tg || '' }; });
+        }
+        function periksaBagian(k) {
+            const w = document.getElementById('cek_' + k); if (!w || !snap) return;
+            const n = narasi[k] || {};
+            // Angka sah = angka pada data yang diberikan untuk bagian ini (sama dengan masukan AI)
+            const sah = lapAngkaDalam(lapKonteksAI(k === 'eksekutif' ? 'integrasi' : k, snap, hasilKomponen()));
+            lapAngkaDalam(snap.periode, sah);
+            if (k === 'eksekutif') lapAngkaDalam(lapKonteksAI('eksekutif', snap, hasilKomponen()), sah);
+            const teks = [n.teks, n.poin, ...(n.rekomendasi || []).map(r => r.uraian)].join('\n');
+            const temuan = lapPeriksaAngka(teks, sah);
+            w.innerHTML = temuan.length ? `<div class="alert alert-warning py-1 px-2 mb-0"><i class="fas fa-search me-1"></i>Angka tidak ditemukan di data: ${[...new Set(temuan.map(t => t.angka))].map(esc).join(', ')} — periksa kalimatnya.</div>` : (n.teks ? '<span class="text-success"><i class="fas fa-check me-1"></i>Semua angka cocok dengan data.</span>' : '');
         }
 
-        async function generateChartsBase64(namaBulanArr) {
-            // Chart Ringkasan
-            const ctxMutu = document.getElementById('chartMutu').getContext('2d');
-            new Chart(ctxMutu, {
-                type: 'pie', data: { labels: ['Tercapai', 'Tidak Tercapai'], datasets: [{ data: [statDataMutu.tercapai, statDataMutu.gagal], backgroundColor: ['#198754', '#dc3545'] }] },
-                options: { animation: false, plugins: { legend: { labels: { font: { size: 14 } } } } } 
-            });
-
-            const ctxIn = document.getElementById('chartInsiden').getContext('2d');
-            new Chart(ctxIn, {
-                type: 'bar', data: { labels: ['Ekstrem', 'Tinggi', 'Sedang', 'Rendah'], datasets: [{ label: 'Jumlah Insiden', data: [statDataInsiden.merah, statDataInsiden.kuning, statDataInsiden.hijau, statDataInsiden.biru], backgroundColor: ['#dc3545', '#fd7e14', '#198754', '#0dcaf0'] }] },
-                options: { animation: false, scales: { y: { beginAtZero: true } } }
-            });
-
-            await new Promise(r => setTimeout(r, 300));
-            imgChartMutu = document.getElementById('chartMutu').toDataURL("image/png");
-            imgChartInsiden = document.getElementById('chartInsiden').toDataURL("image/png");
-
-            // Chart Per Indikator Mutu
-            const canvasInd = document.getElementById('chartIndividual');
-            const ctxInd = canvasInd.getContext('2d');
-            let chartTemp = null;
-
-            for(let i=0; i<hasilAgregasi.length; i++) {
-                let item = hasilAgregasi[i];
-                let dataCap = namaBulanArr.map(b => item.capaian_bulan[b].val !== null ? item.capaian_bulan[b].val : 0);
-                let dataTgt = namaBulanArr.map(b => item.target);
-                
-                if(chartTemp) chartTemp.destroy();
-                
-                chartTemp = new Chart(ctxInd, {
-                    type: 'line',
-                    data: {
-                        labels: namaBulanArr,
-                        datasets: [
-                            { label: 'Target', data: dataTgt, borderColor: '#dc3545', borderDash: [5, 5], fill: false, tension: 0, pointRadius: 0 },
-                            { label: 'Capaian', data: dataCap, borderColor: '#0dcaf0', backgroundColor: 'rgba(13, 202, 240, 0.1)', fill: true, tension: 0.3, pointRadius: 5 }
-                        ]
-                    },
-                    options: { 
-                        animation: false, 
-                        plugins: { title: { display: true, text: item.judul, font: { size: 14 } }, legend: { position: 'bottom' } },
-                        scales: { y: { beginAtZero: true } }
-                    }
-                });
-                await new Promise(r => setTimeout(r, 100)); // Beri waktu render
-                hasilAgregasi[i].chartBase64 = canvasInd.toDataURL("image/png");
+        // Jawaban AI / aturan -> bentuk yang dapat disunting
+        function keNarasi(k, h, sumber) {
+            const r = { sumber, dibuat: new Date().toISOString() };
+            if (k === 'eksekutif') { r.teks = (h.ringkasan_eksekutif || []).join('\n\n'); r.poin = (h.sorotan || []).join('\n'); return r; }
+            if (k === 'integrasi') {
+                r.teks = (h.pembahasan || []).join('\n\n');
+                r.poin = (h.keterkaitan || []).map(x => typeof x === 'string' ? x : `${x.tema}: ${x.uraian}`).join('\n');
+                r.rekomendasi = (h.rekomendasi_strategis || []).map(x => ({ uraian: x.uraian || '', penanggung_jawab: x.penanggung_jawab || '', prioritas: x.prioritas || '', tenggat: x.tenggat_saran || x.tenggat || '' }));
+                return r;
             }
-            if(chartTemp) chartTemp.destroy();
+            r.ringkasan = h.ringkasan || '';
+            r.teks = (h.pembahasan || []).join('\n\n');
+            r.poin = (h.temuan_kunci || []).join('\n');
+            r.rekomendasi = (h.rekomendasi || []).map(x => ({ uraian: x.uraian || '', penanggung_jawab: x.penanggung_jawab || '', prioritas: x.prioritas || '', tenggat: x.tenggat || '' }));
+            return r;
+        }
+        // Ringkasan komponen yang sudah ada -> masukan untuk tahap integrasi & eksekutif
+        function hasilKomponen() {
+            const o = {};
+            ['mutu', 'keselamatan', 'budaya', 'risiko'].forEach(k => { const n = narasi[k]; if (n && (n.teks || n.poin)) o[k] = { ringkasan: n.ringkasan || String(n.teks || '').split(/(?<=\.)\s/)[0], temuan_kunci: baris(n.poin) }; });
+            const i = narasi.integrasi;
+            if (i && i.teks) o.integrasi = { keterkaitan: baris(i.poin), rekomendasi_strategis: i.rekomendasi || [] };
+            return o;
         }
 
-        // ==============================================
-        // AI PROMPT & GROQ (QWEN)
-        // ==============================================
-        async function callGroqAPI(periodeTxt) {
-            // GROQ_API_KEY tidak lagi ada di client — panggilan diteruskan lewat
-            // Edge Function 'generate-laporan-ai', yang menyimpan key sebagai secret
-            // di server dan memvalidasi ulang role user sebelum memanggil Groq.
-            const { data, error } = await supabaseClient.functions.invoke('generate-laporan-ai', {
-                body: {
-                    periodeTxt: periodeTxt,
-                    statDataMutu: statDataMutu,
-                    statDataInsiden: statDataInsiden,
-                    jumlahRisiko: rawDataRisiko.length,
-                    jumlahFmea: rawDataFmea.length,
-                    jumlahBudaya: rawDataBudaya.length
+        window.isiAturan = function(k) {
+            if (!bisaUbah()) return;
+            narasi[k] = keNarasi(k, lapNarasiAturan(k, snap), 'aturan');
+            document.getElementById('bag_' + k).outerHTML = kartuBagian(BAGIAN.find(b => b.k === k)); periksaBagian(k);
+        };
+        window.isiSemuaAturan = async function() {
+            if (!bisaUbah()) return;
+            const ada = BAGIAN.filter(b => narasi[b.k] && narasi[b.k].teks);
+            if (ada.length) { const t = await Swal.fire({ title: 'Timpa pembahasan?', text: `${ada.length} bagian sudah berisi teks dan akan diganti.`, icon: 'warning', showCancelButton: true, confirmButtonText: 'Ganti' }); if (!t.isConfirmed) return; }
+            BAGIAN.forEach(b => { narasi[b.k] = keNarasi(b.k, lapNarasiAturan(b.k, snap), 'aturan'); });
+            gambarBagian();
+        };
+
+        // Panggil analis AI (Edge Function). Menunggu & mengulang bila batas gratis tercapai.
+        async function panggilAI(tugas, konteks, info) {
+            for (let coba = 0; coba < 4; coba++) {
+                const { data, error } = await supabaseClient.functions.invoke('generate-laporan-ai', { body: { tugas, periode: snap.periode.label, konteks } });
+                let isi = data;
+                if (error) { try { isi = await error.context.json(); } catch (e) { isi = { error: error.message }; } }
+                if (isi && isi.hasil) return isi;
+                if (isi && isi.tunggu_detik) {
+                    const d = Math.min(90, isi.tunggu_detik + 2);
+                    if (info) info(`Batas pemakaian AI gratis tercapai, menunggu ${d} detik...`);
+                    await tunda(d * 1000); continue;
                 }
-            });
-
-            if (error) throw new Error("Gagal memanggil layanan AI: " + error.message);
-            if (!data || data.error) throw new Error(data && data.error ? data.error : "Format respons AI tidak dikenali.");
-            return data.content;
-        }
-
-        // ==============================================
-        // MERAKIT MS WORD DOCUMENT SUPER LENGKAP
-        // ==============================================
-        function buildWordDocument(periodeTxt, htmlAnalisisAI, listBulan) {
-            
-            const h1 = "<ht" + "ml xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><he" + "ad><meta charset='utf-8'><st" + "yle>";
-            
-            const cssWord = "@page { size: 21cm 29.7cm; margin: 2.5cm; } " +
-                "body { font-family: 'Times New Roman', serif; font-size: 11pt; line-height: 1.5; color: #000; } " +
-                "h1, h2, h3, h4 { text-align: center; font-weight: bold; margin-bottom: 10pt; line-height: 1.2; } " +
-                "p { text-align: justify; margin-bottom: 10pt; } " +
-                "table { border-collapse: collapse; width: 100%; margin-bottom: 15pt; font-size: 10pt; } " +
-                "th, td { border: 1px solid #000; padding: 4pt; vertical-align: middle; } " +
-                "th { background-color: #f2f2f2; font-weight: bold; text-align: center; } " +
-                ".cover-page { text-align: center; padding-top: 50pt; } " +
-                ".signature-box { width: 100%; border: none; margin-top: 50pt; } " +
-                ".signature-box td { border: none; text-align: center; } " +
-                ".pdsa-row td { background-color: #fafafa; font-style: italic; font-size: 9pt; color: #333; padding-left: 15pt; border-top: none;}";
-                
-            const h3 = "</st" + "yle></he" + "ad><bo" + "dy>";
-            const msWordPageBreak = "<br clear='all' style='mso-special-character:line-break;page-break-before:always' />";
-
-            const coverPage = "<div class='cover-page'>" +
-                "<h2>PEMERINTAH KABUPATEN BANTUL<br>DINAS KESEHATAN<br>RUMAH SAKIT UMUM DAERAH SARAS ADYATMA</h2><br><br><br>" +
-                "<img src='https://upload.wikimedia.org/wikipedia/commons/a/a5/Bantul_Coat_of_Arms.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original' alt='Logo Bantul' width='160' height='210'><br><br><br>" +
-                "<h1>LAPORAN TERINTEGRASI PENINGKATAN MUTU DAN KESELAMATAN PASIEN (PMKP)</h1>" +
-                "<h2>" + periodeTxt + "</h2></div>";
-
-            const dateStr = new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
-            
-            const bab1 = "<h3 style='text-align: center;'>KATA PENGANTAR</h3>" +
-                "<p>Puji syukur kami panjatkan kehadirat Tuhan Yang Maha Esa, dimana Komite Mutu dan Keselamatan Pasien telah menyelesaikan penyusunan Laporan Terintegrasi PMKP " + periodeTxt + " di Rumah Sakit Umum Daerah Saras Adyatma.</p>" +
-                "<p>Laporan terintegrasi ini disusun untuk mewujudkan segala upaya peningkatan mutu dan keselamatan pasien secara berkelanjutan guna memberikan pelayanan yang berkualitas kepada pasien selama menjalani perawatan.</p>" +
-                "<p style='text-align: right;'>Bantul, " + dateStr + "<br>Komite Mutu dan Keselamatan Pasien</p>" +
-                msWordPageBreak + 
-                "<h3 style='text-align: center;'>BAB I<br>PENDAHULUAN</h3>" +
-                "<p>Pembangunan kesehatan di bidang pelayanan seperti rumah sakit bertujuan untuk meningkatkan mutu, cakupan dan efisiensi pelaksanaan pelayanan kesehatan yang meliputi kegiatan perencanaan, pelaksanaan, pengawasan, pengendalian dan penilaian. Semakin meningkatnya tingkat pendidikan, sosial dan ekonomi masyarakat, menuntut pelayanan yang lebih baik, lebih ramah dan lebih bermutu.</p>" +
-                "<p>Rumah Sakit Umum Daerah (RSUD) Saras Adyatma Kabupaten Bantul menyelenggarakan tata kelola mutu yang dipandu oleh Komite Mutu dan Keselamatan Pasien untuk meningkatkan keselamatan pasien dan mempertahankan standar pelayanan. Laporan ini merupakan bentuk tanggung jawab institusi yang mencakup evaluasi Mutu, Insiden Keselamatan Pasien, Manajemen Risiko, dan Budaya Keselamatan.</p>";
-
-            // ================== GENERATE TABEL MUTU ==================
-            let thBulan = listBulan.map(b => `<th>${b}</th>`).join('');
-            
-            const buildBlokMutu = (jenisStr, judulBlok) => {
-                let items = hasilAgregasi.filter(h => h.kategori_jenis === jenisStr);
-                if(items.length === 0) return ""; 
-
-                let html = `<h4>${judulBlok}</h4>`;
-                html += `<table><thead><tr><th width="5%">No</th><th width="35%">Judul Indikator</th><th width="10%">Target</th>${thBulan}<th width="10%">Rata-rata</th></tr></thead><tbody>`;
-                items.forEach((item, idx) => {
-                    let tdBulans = listBulan.map(b => `<td style="text-align:center;">${item.capaian_bulan[b].val !== null ? item.capaian_bulan[b].val : '-'}</td>`).join('');
-                    let cl = item.isTercapai ? "color: green;" : "color: red; font-weight: bold;";
-                    html += `<tr><td style="text-align:center;">${idx+1}</td><td>${esc(item.judul)}</td><td style="text-align:center;">${item.target} ${esc(item.satuan)}</td>${tdBulans}<td style="text-align:center; ${cl}">${item.rata_rata} ${esc(item.satuan)}</td></tr>`;
-                });
-                html += `</tbody></table>`;
-
-                html += `<p><b>Grafik Tren & Tindak Lanjut (PDSA):</b></p>`;
-                items.forEach((item, idx) => {
-                    html += `<h5>${idx+1}. ${esc(item.judul)}</h5>`;
-                    html += `<div style="text-align:center; margin-bottom: 10pt;"><img src="${item.chartBase64}" width="400" height="200"></div>`;
-                    
-                    let pdsaMatch = rawDataPdsa.find(p => p.id_indikator === item.id_indikator);
-                    if(pdsaMatch) { 
-                        let masalah = pdsaMatch.plan_data ? pdsaMatch.plan_data.masalah : "-";
-                        let rencana = pdsaMatch.plan_data && pdsaMatch.plan_data.action[0] ? pdsaMatch.plan_data.action[0].act : "-";
-                        html += `<table><thead><tr><th width="50%">Analisa Akar Masalah</th><th width="50%">Rencana Tindak Lanjut</th></tr></thead><tbody><tr><td>${esc(masalah)}</td><td>${esc(rencana)}</td></tr></tbody></table>`;
-                    }
-                });
-                return html;
-            };
-
-            const tabelINM = buildBlokMutu("INM", "A. Capaian Indikator Nasional Mutu (INM)");
-            const tabelIMPRS = buildBlokMutu("IMP-RS", "B. Capaian Indikator Mutu Prioritas RS (IMP-RS)");
-
-            // LOGIKA KHUSUS IMP-UNIT (DIPISAH PER UNIT)
-            let impUnitHtml = "";
-            let impUnitItems = hasilAgregasi.filter(h => h.kategori_jenis === 'IMP-Unit');
-            if(impUnitItems.length > 0) {
-                impUnitHtml += `<br clear='all' style='mso-special-character:line-break;page-break-before:always' />`;
-                impUnitHtml += `<h3 style='text-align: center;'>C. CAPAIAN INDIKATOR MUTU PRIORITAS UNIT (IMP-UNIT)</h3>`;
-                
-                let unitsObj = {};
-                impUnitItems.forEach(i => {
-                    if(!unitsObj[i.unit]) unitsObj[i.unit] = [];
-                    unitsObj[i.unit].push(i);
-                });
-
-                for(let uName in unitsObj) {
-                    impUnitHtml += `<h4>Unit: ${esc(uName)}</h4>`;
-                    let items = unitsObj[uName];
-                    
-                    impUnitHtml += `<table><thead><tr><th width="5%">No</th><th width="35%">Judul Indikator</th><th width="10%">Target</th>${thBulan}<th width="10%">Rata-rata</th></tr></thead><tbody>`;
-                    items.forEach((item, idx) => {
-                        let tdBulans = listBulan.map(b => `<td style="text-align:center;">${item.capaian_bulan[b].val !== null ? item.capaian_bulan[b].val : '-'}</td>`).join('');
-                        let cl = item.isTercapai ? "color: green;" : "color: red; font-weight: bold;";
-                        impUnitHtml += `<tr><td style="text-align:center;">${idx+1}</td><td>${esc(item.judul)}</td><td style="text-align:center;">${item.target} ${esc(item.satuan)}</td>${tdBulans}<td style="text-align:center; ${cl}">${item.rata_rata} ${esc(item.satuan)}</td></tr>`;
-                    });
-                    impUnitHtml += `</tbody></table>`;
-
-                    items.forEach((item, idx) => {
-                        impUnitHtml += `<h5>${idx+1}. ${esc(item.judul)}</h5>`;
-                        impUnitHtml += `<div style="text-align:center; margin-bottom: 10pt;"><img src="${item.chartBase64}" width="400" height="200"></div>`;
-                        
-                        let pdsaMatch = rawDataPdsa.find(p => p.id_indikator === item.id_indikator && p.unit_kerja === item.unit);
-                        if(!pdsaMatch) pdsaMatch = rawDataPdsa.find(p => p.id_indikator === item.id_indikator); // fallback
-
-                        if(pdsaMatch) {
-                            let masalah = pdsaMatch.plan_data ? pdsaMatch.plan_data.masalah : "-";
-                            let rencana = pdsaMatch.plan_data && pdsaMatch.plan_data.action[0] ? pdsaMatch.plan_data.action[0].act : "-";
-                            impUnitHtml += `<table><thead><tr><th width="50%">Analisa Akar Masalah</th><th width="50%">Rencana Tindak Lanjut</th></tr></thead><tbody><tr><td>${esc(masalah)}</td><td>${esc(rencana)}</td></tr></tbody></table>`;
-                        }
-                    });
-                }
+                throw new Error((isi && isi.error) || 'Layanan AI tidak menjawab.');
             }
+            throw new Error('Batas pemakaian AI gratis masih tercapai. Coba lagi beberapa menit lagi.');
+        }
+        async function jalankanAI(k, info) {
+            const konteks = lapKonteksAI(k, snap, hasilKomponen());
+            const r = await panggilAI(k, konteks, info);
+            narasi[k] = keNarasi(k, r.hasil, 'ai:' + r.model);
+            lap.ai_model = r.model;
+            const el = document.getElementById('bag_' + k);
+            if (el) { el.outerHTML = kartuBagian(BAGIAN.find(b => b.k === k)); periksaBagian(k); }
+        }
+        window.susunAI = async function(k) {
+            if (!bisaUbah()) return;
+            const prog = document.getElementById('progresAI');
+            prog.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i> Menyusun ${esc(BAGIAN.find(b => b.k === k).judul)}...`;
+            try { await jalankanAI(k, t => { prog.textContent = t; }); prog.innerHTML = '<span class="text-success">Selesai. Periksa dan simpan.</span>'; }
+            catch (e) { prog.innerHTML = `<span class="text-danger">${esc(e.message)}</span>`; }
+        };
+        window.susunSemuaAI = async function() {
+            if (!bisaUbah()) return;
+            const t = await Swal.fire({ title: 'Susun semua pembahasan dengan AI?', html: 'Urutan: mutu → keselamatan → budaya → risiko → terintegrasi → ringkasan eksekutif. Teks yang ada akan diganti. Perkiraan 1–3 menit.', icon: 'question', showCancelButton: true, confirmButtonText: 'Mulai' });
+            if (!t.isConfirmed) return;
+            const prog = document.getElementById('progresAI');
+            for (let i = 0; i < URUT_AI.length; i++) {
+                const k = URUT_AI[i];
+                prog.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i> (${i + 1}/${URUT_AI.length}) ${esc(BAGIAN.find(b => b.k === k).judul)}...`;
+                try { await jalankanAI(k, x => { prog.textContent = x; }); }
+                catch (e) {
+                    narasi[k] = keNarasi(k, lapNarasiAturan(k, snap), 'aturan');
+                    const el = document.getElementById('bag_' + k); if (el) { el.outerHTML = kartuBagian(BAGIAN.find(b => b.k === k)); periksaBagian(k); }
+                    prog.innerHTML = `<span class="text-danger">${esc(k)}: ${esc(e.message)} — diisi otomatis tanpa AI.</span>`;
+                    if (/tidak tersedia|API key|khusus/i.test(e.message)) break;
+                    await tunda(1500);
+                }
+                if (i < URUT_AI.length - 1) await tunda(4000);   // jeda agar tidak melewati batas per menit
+            }
+            await simpanNarasi(true);
+            prog.innerHTML = '<span class="text-success"><i class="fas fa-check me-1"></i>Pembahasan tersusun dan tersimpan. Periksa tanda angka dan sunting seperlunya.</span>';
+        };
+        window.simpanNarasi = async function(diam) {
+            if (!bisaUbah() || !lap.id) return;
+            BAGIAN.forEach(b => ambilDariForm(b.k));
+            const { data, error } = await supabaseClient.from('laporan_periodik').update({ narasi, ai_model: lap.ai_model || null }).eq('id', lap.id).select().single();
+            if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            lap = data; gambarInfo();
+            if (diam !== true) Swal.fire({ title: 'Pembahasan tersimpan', icon: 'success', timer: 1200, showConfirmButton: false });
+        };
 
-            const bab2 = msWordPageBreak + 
-                "<h3 style='text-align: center;'>BAB II<br>CAPAIAN INDIKATOR MUTU & PERBAIKAN (PDSA)</h3>" +
-                "<p>Pemantauan indikator mutu diukur melalui sistem agregasi data harian. Berikut adalah rekapitulasi data capaian mutu pada " + periodeTxt + ":</p>" +
-                "<ul><li>Total Indikator Dipantau: <b>" + statDataMutu.total + " Indikator</b></li><li>Memenuhi Target: <b>" + statDataMutu.tercapai + " Indikator</b></li><li>Tidak Memenuhi Target: <b>" + statDataMutu.gagal + " Indikator</b></li></ul>" +
-                "<div style='text-align:center; margin-bottom: 20pt;'><img src='" + imgChartMutu + "' width='350' height='230'></div>" +
-                tabelINM + tabelIMPRS + impUnitHtml;
+        // =============================================================
+        // UMPAN BALIK UNIT
+        // =============================================================
+        const unitAktif = () => snap ? Object.values(snap.unit).filter(u => u.aktif) : [];
+        function gambarUnit() {
+            const tb = document.getElementById('tabelUnit');
+            if (!snap) { tb.innerHTML = '<tr><td colspan="8" class="text-muted">Kompilasi data terlebih dahulu.</td></tr>'; return; }
+            tb.innerHTML = unitAktif().map(u => {
+                const ub = umpan[u.unit];
+                const st = !ub ? '<span class="badge bg-light text-dark border">belum</span>' : ub.sumber && ub.sumber.startsWith('ai') ? '<span class="badge bg-primary">AI</span>' : ub.sumber === 'aturan' ? '<span class="badge bg-secondary">otomatis</span>' : '<span class="badge bg-success">disunting</span>';
+                const id = 'u_' + btoa(unescape(encodeURIComponent(u.unit))).replace(/[^a-z0-9]/gi, '');
+                return `<tr class="unit-baris" onclick="bukaUnit(this.dataset.u)" data-u="${esc(u.unit)}"><td class="fw-bold">${esc(u.unit)}</td><td>${u.sinyal.map(x => `<span class="chip">${esc(x)}</span>`).join('')}</td>
+                    <td class="text-center">${u.indikator.tercapai}/${u.indikator.total}</td><td class="text-center">${u.kepatuhan ? lapFmt(u.kepatuhan.persen, '%') : '-'}</td>
+                    <td class="text-center">${u.insiden.terkait}</td><td class="text-center">${u.risiko.tinggiEkstrem}</td><td>${st}</td>
+                    <td class="text-end"><i class="fas fa-chevron-right text-muted"></i></td></tr><tr class="d-none" id="${id}"><td colspan="8"></td></tr>`;
+            }).join('') || '<tr><td colspan="8" class="text-muted">Tidak ada unit aktif.</td></tr>';
+        }
+        const idBarisUnit = unit => 'u_' + btoa(unescape(encodeURIComponent(unit))).replace(/[^a-z0-9]/gi, '');
+        window.bukaUnit = function(unit) {
+            const tr = document.getElementById(idBarisUnit(unit));
+            if (!tr.classList.contains('d-none')) { tr.classList.add('d-none'); return; }
+            const ub = umpan[unit] || {};
+            const ro = bisaUbah() ? '' : 'readonly';
+            tr.firstElementChild.innerHTML = `<div class="p-2 bg-light rounded">
+                <div class="row g-2">
+                    <div class="col-12"><label class="small fw-bold">Ringkasan</label><textarea class="form-control form-control-sm" rows="2" data-f="ringkasan" ${ro}>${esc(ub.ringkasan || '')}</textarea></div>
+                    <div class="col-md-4"><label class="small fw-bold">Apresiasi (satu per baris)</label><textarea class="form-control form-control-sm" rows="5" data-f="apresiasi" ${ro}>${esc((ub.apresiasi || []).join('\n'))}</textarea></div>
+                    <div class="col-md-4"><label class="small fw-bold">Perlu diperhatikan</label><textarea class="form-control form-control-sm" rows="5" data-f="perhatian" ${ro}>${esc((ub.perhatian || []).join('\n'))}</textarea></div>
+                    <div class="col-md-4"><label class="small fw-bold">Saran tindak lanjut</label><textarea class="form-control form-control-sm" rows="5" data-f="saran" ${ro}>${esc((ub.saran || []).join('\n'))}</textarea></div>
+                </div>
+                <div class="d-flex gap-2 mt-2 flex-wrap">
+                    <button class="btn btn-sm btn-outline-secondary btn-edit" onclick="isiSatuUnit(this, 'aturan')" ${bisaUbah() ? '' : 'disabled'}><i class="fas fa-list-ul me-1"></i> Otomatis</button>
+                    <button class="btn btn-sm btn-outline-primary btn-edit" onclick="isiSatuUnit(this, 'ai')" ${bisaUbah() ? '' : 'disabled'}><i class="fas fa-robot me-1"></i> AI</button>
+                    <button class="btn btn-sm btn-success btn-edit" onclick="simpanSatuUnit(this)" ${bisaUbah() ? '' : 'disabled'}><i class="fas fa-save me-1"></i> Simpan</button>
+                    <button class="btn btn-sm btn-outline-primary ms-auto" onclick="unduhUnit(this)"><i class="fas fa-file-word me-1"></i> Word unit ini</button>
+                </div></div>`;
+            tr.firstElementChild.dataset.u = unit;
+            tr.classList.remove('d-none');
+        };
+        const unitDari = el => el.closest('td').dataset.u;
+        function isiForm(td, ub) {
+            td.querySelector('[data-f=ringkasan]').value = ub.ringkasan || '';
+            ['apresiasi', 'perhatian', 'saran'].forEach(f => { td.querySelector(`[data-f=${f}]`).value = (ub[f] || []).join('\n'); });
+        }
+        function dariForm(td) {
+            return { ringkasan: td.querySelector('[data-f=ringkasan]').value.trim(), apresiasi: baris(td.querySelector('[data-f=apresiasi]').value),
+                     perhatian: baris(td.querySelector('[data-f=perhatian]').value), saran: baris(td.querySelector('[data-f=saran]').value) };
+        }
+        async function simpanUmpan(unit, ub, sumber) {
+            const { data, error } = await supabaseClient.from('laporan_umpan_balik_unit')
+                .upsert({ id_laporan: lap.id, unit_kerja: unit, ringkasan: ub.ringkasan || null, apresiasi: ub.apresiasi || [], perhatian: ub.perhatian || [], saran: ub.saran || [], sumber }, { onConflict: 'id_laporan,unit_kerja' })
+                .select().single();
+            if (error) throw error;
+            umpan[unit] = data;
+        }
+        function ringkasanAturan(u) {
+            return `${u.indikator.tercapai} dari ${u.indikator.total} indikator unit tercapai${u.kepatuhan ? `; kepatuhan pelaporan ${lapFmt(u.kepatuhan.persen, '%')}` : ''}; ${u.insiden.terkait} insiden terkait unit; ${u.risiko.aktif} risiko aktif (${u.risiko.tinggiEkstrem} tinggi/ekstrem).`;
+        }
+        async function susunUmpanAI(unit, info) {
+            const r = await panggilAI('unit', lapKonteksAI('unit', snap, {}, unit), info);
+            const h = r.hasil || {};
+            const arr = x => Array.isArray(x) ? x.map(String).filter(Boolean) : [];
+            return { ub: { ringkasan: String(h.ringkasan || ''), apresiasi: arr(h.apresiasi), perhatian: arr(h.perhatian), saran: arr(h.saran) }, model: r.model };
+        }
+        window.isiSatuUnit = async function(btn, cara) {
+            const unit = unitDari(btn), td = btn.closest('td'), u = snap.unit[unit];
+            try {
+                btn.disabled = true;
+                if (cara === 'aturan') { const a = lapSaranAturan(u); a.ringkasan = ringkasanAturan(u); isiForm(td, a); td.dataset.sumber = 'aturan'; }
+                else { const { ub, model } = await susunUmpanAI(unit); isiForm(td, ub); td.dataset.sumber = 'ai:' + model; }
+            } catch (e) { Swal.fire('Gagal', esc(e.message), 'error'); } finally { btn.disabled = false; }
+        };
+        window.simpanSatuUnit = async function(btn) {
+            const unit = unitDari(btn), td = btn.closest('td');
+            const lama = umpan[unit] || {}, baru = dariForm(td);
+            const sama = lama.ringkasan === baru.ringkasan && ['apresiasi', 'perhatian', 'saran'].every(f => JSON.stringify(lama[f] || []) === JSON.stringify(baru[f]));
+            try { await simpanUmpan(unit, baru, td.dataset.sumber || (sama ? lama.sumber : 'disunting')); delete td.dataset.sumber; gambarUnit(); Swal.fire({ title: 'Tersimpan', icon: 'success', timer: 1000, showConfirmButton: false }); }
+            catch (e) { Swal.fire('Gagal', esc(e.message), 'error'); }
+        };
+        window.isiUnitAturan = async function(timpa) {
+            if (!bisaUbah() || !lap.id) return;
+            const prog = document.getElementById('progresUnit');
+            let n = 0;
+            for (const u of unitAktif()) {
+                if (umpan[u.unit] && !timpa) continue;
+                const a = lapSaranAturan(u); a.ringkasan = ringkasanAturan(u);
+                try { await simpanUmpan(u.unit, a, 'aturan'); n++; } catch (e) { prog.innerHTML = `<span class="text-danger">${esc(u.unit)}: ${esc(e.message)}</span>`; return; }
+            }
+            prog.innerHTML = `<span class="text-success">${n} umpan balik unit diisi otomatis.</span>`; gambarUnit();
+        };
+        window.susunUnitAI = async function() {
+            if (!bisaUbah() || !lap.id) return;
+            const daftar = unitAktif();
+            const t = await Swal.fire({ title: 'Susun saran unit dengan AI?', html: `${daftar.length} unit. Umpan balik yang sudah <b>disunting</b> tidak ditimpa. Karena batas AI gratis, perkiraan ${Math.ceil(daftar.length * 7 / 60)} menit — biarkan halaman terbuka.`, icon: 'question', showCancelButton: true, confirmButtonText: 'Mulai' });
+            if (!t.isConfirmed) return;
+            const prog = document.getElementById('progresUnit');
+            let ok = 0, gagal = 0;
+            for (let i = 0; i < daftar.length; i++) {
+                const u = daftar[i];
+                if (umpan[u.unit] && umpan[u.unit].sumber === 'disunting') continue;
+                prog.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i> (${i + 1}/${daftar.length}) ${esc(u.unit)}...`;
+                try {
+                    const { ub, model } = await susunUmpanAI(u.unit, x => { prog.textContent = x; });
+                    await simpanUmpan(u.unit, ub, 'ai:' + model); ok++;
+                } catch (e) {
+                    gagal++;
+                    if (!umpan[u.unit]) { const a = lapSaranAturan(u); a.ringkasan = ringkasanAturan(u); try { await simpanUmpan(u.unit, a, 'aturan'); } catch (e2) { /* abaikan */ } }
+                    if (/tidak tersedia|API key|khusus/i.test(e.message)) { prog.innerHTML = `<span class="text-danger">${esc(e.message)}</span>`; break; }
+                }
+                gambarUnit();
+                await tunda(6500);
+            }
+            gambarUnit();
+            prog.innerHTML += `<div class="${gagal ? 'text-warning' : 'text-success'}">${ok} unit disusun dengan AI${gagal ? `, ${gagal} memakai isi otomatis` : ''}.</div>`;
+        };
+        window.unduhUnit = async function(btn) {
+            const unit = unitDari(btn);
+            await lapUnduhDokumen(lapDokumenUnit(snap, unit, umpan[unit] || null, inst, { tanggal: lap.disetujui_pada || null }), `Umpan_Balik_${lapNamaBerkas(unit)}_${lapNamaBerkas(snap.periode.pendek)}.docx`);
+        };
+        window.unduhSemuaUnit = async function() {
+            if (!snap) return;
+            const d = unitAktif().map(u => ({ unit: u.unit, umpan: umpan[u.unit] || null }));
+            await lapUnduhDokumen(lapDokumenSemuaUnit(snap, d, inst, { tanggal: lap.disetujui_pada || null }), `Umpan_Balik_Unit_${lapNamaBerkas(snap.periode.pendek)}.docx`);
+        };
 
-            // ================== GENERATE TABEL INSIDEN ==================
-            let tabelInsidenHtml = "";
-            if(rawDataInsiden.length === 0) {
-                tabelInsidenHtml = "<tr><td colspan='5' style='text-align:center;'>Nihil Laporan Insiden.</td></tr>";
+        // =============================================================
+        // PERSETUJUAN, TINDAK LANJUT, UNDUH
+        // =============================================================
+        window.unduhDireksi = async function() {
+            if (!snap) { Swal.fire('Belum ada data', 'Kompilasi data terlebih dahulu.', 'info'); return; }
+            if (bisaUbah()) BAGIAN.forEach(b => ambilDariForm(b.k));
+            Swal.fire({ title: 'Menyusun dokumen Word...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            try {
+                const doc = lapDokumenDireksi(snap, narasi, inst, { status: lap.status, disposisi: lap.disposisi_direktur, tanggalDisposisi: lap.tanggal_disposisi, tanggal: lap.diajukan_pada || null, tanggapan: lap.tanggapan_direktur || {} });
+                await lapUnduhDokumen(doc, `Laporan_PMKP_Terintegrasi_${lapNamaBerkas(snap.periode.label)}${lap.status === 'disetujui' ? '' : '_DRAF'}.docx`);
+                Swal.close();
+            } catch (e) { console.error(e); Swal.fire('Gagal', esc(e.message), 'error'); }
+        };
+
+        const KOMPONEN_TANGGAPAN = [['mutu', 'Capaian indikator mutu & PDSA'], ['keselamatan', 'Keselamatan pasien (IKP, KPC)'], ['budaya', 'Budaya keselamatan'],
+                                    ['risiko', 'Manajemen risiko & FMEA'], ['integrasi', 'Analisis terintegrasi & tindak lanjut'], ['umum', 'Tanggapan umum']];
+        function formTanggapan(ro) {
+            const t = lap.tanggapan_direktur || {};
+            const rek = ((narasi.integrasi || {}).rekomendasi || []).filter(r => r.uraian);
+            const cari = u => (t.rekomendasi || []).find(x => x.uraian === u) || {};
+            const dis = ro ? 'disabled' : '';
+            return `<div class="border rounded p-2 mb-2 bg-light"><div class="fw-bold small mb-1">Lembar Tanggapan Direktur (salin dari lembar yang ditandatangani)</div>
+                ${KOMPONEN_TANGGAPAN.map(([k, nama]) => `<label class="small text-muted mb-0">${nama}</label><textarea class="form-control form-control-sm mb-1 tgp" data-k="${k}" rows="2" ${dis}>${esc(t[k] || '')}</textarea>`).join('')}
+                ${rek.length ? `<div class="small fw-bold mt-2">Keputusan atas rekomendasi strategis</div>` + rek.map((r, i) => { const c = cari(r.uraian); return `<div class="small mt-1">${i + 1}. ${esc(r.uraian)}</div>
+                    <div class="d-flex gap-1"><select class="form-select form-select-sm tgp-kep" data-u="${esc(r.uraian)}" style="max-width:130px" ${dis}>${[['', '—'], ['setuju', 'Setuju'], ['revisi', 'Revisi'], ['tidak', 'Tidak']].map(([v, l]) => `<option value="${v}" ${c.keputusan === v ? 'selected' : ''}>${l}</option>`).join('')}</select>
+                    <input class="form-control form-control-sm tgp-cat" placeholder="Catatan Direktur" value="${esc(c.catatan || '')}" ${dis}></div>`; }).join('') : ''}
+                ${ro ? '' : '<button class="btn btn-sm btn-outline-primary mt-2" onclick="simpanTanggapan()"><i class="fas fa-save me-1"></i> Simpan tanggapan</button>'}</div>`;
+        }
+        function ambilTanggapan() {
+            const t = {};
+            document.querySelectorAll('.tgp').forEach(e => { if (e.value.trim()) t[e.dataset.k] = e.value.trim(); });
+            t.rekomendasi = [...document.querySelectorAll('.tgp-kep')].map(e => ({ uraian: e.dataset.u, keputusan: e.value, catatan: e.parentElement.querySelector('.tgp-cat').value.trim() }))
+                .filter(x => x.keputusan || x.catatan);
+            return t;
+        }
+        window.simpanTanggapan = async function() {
+            const { data, error } = await supabaseClient.from('laporan_periodik').update({ tanggapan_direktur: ambilTanggapan() }).eq('id', lap.id).select().single();
+            if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            lap = data; Swal.fire({ title: 'Tanggapan tersimpan', icon: 'success', timer: 1000, showConfirmButton: false });
+        };
+
+        function gambarSetuju() {
+            const w = document.getElementById('panelStatus');
+            if (!lap.id) { w.innerHTML = '<div class="text-muted small">Kompilasi data terlebih dahulu.</div>'; }
+            else if (lap.status === 'draf') {
+                w.innerHTML = `<div class="small mb-2">Setelah pembahasan dan umpan balik unit selesai, ajukan laporan kepada Direktur. Isi laporan dan umpan balik terkunci selama diajukan.</div>
+                    <div class="mb-2"><label class="small fw-bold">Nomor surat pengantar (opsional)</label><input id="st_nomor" class="form-control form-control-sm" value="${esc(lap.nomor_surat || '')}"></div>
+                    <button class="btn btn-warning fw-bold" onclick="ubahStatus('diajukan')"><i class="fas fa-paper-plane me-1"></i> Ajukan ke Direktur</button>`;
+            } else if (lap.status === 'diajukan') {
+                w.innerHTML = `<div class="small mb-2">Diajukan ${tgl(lap.diajukan_pada)} oleh ${esc(lap.diajukan_oleh || '-')}. Masukkan disposisi/arahan Direktur dari lembar disposisi yang sudah ditandatangani.</div>
+                    <label class="small fw-bold">Disposisi / arahan Direktur (wajib)</label>
+                    <textarea id="st_disposisi" class="form-control form-control-sm mb-2" rows="4" placeholder="Arahan / disposisi Direktur">${esc(lap.disposisi_direktur || '')}</textarea>
+                    ${formTanggapan(false)}
+                    <div class="row g-2 mb-2"><div class="col-md-6"><label class="small fw-bold">Tanggal disposisi</label><input id="st_tanggal" type="date" class="form-control form-control-sm" value="${esc(lap.tanggal_disposisi || new Date().toISOString().slice(0, 10))}"></div>
+                        <div class="col-md-6"><label class="small fw-bold">Disetujui oleh</label><input id="st_oleh" class="form-control form-control-sm" value="${esc(lap.disetujui_oleh || (inst && inst.direktur_nama) || '')}"></div></div>
+                    <div class="d-flex gap-2 flex-wrap"><button class="btn btn-success fw-bold" onclick="ubahStatus('disetujui')"><i class="fas fa-check-double me-1"></i> Tandai disetujui</button>
+                        <button class="btn btn-outline-secondary" onclick="ubahStatus('draf')"><i class="fas fa-undo me-1"></i> Kembalikan ke draf (revisi)</button></div>`;
             } else {
-                rawDataInsiden.forEach((r, i) => {
-                    let tgl = new Date(r.waktu_insiden).toLocaleDateString('id-ID', {day:'2-digit', month:'short', year:'numeric'}) + " " + r.waktu_insiden.split('T')[1].substring(0,5);
-                    tabelInsidenHtml += `<tr><td style="text-align:center;">${i+1}</td><td>${tgl}</td><td>${esc(r.insiden)}</td><td style="text-align:center; font-weight:bold;">${esc(r.grading_risiko)}</td><td>${esc(r.unit_terkait)}</td></tr>`;
-                });
+                w.innerHTML = `<div class="alert alert-success small mb-2"><b>Disetujui</b> ${tgl(lap.disetujui_pada)} oleh ${esc(lap.disetujui_oleh || '-')}; disposisi tanggal ${tgl(lap.tanggal_disposisi)}.<div class="mt-1" style="white-space:pre-wrap">${esc(lap.disposisi_direktur || '')}</div></div>
+                    ${formTanggapan(true)}
+                    <div class="small text-muted mb-2">Umpan balik unit kini dapat dibaca masing-masing unit di Beranda.</div>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="ubahStatus('draf')"><i class="fas fa-lock-open me-1"></i> Buka kembali untuk revisi</button>`;
             }
-
-            const bab3 = msWordPageBreak + 
-                "<h3 style='text-align: center;'>BAB III<br>KESELAMATAN PASIEN</h3>" +
-                "<p>Selama periode " + periodeTxt + ", dilaporkan terdapat total <b>" + statDataInsiden.total + "</b> Insiden Keselamatan Pasien (IKP/KPC) yang masuk ke Komite Mutu. Berdasarkan hasil grading risiko awal, sebarannya adalah sebagai berikut:</p>" +
-                "<div style='text-align:center; margin-bottom: 20pt;'><img src='" + imgChartInsiden + "' width='450' height='300'></div>" +
-                "<h4>Overview Insiden Keselamatan Pasien Terlapor</h4>" +
-                "<table><thead><tr><th width='5%'>No</th><th width='15%'>Waktu Insiden</th><th width='40%'>Judul Insiden / Kronologi Singkat</th><th width='15%'>Grading</th><th width='25%'>Unit Terkait</th></tr></thead><tbody>" + tabelInsidenHtml + "</tbody></table>";
-
-            // ================== GENERATE TABEL RISIKO & FMEA ==================
-            let tabelRisikoLengkapHtml = "";
-            if(rawDataRisiko.length === 0) tabelRisikoLengkapHtml = "<tr><td colspan='5' style='text-align:center;'>Belum ada Profil Risiko Korporat.</td></tr>";
-            else {
-                rawDataRisiko.forEach((r, i) => {
-                    tabelRisikoLengkapHtml += `<tr><td style="text-align:center;">${i+1}</td><td>${esc(r.kategori_risiko || '-')}</td><td>${esc(r.risiko_teridentifikasi)}</td><td style="text-align:center;">${r.skor_akhir}</td><td>${esc(r.status_penanganan || 'Belum Ditangani')}</td></tr>`;
-                });
-            }
-
-            let tabelFmeaHtml = "";
-            if(rawDataFmea.length === 0) tabelFmeaHtml = "<tr><td colspan='4' style='text-align:center;'>Tidak ada Proyek FMEA yang berjalan pada periode ini.</td></tr>";
-            else {
-                rawDataFmea.forEach((f, i) => {
-                    tabelFmeaHtml += `<tr><td style="text-align:center;">${i+1}</td><td>${esc(f.nama_proses)}</td><td>${esc(f.ketua_tim || '-')}</td><td style="text-align:center; font-weight:bold;">${esc(f.status_proyek || 'Aktif')}</td></tr>`;
-                });
-            }
-
-            const bab4_risiko = msWordPageBreak + 
-                "<h3 style='text-align: center;'>BAB IV<br>MANAJEMEN RISIKO KORPORAT & FMEA</h3>" +
-                "<h4>Daftar Profil Risiko Rumah Sakit</h4>" +
-                "<p>Pemantauan terhadap risiko tingkat rumah sakit yang telah ditetapkan pada periode ini beserta status penanganannya:</p>" +
-                "<table><thead><tr><th width='5%'>No</th><th width='25%'>Kategori</th><th width='40%'>Risiko Teridentifikasi</th><th width='10%'>Skor Akhir</th><th width='20%'>Status Pantau</th></tr></thead><tbody>" + tabelRisikoLengkapHtml + "</tbody></table>" +
-                "<h4>Progres Analisis FMEA (Failure Mode and Effects Analysis)</h4>" +
-                "<p>Terhadap proses layanan yang berisiko sangat tinggi (Ekstrem), rumah sakit membentuk tim redesain proses layanan klinis (FMEA) sebagai bentuk mitigasi proaktif:</p>" +
-                "<table><thead><tr><th width='5%'>No</th><th width='45%'>Nama Proses Yang Dianalisis</th><th width='30%'>Ketua Tim</th><th width='20%'>Status Proyek</th></tr></thead><tbody>" + tabelFmeaHtml + "</tbody></table>";
-
-            // ================== BAB V & VI ==================
-            const bab5_ai = msWordPageBreak + 
-                "<h3 style='text-align: center;'>BAB V<br>ANALISIS TERINTEGRASI DAN TINDAK LANJUT</h3>" +
-                "<p><i>Catatan: Narasi pembahasan strategis di bawah ini dirumuskan berdasarkan agregasi data kuantitatif menggunakan Teknologi AI.</i></p>" +
-                "<div style='border: 1px solid #000; padding: 10pt; background-color: #fcfcfc;'>" + htmlAnalisisAI + "</div>";
-
-            const bab6_feedback = msWordPageBreak + 
-                "<h3 style='text-align: center;'>BAB VI<br>EVALUASI DAN UMPAN BALIK DIREKTUR</h3>" +
-                "<p>Sesuai dengan pedoman tata kelola mutu rumah sakit, Direktur diwajibkan memberikan umpan balik secara tertulis terhadap laporan kinerja PMKP yang telah disampaikan.</p>" +
-                "<table style='margin-top: 20pt;'><thead><tr><th>Umpan Balik / Arahan Direktur Rumah Sakit</th></tr></thead><tbody><tr><td style='height: 250px; vertical-align: top;'><br><br><br><br></td></tr></tbody></table>" +
-                "<table class='signature-box'><tr><td width='50%'>Ketua Komite Mutu dan Keselamatan Pasien<br><br><br><br><br><b>( dr. _________________________ )</b><br>NIP. </td><td width='50%'>Mengetahui & Menyetujui,<br>Direktur RSUD Saras Adyatma<br><br><br><br><br><b>( dr. _________________________ )</b><br>NIP. </td></tr></table>";
-
-            const f1 = "</bo" + "dy></ht" + "ml>";
-                
-            const blob = new Blob(['\ufeff', h1 + cssWord + h3 + coverPage + bab1 + bab2 + bab3 + bab4_risiko + bab5_ai + bab6_feedback + f1], { type: 'application/msword' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob); 
-            link.download = "Laporan_PMKP_Terintegrasi_" + periodeTxt.replace(/ /g, "_") + ".doc";
-            link.click();
+            // Tindak lanjut laporan ini
+            document.getElementById('daftarTL').innerHTML = tlIni.map(t => barisTL(t, true)).join('') || '<div class="text-muted small">Belum ada.</div>';
+            document.querySelectorAll('.btn-edit-tl').forEach(e => e.classList.toggle('d-none', !lap.id));
+            document.getElementById('daftarTLLama').innerHTML = tlLama.map(t => barisTL(t, false)).join('') || '<div class="text-muted">Tidak ada.</div>';
+            muatRiwayat();
         }
-
+        function barisTL(t, ini) {
+            const dari = !ini ? `<div class="text-muted">${esc(t.judul_laporan || '')}</div>` : '';
+            return `<div class="border rounded p-2 mb-1 small bg-white">${dari}<div class="fw-bold">${esc(t.uraian)}</div>
+                <div class="text-muted">${t.sumber === 'disposisi' ? 'Disposisi Direktur' : 'Rekomendasi'} · ${esc(t.pic || '-')} · tenggat ${tgl(t.tenggat)}</div>
+                <div class="d-flex gap-1 mt-1 align-items-center flex-wrap">
+                    <select class="form-select form-select-sm" style="width:auto" id="tls_${t.id}">${['rencana', 'berjalan', 'selesai', 'batal'].map(s => `<option ${s === t.status ? 'selected' : ''}>${s}</option>`).join('')}</select>
+                    <input class="form-control form-control-sm" style="max-width:260px" id="tlp_${t.id}" placeholder="Progres" value="${esc(t.progres || '')}">
+                    <button class="btn btn-sm btn-outline-primary" onclick="simpanTL('${t.id}')"><i class="fas fa-save"></i></button>
+                    ${ini ? `<button class="btn btn-sm btn-outline-danger" onclick="hapusTL('${t.id}')"><i class="fas fa-trash"></i></button>` : ''}</div></div>`;
+        }
+        async function muatRiwayat() {
+            const w = document.getElementById('riwayat');
+            if (!lap.id) { w.innerHTML = ''; return; }
+            const { data } = await supabaseClient.from('laporan_periodik_riwayat').select('versi, status, keterangan, dicatat_oleh, dicatat_pada').eq('id_laporan', lap.id).order('dicatat_pada', { ascending: false });
+            w.innerHTML = (data || []).map(r => `<div>${tgl(r.dicatat_pada)} — ${esc(r.keterangan)} (versi ${r.versi}) oleh ${esc(r.dicatat_oleh || '-')}</div>`).join('') || '<div class="text-muted">Belum ada.</div>';
+        }
+        window.ubahStatus = async function(status) {
+            const nilai = { status };
+            if (status === 'diajukan') {
+                if (!narasi.eksekutif || !narasi.eksekutif.teks) { const t = await Swal.fire({ title: 'Ringkasan eksekutif kosong', text: 'Tetap ajukan?', icon: 'warning', showCancelButton: true }); if (!t.isConfirmed) return; }
+                BAGIAN.forEach(b => ambilDariForm(b.k));
+                nilai.narasi = narasi; nilai.nomor_surat = (document.getElementById('st_nomor') || {}).value || null;
+            }
+            if (status === 'disetujui') {
+                nilai.disposisi_direktur = document.getElementById('st_disposisi').value.trim();
+                nilai.tanggal_disposisi = document.getElementById('st_tanggal').value || null;
+                nilai.disetujui_oleh = document.getElementById('st_oleh').value.trim() || null;
+                nilai.tanggapan_direktur = ambilTanggapan();
+                if (!nilai.disposisi_direktur) { Swal.fire('Belum lengkap', 'Isi disposisi Direktur.', 'warning'); return; }
+            }
+            if (status === 'draf' && lap.status === 'disetujui') {
+                const t = await Swal.fire({ title: 'Buka kembali laporan?', text: 'Laporan kembali menjadi draf; umpan balik unit tidak lagi terlihat oleh unit sampai disetujui ulang.', icon: 'warning', showCancelButton: true, confirmButtonText: 'Buka kembali' });
+                if (!t.isConfirmed) return;
+            }
+            // Simpan narasi terakhir sebelum diajukan
+            const { data, error } = await supabaseClient.from('laporan_periodik').update(nilai).eq('id', lap.id).select().single();
+            if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            lap = data; await muatLaporan();
+            if (status === 'disetujui' && !tlIni.length) Swal.fire({ title: 'Laporan disetujui', html: 'Tambahkan butir tindak lanjut dari disposisi Direktur di panel kanan agar dipantau pada laporan berikutnya.', icon: 'success' });
+            else Swal.fire({ title: 'Status diperbarui', icon: 'success', timer: 1200, showConfirmButton: false });
+        };
+        window.tambahTL = async function() {
+            const uraian = document.getElementById('tl_uraian').value.trim();
+            if (!uraian) { Swal.fire('Belum lengkap', 'Isi uraian tindak lanjut.', 'warning'); return; }
+            const { error } = await supabaseClient.from('laporan_tindak_lanjut').insert({ id_laporan: lap.id, uraian, sumber: document.getElementById('tl_sumber').value,
+                pic: document.getElementById('tl_pic').value.trim() || null, tenggat: document.getElementById('tl_tenggat').value || null });
+            if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            ['tl_uraian', 'tl_pic', 'tl_tenggat'].forEach(i => { document.getElementById(i).value = ''; });
+            await muatLaporan();
+        };
+        window.imporRekomendasi = async function() {
+            const rek = ((narasi.integrasi || {}).rekomendasi || []).filter(r => r.uraian);
+            const sudah = new Set(tlIni.map(t => t.uraian));
+            const baru = rek.filter(r => !sudah.has(r.uraian));
+            if (!baru.length) { Swal.fire('Tidak ada', 'Tidak ada rekomendasi strategis baru untuk ditambahkan.', 'info'); return; }
+            const { error } = await supabaseClient.from('laporan_tindak_lanjut').insert(baru.map(r => ({ id_laporan: lap.id, uraian: r.uraian, sumber: 'rekomendasi', pic: r.penanggung_jawab || null })));
+            if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            await muatLaporan();
+        };
+        window.simpanTL = async function(id) {
+            const { error } = await supabaseClient.from('laporan_tindak_lanjut').update({ status: document.getElementById('tls_' + id).value, progres: document.getElementById('tlp_' + id).value.trim() || null }).eq('id', id);
+            if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            Swal.fire({ title: 'Tersimpan', icon: 'success', timer: 900, showConfirmButton: false });
+        };
+        window.hapusTL = async function(id) {
+            const t = await Swal.fire({ title: 'Hapus butir ini?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Hapus' });
+            if (!t.isConfirmed) return;
+            const { error } = await supabaseClient.from('laporan_tindak_lanjut').delete().eq('id', id);
+            if (error) { Swal.fire('Gagal', esc(error.message), 'error'); return; }
+            await muatLaporan();
+        };
     </script>
 </body>
 </html>

@@ -32,6 +32,7 @@
                         <div class="col-md-4"><label class="small fw-bold">Nama singkat</label><input id="nama_singkat" class="form-control form-control-sm"></div>
                         <div class="col-md-8"><label class="small fw-bold">Pemilik / instansi induk</label><input id="pemilik" class="form-control form-control-sm" placeholder="mis. Pemerintah Kabupaten Bantul" oninput="pratinjau()"></div>
                         <div class="col-md-4"><label class="small fw-bold">Kota (untuk tanggal tanda tangan)</label><input id="kota" class="form-control form-control-sm"></div>
+                        <div class="col-md-8"><label class="small fw-bold">Dinas / instansi induk</label><input id="dinas_induk" class="form-control form-control-sm" placeholder="mis. Dinas Kesehatan" oninput="pratinjau()"></div>
                         <div class="col-12"><label class="small fw-bold">Alamat</label><input id="alamat" class="form-control form-control-sm" oninput="pratinjau()"></div>
                         <div class="col-md-4"><label class="small fw-bold">Telepon</label><input id="telepon" class="form-control form-control-sm" oninput="pratinjau()"></div>
                         <div class="col-md-4"><label class="small fw-bold">Email</label><input id="email" class="form-control form-control-sm" oninput="pratinjau()"></div>
@@ -42,8 +43,9 @@
                         <div>
                             <label class="small fw-bold d-block">Logo (PNG/JPG)</label>
                             <input type="file" accept="image/png,image/jpeg" class="form-control form-control-sm mb-1" onchange="pilihLogo(this)">
-                            <div class="small text-muted">Diperkecil otomatis menjadi maks. 300 px. Disimpan di database, tidak mengambil dari situs luar.</div>
-                            <button class="btn btn-sm btn-link text-danger p-0" onclick="hapusLogo()">Hapus logo</button>
+                            <div class="small text-muted">Logo pemerintah daerah / RS untuk sampul dan kop laporan. Unduh gambarnya dulu (buka alamat gambar → klik kanan → Simpan gambar), lalu pilih berkasnya di sini. Diperkecil otomatis menjadi maks. 300 px dan disimpan di database.</div>
+                            <button class="btn btn-sm btn-link text-danger p-0" onclick="hapusLogo()">Hapus logo unggahan (kembali ke logo bawaan)</button>
+                            <div class="small text-success" id="ketLogo"></div>
                         </div>
                     </div>
 
@@ -78,9 +80,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        const KOLOM = ['nama_rs', 'nama_singkat', 'pemilik', 'kota', 'alamat', 'telepon', 'email', 'situs_web',
+        const KOLOM = ['nama_rs', 'nama_singkat', 'pemilik', 'dinas_induk', 'kota', 'alamat', 'telepon', 'email', 'situs_web',
                        'direktur_nama', 'direktur_nip', 'ketua_komite_nama', 'ketua_komite_nip', 'sekretaris_komite_nama', 'sekretaris_komite_nip'];
-        let logoData = null;
+        let logoData = null, logoBawaan = null;
 
         document.addEventListener('DOMContentLoaded', async () => {
             if (!supabaseClient) return;
@@ -92,6 +94,7 @@
             const d = data || {};
             KOLOM.forEach(k => { document.getElementById(k).value = d[k] || ''; });
             logoData = d.logo_data || null;
+            logoBawaan = await logoBawaanDataUrl();
             document.getElementById('infoPembaru').textContent = d.diperbarui_oleh ? `Terakhir diubah ${d.diperbarui_oleh}, ${new Date(d.diperbarui_pada).toLocaleString('id-ID')}` : '';
             tampilLogo(); pratinjau();
         });
@@ -101,9 +104,11 @@
             o.logo_data = logoData; return o;
         }
         function tampilLogo() {
-            document.getElementById('logoPreview').innerHTML = logoData ? `<img src="${esc(logoData)}" alt="Logo">` : '<span class="small text-muted">Tanpa logo</span>';
+            const src = logoData || logoBawaan;
+            document.getElementById('logoPreview').innerHTML = src ? `<img src="${esc(src)}" alt="Logo">` : '<span class="small text-muted">Tanpa logo</span>';
+            document.getElementById('ketLogo').textContent = logoData ? 'Logo dari database.' : logoBawaan ? 'Memakai logo bawaan aplikasi (img/logo_laporan.png).' : '';
         }
-        window.pratinjau = function() { document.getElementById('pratinjauKop').innerHTML = kopLaporanHTML(nilai(), 'LAPORAN TRIWULAN III TAHUN 2026'); };
+        window.pratinjau = function() { const v = nilai(); if (!v.logo_data) v.logo_data = logoBawaan; document.getElementById('pratinjauKop').innerHTML = kopLaporanHTML(v, 'LAPORAN TRIWULAN III TAHUN 2026'); };
 
         window.pilihLogo = function(input) {
             const f = input.files && input.files[0];

@@ -90,6 +90,15 @@
             <div class="card-body pt-2" id="isiPerluTindakan"></div>
         </div>
 
+        <!-- UMPAN BALIK KOMITE MUTU UNTUK UNIT (laporan periodik yang sudah disetujui) -->
+        <div id="panelUmpanBalik" class="card border-0 shadow-sm mb-5 d-none" style="border-radius: 12px;">
+            <div class="card-header bg-white border-0 pt-3 pb-0 d-flex justify-content-between align-items-center flex-wrap gap-2" style="border-radius: 12px;">
+                <h6 class="fw-bold mb-0"><i class="fas fa-comment-medical text-primary me-2"></i> Umpan Balik Komite Mutu untuk Unit Anda</h6>
+                <select id="pilihUmpanBalik" class="form-select form-select-sm w-auto" onchange="tampilUmpanBalik()"></select>
+            </div>
+            <div class="card-body pt-2 small" id="isiUmpanBalik"></div>
+        </div>
+
         <h5 class="fw-bold text-secondary mb-4 border-bottom pb-2">Akses Cepat Layanan (Unit Kerja)</h5>
         
         <div class="row g-4 justify-content-center mb-5">
@@ -233,6 +242,7 @@
                 }
                 // Indikator tidak tercapai berturut-turut (admin: semua unit; staf: unitnya sendiri lewat RLS)
                 muatPerluTindakan(isAdminMutu(userData.role));
+                if (!isAdminMutu(userData.role)) muatUmpanBalik();
             }
         });
 
@@ -265,6 +275,29 @@
         // PERLU TINDAKAN: indikator tidak tercapai >= 3 bulan berturut-turut
         // =========================================================================
         const NAMA_BLN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        // Umpan balik unit dari laporan periodik yang sudah disetujui Direktur
+        let daftarUmpanBalik = [];
+        async function muatUmpanBalik() {
+            if (!supabaseClient) return;
+            const { data, error } = await supabaseClient.rpc('laporan_umpan_balik_saya');
+            if (error || !data || !data.length) return;
+            daftarUmpanBalik = data;
+            const sel = document.getElementById('pilihUmpanBalik');
+            data.forEach((d, i) => sel.add(new Option((d.judul || '').replace(/^Laporan PMKP Terintegrasi /, ''), i)));
+            document.getElementById('panelUmpanBalik').classList.remove('d-none');
+            tampilUmpanBalik();
+        }
+        window.tampilUmpanBalik = function() {
+            const d = daftarUmpanBalik[Number(document.getElementById('pilihUmpanBalik').value) || 0];
+            if (!d) return;
+            const daftar = (judul, xs, ikon, warna, bernomor) => xs && xs.length ? `<div class="mt-2"><div class="fw-bold ${warna}"><i class="fas ${ikon} me-1"></i>${judul}</div>
+                <${bernomor ? 'ol' : 'ul'} class="mb-0">${xs.map(x => `<li>${esc(x)}</li>`).join('')}</${bernomor ? 'ol' : 'ul'}></div>` : '';
+            document.getElementById('isiUmpanBalik').innerHTML = `${d.ringkasan ? `<p class="mb-1">${esc(d.ringkasan)}</p>` : ''}
+                ${daftar('Apresiasi', d.apresiasi, 'fa-thumbs-up', 'text-success')}${daftar('Perlu diperhatikan', d.perhatian, 'fa-exclamation-circle', 'text-warning')}
+                ${daftar('Saran tindak lanjut', d.saran, 'fa-tasks', 'text-primary', true)}
+                <div class="text-muted mt-2">Disetujui Direktur ${d.disetujui_pada ? new Date(d.disetujui_pada).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : ''}. Sampaikan rencana tindak lanjut kepada Komite Mutu.</div>`;
+        };
+
         async function muatPerluTindakan(admin) {
             if (!supabaseClient || typeof cariTidakTercapaiBeruntun !== 'function') return;
             const panel = document.getElementById('panelPerluTindakan');

@@ -107,7 +107,17 @@ function escJsAttr(s) {
 
 // 7. IDENTITAS INSTITUSI (tabel pengaturan_institusi) untuk kop & tanda tangan laporan.
 // Disimpan 10 menit di sessionStorage agar tidak dimuat ulang tiap halaman.
-const INSTITUSI_BAWAAN = { nama_rs: 'RSUD Saras Adyatma', nama_singkat: 'RSUD Saras Adyatma', pemilik: 'Pemerintah Kabupaten Bantul', kota: 'Bantul' };
+const INSTITUSI_BAWAAN = { nama_rs: 'RSUD Saras Adyatma', nama_singkat: 'RSUD Saras Adyatma', pemilik: 'Pemerintah Kabupaten Bantul', dinas_induk: 'Dinas Kesehatan', kota: 'Bantul' };
+// Logo bawaan bila belum diunggah di Pengaturan Institusi (berkas di folder aplikasi, sumber: img/bantul.png)
+const LOGO_BAWAAN_URL = 'img/logo_laporan.png';
+async function logoBawaanDataUrl() {
+    try {
+        const r = await fetch(LOGO_BAWAAN_URL, { cache: 'force-cache' });
+        if (!r.ok) return null;
+        const b = await r.blob();
+        return await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = () => res(null); fr.readAsDataURL(b); });
+    } catch (e) { return null; }
+}
 async function ambilInstitusi() {
     try {
         const c = JSON.parse(sessionStorage.getItem('institusiMutu') || 'null');
@@ -116,10 +126,11 @@ async function ambilInstitusi() {
     try {
         const { data } = await supabaseClient.from('pengaturan_institusi').select('*').eq('id', 1).maybeSingle();
         const hasil = { ...INSTITUSI_BAWAAN, ...(data || {}) };
+        if (!hasil.logo_data) hasil.logo_data = await logoBawaanDataUrl();
         try { sessionStorage.setItem('institusiMutu', JSON.stringify({ waktu: Date.now(), data: hasil })); } catch (e) {}
         return hasil;
     } catch (e) {
-        return { ...INSTITUSI_BAWAAN };
+        return { ...INSTITUSI_BAWAAN, logo_data: await logoBawaanDataUrl() };
     }
 }
 
@@ -131,6 +142,7 @@ function kopLaporanHTML(inst, judul, subjudul) {
         <td style="width:80px;vertical-align:middle;padding:0 8px 6px 0">${i.logo_data ? `<img src="${esc(i.logo_data)}" style="max-width:75px;max-height:75px">` : ''}</td>
         <td style="text-align:center;vertical-align:middle;padding-bottom:6px">
             ${i.pemilik ? `<div style="font-size:13px;letter-spacing:.5px">${esc(String(i.pemilik).toUpperCase())}</div>` : ''}
+            ${i.dinas_induk ? `<div style="font-size:13px;letter-spacing:.5px">${esc(String(i.dinas_induk).toUpperCase())}</div>` : ''}
             <div style="font-size:17px;font-weight:bold">${esc(String(i.nama_rs).toUpperCase())}</div>
             ${kontak ? `<div style="font-size:10.5px">${kontak}</div>` : ''}
         </td><td style="width:80px"></td></tr></table>

@@ -320,8 +320,16 @@
                                 <li>Pilih tahun lalu, lalu jalankan <strong>Tutup Tahun</strong>. Rekap numerator, denominator, dan capaian disimpan ke arsip sebelum data harian dihapus, sehingga dasbor tahun lalu tetap dapat dibuka.</li>
                             </ol>
 
-                            <div class="sub-chapter">7. Laporan terintegrasi</div>
-                            <p>Menu <strong>Laporan Terintegrasi (AI)</strong> menyusun draf laporan dari data sistem. Periksa dan sunting narasinya sebelum diserahkan kepada Direktur.</p>
+                            <div class="sub-chapter">7. Laporan terintegrasi (triwulan, semester, tahunan)</div>
+                            <ol>
+                                <li>Buka <strong>Laporan Terintegrasi (AI)</strong>, pilih jenis, periode, dan tahun, lalu klik <strong>Buka</strong>.</li>
+                                <li><strong>Kesiapan & Data:</strong> klik <strong>Kompilasi data</strong>. Angka disimpan sebagai snapshot (tidak berubah walau data harian dikoreksi, sampai dikompilasi ulang). Perhatikan daftar kesiapan: kunci periode, kepatuhan pelaporan, validasi, insiden & risiko yang belum diverifikasi.</li>
+                                <li><strong>Pembahasan:</strong> klik <strong>Susun semua dengan AI</strong>. AI membahas mutu, keselamatan pasien, budaya, dan risiko/FMEA satu per satu, lalu menyusun pembahasan terintegrasi, rekomendasi strategis, dan ringkasan eksekutif. Hanya angka agregat yang dikirim ke AI. Angka yang tidak ditemukan di data ditandai kuning; sunting teksnya lalu <strong>Simpan pembahasan</strong>. Tanpa AI, gunakan <strong>Isi otomatis tanpa AI</strong>.</li>
+                                <li><strong>Umpan Balik Unit:</strong> isi otomatis atau susun saran dengan AI, sunting per unit, lalu simpan. Tersedia Word per unit atau semua unit.</li>
+                                <li><strong>Persetujuan & Unduh:</strong> unduh <strong>Laporan untuk Direksi (.docx)</strong>, lalu <strong>Ajukan ke Direktur</strong>. Setelah Direktur menandatangani lembar disposisi, masukkan isi disposisinya dan klik <strong>Tandai disetujui</strong>. Tambahkan butir tindak lanjut; butir ini dipantau di laporan periode berikutnya.</li>
+                                <li>Setelah disetujui, setiap unit dapat membaca umpan baliknya di <strong>Beranda</strong>.</li>
+                            </ol>
+                            <p class="small text-muted">Pengaturan AI (sekali oleh admin teknis): simpan <code>GEMINI_API_KEY</code> (Google AI Studio, gratis) dan/atau <code>GROQ_API_KEY</code> (Groq, gratis) sebagai secret Edge Function <code>generate-laporan-ai</code>.</p>
                         </div>
 
                     </div>

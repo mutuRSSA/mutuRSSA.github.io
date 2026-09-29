@@ -10,6 +10,7 @@ Menguji aturan yang dijaga database dan kesamaan hasil mesin rumus:
 | `sql/04_insiden.sql` | Grading dihitung ulang dari matriks (Sentinel = Merah), alur Baru → Investigasi → Tindak Lanjut → Selesai, wajib RCA, batas 45 hari, penutupan otomatis, hak baca unit. |
 | `sql/05_versi_rumus.sql` | Perubahan rumus/target "berlaku mulai" tidak mengubah bulan sebelumnya; koreksi berlaku untuk semua bulan. |
 | `sql/06_survei_budaya.sql` | Survei hanya diterima saat periode dibuka, hanya satu periode dibuka, unit wajib dari daftar. |
+| `sql/07_laporan.sql` | Laporan periodik: draf → diajukan → disetujui, versi naik saat kompilasi ulang, isi terkunci saat diajukan/disetujui, disposisi wajib, riwayat, umpan balik unit hanya terbaca unitnya sendiri setelah disetujui. |
 | mesin rumus | `hitung_capaian_mutu()` (database) dibandingkan dengan `engine_mutu.js` pada ±1.000 kelompok data & rumus acak (COUNTALL, COUNTIF, SUM, KONSTAN, syarat bertingkat, GABUNGAN, isian kosong/aneh). |
 
 Setiap uji berjalan di dalam **satu transaksi yang selalu di-ROLLBACK**: pengguna, unit, indikator, dan data uji dibuat lalu dibuang lagi. Tidak ada yang tersimpan.
