@@ -476,6 +476,45 @@
             if (el) el.innerHTML = v ? '<i class="fas fa-circle text-warning me-1"></i> Ada perubahan yang belum disimpan' : '';
         }
 
+        // ---------- Urutkan tabel dengan klik judul kolom ----------
+        // Diurutkan pada data (bukan tampilan Handsontable) lalu rumus baris dibuat ulang untuk
+        // posisi barunya, sehingga rumus, deteksi perubahan, dan penyimpanan tetap benar.
+        let urutKolom = { form: null, col: -1, arah: 1 };
+        function kunciUrut(v, tipe) {
+            if (v === null || v === undefined || String(v).trim() === '' || nilaiError(v)) return null;
+            if (tipe === 'date' || tipe === 'calendar') { const m = parseIndoDate(v); if (m.isValid()) return m.valueOf(); }
+            if (tipe === 'time') { const t = parseTime24(v); if (t) return t; }
+            if (typeof v === 'number') return v;
+            const t = String(v).trim();
+            if (/^-?\d+([.,]\d+)?$/.test(t)) return Number(t.replace(',', '.'));
+            return t.toLowerCase();
+        }
+        function terapkanUrut() {
+            const hot = hotInstance, col = urutKolom.col, n = cetakBiruAktif.length;
+            if (!hot || col < 0 || col >= n) return;
+            const tipe = tipeKolom(cetakBiruAktif[col]);
+            const sumber = hot.getSourceData().map(r => r.slice());
+            const nilai = hot.getData();
+            const isi = [], kosong = [];
+            sumber.forEach((row, i) => (barisKosong(nilai[i]) && !row[n] ? kosong : isi).push({ row, k: kunciUrut(nilai[i][col], tipe), i }));
+            isi.sort((a, b) => {
+                if (a.k === null || b.k === null) return a.k === b.k ? a.i - b.i : a.k === null ? 1 : -1;   // kosong selalu di bawah
+                const c = typeof a.k === 'number' && typeof b.k === 'number' ? a.k - b.k : String(a.k).localeCompare(String(b.k), 'id', { numeric: true });
+                return c * urutKolom.arah || a.i - b.i;
+            });
+            const baru = [...isi, ...kosong].map((x, r) => { cetakBiruAktif.forEach((c, j) => { if (adaRumus(c)) x.row[j] = rumusBaris(c, r); }); return x.row; });
+            const berubah = tabelBerubah;
+            if (typeof hot.updateData === 'function') hot.updateData(baru); else hot.loadData(baru);
+            tandaiBerubah(berubah);   // mengurutkan bukan perubahan data
+            hot.render();
+        }
+        function klikJudulKolom(col) {
+            const form = document.getElementById('sel_indikator').value;
+            if (urutKolom.form === form && urutKolom.col === col) urutKolom.arah = -urutKolom.arah;
+            else urutKolom = { form, col, arah: 1 };
+            terapkanUrut();
+        }
+
         function renderExcelTabel() {
             const container = document.getElementById('spreadsheet');
             container.innerHTML = '';
@@ -513,7 +552,12 @@
             const tersembunyi = cetakBiruAktif.map((c, i) => c.sembunyi ? i : -1).filter(i => i >= 0).concat([n]);
 
             hotInstance = new Handsontable(container, {
-                data, colHeaders: cetakBiruAktif.map(c => c.judul).concat(['id']), columns: hotColumns,
+                data, columns: hotColumns,
+                colHeaders: i => i >= n ? 'id' : `${cetakBiruAktif[i].judul}${urutKolom.col === i && urutKolom.form === document.getElementById('sel_indikator').value ? (urutKolom.arah > 0 ? ' ▲' : ' ▼') : ''}`,
+                // Klik judul kolom: urutkan naik, klik lagi: turun
+                afterOnCellMouseDown: function(event, coords) {
+                    if (coords.row === -1 && coords.col >= 0 && coords.col < n && event.button === 0 && !event.target.closest('.manualColumnResizer')) klikJudulKolom(coords.col);
+                },
                 rowHeaders: true, width: '100%', height: 500, stretchH: 'all',
                 formulas: { engine: HyperFormula }, licenseKey: 'non-commercial-and-evaluation', 
                 autoColumnSize: false, manualColumnResize: true, minSpareRows: periodeTerkunci ? 0 : 5,
@@ -608,6 +652,9 @@
                 }
             });
             tandaiBerubah(false);
+            // Pertahankan urutan pilihan pengguna setelah tabel dimuat ulang (mis. sesudah simpan)
+            if (urutKolom.form === document.getElementById('sel_indikator').value) terapkanUrut();
+            else urutKolom = { form: null, col: -1, arah: 1 };
             siapkanHitungForm();
         }
 

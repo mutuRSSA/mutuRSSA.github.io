@@ -293,6 +293,21 @@ function periksaTemplate(teks, kolomPerForm) {
 //   opsi   : { tahun, bulanAkhir (bulan terakhir yang dinilai), minBeruntun = 3 }
 // Deret dihitung mundur dari bulan terakhir yang ada capaiannya (paling lambat 1 bulan sebelum
 // bulanAkhir); bulan tanpa data atau bulan tercapai memutus deret.
+// Formulir yang dilaporkan tiap unit: Pengaturan Unit Kerja (master_unit.daftar_form).
+// Inilah acuan indikator milik unit — bukan unit pelaksana di Profil Indikator.
+function mutuPetaFormUnit(daftarUnit) {
+    const m = new Map();
+    (daftarUnit || []).forEach(u => m.set(u.nama_unit, new Set(String(u.daftar_form || '').split(',').map(s => s.trim()).filter(Boolean))));
+    return m;
+}
+// Peta dianggap aktif bila minimal satu unit sudah diatur daftar formulirnya
+const mutuPetaAktif = peta => !!peta && [...peta.values()].some(s => s.size > 0);
+function mutuUnitMelaporkan(peta, unit, idForm) {
+    if (!mutuPetaAktif(peta)) return true;
+    const s = peta.get(unit);
+    return !!(s && s.has(idForm));
+}
+
 function cariTidakTercapaiBeruntun(master, hasilDb, pdsa, opsi) {
     const minB = opsi.minBeruntun || 3;
     const profil = new Map(master.map(p => [p.id_indikator, p]));
@@ -301,6 +316,7 @@ function cariTidakTercapaiBeruntun(master, hasilDb, pdsa, opsi) {
     hasilDb.forEach(h => {
         if (h.capaian === null || h.capaian === undefined || !profil.has(h.id_indikator)) return;
         if (h.bulan > opsi.bulanAkhir) return;
+        if (opsi.petaForm && !mutuUnitMelaporkan(opsi.petaForm, h.unit_kerja, profil.get(h.id_indikator).id_form)) return;
         const k = h.id_indikator + '|' + h.unit_kerja;
         if (!kelompok.has(k)) kelompok.set(k, { id: h.id_indikator, unit: h.unit_kerja, bulan: new Map(), versi: new Map() });
         kelompok.get(k).bulan.set(h.bulan, Number(h.capaian));
@@ -342,5 +358,5 @@ if (typeof module !== 'undefined') module.exports = {
     mutuAngka, mutuIndeks, mutuCocok, mutuParseTemplate, mutuSyaratOk, mutuNilaiRumus, mutuBagian,
     eksekusiRumusEngine, indikatorPakaiEngine, mutuPengali, hitungCapaianND, hitungKelompokIndikator,
     cekTercapaiProfil, susunRingkasanDariHasil, jelaskanTemplate, periksaTemplate, MUTU_OPERATOR,
-    cariTidakTercapaiBeruntun, mutuBulat2
+    cariTidakTercapaiBeruntun, mutuBulat2, mutuPetaFormUnit, mutuUnitMelaporkan
 };

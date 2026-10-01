@@ -219,7 +219,16 @@ function lapNilaiKelompok(rows, satuan, rataRata) {
 function lapSusunMutu(S) {
     const p = S.p;
     const idxCap = rows => { const m = new Map(); rows.forEach(r => { const k = String(r.id_indikator); if (!m.has(k)) m.set(k, []); m.get(k).push(r); }); return m; };
-    const kini = idxCap(S.capKini), sebelum = idxCap(S.capSebelum), lalu = idxCap(S.capTahunLalu);
+    // Hanya unit yang melaporkan formulir indikator (Pengaturan Unit Kerja), bukan unit pelaksana di profil
+    const peta = mutuPetaFormUnit(S.unit), formDari = new Map(S.master.map(m => [String(m.id_indikator), m.id_form]));
+    const diabaikan = new Set();
+    const sahUnit = rows => rows.filter(r => {
+        const ok = mutuUnitMelaporkan(peta, r.unit_kerja, formDari.get(String(r.id_indikator)));
+        if (!ok && formDari.has(String(r.id_indikator))) diabaikan.add(`${r.unit_kerja}|${r.id_indikator}`);
+        return ok;
+    });
+    const kini = idxCap(sahUnit(S.capKini)), sebelum = idxCap(sahUnit(S.capSebelum)), lalu = idxCap(sahUnit(S.capTahunLalu));
+    if (diabaikan.size) (S.catatan = S.catatan || []).push(`${diabaikan.size} kombinasi unit × indikator tidak dihitung karena formulirnya tidak terdaftar untuk unit tersebut di Pengaturan Unit Kerja.`);
     const indikator = [], perUnit = [];
     const pdsaUntuk = (prof, unit) => S.pdsa.filter(d => (d.id_profil ? d.id_profil === prof.id_indikator : (d.id_indikator === prof.id_form || d.id_indikator === prof.id_indikator))
         && (!unit || !d.unit_kerja || d.unit_kerja === unit));

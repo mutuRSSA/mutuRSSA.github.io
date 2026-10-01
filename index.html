@@ -323,13 +323,14 @@
                 panel.classList.remove('d-none');
                 isi.innerHTML = '<div class="text-muted small py-2"><i class="fas fa-spinner fa-spin me-1"></i> Menghitung capaian...</div>';
                 const bulan = Array.from({ length: bulanAkhir }, (_, i) => i + 1);
-                const [resInd, hasil, resPdsa] = await Promise.all([
+                const [resInd, hasil, resPdsa, resUnit] = await Promise.all([
                     supabaseClient.from('master_indikator').select('*').neq('status_aktif', false),
                     ambilSemuaBaris(() => supabaseClient.rpc('hitung_capaian_mutu', { p_tahun: tahun, p_bulan: bulan }).order('id_indikator').order('unit_kerja').order('bulan')),
-                    ambilSemua(() => supabaseClient.from('data_pdsa').select('id_pdsa, unit_kerja, id_indikator, id_profil, judul_indikator, fase_saat_ini, tanggal_dibuat').order('id_pdsa'))
+                    ambilSemua(() => supabaseClient.from('data_pdsa').select('id_pdsa, unit_kerja, id_indikator, id_profil, judul_indikator, fase_saat_ini, tanggal_dibuat').order('id_pdsa')),
+                    supabaseClient.from('master_unit').select('nama_unit, daftar_form')
                 ]);
                 if (resInd.error) throw resInd.error;
-                const daftar = cariTidakTercapaiBeruntun(resInd.data || [], hasil || [], resPdsa.data || [], { tahun, bulanAkhir, minBeruntun: 3 });
+                const daftar = cariTidakTercapaiBeruntun(resInd.data || [], hasil || [], resPdsa.data || [], { tahun, bulanAkhir, minBeruntun: 3, petaForm: resUnit.error ? null : mutuPetaFormUnit(resUnit.data) });
                 document.getElementById('ketPerluTindakan').textContent = `Dinilai s.d. ${NAMA_BLN[bulanAkhir - 1]} ${tahun}`;
                 if (!daftar.length) {
                     isi.innerHTML = '<div class="text-success small py-2"><i class="fas fa-check-circle me-1"></i> Tidak ada indikator yang tidak tercapai 3 bulan berturut-turut.</div>';
