@@ -302,10 +302,95 @@ function mutuPetaFormUnit(daftarUnit) {
 }
 // Peta dianggap aktif bila minimal satu unit sudah diatur daftar formulirnya
 const mutuPetaAktif = peta => !!peta && [...peta.values()].some(s => s.size > 0);
-function mutuUnitMelaporkan(peta, unit, idForm) {
+// idIndikator (opsional): cek juga Hak Akses Kolom bila peta dipasangi mutuPasangAksesKolom
+function mutuUnitMelaporkan(peta, unit, idForm, idIndikator) {
+    if (!mutuUnitBerhakIndikator(peta, unit, idIndikator)) return false;
     if (!mutuPetaAktif(peta)) return true;
     const s = peta.get(unit);
     return !!(s && s.has(idForm));
+}
+
+// ---------------------------------------------------------------------
+// Hak Akses Kolom (Form Builder) -> unit yang melaporkan TIAP indikator.
+// Satu formulir bisa dipakai beberapa indikator dan diisi beberapa unit;
+// tiap unit hanya mengisi kolom yang menjadi haknya. Indikator dianggap
+// milik unit bila unit berhak mengisi minimal satu kolom TERBATAS (bukan
+// ALL) yang dirujuk rumus N/D indikator itu (target_kolom, syarat_kolom,
+// syarat[].kolom, termasuk sumber rumus kolom READONLY [x]).
+// Bila rumus hanya merujuk kolom ALL (atau COUNTALL saja), semua unit yang
+// melaporkan formulirnya dianggap melaporkan indikator tsb.
+// ---------------------------------------------------------------------
+const mutuAksesSemua = a => { const s = String(a ?? '').trim(); return !s || s.toUpperCase() === 'ALL' || s === 'None'; };
+const mutuNamaUnit = u => String(u ?? '').trim().toLowerCase();
+function mutuDaftarAkses(a) { return mutuAksesSemua(a) ? [] : String(a).split(',').map(s => s.trim()).filter(Boolean); }
+
+// Indeks kolom yang dirujuk satu rumus (bukan GABUNGAN)
+function mutuKolomRumus(r) {
+    const hasil = new Set();
+    if (!r || typeof r !== 'object') return hasil;
+    [r.target_kolom, r.syarat_kolom].forEach(v => { const i = mutuIndeks(mutuTeks(v)); if (i !== null) hasil.add(i); });
+    if (Array.isArray(r.syarat)) r.syarat.forEach(s => { const i = mutuIndeks(mutuTeks(s && s.kolom)); if (i !== null) hasil.add(i); });
+    return hasil;
+}
+
+// [{ id_form, kolom: Set(indeks) }] yang dirujuk template N & D sebuah profil indikator
+function mutuKolomIndikator(profil) {
+    const perForm = new Map();
+    [profil.template_numerator, profil.template_denominator].forEach(t => {
+        mutuBagian(mutuParseTemplate(t)).forEach(b => {
+            if (b.rumus.tipe === 'KONSTAN') return;
+            const f = b.id_form || profil.id_form;
+            if (!perForm.has(f)) perForm.set(f, new Set());
+            mutuKolomRumus(b.rumus).forEach(i => perForm.get(f).add(i));
+        });
+    });
+    return [...perForm].map(([id_form, kolom]) => ({ id_form, kolom }));
+}
+
+// Tambah sumber rumus kolom READONLY ([1]/[2]*100 -> 1, 2), berantai
+function mutuKolomDenganSumber(kolomForm, indeks) {
+    const hasil = new Set(indeks), antre = [...indeks];
+    while (antre.length) {
+        const c = kolomForm[antre.pop()];
+        const f = c && c.formula ? String(c.formula) : '';
+        for (const m of f.matchAll(/\[(\d+)\]/g)) { const j = parseInt(m[1], 10); if (!hasil.has(j)) { hasil.add(j); antre.push(j); } }
+    }
+    return hasil;
+}
+
+/**
+ * Peta id_indikator -> { unit: Set(nama unit huruf kecil), kolom: [{id_form, indeks, judul, akses}] }
+ * Hanya berisi indikator yang rumusnya merujuk kolom terbatas.
+ *   daftarForm: baris setup_formulir ({id_form, kolom}); daftarIndikator: master_indikator
+ */
+function mutuPetaAksesIndikator(daftarForm, daftarIndikator) {
+    const kolomDari = new Map((daftarForm || []).map(f => [f.id_form, Array.isArray(f.kolom) ? f.kolom : []]));
+    const peta = new Map();
+    (daftarIndikator || []).forEach(p => {
+        const unit = new Set(), kolom = [];
+        mutuKolomIndikator(p).forEach(({ id_form, kolom: idx }) => {
+            const kf = kolomDari.get(id_form);
+            if (!kf) return;
+            [...mutuKolomDenganSumber(kf, idx)].sort((a, b) => a - b).forEach(i => {
+                const c = kf[i];
+                if (!c || mutuAksesSemua(c.akses)) return;
+                kolom.push({ id_form, indeks: i, judul: c.judul, akses: c.akses });
+                mutuDaftarAkses(c.akses).forEach(u => unit.add(mutuNamaUnit(u)));
+            });
+        });
+        if (kolom.length) peta.set(String(p.id_indikator), { unit, kolom });
+    });
+    return peta;
+}
+// Pasang peta akses kolom ke peta formulir unit (dipakai mutuUnitMelaporkan)
+function mutuPasangAksesKolom(petaForm, daftarForm, daftarIndikator) {
+    const peta = petaForm || new Map();
+    peta.aksesIndikator = mutuPetaAksesIndikator(daftarForm, daftarIndikator);
+    return peta;
+}
+function mutuUnitBerhakIndikator(peta, unit, idIndikator) {
+    const a = peta && peta.aksesIndikator && idIndikator !== undefined && idIndikator !== null ? peta.aksesIndikator.get(String(idIndikator)) : null;
+    return !a || a.unit.has(mutuNamaUnit(unit));
 }
 
 function cariTidakTercapaiBeruntun(master, hasilDb, pdsa, opsi) {
@@ -316,7 +401,7 @@ function cariTidakTercapaiBeruntun(master, hasilDb, pdsa, opsi) {
     hasilDb.forEach(h => {
         if (h.capaian === null || h.capaian === undefined || !profil.has(h.id_indikator)) return;
         if (h.bulan > opsi.bulanAkhir) return;
-        if (opsi.petaForm && !mutuUnitMelaporkan(opsi.petaForm, h.unit_kerja, profil.get(h.id_indikator).id_form)) return;
+        if (opsi.petaForm && !mutuUnitMelaporkan(opsi.petaForm, h.unit_kerja, profil.get(h.id_indikator).id_form, h.id_indikator)) return;
         const k = h.id_indikator + '|' + h.unit_kerja;
         if (!kelompok.has(k)) kelompok.set(k, { id: h.id_indikator, unit: h.unit_kerja, bulan: new Map(), versi: new Map() });
         kelompok.get(k).bulan.set(h.bulan, Number(h.capaian));
@@ -358,5 +443,6 @@ if (typeof module !== 'undefined') module.exports = {
     mutuAngka, mutuIndeks, mutuCocok, mutuParseTemplate, mutuSyaratOk, mutuNilaiRumus, mutuBagian,
     eksekusiRumusEngine, indikatorPakaiEngine, mutuPengali, hitungCapaianND, hitungKelompokIndikator,
     cekTercapaiProfil, susunRingkasanDariHasil, jelaskanTemplate, periksaTemplate, MUTU_OPERATOR,
-    cariTidakTercapaiBeruntun, mutuBulat2, mutuPetaFormUnit, mutuUnitMelaporkan
+    cariTidakTercapaiBeruntun, mutuBulat2, mutuPetaFormUnit, mutuUnitMelaporkan,
+    mutuPetaAksesIndikator, mutuPasangAksesKolom, mutuUnitBerhakIndikator, mutuKolomIndikator, mutuAksesSemua, mutuDaftarAkses
 };

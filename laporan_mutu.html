@@ -123,7 +123,7 @@
     <!-- LIBRARY SUPABASE & CHART.JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js?v=20261001"></script>
-    <script src="engine_mutu.js?v=20261001b"></script>
+    <script src="engine_mutu.js?v=20261002"></script>
     <script src="auth.js?v=20261001"></script>
     <script src="components.js?v=20261001"></script>
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
@@ -144,7 +144,7 @@
         let dbDataHarian = []; 
         let dbDataArsip = []; // WADAH BARU UNTUK ARSIP
         
-        let hasilAgregasi = []; let indikatorDisembunyikan = []; let unitTidakTerdaftar = []; let petaFormUnit = new Map();
+        let hasilAgregasi = []; let indikatorDisembunyikan = []; let unitTidakTerdaftar = []; let unitTanpaAksesKolom = []; let petaFormUnit = new Map();
 
         // Urutan tampil kategori: INM -> IMP-RS -> IMP-Unit -> lainnya
         function urutanKategori(jenis) {
@@ -230,6 +230,8 @@
                 const resUnit = await supabaseClient.from('master_unit').select('nama_unit, daftar_form').order('nama_unit');
                 // Indikator milik unit = formulir yang dicentang di Pengaturan Unit Kerja (Super Admin Panel)
                 petaFormUnit = mutuPetaFormUnit(resUnit.data || []);
+                // Formulir bersama: indikator milik unit = kolom rumusnya boleh diisi unit itu (Hak Akses Kolom di Form Builder)
+                mutuPasangAksesKolom(petaFormUnit, dbSetupFormulir, dbMasterIndikator);
                 const unitSelect = document.getElementById('filterUnit');
                 unitSelect.innerHTML = '<option value="RS_ALL" class="fw-bold text-primary">🏥 SELURUH RUMAH SAKIT</option>';
                 if(resUnit.data) resUnit.data.forEach(u => { unitSelect.appendChild(new Option(u.nama_unit, u.nama_unit)); });
@@ -313,7 +315,7 @@
             // 2. PROSES AGREGASI HIBRIDA
             // =======================================================
             hasilAgregasi = [];
-            indikatorDisembunyikan = []; unitTidakTerdaftar = [];
+            indikatorDisembunyikan = []; unitTidakTerdaftar = []; unitTanpaAksesKolom = [];
             let unitGroupedData = {};
             let groupedData = {};
 
@@ -355,17 +357,20 @@
                     }
                 });
 
-                // Unit yang tidak melaporkan formulir ini (menurut Pengaturan Unit Kerja) tidak dihitung
+                // Unit yang tidak melaporkan formulir ini (Pengaturan Unit Kerja) atau tidak berhak
+                // mengisi kolom rumus indikator ini (Hak Akses Kolom di Form Builder) tidak dihitung
                 unitsToProcess = unitsToProcess.filter(u => {
-                    if (mutuUnitMelaporkan(petaFormUnit, u, idForm)) return true;
-                    unitTidakTerdaftar.push(`${judul} — ${u}`);
+                    if (mutuUnitMelaporkan(petaFormUnit, u, idForm, idIndikatorAsli)) return true;
+                    if (selectedUnit !== 'RS_ALL' && u !== selectedUnit) return false;   // catatan hanya untuk unit yang ditampilkan
+                    if (!mutuUnitBerhakIndikator(petaFormUnit, u, idIndikatorAsli)) unitTanpaAksesKolom.push(`${judul} — ${u}`);
+                    else unitTidakTerdaftar.push(`${judul} — ${u}`);
                     return false;
                 });
                 // Belum ada data: tampilkan sekali saja (tidak disebar ke semua unit).
                 // Tampilan per unit: hanya bila formulir ini memang dicentang untuk unit tersebut.
                 if (unitsToProcess.length === 0) {
                     if (selectedUnit === 'RS_ALL') unitsToProcess.push('Semua Unit (Hospital Wide)');
-                    else if (mutuUnitMelaporkan(petaFormUnit, selectedUnit, idForm)) unitsToProcess.push(selectedUnit);
+                    else if (mutuUnitMelaporkan(petaFormUnit, selectedUnit, idForm, idIndikatorAsli)) unitsToProcess.push(selectedUnit);
                 }
 
                 unitsToProcess.forEach(unt => {
@@ -574,6 +579,11 @@
                     <b>${unitTidakTerdaftar.length} data unit × indikator tidak dihitung</b> karena formulirnya tidak terdaftar untuk unit tersebut di Pengaturan Unit Kerja:
                     ${[...new Set(unitTidakTerdaftar)].slice(0, 30).map(j => esc(j)).join('; ')}${unitTidakTerdaftar.length > 30 ? '; …' : ''}.
                     Bila unit memang melaporkan indikator ini, centang formulirnya di Pengaturan Unit Kerja.</div>`;
+            }
+            if (unitTanpaAksesKolom.length && isAdminMutu(userRole)) {
+                fullHtml += `<div class="alert alert-light border small d-print-none mb-3"><i class="fas fa-shield-alt me-1 text-muted"></i>
+                    <b>${unitTanpaAksesKolom.length} data unit × indikator tidak dihitung</b> karena unit tersebut tidak berhak mengisi kolom yang dipakai rumus indikatornya (Hak Akses Kolom di Form Builder):
+                    ${[...new Set(unitTanpaAksesKolom)].slice(0, 30).map(j => esc(j)).join('; ')}${unitTanpaAksesKolom.length > 30 ? '; …' : ''}.</div>`;
             }
             if (indikatorDisembunyikan.length && isAdminMutu(userRole)) {
                 fullHtml += `<div class="alert alert-light border small d-print-none mb-4"><i class="fas fa-eye-slash me-1 text-muted"></i>

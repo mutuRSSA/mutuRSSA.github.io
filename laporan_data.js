@@ -113,6 +113,8 @@ async function lapKumpulkanSumber(p, log = () => {}) {
         lapAmbil('Unit', () => supabaseClient.from('master_unit').select('nama_unit, daftar_form').order('nama_unit')),
         lapAmbil('PDSA', () => supabaseClient.from('data_pdsa').select('*').order('id_pdsa'))
     ]);
+    // Hak Akses Kolom formulir (Form Builder): menentukan unit pelapor tiap indikator pada formulir bersama
+    const formulir = await lapAmbilOpsional('Struktur formulir', () => supabaseClient.from('setup_formulir').select('id_form, kolom').order('id_form'), catatan);
     log(`Menghitung capaian ${p.label} di database...`);
     const capKini = await lapCapaianBulanan(p.tahun, p.bulan);
     log(`Menghitung pembanding ${ps.label}${ps.label !== pl.label ? ' dan ' + pl.label : ''}...`);
@@ -162,7 +164,7 @@ async function lapKumpulkanSumber(p, log = () => {}) {
         lapAmbilOpsional('Tindak lanjut laporan', () => supabaseClient.from('laporan_tindak_lanjut').select('*').order('dibuat_pada'), catatan)
     ]);
 
-    return { p, ps, pl, master, unit, pdsa, capKini, capSebelum, capTahunLalu, kepatuhan, kunci, validasi,
+    return { p, ps, pl, master, unit, formulir, pdsa, capKini, capSebelum, capTahunLalu, kepatuhan, kunci, validasi,
              insiden, insidenSebelum, insidenTahunLalu, tindakLanjutInsiden, periodeSurvei, surveiDipakai, stafSurvei, jawabanSurvei,
              risiko, tindakanRisiko, reviewRisiko, profil, sk, fmea, laporanLain, tindakLanjutLaporan, catatan, hariIni: lapHariIni() };
 }
@@ -220,15 +222,17 @@ function lapSusunMutu(S) {
     const p = S.p;
     const idxCap = rows => { const m = new Map(); rows.forEach(r => { const k = String(r.id_indikator); if (!m.has(k)) m.set(k, []); m.get(k).push(r); }); return m; };
     // Hanya unit yang melaporkan formulir indikator (Pengaturan Unit Kerja), bukan unit pelaksana di profil
-    const peta = mutuPetaFormUnit(S.unit), formDari = new Map(S.master.map(m => [String(m.id_indikator), m.id_form]));
-    const diabaikan = new Set();
+    // ... dan hanya unit yang berhak mengisi kolom rumus indikator (Hak Akses Kolom di Form Builder)
+    const peta = mutuPasangAksesKolom(mutuPetaFormUnit(S.unit), S.formulir || [], S.master), formDari = new Map(S.master.map(m => [String(m.id_indikator), m.id_form]));
+    const diabaikan = new Set(), tanpaAkses = new Set();
     const sahUnit = rows => rows.filter(r => {
-        const ok = mutuUnitMelaporkan(peta, r.unit_kerja, formDari.get(String(r.id_indikator)));
-        if (!ok && formDari.has(String(r.id_indikator))) diabaikan.add(`${r.unit_kerja}|${r.id_indikator}`);
+        const ok = mutuUnitMelaporkan(peta, r.unit_kerja, formDari.get(String(r.id_indikator)), r.id_indikator);
+        if (!ok && formDari.has(String(r.id_indikator))) (mutuUnitBerhakIndikator(peta, r.unit_kerja, r.id_indikator) ? diabaikan : tanpaAkses).add(`${r.unit_kerja}|${r.id_indikator}`);
         return ok;
     });
     const kini = idxCap(sahUnit(S.capKini)), sebelum = idxCap(sahUnit(S.capSebelum)), lalu = idxCap(sahUnit(S.capTahunLalu));
     if (diabaikan.size) (S.catatan = S.catatan || []).push(`${diabaikan.size} kombinasi unit × indikator tidak dihitung karena formulirnya tidak terdaftar untuk unit tersebut di Pengaturan Unit Kerja.`);
+    if (tanpaAkses.size) (S.catatan = S.catatan || []).push(`${tanpaAkses.size} kombinasi unit × indikator tidak dihitung karena unit tersebut tidak berhak mengisi kolom rumus indikatornya (Hak Akses Kolom di Form Builder).`);
     const indikator = [], perUnit = [];
     const pdsaUntuk = (prof, unit) => S.pdsa.filter(d => (d.id_profil ? d.id_profil === prof.id_indikator : (d.id_indikator === prof.id_form || d.id_indikator === prof.id_indikator))
         && (!unit || !d.unit_kerja || d.unit_kerja === unit));
