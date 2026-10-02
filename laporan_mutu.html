@@ -130,6 +130,9 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx@9.6.1/dist/index.iife.js"></script>
+    <script src="laporan_docx.js?v=20261002"></script>
+    <script src="laporan_mutu_docx.js?v=20261002"></script>
 
     <script>
         let sessionMutu = JSON.parse(localStorage.getItem("sessionMutu")) || {};
@@ -481,7 +484,8 @@
                 kopLaporanHTML(window.__institusi, 'LAPORAN CAPAIAN INDIKATOR MUTU', String(activePeriodeTitle).toUpperCase() + ' - ' + (selectedUnit === 'RS_ALL' ? 'SELURUH RUMAH SAKIT' : 'UNIT ' + String(selectedUnit).toUpperCase())) + "</div>" +
                 "<div class='d-flex justify-content-between align-items-center mb-4 border-bottom pb-3 d-print-none'>" +
                 "<h5 class='fw-bold text-secondary mb-0'><i class='fas fa-hospital me-2'></i> " + esc(selectedUnit === 'RS_ALL' ? 'Seluruh Rumah Sakit' : selectedUnit) + " (" + esc(activePeriodeTitle) + ")</h5><div>";
-            fullHtml += "<button class='btn btn-danger fw-bold px-3' onclick='window.print()'><i class='fas fa-print me-1'></i> Cetak Dokumen</button></div></div>";
+            fullHtml += "<button class='btn btn-primary fw-bold px-3 me-2' onclick='unduhWordLaporanMutu()' title='Unduh laporan dalam format Microsoft Word (.docx)'><i class='fas fa-file-word me-1'></i> Unduh Word</button>" +
+                "<button class='btn btn-danger fw-bold px-3' onclick='window.print()' title='Cetak atau simpan sebagai PDF'><i class='fas fa-print me-1'></i> Cetak / PDF</button></div></div>";
 
             let chartConfigs = []; let chartIdCounter = 0;
             let stats = { total: 0, hit: 0, miss: 0, sumInmCpa: 0, countInm: 0 };
@@ -522,6 +526,11 @@
                 }
             }
             
+            // Model untuk ekspor Word (laporan_mutu_docx.js)
+            window.__cetakMutu = { tahun: selectedTahun, unit: selectedUnit, tipe: selectedTipe, periode: activePeriodeTitle, namaBulan,
+                groupedData, unitGroupedData: selectedUnit === 'RS_ALL' ? unitGroupedData : {}, kategori: susunKategori(groupedData),
+                stats: { ...stats }, rataInm: stats.countInm > 0 ? stats.sumInmCpa / stats.countInm : null, grafik: [] };
+
             let avgInmText = stats.countInm > 0 ? (stats.sumInmCpa / stats.countInm).toFixed(1) + "<small>%</small>" : "-";
             
             fullHtml += `
@@ -631,7 +640,7 @@
                     cardsHtml += "<div class='" + colWidth + " mb-4' style='" + displayStyle + "'><div class='card h-100 shadow-sm'><div class='card-body'>" + chartAreaHtml + "</div></div></div>";
                     
                     if (selectedTipe !== 'bulanan') {
-                        chartConfigs.push({ id: canvasId, labels: namaBulan, target: namaBulan.map(b => item.bulans[b].target), capai: namaBulan.map(b => item.bulans[b].capai), satuan: item.satuan });
+                        chartConfigs.push({ id: canvasId, labels: namaBulan, target: namaBulan.map(b => item.bulans[b].target), capai: namaBulan.map(b => item.bulans[b].capai), satuan: item.satuan, judul, grup: jenis });
                     }
                 }
                 
@@ -699,7 +708,7 @@
                         uCardsHtml += "<div class='" + colWidth + " mb-4' style='" + displayStyle + "'><div class='card h-100 shadow-sm border-0 bg-white'><div class='card-body'>" + chartAreaHtml + "</div></div></div>";
                         
                         if (selectedTipe !== 'bulanan') {
-                            chartConfigs.push({ id: canvasId, labels: namaBulan, target: namaBulan.map(b => uItem.bulans[b].target), capai: namaBulan.map(b => uItem.bulans[b].capai), satuan: uItem.satuan });
+                            chartConfigs.push({ id: canvasId, labels: namaBulan, target: namaBulan.map(b => uItem.bulans[b].target), capai: namaBulan.map(b => uItem.bulans[b].capai), satuan: uItem.satuan, judul: uJudul, grup: 'unit:' + uName });
                         }
                     });
                     
@@ -723,6 +732,7 @@
             }
 
             dashboardContent.innerHTML = fullHtml;
+            window.__cetakMutu.grafik = chartConfigs;
 
             // Render Charts (Chart.js)
             chartConfigs.forEach(conf => {

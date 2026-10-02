@@ -111,16 +111,16 @@ function ldTanpaGaris() {
     const n = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
     return { top: n, bottom: n, left: n, right: n, insideHorizontal: n, insideVertical: n };
 }
-function ldKop(inst) {
+function ldKop(inst, lebar = LD_LEBAR) {
     const { Table, TableRow, TableCell, Paragraph, ImageRun, WidthType, AlignmentType, VerticalAlign, BorderStyle } = ldDocx();
     const logo = ldBytesDataUrl(inst.logo_data);
     const kontak = [inst.alamat, inst.telepon ? 'Telp. ' + inst.telepon : '', inst.email, inst.situs_web].filter(Boolean).join(' · ');
-    const w = [1400, LD_LEBAR - 2800, 1400];
+    const w = [1400, lebar - 2800, 1400];
     const tengah = [inst.pemilik ? ldP(String(inst.pemilik).toUpperCase(), { rata: 'tengah', setelah: 0, ukuran: 22 }) : null,
         inst.dinas_induk ? ldP(String(inst.dinas_induk).toUpperCase(), { rata: 'tengah', setelah: 0, ukuran: 22 }) : null,
         ldP(String(inst.nama_rs || '').toUpperCase(), { rata: 'tengah', setelah: 0, tebal: true, ukuran: 28 }),
         kontak ? ldP(kontak, { rata: 'tengah', setelah: 0, ukuran: 16 }) : null].filter(Boolean);
-    const t = new Table({ width: { size: LD_LEBAR, type: WidthType.DXA }, columnWidths: w, borders: ldTanpaGaris(), rows: [new TableRow({ children: [
+    const t = new Table({ width: { size: lebar, type: WidthType.DXA }, columnWidths: w, borders: ldTanpaGaris(), rows: [new TableRow({ children: [
         new TableCell({ width: { size: w[0], type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER, children: [new Paragraph({ alignment: AlignmentType.CENTER,
             children: logo ? [ldLogo(logo, 75)] : [] })] }),
         new TableCell({ width: { size: w[1], type: WidthType.DXA }, verticalAlign: VerticalAlign.CENTER, children: tengah }),
@@ -132,8 +132,9 @@ function ldTandaTangan(inst, penanda, tanggal, o = {}) {
     const { Table, TableRow, TableCell, WidthType } = ldDocx();
     const t = tanggal ? new Date(String(tanggal).length === 10 ? tanggal + 'T00:00:00' : tanggal) : new Date();
     const tgl = `${inst.kota || ''}, ${t.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
-    const w = Math.floor(LD_LEBAR / penanda.length);
-    return [ldP('', { setelah: o.rapat ? 0 : 200 }), new Table({ width: { size: LD_LEBAR, type: WidthType.DXA }, columnWidths: penanda.map(() => w), borders: ldTanpaGaris(),
+    const LEBAR = o.lebar || LD_LEBAR;
+    const w = Math.floor(LEBAR / penanda.length);
+    return [ldP('', { setelah: o.rapat ? 0 : 200 }), new Table({ width: { size: LEBAR, type: WidthType.DXA }, columnWidths: penanda.map(() => w), borders: ldTanpaGaris(),
         rows: [new TableRow({ cantSplit: true, children: penanda.map((p, i) => new TableCell({ width: { size: w, type: WidthType.DXA }, children: [
             ldP(i === penanda.length - 1 ? tgl : (p.atas || ' '), { rata: 'tengah', setelah: 0 }),
             ldP(p.jabatan || '', { rata: 'tengah', setelah: o.rapat ? 700 : 900 }),
