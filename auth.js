@@ -42,7 +42,7 @@ async function jagaGerbang() {
         .single();
 
     if (error || !profil || profil.status !== 'Aktif') {
-        await supabaseClient.auth.signOut();
+        await supabaseClient.auth.signOut({ scope: 'local' });
         localStorage.removeItem("sessionMutu");
         tampilkanPesanAkses(
             'Sesi Tidak Valid',
@@ -121,7 +121,13 @@ function tampilkanPesanAkses(judul, pesan, tipe, tujuan) {
     }
 }
 
-document.addEventListener("DOMContentLoaded", jagaGerbang);
+// Halaman yang butuh profil terbaru (unit, role) menunggu janji ini, supaya tidak memakai
+// salinan sessionMutu lama di browser (mis. komputer bersama / nama unit sudah diganti).
+window.gerbangSiap = new Promise(selesai => {
+    document.addEventListener("DOMContentLoaded", () => {
+        jagaGerbang().catch(e => console.error('Gagal memeriksa sesi:', e)).finally(() => selesai());
+    });
+});
 
 // Kalau sesi berakhir/di-logout dari tab lain, ikut redirect di tab ini juga
 if (typeof supabaseClient !== 'undefined' && supabaseClient) {
@@ -138,19 +144,34 @@ if (typeof supabaseClient !== 'undefined' && supabaseClient) {
 // =====================================================================
 // FITUR AUTO-LOGOUT (INACTIVITY TIMEOUT - 30 Menit)
 // =====================================================================
+// Aktivitas terakhir disimpan bersama untuk semua tab, jadi tab yang menganggur tidak
+// me-logout tab lain yang sedang dipakai.
+// Logout memakai scope 'local': hanya browser ini. (Bawaan Supabase 'global' mematikan sesi
+// akun itu di SEMUA perangkat — perangkat lain lalu tiba-tiba tidak bisa membaca/menyimpan
+// data: tabel kosong, "permission denied for function ...".)
 const INACTIVITY_LIMIT = 30 * 60 * 1000;
+const KUNCI_AKTIVITAS = 'aktivitasTerakhirMutu';
 let timeoutTimer;
+let aktivitasDicatat = 0;
 
 function resetTimer() {
     clearTimeout(timeoutTimer);
-    if (localStorage.getItem("sessionMutu")) {
-        timeoutTimer = setTimeout(autoLogout, INACTIVITY_LIMIT);
+    if (!localStorage.getItem("sessionMutu")) return;
+    const kini = Date.now();
+    if (kini - aktivitasDicatat > 15000) {
+        aktivitasDicatat = kini;
+        try { localStorage.setItem(KUNCI_AKTIVITAS, String(kini)); } catch (e) { /* abaikan */ }
     }
+    timeoutTimer = setTimeout(autoLogout, INACTIVITY_LIMIT);
 }
 
 async function autoLogout() {
+    // Tab lain masih aktif dipakai -> tunda
+    const terakhir = Number(localStorage.getItem(KUNCI_AKTIVITAS)) || 0;
+    const sisa = INACTIVITY_LIMIT - (Date.now() - terakhir);
+    if (sisa > 1000) { timeoutTimer = setTimeout(autoLogout, sisa); return; }
     if (supabaseClient) {
-        await supabaseClient.auth.signOut(); // mematikan sesi Supabase yang sesungguhnya
+        await supabaseClient.auth.signOut({ scope: 'local' }); // hanya sesi di browser ini
     }
     localStorage.removeItem("sessionMutu");
     localStorage.removeItem("menuMutu");
@@ -179,7 +200,6 @@ async function autoLogout() {
 
 // Deteksi aktivitas pengguna untuk mereset timer
 window.onload = resetTimer;
-document.onmousemove = resetTimer;
-document.onkeypress = resetTimer;
-document.onclick = resetTimer;
-document.onscroll = resetTimer;
+// capture: true -> tetap terdeteksi walau editor tabel (Handsontable) menahan event
+['mousemove', 'mousedown', 'keydown', 'paste', 'touchstart', 'wheel', 'scroll'].forEach(ev =>
+    document.addEventListener(ev, resetTimer, { capture: true, passive: true }));

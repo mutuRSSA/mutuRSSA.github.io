@@ -275,7 +275,7 @@ window.logoutSystem = function() {
             if (result.isConfirmed) {
                 const selesai = () => { localStorage.clear(); window.location.href = "login.html"; };
                 if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-                    supabaseClient.auth.signOut().finally(selesai);
+                    supabaseClient.auth.signOut({ scope: 'local' }).finally(selesai);   // hanya perangkat ini
                 } else { selesai(); }
             }
         });

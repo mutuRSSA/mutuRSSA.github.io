@@ -91,7 +91,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <!-- 2. Muat Konfigurasi Anda -->
-    <script src="config.js?v=20261001"></script>
+    <script src="config.js?v=20261005"></script>
 
     <script>
         // Tampilkan domain login dari config.js
@@ -147,14 +147,14 @@
 
                 if (profilError || !profil) {
                     Swal.fire('Profil Tidak Ditemukan', 'Akun berhasil login tapi data profil belum lengkap. Hubungi Administrator Aplikasi.', 'error');
-                    await supabaseClient.auth.signOut();
+                    await supabaseClient.auth.signOut({ scope: 'local' });
                     resetButton();
                     return;
                 }
 
                 if (profil.status !== 'Aktif') {
                     Swal.fire('Akses Ditolak', 'Akun Anda telah dinonaktifkan. Hubungi Komite Mutu.', 'error');
-                    await supabaseClient.auth.signOut();
+                    await supabaseClient.auth.signOut({ scope: 'local' });
                     resetButton();
                     return;
                 }

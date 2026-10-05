@@ -122,6 +122,9 @@
                             <input type="number" class="form-control" id="sel_tahun" onchange="loadDataTabel()">
                         </div>
                     </div>
+                    <div id="peringatanJam" class="alert alert-warning small mt-3 mb-0 py-2 d-none"></div>
+                    <div id="ringkasBulan" class="mt-2 small"></div>
+                    <div class="text-end mt-1"><a href="#" class="small text-muted" onclick="infoPerangkat(); return false;"><i class="fas fa-stethoscope me-1"></i>Info perangkat (bila data tampak kosong)</a></div>
 
                     <div class="mt-3">
                         <label class="form-label-custom">Pilih Formulir Indikator <span class="text-danger">*</span></label>
@@ -210,14 +213,15 @@
 
     <!-- Wajib: Library Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=20261001"></script>
-    <script src="auth.js?v=20261001"></script>
-    <script src="components.js?v=20261001"></script>
+    <script src="config.js?v=20261005"></script>
+    <script src="auth.js?v=20261005b"></script>
+    <script src="components.js?v=20261005b"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        const session = JSON.parse(localStorage.getItem("sessionMutu")) || {};
-        const isAdmin = (isAdminMutu(session.role));
+        // Diisi ulang setelah auth.js memuat profil terbaru dari server (lihat DOMContentLoaded)
+        let session = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+        let isAdmin = (isAdminMutu(session.role));
 
         let cetakBiruAktif = []; 
         let daftarUnitMaster = []; 
@@ -253,9 +257,31 @@
             return moment(dateStr, ["DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD", "DD-MM-YYYY", "YYYY/MM/DD", "D/M/YY", "D/M/YYYY", moment.ISO_8601], false);
         };
 
+        // Tanggal acuan: jam server bila jam/tanggal perangkat meleset (> 12 jam).
+        // Perangkat dengan tanggal salah membuka bulan/tahun yang salah, sehingga data
+        // yang sudah tersimpan tampak "kosong".
+        async function tanggalAcuan() {
+            const lokal = new Date();
+            try {
+                const { data, error } = await supabaseClient.rpc('waktu_server');
+                if (error || !data) return lokal;
+                const server = new Date(data);
+                if (isNaN(server) || Math.abs(server - lokal) < 12 * 3600 * 1000) return lokal;
+                const fmt = d => d.toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const el = document.getElementById('peringatanJam');
+                el.innerHTML = `<i class="fas fa-clock me-1"></i> <b>Tanggal/jam perangkat ini tidak sesuai</b> (perangkat: ${fmt(lokal)}; server: ${fmt(server)}).
+                    Bulan dan tahun diatur memakai tanggal server. Mohon perbaiki pengaturan tanggal & jam komputer.`;
+                el.classList.remove('d-none');
+                return server;
+            } catch (e) { return lokal; }
+        }
+
         document.addEventListener("DOMContentLoaded", async function () {
             if (!supabaseClient) return;
-            const date = new Date();
+            if (window.gerbangSiap) await window.gerbangSiap;
+            session = JSON.parse(localStorage.getItem("sessionMutu")) || {};
+            isAdmin = isAdminMutu(session.role);
+            const date = await tanggalAcuan();
             document.getElementById('sel_bulan').value = date.getMonth() + 1;
             document.getElementById('sel_tahun').value = date.getFullYear();
             await inisialisasiAkses();
@@ -955,6 +981,124 @@
             }
         }
 
+        // ---------- Periode tujuan (Smart Date Routing) ----------
+        const NAMA_BLN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        const labelPeriode = p => `${NAMA_BLN[p.bulan - 1] || 'Bulan ' + p.bulan} ${p.tahun}`;
+        // Kelompok periode selain bulan yang dipilih: [{bulan, tahun, n}] terbanyak dulu
+        function periodeLain(rows, defBulan, defTahun) {
+            const m = new Map();
+            rows.forEach(r => { if (r.bulan === defBulan && r.tahun === defTahun) return; const k = r.tahun * 100 + r.bulan; m.set(k, (m.get(k) || 0) + 1); });
+            return [...m].sort((a, b) => b[1] - a[1]).map(([k, n]) => ({ tahun: Math.floor(k / 100), bulan: k % 100, n }));
+        }
+        // Beri tahu SEBELUM menyimpan bila tanggal di data membuat baris masuk ke bulan lain
+        async function konfirmasiPeriodeLain(lain, jumlahTotal, defBulan, defTahun) {
+            if (!lain.length) return true;
+            const jauh = lain.filter(p => Math.abs((p.tahun * 12 + p.bulan) - (defTahun * 12 + defBulan)) > 2);
+            const k = await Swal.fire({
+                title: 'Data akan masuk ke bulan lain', icon: jauh.length ? 'warning' : 'info',
+                html: `<div class="text-start small">
+                    <p class="mb-2">Bulan tersimpan mengikuti <b>kolom tanggal</b> yang diisi, bukan pilihan bulan (${esc(labelPeriode({ bulan: defBulan, tahun: defTahun }))}).</p>
+                    <ul class="mb-2">${lain.map(p => `<li><b>${p.n}</b> dari ${jumlahTotal} baris → <b>${esc(labelPeriode(p))}</b></li>`).join('')}</ul>
+                    ${jauh.length ? `<p class="text-danger mb-2"><i class="fas fa-exclamation-triangle me-1"></i> ${jauh.map(p => esc(labelPeriode(p))).join(', ')} jauh dari bulan yang dipilih. Periksa kolom tanggal (salah ketik tahun, atau hari & bulan tertukar).</p>` : ''}
+                    <p class="text-muted mb-0">Setelah disimpan, tampilan berpindah ke bulan tempat data tersimpan.</p></div>`,
+                showCancelButton: true, confirmButtonText: 'Ya, simpan', cancelButtonText: 'Periksa dulu' });
+            return k.isConfirmed;
+        }
+        // Ringkasan jumlah data tersimpan per bulan (unit + formulir + tahun terpilih); klik untuk membuka
+        let nomorRingkas = 0;
+        async function muatRingkasBulan() {
+            const el = document.getElementById('ringkasBulan');
+            const unit = document.getElementById('sel_unit').value, form = document.getElementById('sel_indikator').value;
+            const tahun = parseInt(document.getElementById('sel_tahun').value), bulanPilih = parseInt(document.getElementById('sel_bulan').value);
+            if (!el) return;
+            if (!unit || !form || !tahun) { el.innerHTML = ''; return; }
+            const nomor = ++nomorRingkas;
+            try {
+                const { data, error } = await ambilSemua(() => supabaseClient.from('data_mutu_harian').select('id, bulan')
+                    .eq('unit_kerja', unit).eq('id_indikator', form).eq('tahun', tahun).order('id'));
+                if (error) throw error;
+                if (nomor !== nomorRingkas) return;   // sudah ada permintaan yang lebih baru
+                const jml = Array(13).fill(0); (data || []).forEach(d => { jml[d.bulan] = (jml[d.bulan] || 0) + 1; });
+                const tombol = NAMA_BLN.map((nm, i) => {
+                    const b = i + 1, n = jml[b], aktif = b === bulanPilih;
+                    if (!n && !aktif) return '';
+                    return `<button type="button" class="btn btn-sm ${aktif ? 'btn-primary' : 'btn-outline-primary'} py-0 px-2 me-1 mb-1" onclick="bukaPeriode(${b}, ${tahun})" title="${n} baris tersimpan">${nm.slice(0, 3)} <span class="badge ${aktif ? 'bg-light text-primary' : 'bg-primary'} ms-1">${n}</span></button>`;
+                }).join('');
+                el.innerHTML = `<span class="text-muted me-1"><i class="fas fa-database me-1"></i>Data tersimpan ${tahun}:</span>${tombol}`;
+            } catch (e) { if (nomor === nomorRingkas) el.innerHTML = ''; }
+        }
+        window.bukaPeriode = function(bulan, tahun) {
+            document.getElementById('sel_bulan').value = String(bulan);
+            document.getElementById('sel_tahun').value = String(tahun);
+            loadDataTabel();
+        };
+
+        // Diagnostik: bandingkan yang dilihat perangkat ini dengan yang ada di server
+        window.infoPerangkat = async function() {
+            Swal.fire({ title: 'Memeriksa...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            const info = [];
+            const tambah = (k, v, buruk) => info.push({ k, v: String(v ?? '-'), buruk: !!buruk });
+            const lokal = new Date();
+            tambah('Versi halaman', 'input_mutu 2026-10-05');
+            tambah('Browser', navigator.userAgent);
+            const modern = typeof Array.prototype.at === 'function' && typeof structuredClone === 'function' && typeof Object.hasOwn === 'function';
+            tambah('Browser mendukung aplikasi', modern ? 'Ya' : 'TIDAK — perbarui Chrome/Edge/Firefox', !modern);
+            tambah('Tanggal perangkat', lokal.toLocaleString('id-ID'));
+            try {
+                const { data } = await supabaseClient.rpc('waktu_server');
+                if (data) { const sv = new Date(data); tambah('Tanggal server', sv.toLocaleString('id-ID'), Math.abs(sv - lokal) > 12 * 3600 * 1000); }
+            } catch (e) { /* migrasi waktu_server belum dijalankan */ }
+            let profil = null;
+            try {
+                const { data: s } = await supabaseClient.auth.getSession();
+                const u = s && s.session && s.session.user;
+                tambah('Login sebagai', u ? u.email : 'TIDAK ADA SESI LOGIN', !u);
+                if (s && s.session && s.session.expires_at) tambah('Sesi berlaku s.d.', new Date(s.session.expires_at * 1000).toLocaleString('id-ID'), s.session.expires_at * 1000 < Date.now());
+                if (u) { const r = await supabaseClient.from('profiles').select('unit_kerja, role, status').eq('id', u.id).maybeSingle(); profil = r.data; if (r.error) tambah('Baca profil', r.error.message, true); }
+            } catch (e) { tambah('Sesi', e.message, true); }
+            const unitDipilih = document.getElementById('sel_unit').value;
+            if (profil) tambah('Unit di akun (server)', `${profil.unit_kerja} (${profil.role}, ${profil.status})`, !isAdmin && profil.unit_kerja !== unitDipilih);
+            tambah('Unit yang dipakai halaman', unitDipilih, !isAdmin && profil && profil.unit_kerja !== unitDipilih);
+            const form = document.getElementById('sel_indikator').value, bulan = document.getElementById('sel_bulan').value, tahun = document.getElementById('sel_tahun').value;
+            tambah('Formulir / periode tampil', `${form || '-'} / ${labelPeriode({ bulan: parseInt(bulan), tahun })}`);
+            tambah('Baris di tabel halaman', dataPeriode.length);
+            if (unitDipilih && form) {
+                try {
+                    const { count, error } = await supabaseClient.from('data_mutu_harian').select('id', { count: 'exact', head: true })
+                        .eq('unit_kerja', unitDipilih).eq('id_indikator', form).eq('bulan', bulan).eq('tahun', tahun);
+                    tambah('Baris di server (periode ini)', error ? error.message : count, !!error || (count || 0) !== dataPeriode.length);
+                    const t = await supabaseClient.from('data_mutu_harian').select('id', { count: 'exact', head: true })
+                        .eq('unit_kerja', unitDipilih).eq('id_indikator', form).eq('tahun', tahun);
+                    tambah(`Baris di server (setahun ${tahun})`, t.error ? t.error.message : t.count, !!t.error);
+                } catch (e) { tambah('Baca server', e.message, true); }
+            }
+            const teks = info.map(x => `${x.k}: ${x.v}`).join('\n');
+            const r = await Swal.fire({
+                title: 'Info perangkat', width: 640,
+                html: `<table class="table table-sm small text-start mb-2">${info.map(x => `<tr class="${x.buruk ? 'table-danger' : ''}"><th style="width:38%">${esc(x.k)}</th><td style="word-break:break-word">${esc(x.v)}</td></tr>`).join('')}</table>
+                       <div class="small text-muted text-start">Baris merah = kemungkinan penyebab. Tekan <b>Salin</b> lalu kirim ke Komite Mutu bila perlu.</div>`,
+                showCancelButton: true, confirmButtonText: 'Salin', cancelButtonText: 'Tutup' });
+            if (r.isConfirmed) {
+                try { await navigator.clipboard.writeText(teks); toast('Info disalin'); }
+                catch (e) { Swal.fire({ title: 'Salin manual', html: `<textarea class="form-control small" rows="12">${esc(teks)}</textarea>` }); }
+            }
+        };
+
+        // Sesi login masih berlaku? Tanpa sesi, database mengembalikan 0 baris (tabel tampak kosong)
+        // dan menolak simpan ("permission denied for function ..."). Isian tabel tidak dibuang.
+        async function pastikanSesi(tampilkan = true) {
+            try {
+                const { data } = await supabaseClient.auth.getSession();
+                if (data && data.session) return true;
+            } catch (e) { /* dianggap tidak ada sesi */ }
+            if (tampilkan) await Swal.fire({ icon: 'warning', title: 'Sesi login berakhir',
+                html: `Login di perangkat ini sudah tidak berlaku, jadi data tidak bisa dibaca atau disimpan.<br><br>
+                       <b>Isian tabel Anda belum hilang.</b> Buka <a href="login.html" target="_blank" rel="noopener">halaman login di tab baru</a>,
+                       login lagi, lalu kembali ke tab ini dan tekan <b>Simpan</b> lagi.` });
+            return false;
+        }
+        const pesanSesiHabis = m => /permission denied for function|jwt|not authenticated|invalid claim|refresh token/i.test(m || '');
+
         function toast(judul, ikon = 'success') {
             Swal.fire({ toast: true, position: 'top-end', icon: ikon, title: judul, showConfirmButton: false, timer: 2800 });
         }
@@ -967,11 +1111,13 @@
 
             if(!unitKerja || !idIndikator) { Swal.fire('Peringatan', 'Lengkapi parameter unit dan indikator.', 'warning'); return; }
             if (periodeTerkunci) { Swal.fire('Periode terkunci', 'Data bulan ini sudah dikunci. Hubungi admin bila perlu perbaikan.', 'info'); return; }
+            if (!(await pastikanSesi())) return;
 
             const btn = document.getElementById(mode === 'excel' ? 'btnSimpanDataExcel' : 'btnSimpanDataForm');
             const labelExcel = '<i class="fas fa-layer-group me-2"></i> Simpan Semua Perubahan';
             btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Menyimpan...';
             let adaYangTersimpan = false;
+            let periodeTujuan = null;   // tampilkan bulan ini setelah simpan (bila semua data masuk ke bulan lain)
 
             try {
                 // ===== FORM TUNGGAL =====
@@ -980,6 +1126,9 @@
                     if (barisKosong(rowData)) { Swal.fire('Kosong', 'Harap isi setidaknya 1 field data.', 'warning'); return; }
                     const clean = bersihkanBaris(rowData);
                     const per = hitungPeriode(clean, defBulan, defTahun);
+                    const lainForm = periodeLain([per], defBulan, defTahun);
+                    if (!(await konfirmasiPeriodeLain(lainForm, 1, defBulan, defTahun))) return;
+                    if (lainForm.length) periodeTujuan = lainForm[0];
 
                     if (idEditForm) {
                         const hasil = await ubahBaris([{ id: idEditForm, data_input: clean, bulan: per.bulan, tahun: per.tahun }]);
@@ -1028,6 +1177,10 @@
                 barisAsli.forEach((_, id) => { if (!idTampil.has(id)) hapus.push(id); });   // baris dihapus lewat klik kanan
 
                 if (!baru.length && !ubah.length && !hapus.length) { toast('Tidak ada perubahan untuk disimpan', 'info'); return; }
+                const disimpan = [...ubah, ...baru];
+                const lain = periodeLain(disimpan, defBulan, defTahun);
+                if (!(await konfirmasiPeriodeLain(lain, disimpan.length, defBulan, defTahun))) return;
+                const semuaKeLain = disimpan.length > 0 && !hapus.length && lain.reduce((a, p) => a + p.n, 0) === disimpan.length;
                 if (ubah.length || hapus.length) {
                     const ok = await Swal.fire({
                         title: 'Simpan perubahan tabel?', icon: hapus.length ? 'warning' : 'question',
@@ -1053,10 +1206,12 @@
                     if (h) { adaYangTersimpan = true; ringkas.push(h.sudah_tersimpan ? `${h.sudah_tersimpan} baru (sudah tersimpan sebelumnya)` : `${h.dimasukkan} baru${h.dilewati ? `, ${h.dilewati} sama dilewati` : ''}`); }
                     else ringkas.push('baris baru dibatalkan');
                 }
-                const pindah = [...ubah, ...baru].some(r => r.bulan !== defBulan || r.tahun !== defTahun);
-                toast('Tersimpan: ' + ringkas.join(', ') + (pindah ? ' — sebagian masuk ke bulan lain sesuai tanggal' : ''));
+                if (lain.length && semuaKeLain) periodeTujuan = lain[0];
+                toast('Tersimpan: ' + ringkas.join(', ') + (!lain.length ? '' : semuaKeLain ? ` — ditampilkan ${labelPeriode(lain[0])}`
+                    : ' — sebagian masuk ke ' + lain.map(labelPeriode).join(', ')));
             } catch (err) {
                 console.error(err);
+                if (pesanSesiHabis(err.message)) { await pastikanSesi(); if (adaYangTersimpan) await loadDataTabel(true); return; }
                 const pesan = /sudah dikunci/i.test(err.message || '') ? esc(err.message)
                     : /row-level security/i.test(err.message || '') ? 'Anda tidak berhak menyimpan data untuk unit ini.'
                     : (err.message && !/fetch|network/i.test(err.message)) ? esc(err.message)
@@ -1065,7 +1220,13 @@
             } finally {
                 btn.disabled = !!periodeTerkunci;
                 if (mode === 'form') aturLabelForm(); else btn.innerHTML = labelExcel;
-                if (adaYangTersimpan) await loadDataTabel(true);
+                if (adaYangTersimpan) {
+                    if (periodeTujuan) {
+                        document.getElementById('sel_bulan').value = String(periodeTujuan.bulan);
+                        document.getElementById('sel_tahun').value = String(periodeTujuan.tahun);
+                    }
+                    await loadDataTabel(true);
+                }
             }
         };
 
@@ -1086,8 +1247,13 @@
                     return;
                 }
             }
+            if (!(await pastikanSesi(false))) {
+                tbody.innerHTML = '<tr><td colspan="100%" class="text-center py-4 text-danger"><i class="fas fa-user-lock me-1"></i> Sesi login berakhir — data tidak bisa dibaca. <a href="login.html" target="_blank" rel="noopener">Login lagi di tab baru</a>, lalu pilih ulang bulan.</td></tr>';
+                return;
+            }
             periodeAktif = { bulan, tahun, form: idIndikator };
-            document.getElementById('lbl_bulan_tahun').innerText = `- Bulan ${bulan}/${tahun}`;
+            document.getElementById('lbl_bulan_tahun').innerText = `- ${labelPeriode({ bulan: parseInt(bulan), tahun })}`;
+            muatRingkasBulan();
             document.getElementById('loadingTabel').classList.remove('d-none'); tbody.innerHTML = '';
 
             try {

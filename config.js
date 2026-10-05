@@ -13,7 +13,11 @@ const SUPABASE_KEY = 'sb_publishable_wwcNE3xansrDq16VWSj56A_LXpgTnQq';
 // PERBAIKAN: Ubah nama variabel agar tidak bentrok dengan library bawaan CDN
 let supabaseClient;
 if (typeof window.supabase !== 'undefined') {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // cache: 'no-store' -> data selalu diambil langsung dari server, tidak dari cache
+    // browser atau proxy/filter internet jaringan RS (bisa menyajikan hasil lama/kosong).
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        global: { fetch: (url, opsi = {}) => fetch(url, { ...opsi, cache: 'no-store' }) }
+    });
 }
 
 // 2. API GOOGLE APPS SCRIPT
