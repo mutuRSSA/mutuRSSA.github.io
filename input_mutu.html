@@ -168,7 +168,7 @@
                             <i class="fas fa-table fa-2x me-3"></i> 
                             <div>
                                 Data bulan terpilih sudah dimuat (baris <span style="background:#f4f9ff;border:1px solid #cfe2ff;padding:0 6px;">biru muda</span>) — ubah langsung di sel.
-                                Isi / tempel data baru di baris kosong di bawahnya. Salin &amp; tempel: <b>Ctrl+C</b> / <b>Ctrl+V</b> (bisa dari atau ke Excel). Hapus baris: klik kanan → <i>Hapus baris</i>.
+                                Isi / tempel data baru di baris kosong di bawahnya. Salin &amp; tempel: <b>Ctrl+C</b> / <b>Ctrl+V</b> (bisa dari atau ke Excel). Tarik kotak kecil di sudut sel ke bawah untuk mengisi; tanggal otomatis berurutan (1, 2, 3, …). Hapus baris: klik kanan → <i>Hapus baris</i>.
                                 Tanggal menentukan bulan tersimpan (Smart Date Routing).
                             </div>
                         </div>
@@ -554,7 +554,11 @@
 
                 if (rawType === 'dropdown') { config.type = 'dropdown'; config.source = c.opsi ? c.opsi.split(',').map(s=>s.trim()) : []; } 
                 else if (rawType === 'checkbox') { config.type = 'checkbox'; config.checkedTemplate = 'Ya'; config.uncheckedTemplate = 'Tidak'; config.className = 'htCenter htMiddle'; } 
-                else if (rawType === 'calendar' || rawType === 'date') { config.type = 'date'; config.dateFormat = 'DD/MM/YYYY'; } 
+                else if (rawType === 'calendar' || rawType === 'date') {
+                    config.type = 'date'; config.dateFormat = 'DD/MM/YYYY';
+                    // Validator sendiri: validator bawaan menandai merah tanggal DD/MM/YYYY yang sah
+                    config.validator = (v, cb) => cb(v === null || v === undefined || String(v).trim() === '' || parseIndoDate(v).isValid());
+                } 
                 else if (rawType === 'time') { config.type = 'time'; config.timeFormat = 'HH:mm:ss'; config.correctFormat = true; } 
                 else if (rawType === 'number') { config.type = 'numeric'; }
 
@@ -595,6 +599,12 @@
                 // jadi blok dari Excel diisikan berurutan ke kolom yang terlihat saja.
                 hiddenColumns: { columns: tersembunyi, indicators: false, copyPasteEnabled: false },
                 beforePaste: function(data, coords) { catatKolomTerkunciTempel(this, data, coords); },
+                // Tarik kotak kecil di sudut kanan bawah sel (fill handle) ke bawah/atas.
+                // Tanggal -> deret per hari (atau mengikuti selisih 2 sel terpilih); angka 2+ sel -> deret.
+                fillHandle: { direction: 'vertical', autoInsertRow: true },
+                // Deret ditulis SETELAH Handsontable selesai mengisi (hasil beforeAutofill masih diolah ulang
+                // oleh Handsontable 18, sehingga tanggal tetap berulang 2,3,4,2,3,4).
+                afterAutofill: function(dataIsi, rangeSumber, rangeTujuan, arah) { terapkanDeretIsi(this, rangeSumber, rangeTujuan, arah); },
 
                 // Sel yang sedang dibuka editornya (untuk menjaga isi tanggal bila kalender ditutup tanpa memilih)
                 afterBeginEditing: function(row, col) { selDiedit = { row, col, nilai: this.getDataAtCell(row, col) }; },
@@ -697,6 +707,88 @@
             if (urutKolom.form === document.getElementById('sel_indikator').value) terapkanUrut();
             else urutKolom = { form: null, col: -1, arah: 1 };
             siapkanHitungForm();
+        }
+
+        // ---------- Isi otomatis berderet (seperti Excel) ----------
+        // Sumber 1 tanggal -> +1 hari per baris. Sumber 2+ tanggal/angka dengan selisih tetap -> lanjutkan
+        // selisihnya (1,3 -> 5,7; 01/09, 08/09 -> 15/09). Selain itu diulang seperti biasa.
+        function deretIsiOtomatis(hot, dataSumber, rangeSumber, rangeTujuan, arah) {
+            if (arah !== 'down' && arah !== 'up') return;           // kiri/kanan: perilaku bawaan
+            try {
+                const atasSumber = Math.min(rangeSumber.from.row, rangeSumber.to.row);
+                const bawahSumber = Math.max(rangeSumber.from.row, rangeSumber.to.row);
+                const kiri = Math.min(rangeSumber.from.col, rangeSumber.to.col);
+                const atasTujuan = Math.min(rangeTujuan.from.row, rangeTujuan.to.row);
+                const bawahTujuan = Math.max(rangeTujuan.from.row, rangeTujuan.to.row);
+                // Baris tujuan saja (tanpa baris sumber, bila range tujuan ikut memuatnya)
+                const barisTujuan = [];
+                for (let rr = atasTujuan; rr <= bawahTujuan; rr++) if (rr < atasSumber || rr > bawahSumber) barisTujuan.push(rr);
+                if (!barisTujuan.length || !dataSumber.length) return;
+                const nSumber = dataSumber.length, lebar = dataSumber[0].length;
+                let adaDeret = false;
+                const kolom = [];
+                for (let j = 0; j < lebar; j++) {
+                    const fisik = hot.toPhysicalColumn(kiri + j);
+                    const def = cetakBiruAktif[fisik];
+                    const tipe = def ? tipeKolom(def) : '';
+                    const nilai = dataSumber.map(b => b[j]);
+                    const ulang = k => nilai[((k % nSumber) + nSumber) % nSumber];   // k = jarak dari baris sumber teratas
+                    let f = ulang;
+                    if (!def) f = () => null;                                   // kolom id tersembunyi: jangan pernah disalin
+                    else if (adaRumus(def)) f = k => rumusBaris(def, atasSumber + k);   // rumus baris milik barisnya sendiri
+                    const kosong = nilai.some(v => v === null || v === undefined || String(v).trim() === '');
+                    if (def && !adaRumus(def) && !kosong) {
+                        if (tipe === 'calendar' || tipe === 'date') {
+                            const tgl = nilai.map(v => parseIndoDate(v));
+                            if (tgl.every(t => t.isValid())) {
+                                const hari = tgl.map(t => Math.round(t.clone().startOf('day').valueOf() / 86400000));
+                                const langkah = nSumber === 1 ? 1 : hari[1] - hari[0];
+                                if (hari.every((h, i) => i === 0 || h - hari[i - 1] === langkah)) {
+                                    f = k => tgl[0].clone().add(langkah * k, 'days').format('DD/MM/YYYY');
+                                    adaDeret = true;
+                                }
+                            }
+                        } else if (tipe === 'number' && nSumber >= 2) {
+                            const ang = nilai.map(v => typeof v === 'number' ? v : rapikanAngka(String(v)));
+                            if (ang.every(a => typeof a === 'number' && isFinite(a))) {
+                                const langkah = ang[1] - ang[0];
+                                if (langkah !== 0 && ang.every((a, i) => i === 0 || Math.abs(a - ang[i - 1] - langkah) < 1e-9)) {
+                                    const des = Math.max(...ang.map(a => (String(a).split('.')[1] || '').length));
+                                    f = k => Number((ang[0] + langkah * k).toFixed(des));
+                                    adaDeret = true;
+                                }
+                            }
+                        }
+                    }
+                    kolom.push(f);
+                }
+                if (!adaDeret) return;                                  // tidak ada deret: perilaku bawaan
+                return barisTujuan.map(rr => kolom.map(f => f(rr - atasSumber)));
+            } catch (e) {
+                console.warn('Isi otomatis berderet gagal, pakai salin biasa:', e);
+                return;
+            }
+        }
+
+        function terapkanDeretIsi(hot, rangeSumber, rangeTujuan, arah) {
+            try {
+                const atas = Math.min(rangeSumber.from.row, rangeSumber.to.row), bawah = Math.max(rangeSumber.from.row, rangeSumber.to.row);
+                const kiri = Math.min(rangeSumber.from.col, rangeSumber.to.col), kanan = Math.max(rangeSumber.from.col, rangeSumber.to.col);
+                const dataSumber = [];
+                for (let rr = atas; rr <= bawah; rr++) { const b = []; for (let c = kiri; c <= kanan; c++) b.push(hot.getDataAtCell(rr, c)); dataSumber.push(b); }
+                const hasil = deretIsiOtomatis(hot, dataSumber, rangeSumber, rangeTujuan, arah);
+                if (!Array.isArray(hasil)) return;
+                const atasT = Math.min(rangeTujuan.from.row, rangeTujuan.to.row), bawahT = Math.max(rangeTujuan.from.row, rangeTujuan.to.row);
+                const baris = [];
+                for (let rr = atasT; rr <= bawahT; rr++) if (rr < atas || rr > bawah) baris.push(rr);
+                const ubah = [];
+                baris.forEach((rr, i) => (hasil[i] || []).forEach((v, j) => {
+                    const c = kiri + j, fisik = hot.toPhysicalColumn(c);
+                    if (fisik >= cetakBiruAktif.length || adaRumus(cetakBiruAktif[fisik]) || hot.getCellMeta(rr, c).readOnly) return;
+                    if (String(hot.getDataAtCell(rr, c) ?? '') !== String(v ?? '')) ubah.push([rr, c, v]);
+                }));
+                if (ubah.length) hot.setDataAtCell(ubah, 'Autofill.deret');
+            } catch (e) { console.warn('Isi otomatis berderet gagal:', e); }
         }
 
         // ---------- Salin & tempel ----------
