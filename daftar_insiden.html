@@ -321,6 +321,20 @@
         // Kuning/Merah (selain KPC) & Sentinel wajib RCA (sama dengan aturan database)
         const wajibRCA = r => r.jenis_insiden === 'Sentinel' || (r.jenis_insiden !== 'KPC' && (r.grading_risiko === 'Merah' || r.grading_risiko === 'Kuning'));
         const jenisInv = r => r.jenis_investigasi || (r.investigasi_komite ? (r.investigasi_komite.masalah_cmp !== undefined ? 'rca' : 'sederhana') : (wajibRCA(r) ? 'rca' : 'sederhana'));
+        // Matriks grading KKP-RS (sama dengan mutu_grading_insiden di database)
+        const MATRIKS_IKP = { 1: ['Biru', 'Biru', 'Biru', 'Hijau', 'Hijau'], 2: ['Biru', 'Biru', 'Hijau', 'Hijau', 'Hijau'], 3: ['Hijau', 'Hijau', 'Kuning', 'Kuning', 'Kuning'],
+                              4: ['Kuning', 'Kuning', 'Merah', 'Merah', 'Merah'], 5: ['Merah', 'Merah', 'Merah', 'Merah', 'Merah'] };
+        const gradingIkp = (jenis, d, p) => jenis === 'Sentinel' ? 'Merah' : (MATRIKS_IKP[d] && p >= 1 && p <= 5 ? MATRIKS_IKP[d][p - 1] : null);
+        const LABEL_DAMPAK = ['Tidak signifikan (tidak ada cedera)', 'Minor (cedera ringan)', 'Moderat (cedera sedang, perpanjangan rawat)', 'Mayor (cedera berat / cacat)', 'Katastropik (kematian)'];
+        const LABEL_PROB = ['Sangat jarang (> 5 tahun sekali)', 'Jarang (2–5 tahun sekali)', 'Mungkin (1–2 tahun sekali)', 'Sering (beberapa kali / tahun)', 'Sangat sering (tiap minggu / bulan)'];
+        const GRADING_INFO = { Merah: ['bg-danger', 'Ekstrem (Merah)'], Kuning: ['bg-warning text-dark', 'Tinggi (Kuning)'], Hijau: ['bg-success', 'Sedang (Hijau)'], Biru: ['bg-info text-dark', 'Rendah (Biru)'] };
+        const JENIS_IKP = { KNC: 'KNC (Kejadian Nyaris Cedera)', KTC: 'KTC (Kejadian Tidak Cedera)', KTD: 'KTD (Kejadian Tidak Diharapkan)', Sentinel: 'Sentinel (kematian / cedera serius)' };
+        const badgeGradingKecil = g => g && GRADING_INFO[g] ? `<span class="badge ${GRADING_INFO[g][0]}">${GRADING_INFO[g][1]}</span>` : '<span class="badge bg-secondary">-</span>';
+        // Isian pelapor (sebelum migrasi verifikasi: nilai saat ini)
+        const isianPelapor = r => ({ jenis: r.jenis_insiden_pelapor || r.jenis_insiden, d: r.skor_dampak_pelapor ?? r.skor_dampak,
+                                     p: r.skor_probabilitas_pelapor ?? r.skor_probabilitas, g: r.grading_pelapor || r.grading_risiko });
+        const dikoreksi = r => { const x = isianPelapor(r); return x.jenis !== r.jenis_insiden || x.g !== r.grading_risiko || Number(x.d) !== Number(r.skor_dampak) || Number(x.p) !== Number(r.skor_probabilitas); };
+
         function batasInv(r) {
             if (r.batas_investigasi) return new Date(r.batas_investigasi + 'T23:59:59');
             const hari = jenisInv(r) === 'rca' ? 45 : (r.grading_risiko === 'Hijau' ? 14 : 7);
@@ -544,6 +558,8 @@
                 else if(row.grading_risiko === 'Kuning') badgeGrading = `<span class="badge bg-warning text-dark p-2 w-100">Tinggi (Kuning)</span>`;
                 else if(row.grading_risiko === 'Hijau') badgeGrading = `<span class="badge bg-success p-2 w-100">Sedang (Hijau)</span>`;
                 else badgeGrading = `<span class="badge bg-info text-dark p-2 w-100">Rendah (Biru)</span>`;
+                if (statusIkp(row) === 'Baru') badgeGrading += `<div class="small text-muted mt-1" title="Belum diverifikasi Komite">menurut pelapor</div>`;
+                else if (dikoreksi(row)) { const x = isianPelapor(row); badgeGrading += `<div class="small text-muted mt-1" title="Dikoreksi saat verifikasi">pelapor: ${esc(x.jenis || '-')} · ${esc(x.g || '-')}</div>`; }
 
                 const st = statusIkp(row);
                 const [kls, ikon, label] = STATUS_IKP[st];
@@ -561,6 +577,7 @@
                         ? (jenis === 'rca'
                             ? `<button class="btn btn-sm btn-danger shadow-sm w-100 fw-bold mb-1" onclick="bukaRCA('${idInsiden}')"><i class="fas fa-search-plus me-1"></i> Kerjakan RCA</button>`
                             : `<button class="btn btn-sm btn-success shadow-sm w-100 fw-bold mb-1" onclick="bukaSederhana('${idInsiden}')"><i class="fas fa-search me-1"></i> Kerjakan Investigasi Sederhana</button>`)
+                          + (row.investigasi_komite ? '' : `<button class="btn btn-sm btn-outline-primary w-100 mb-1" onclick="verifikasiInsiden('${idInsiden}', true)"><i class="fas fa-user-edit me-1"></i> Ubah verifikasi</button>`)
                         : `<span class="text-muted" style="font-size:0.75rem;">Sedang diinvestigasi Komite</span>`;
                 } else if (st === 'Tindak Lanjut' || st === 'Selesai') {
                     aksiHtml = `<button class="btn btn-sm ${st === 'Selesai' ? 'btn-outline-warning text-dark' : 'btn-warning'} shadow-sm w-100 fw-bold mb-1" onclick="bukaTindakLanjut('${idInsiden}')"><i class="fas fa-tasks me-1"></i> Tindak Lanjut</button>`
@@ -609,6 +626,7 @@
             let banner = document.getElementById('modalBanner');
             banner.className = 'p-3 mb-3 rounded text-center fw-bold shadow-sm text-white';
             if(data.jenis_insiden === 'Sentinel') { banner.classList.add('bg-danger'); banner.innerHTML = 'KEJADIAN SENTINEL - Wajib RCA Maksimal 45 Hari & Lapor KNKP 2x24 Jam'; }
+            else if (data.jenis_insiden !== 'KPC' && data.jenis_investigasi === 'rca' && !['Merah', 'Kuning'].includes(data.grading_risiko)) { banner.classList.add('bg-danger'); banner.innerHTML = 'RCA ATAS KEPUTUSAN KOMITE - Maksimal 45 Hari'; }
             else if(data.grading_risiko === 'Merah') { banner.classList.add('bg-danger'); banner.innerHTML = 'RISIKO EKSTREM (MERAH) - Wajib RCA Maksimal 45 Hari'; }
             else if(data.grading_risiko === 'Kuning') { banner.classList.add('bg-warning', 'text-dark'); banner.classList.remove('text-white'); banner.innerHTML = 'RISIKO TINGGI (KUNING) - Wajib RCA Maksimal 45 Hari'; }
             else if(data.grading_risiko === 'Hijau') { banner.classList.add('bg-success'); banner.innerHTML = 'RISIKO SEDANG (HIJAU) - Investigasi Sederhana Maksimal 14 Hari'; }
@@ -622,6 +640,13 @@
             const stD = statusIkp(data);
             let infoStatus = `<span class="badge ${STATUS_IKP[stD][0]}">${STATUS_IKP[stD][2]}</span>`;
             if (data.diverifikasi_pada) infoStatus += ` <small class="text-muted">diverifikasi ${esc(data.diverifikasi_oleh || '')} ${tglID(data.diverifikasi_pada)}</small>`;
+            {
+                const x = isianPelapor(data), sudah = stD !== 'Baru' && stD !== 'Ditolak';
+                infoStatus += `<div class="small mt-1 border rounded p-2 bg-light">
+                    <div><b>${sudah ? 'Terverifikasi Komite' : 'Menurut pelapor (belum diverifikasi)'}:</b> ${esc(data.jenis_insiden || '-')} · dampak ${data.skor_dampak ?? '-'} × probabilitas ${data.skor_probabilitas ?? '-'} → ${badgeGradingKecil(data.grading_risiko)}</div>
+                    ${sudah && dikoreksi(data) ? `<div class="text-muted">Laporan pelapor: ${esc(x.jenis || '-')} · dampak ${x.d ?? '-'} × probabilitas ${x.p ?? '-'} → ${badgeGradingKecil(x.g)}</div>` : ''}
+                    ${data.catatan_verifikasi ? `<div><i class="fas fa-comment-dots me-1 text-muted"></i>${esc(data.catatan_verifikasi)}</div>` : ''}</div>`;
+            }
             if (data.batas_investigasi) infoStatus += `<br><small>Batas investigasi (${jenisInv(data) === 'rca' ? 'RCA' : 'sederhana'}): <b>${tglID(data.batas_investigasi)}</b></small>`;
             if (data.selesai_pada) infoStatus += `<br><small>Ditutup ${tglID(data.selesai_pada)}</small>`;
             if (data.lapor_eksternal_pada) infoStatus += `<br><small>Dilaporkan ke KNKP ${tglID(data.lapor_eksternal_pada)}${data.lapor_eksternal_nomor ? ' (No. ' + esc(data.lapor_eksternal_nomor) + ')' : ''}</small>`;
@@ -681,18 +706,64 @@
 
         const pesanGagal = err => esc((err && err.message) || String(err));
 
-        window.verifikasiInsiden = async function(uuid) {
+        // Verifikasi = Komite memeriksa & menetapkan JENIS INSIDEN dan GRADING (skor dampak x probabilitas).
+        // Jenis investigasi mengikuti hasil verifikasi (database): Sentinel / Kuning / Merah (kecuali KPC) -> RCA,
+        // lainnya investigasi sederhana; Komite boleh menaikkan ke RCA.
+        window.verifikasiInsiden = async function(uuid, ulang = false) {
             const r = listSemuaInsiden.find(x => x.id_insiden === uuid);
             if (!r) return;
-            const opsi = wajibRCA(r)
-                ? { rca: 'RCA \u2013 batas 45 hari (wajib untuk ' + (r.jenis_insiden === 'Sentinel' ? 'Sentinel' : 'grading ' + r.grading_risiko) + ')' }
-                : { sederhana: `Investigasi sederhana \u2013 batas ${r.grading_risiko === 'Hijau' ? 14 : 7} hari`, rca: 'RCA \u2013 batas 45 hari' };
+            const kpc = r.jenis_insiden === 'KPC';
+            const pel = isianPelapor(r);
+            const opsiJenis = kpc ? '<option value="KPC">KPC (Kondisi Potensial Cedera)</option>'
+                : Object.entries(JENIS_IKP).map(([k, v]) => `<option value="${k}" ${k === r.jenis_insiden ? 'selected' : ''}>${v}</option>`).join('')
+                  + (r.jenis_insiden && !JENIS_IKP[r.jenis_insiden] ? `<option value="${esc(r.jenis_insiden)}" selected>${esc(r.jenis_insiden)}</option>` : '');
+            const opsiSkor = (label, nilai) => (kpc || !nilai ? '<option value="">– pilih –</option>' : '')
+                + label.map((t, i) => `<option value="${i + 1}" ${Number(nilai) === i + 1 ? 'selected' : ''}>${i + 1} – ${t}</option>`).join('');
+            const nilaiForm = () => ({ j: document.getElementById('v_jenis').value, d: parseInt(document.getElementById('v_dampak').value, 10) || null,
+                                       p: parseInt(document.getElementById('v_prob').value, 10) || null, naik: document.getElementById('v_naik').checked,
+                                       catatan: document.getElementById('v_catatan').value.trim() });
+            const adaKoreksi = v => v.j !== pel.jenis || v.d !== (pel.d ?? null) || v.p !== (pel.p ?? null);
+            const hitung = () => {
+                const v = nilaiForm();
+                const g = gradingIkp(v.j, v.d, v.p) || (kpc && !v.d ? r.grading_risiko : null);
+                const wajib = wajibRCA({ jenis_insiden: v.j, grading_risiko: g });
+                const rca = wajib || v.naik;
+                document.getElementById('v_naikWrap').classList.toggle('d-none', wajib || !g);
+                document.getElementById('v_wajibCat').classList.toggle('d-none', !adaKoreksi(v));
+                document.getElementById('v_hasil').innerHTML = !g ? '<span class="text-muted">Pilih dampak dan probabilitas.</span>'
+                    : `<div class="d-flex align-items-center gap-2 mb-1"><span>Grading terverifikasi:</span> ${badgeGradingKecil(g)}</div>
+                       <div><b>Jenis investigasi: ${rca ? 'RCA' : 'Investigasi sederhana'}</b> – batas ${rca ? 45 : g === 'Hijau' ? 14 : 7} hari dari tanggal insiden
+                       <span class="text-muted">(${wajib ? (v.j === 'Sentinel' ? 'wajib untuk Sentinel' : 'wajib untuk grading ' + g) : v.naik ? 'dinaikkan oleh Komite' : 'sesuai grading ' + g})</span></div>`;
+            };
             const hasil = await Swal.fire({
-                title: 'Verifikasi Laporan',
-                html: `<div class="small text-start">${esc(r.jenis_insiden || '-')} \u00b7 grading <b>${esc(r.grading_risiko || '-')}</b> \u00b7 ${esc(r.unit_pelapor || '')}<br>Pilih jenis investigasi, atau tolak bila bukan insiden / laporan ganda.</div>`,
-                input: 'select', inputOptions: opsi, inputValue: Object.keys(opsi)[0],
-                showCancelButton: true, showDenyButton: true,
-                confirmButtonText: 'Mulai Investigasi', denyButtonText: 'Tolak Laporan', cancelButtonText: 'Batal'
+                title: ulang ? 'Ubah Verifikasi Laporan' : 'Verifikasi Laporan', width: 640,
+                html: `<div class="text-start small">
+                    <div class="alert alert-light border py-2 mb-2"><b>Laporan pelapor:</b> ${esc(pel.jenis || '-')} · dampak ${pel.d ?? '-'} × probabilitas ${pel.p ?? '-'} → ${badgeGradingKecil(pel.g)}
+                        <div class="text-muted">${esc(r.unit_pelapor || '')} · ${esc(String(r.kronologi || '').slice(0, 220))}${String(r.kronologi || '').length > 220 ? '…' : ''}</div></div>
+                    <p class="mb-2">Periksa kronologi, lalu tetapkan <b>jenis insiden</b> dan <b>grading</b> yang benar. Jenis investigasi mengikuti hasil verifikasi.</p>
+                    <label class="fw-bold mb-1">Jenis insiden</label>
+                    <select id="v_jenis" class="form-select form-select-sm mb-2" ${kpc ? 'disabled' : ''}>${opsiJenis}</select>
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-6"><label class="fw-bold mb-1">Dampak</label><select id="v_dampak" class="form-select form-select-sm">${opsiSkor(LABEL_DAMPAK, r.skor_dampak)}</select></div>
+                        <div class="col-md-6"><label class="fw-bold mb-1">Probabilitas</label><select id="v_prob" class="form-select form-select-sm">${opsiSkor(LABEL_PROB, r.skor_probabilitas)}</select></div>
+                    </div>
+                    <div id="v_hasil" class="border rounded p-2 mb-2 bg-light"></div>
+                    <div class="form-check mb-2" id="v_naikWrap"><input class="form-check-input" type="checkbox" id="v_naik" ${ulang && r.jenis_investigasi === 'rca' ? 'checked' : ''}>
+                        <label class="form-check-label" for="v_naik">Tetap lakukan RCA (opsional untuk grading Biru/Hijau atau KPC)</label></div>
+                    <label class="fw-bold mb-1">Catatan verifikasi <span id="v_wajibCat" class="text-danger d-none">* wajib karena ada koreksi dari laporan pelapor</span></label>
+                    <textarea id="v_catatan" class="form-control form-control-sm" rows="2" placeholder="mis. pasien mengalami cedera, sehingga KTD bukan KNC">${esc(r.catatan_verifikasi || '')}</textarea>
+                </div>`,
+                showCancelButton: true, showDenyButton: !ulang, focusConfirm: false,
+                confirmButtonText: ulang ? 'Simpan verifikasi' : 'Verifikasi & mulai investigasi', denyButtonText: 'Tolak laporan', cancelButtonText: 'Batal',
+                didOpen: () => { ['v_jenis', 'v_dampak', 'v_prob', 'v_naik', 'v_catatan'].forEach(id => document.getElementById(id).addEventListener(id === 'v_catatan' ? 'input' : 'change', hitung)); hitung(); },
+                preConfirm: () => {
+                    const v = nilaiForm();
+                    if (!kpc && (!v.d || !v.p)) { Swal.showValidationMessage('Pilih skor dampak dan probabilitas'); return false; }
+                    if (adaKoreksi(v) && !v.catatan) { Swal.showValidationMessage('Tulis catatan alasan koreksi jenis/skor'); return false; }
+                    const g = gradingIkp(v.j, v.d, v.p) || (kpc && !v.d ? r.grading_risiko : null);
+                    return { jenis_insiden: v.j, skor_dampak: v.d, skor_probabilitas: v.p, catatan_verifikasi: v.catatan || null,
+                             jenis_investigasi: v.naik && !wajibRCA({ jenis_insiden: v.j, grading_risiko: g }) ? 'rca' : null };
+                }
             });
             if (hasil.isDenied) {
                 const t = await Swal.fire({ title: 'Alasan penolakan', input: 'textarea', inputPlaceholder: 'mis. laporan ganda dengan laporan tgl ..., bukan insiden keselamatan pasien',
@@ -701,7 +772,7 @@
                 return ubahInsiden(uuid, { status_investigasi: 'Ditolak', alasan_ditolak: t.value.trim() }, 'Laporan ditolak');
             }
             if (!hasil.isConfirmed) return;
-            await ubahInsiden(uuid, { status_investigasi: 'Investigasi', jenis_investigasi: hasil.value }, 'Investigasi dimulai');
+            await ubahInsiden(uuid, { ...hasil.value, status_investigasi: 'Investigasi' }, ulang ? 'Verifikasi diperbarui' : 'Laporan terverifikasi – investigasi dimulai');
         };
 
         window.bukaKembali = async function(uuid) {

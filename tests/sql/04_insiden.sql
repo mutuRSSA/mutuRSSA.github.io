@@ -14,9 +14,9 @@ update public.data_insiden set status_investigasi = 'Selesai' where id_insiden =
 select pg_temp.cek((select status_investigasi from public.data_insiden where id_insiden = 'c0000000-0000-4000-8000-000000000001') = 'Baru', 'Unit tidak bisa mengubah status');
 
 select pg_temp.sebagai('komite');
-select pg_temp.harus_gagal($q$update public.data_insiden set status_investigasi = 'Investigasi', jenis_investigasi = 'sederhana' where id_insiden = 'c0000000-0000-4000-8000-000000000001'$q$,
-  'wajib diinvestigasi dengan RCA', 'Sentinel wajib RCA');
-update public.data_insiden set status_investigasi = 'Investigasi', jenis_investigasi = 'rca' where id_insiden = 'c0000000-0000-4000-8000-000000000001';
+-- Jenis investigasi ditetapkan otomatis dari jenis & grading terverifikasi: Sentinel -> RCA walau diminta sederhana
+update public.data_insiden set status_investigasi = 'Investigasi', jenis_investigasi = 'sederhana' where id_insiden = 'c0000000-0000-4000-8000-000000000001';
+select pg_temp.cek((select jenis_investigasi from public.data_insiden where id_insiden = 'c0000000-0000-4000-8000-000000000001') = 'rca', 'Sentinel otomatis RCA');
 select pg_temp.cek((select batas_investigasi = (waktu_insiden::date + 45) from public.data_insiden where id_insiden = 'c0000000-0000-4000-8000-000000000001'), 'Batas RCA 45 hari');
 select pg_temp.harus_gagal($q$update public.data_insiden set status_investigasi = 'Tindak Lanjut' where id_insiden = 'c0000000-0000-4000-8000-000000000001'$q$,
   'hasil investigasi', 'Tindak lanjut butuh hasil investigasi');
