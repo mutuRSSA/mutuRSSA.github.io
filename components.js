@@ -169,8 +169,6 @@ function loadNavigation() {
                     <a href="validasi_mutu.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-validasi" style="font-size: 0.95rem;"><i class="fas fa-check-double me-2"></i> Validasi Data Mutu</a>
                     <a href="daftar_pdsa.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-daftar-pdsa" style="font-size: 0.95rem;"><i class="fas fa-tasks me-2"></i> Pemantauan PDSA</a>
                     <a href="daftar_insiden.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0 mt-1" id="menu-daftar-ikp" style="font-size: 0.95rem;"><i class="fas fa-table me-2"></i> Daftar Insiden (IKP)</a>
-                    <a href="analisis_sederhana.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-analisis-sederhana" style="font-size: 0.95rem;"><i class="fas fa-search me-2"></i> Analisis Sederhana</a>
-                    <a href="analisis_rca.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-analisis-rca" style="font-size: 0.95rem;"><i class="fas fa-project-diagram me-2"></i> Analisis RCA</a>
                     <a href="dasbor_budaya.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0 mt-1" id="menu-dasbor-budaya" style="font-size: 0.95rem;"><i class="fas fa-spider me-2"></i> Analitik Budaya</a>
                     <a href="dasbor_risiko.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0 mt-1" id="menu-dasbor-risiko" style="font-size: 0.95rem;"><i class="fas fa-broadcast-tower me-2"></i> Supervisi Risiko RS</a>
                     <a href="profil_risiko_rs.html" class="list-group-item list-group-item-action py-2 ps-5 admin-link text-danger border-0" id="menu-profil-risiko" style="font-size: 0.95rem;"><i class="fas fa-crown me-2"></i> Profil Risiko RS</a>
@@ -246,8 +244,8 @@ function loadNavigation() {
     else if (page === 'validasi_mutu.html') { document.getElementById('menu-validasi')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'daftar_pdsa.html') { document.getElementById('menu-daftar-pdsa')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'daftar_insiden.html') { document.getElementById('menu-daftar-ikp')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
-    else if (page === 'analisis_sederhana.html') { document.getElementById('menu-analisis-sederhana')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
-    else if (page === 'analisis_rca.html') { document.getElementById('menu-analisis-rca')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
+    // Analisis Sederhana & RCA dibuka dari kasus di Daftar Insiden (tidak ada di sidebar)
+    else if (page === 'analisis_sederhana.html' || page === 'analisis_rca.html') { document.getElementById('menu-daftar-ikp')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'dasbor_budaya.html') { document.getElementById('menu-dasbor-budaya')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'dasbor_risiko.html') { document.getElementById('menu-dasbor-risiko')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }
     else if (page === 'profil_risiko_rs.html') { document.getElementById('menu-profil-risiko')?.classList.add('active'); document.getElementById('collapseAdmin')?.classList.add('show'); }

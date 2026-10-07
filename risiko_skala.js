@@ -78,3 +78,38 @@ function risikoHariIni() {
 const risikoJatuhTempo = r => r.status === 'aktif' && r.review_berikutnya && r.review_berikutnya <= risikoHariIni();
 
 if (typeof module !== 'undefined') module.exports = { RISIKO_MATRIKS, risikoTingkat, RISIKO_TINGKAT, RISIKO_DAMPAK, RISIKO_PROB, RISIKO_KATEGORI };
+
+// ---------- Urut tabel lewat klik judul kolom (Risk Register, Profil Risiko RS) ----------
+// Isian kosong selalu di bawah. Urutan bawaan dipakai sebagai pemecah seri (sort stabil).
+function risikoBanding(a, b, arah) {
+    const kosong = v => v === null || v === undefined || v === '' || (typeof v === 'number' && isNaN(v));
+    if (kosong(a) || kosong(b)) return kosong(a) === kosong(b) ? 0 : kosong(a) ? 1 : -1;
+    const c = typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b), 'id', { numeric: true, sensitivity: 'base' });
+    return c * arah;
+}
+// th[data-urut="kunci"] bisa diklik (klik lagi = balik arah); th[data-urut="awal"] kembali ke urutan bawaan.
+function risikoPasangUrut(thead, status, ulang) {
+    if (!thead) return;
+    thead.querySelectorAll('th[data-urut]').forEach(th => {
+        th.style.cursor = 'pointer'; th.style.userSelect = 'none';
+        th.title = th.dataset.urut === 'awal' ? 'Kembali ke urutan bawaan' : 'Klik untuk mengurutkan (klik lagi untuk membalik)';
+        th.addEventListener('click', () => {
+            const k = th.dataset.urut;
+            if (k === 'awal') { status.kunci = null; status.arah = 1; }
+            else if (status.kunci === k) status.arah = -status.arah;
+            else { status.kunci = k; status.arah = 1; }
+            risikoTandaiUrut(thead, status);
+            ulang();
+        });
+    });
+    risikoTandaiUrut(thead, status);
+}
+function risikoTandaiUrut(thead, status) {
+    thead.querySelectorAll('th[data-urut]').forEach(th => {
+        let ik = th.querySelector('.ikon-urut');
+        if (!ik) { ik = document.createElement('span'); ik.className = 'ikon-urut ms-1'; ik.style.fontSize = '.75em'; th.appendChild(ik); }
+        const aktif = !!status.kunci && th.dataset.urut === status.kunci;
+        ik.textContent = aktif ? (status.arah > 0 ? '▲' : '▼') : (th.dataset.urut === 'awal' ? '' : '⇅');
+        ik.style.opacity = aktif ? '1' : '.45';
+    });
+}

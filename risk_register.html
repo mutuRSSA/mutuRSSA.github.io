@@ -22,15 +22,54 @@
         .tabel-skala th { background: #f1f3f5; }
         .jatuh-tempo { color: #dc3545; font-weight: 700; }
         .risiko-judul { font-weight: 600; }
+        /* ===== Dokumen cetak Register Risiko (dibangun oleh cetakRegister) ===== */
+        #dokumenCetak { display: none; }
         @media print {
-            body { background-color: #fff !important; padding-top: 0 !important; }
-            #navbar-container, #sidebar-container, .d-print-none, .btn, .modal { display: none !important; }
-            .card-custom { border: none !important; box-shadow: none !important; padding: 0 !important; }
-            .table { font-size: 10px !important; }
             * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-            @page { margin: 1cm; size: landscape; }
+            body { background: #fff !important; padding: 0 !important; margin: 0 !important; }
+            body.mode-cetak > *:not(#dokumenCetak) { display: none !important; }
+            body.mode-cetak #dokumenCetak { display: block !important; }
+            /* Cetak lewat Ctrl+P tanpa tombol: tetap rapi seadanya */
+            body:not(.mode-cetak) #navbar-container, body:not(.mode-cetak) #sidebar-container, body:not(.mode-cetak) .d-print-none,
+            body:not(.mode-cetak) .btn, body:not(.mode-cetak) .modal { display: none !important; }
         }
+        #dokumenCetak { font-family: Arial, Helvetica, sans-serif; font-size: 8.5pt; color: #000; line-height: 1.3; }
+        #dokumenCetak .rk-kecil { font-size: 7.5pt; color: #444; }
+        #dokumenCetak .rk-merah { color: #b42318; font-weight: 700; }
+        #dokumenCetak .rk-tengah { text-align: center; }
+        #dokumenCetak .rk-subjudul { font-weight: 700; font-size: 8.5pt; margin-bottom: 3px; }
+        #dokumenCetak .rk-info { width: 100%; border-collapse: collapse; margin: 4px 0 8px; }
+        #dokumenCetak .rk-info td { border: 1px solid #999; padding: 4px 6px; vertical-align: top; width: 25%; }
+        #dokumenCetak .rk-info span { display: block; font-size: 7pt; color: #555; text-transform: uppercase; letter-spacing: .3px; }
+        #dokumenCetak .rk-ringkas { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 8px; break-inside: avoid; }
+        #dokumenCetak .rk-kotak-wadah { border-collapse: separate; border-spacing: 6px 0; flex: 1; }
+        #dokumenCetak .rk-kotak { border: 1px solid #bbb; padding: 6px 8px; text-align: center; width: 25%; vertical-align: top; }
+        #dokumenCetak .rk-angka { font-size: 16pt; font-weight: 700; line-height: 1.1; }
+        #dokumenCetak .rk-matriks { border-collapse: collapse; font-size: 7.5pt; }
+        #dokumenCetak .rk-matriks th { padding: 1px 4px; font-weight: 600; color: #333; text-align: center; }
+        #dokumenCetak .rk-matriks .rk-sumbu { writing-mode: vertical-rl; transform: rotate(180deg); font-size: 7pt; }
+        #dokumenCetak .rk-matriks td { width: 26px; height: 16px; text-align: center; font-weight: 700; border: 1px solid #fff; }
+        #dokumenCetak .rk-register { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        #dokumenCetak .rk-register thead { display: table-header-group; }
+        #dokumenCetak .rk-register th { background: #2c3e50; color: #fff; font-size: 7.5pt; font-weight: 700; padding: 4px 3px; border: 1px solid #2c3e50; text-align: center; vertical-align: middle; }
+        #dokumenCetak .rk-register td { border: 1px solid #888; padding: 3px 4px; vertical-align: top; overflow-wrap: anywhere; word-wrap: break-word; }
+        #dokumenCetak .rk-register tr { break-inside: avoid; page-break-inside: avoid; }
+        #dokumenCetak .rk-register tr.rk-grup { break-after: avoid; page-break-after: avoid; }
+        #dokumenCetak .rk-register tbody.rk-blok { break-inside: avoid; page-break-inside: avoid; }
+        #dokumenCetak .rk-register tbody tr:nth-child(even):not(.rk-grup) td:not([style]) { background: #f6f7f9; }
+        #dokumenCetak .rk-grup td { background: #e3e8ef !important; font-weight: 700; font-size: 8.5pt; padding: 4px 6px; }
+        #dokumenCetak .rk-tindakan { margin-bottom: 3px; }
+        #dokumenCetak .rk-tindakan:last-child { margin-bottom: 0; }
+        #dokumenCetak .rk-batal { text-decoration: line-through; color: #777; }
+        #dokumenCetak .rk-bawah { display: flex; gap: 20px; margin-top: 10px; align-items: flex-start; break-inside: avoid; page-break-inside: avoid; }
+        #dokumenCetak .rk-legenda { flex: 1.1; }
+        #dokumenCetak .rk-legenda table { border-collapse: collapse; width: 100%; font-size: 7.5pt; }
+        #dokumenCetak .rk-legenda td { border: 1px solid #999; padding: 2px 5px; }
+        #dokumenCetak .rk-ttd { flex: 1; border-collapse: collapse; font-size: 8.5pt; text-align: center; }
+        #dokumenCetak .rk-ttd td { vertical-align: top; padding: 0 8px; width: 50%; }
+        #dokumenCetak .rk-ruang-ttd { height: 52px; }
     </style>
+    <style id="gayaHalamanCetak">@page { size: A4 landscape; margin: 12mm 10mm 14mm 10mm; }</style>
 </head>
 <body>
     <div id="navbar-container"></div>
@@ -45,7 +84,7 @@
                 </div>
                 <div class="d-flex gap-2 flex-wrap d-print-none">
                     <button class="btn btn-outline-secondary btn-sm" onclick="bukaDefinisi()"><i class="fas fa-book me-1"></i> Definisi skala</button>
-                    <button class="btn btn-outline-dark btn-sm" onclick="window.print()"><i class="fas fa-print me-1"></i> Cetak</button>
+                    <button class="btn btn-outline-dark btn-sm" onclick="cetakRegister()" title="Cetak atau simpan sebagai PDF (pilih 'Save as PDF' di jendela cetak)"><i class="fas fa-print me-1"></i> Cetak / PDF</button>
                     <button class="btn btn-danger fw-bold" onclick="bukaForm()"><i class="fas fa-plus me-1"></i> Identifikasi Risiko Baru</button>
                 </div>
             </div>
@@ -77,8 +116,8 @@
             <div class="table-responsive">
                 <table class="table table-bordered table-hover table-custom mb-0">
                     <thead><tr>
-                        <th class="text-center">#</th><th>Unit / Kategori</th><th style="min-width:280px">Risiko</th><th class="text-center">Tingkat (D×P)</th>
-                        <th class="text-center">Status</th><th class="text-center">Tindakan</th><th class="text-center">Review berikutnya</th><th class="text-center d-print-none">Aksi</th>
+                        <th class="text-center" data-urut="awal">#</th><th data-urut="unit">Unit / Kategori</th><th style="min-width:280px" data-urut="risiko">Risiko</th><th class="text-center" data-urut="tingkat">Tingkat (D×P)</th>
+                        <th class="text-center" data-urut="status">Status</th><th class="text-center" data-urut="tindakan">Tindakan</th><th class="text-center" data-urut="review">Review berikutnya</th><th class="text-center d-print-none">Aksi</th>
                     </tr></thead>
                     <tbody id="tbodyRisiko"><tr><td colspan="8" class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin me-2"></i> Memuat...</td></tr></tbody>
                 </table>
@@ -166,10 +205,10 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js?v=20261005"></script>
-    <script src="risiko_skala.js?v=20261001"></script>
+    <script src="config.js?v=20261007"></script>
+    <script src="risiko_skala.js?v=20261007"></script>
     <script src="auth.js?v=20261005b"></script>
-    <script src="components.js?v=20261005b"></script>
+    <script src="components.js?v=20261007"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
@@ -183,6 +222,16 @@
         let tindakan = new Map();   // id_risiko -> [risiko_tindakan]
         let review = new Map();     // id_risiko -> [risiko_review]
         let saringStatus = 'terbuka';
+        const urutRR = { kunci: null, arah: 1 };   // urutan dari klik judul kolom
+        const URUT_STATUS = ['draft', 'revisi', 'diajukan', 'aktif', 'ditutup'];
+        const kunciUrutRR = {
+            unit: r => `${r.unit_kerja || ''} ${r.kategori_risiko || ''}`,
+            risiko: r => r.risiko_teridentifikasi,
+            tingkat: r => RISIKO_TINGKAT[r.tingkat_risiko] ? RISIKO_TINGKAT[r.tingkat_risiko].urut * 100 + (r.skor_risiko || 0) : null,
+            status: r => URUT_STATUS.indexOf(statusNorm(r.status)),
+            tindakan: r => { const t = (tindakan.get(r.id_risiko) || []).filter(x => x.status !== 'batal'); return t.length ? t.filter(x => x.status === 'selesai').length / t.length : null; },
+            review: r => statusNorm(r.status) === 'aktif' ? (r.review_berikutnya || null) : null
+        };
         let barisTindakanForm = []; // tindakan di form: [{id?, opsi, tindakan, pic, tenggat, status, hapus?}]
 
         const modal = id => bootstrap.Modal.getOrCreateInstance(document.getElementById(id));
@@ -191,6 +240,7 @@
         document.addEventListener('DOMContentLoaded', async () => {
             if (!supabaseClient) return;
             siapkanPilihan();
+            risikoPasangUrut(document.getElementById('tbodyRisiko').closest('table').tHead, urutRR, render);
             await muatUnit();
             await muatData();
             cekDrafLama();
@@ -262,7 +312,9 @@
                     : statusNorm(r.status) === saringStatus)
                 .sort((a, b) => ((RISIKO_TINGKAT[b.tingkat_risiko] || {}).urut || 0) - ((RISIKO_TINGKAT[a.tingkat_risiko] || {}).urut || 0)
                     || (b.skor_risiko || 0) - (a.skor_risiko || 0) || String(a.unit_kerja).localeCompare(String(b.unit_kerja)));
+            if (urutRR.kunci) { const f = kunciUrutRR[urutRR.kunci]; baris.sort((a, b) => risikoBanding(f(a), f(b), urutRR.arah)); }
 
+            barisTampil = baris;   // yang dicetak = yang tampil (sesuai saringan)
             const tbody = document.getElementById('tbodyRisiko');
             if (!baris.length) { tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Tidak ada risiko untuk saringan ini.</td></tr>'; return; }
             tbody.innerHTML = baris.map((r, i) => {
@@ -288,6 +340,118 @@
             }).join('');
         };
         window.pilihChip = k => { saringStatus = k; render(); };
+        // ================= CETAK / PDF: dokumen Register Risiko =================
+        // Dokumen cetak tersendiri (bukan tampilan layar): kop, ringkasan & matriks, tabel register
+        // selebar halaman (kolom tetap, tidak terpotong), keterangan, dan tanda tangan.
+        let barisTampil = [];
+        const tglPanjang = d => (d ? new Date(String(d).length === 10 ? d + 'T00:00:00' : d) : new Date()).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        window.cetakRegister = async function() {
+            const inst = { ...INSTITUSI_BAWAAN, ...(window.__institusi || (window.__institusi = await ambilInstitusi())) };
+            const unit = document.getElementById('saringUnit').value;
+            const namaUnit = unit || (admin ? '' : userUnit);
+            const ting = document.getElementById('saringTingkat').value, kat = document.getElementById('saringKategori').value;
+            const cari = document.getElementById('saringCari').value.trim();
+            const labelChip = { terbuka: 'Belum ditutup', draft: 'Draf', revisi: 'Perlu revisi', diajukan: 'Menunggu verifikasi', aktif: 'Aktif',
+                                jatuh_tempo: 'Review jatuh tempo', terlambat: 'Tindakan terlambat', ditutup: 'Ditutup', semua: 'Semua status' }[saringStatus] || saringStatus;
+            const saringan = [labelChip, ting && 'Tingkat ' + ting, kat && 'Kategori ' + kat, cari && `Kata kunci "${cari}"`].filter(Boolean).join(' · ');
+            const baris = barisTampil.slice();
+            const hariIni = risikoHariIni();
+
+            // Ringkasan per tingkat & matriks dampak × probabilitas
+            const jml = t => baris.filter(r => r.tingkat_risiko === t).length;
+            const kotak = ['Ekstrem', 'Tinggi', 'Moderat', 'Rendah'].map(t => { const w = RISIKO_TINGKAT[t];
+                return `<td class="rk-kotak" style="border-top:4px solid ${w.bg}"><div class="rk-angka">${jml(t)}</div><div>${t}</div><div class="rk-kecil">review ${w.review.toLowerCase()}</div></td>`; }).join('');
+            const belum = baris.filter(r => !RISIKO_TINGKAT[r.tingkat_risiko]).length;
+            const sel = (d, p) => baris.filter(r => Number(r.dampak) === d && Number(r.frekuensi) === p).length;
+            const matriks = `<table class="rk-matriks"><tr><th rowspan="2" class="rk-sumbu">Dampak</th><th colspan="5">Probabilitas</th></tr>
+                <tr>${[1, 2, 3, 4, 5].map(p => `<th>${p}</th>`).join('')}</tr>
+                ${[5, 4, 3, 2, 1].map(d => `<tr><th>${d}</th>${[1, 2, 3, 4, 5].map(p => { const w = RISIKO_TINGKAT[risikoTingkat(d, p)]; const n = sel(d, p);
+                    return `<td style="background:${w.bg};color:${w.fg}">${n || ''}</td>`; }).join('')}</tr>`).join('')}</table>`;
+
+            // Baris register (dikelompokkan per unit bila mencetak seluruh unit)
+            const kolom = 11;
+            const isiBaris = (r, no) => {
+                const st = statusNorm(r.status), w = RISIKO_TINGKAT[r.tingkat_risiko];
+                const t = (tindakan.get(r.id_risiko) || []);
+                const daftarT = t.length ? t.map(x => {
+                    const telat = tindakanTerlambat(x);
+                    return `<div class="rk-tindakan${x.status === 'batal' ? ' rk-batal' : ''}"><b>${esc(RISIKO_OPSI[x.opsi] || x.opsi || '-')}:</b> ${esc(x.tindakan || '-')}
+                        <div class="rk-kecil">PIC: ${esc(x.pic || '-')} · Tenggat: <span class="${telat ? 'rk-merah' : ''}">${tgl(x.tenggat)}${telat ? ' (terlambat)' : ''}</span> · ${esc(RISIKO_STATUS_TINDAKAN[x.status] || x.status || '-')}</div></div>`; }).join('')
+                    : '<span class="rk-kecil">Belum ada rencana</span>';
+                const jt = risikoJatuhTempo({ ...r, status: st });
+                return `<tr>
+                    <td class="rk-tengah">${no}</td>
+                    <td><b>${esc(r.risiko_teridentifikasi || '-')}</b><div class="rk-kecil">${esc(r.kategori_risiko || 'Belum dikategorikan')}${r.sumber_temuan ? ' · Sumber: ' + esc(r.sumber_temuan) : ''}</div>
+                        ${r.tanggal_identifikasi ? `<div class="rk-kecil">Diidentifikasi: ${tgl(r.tanggal_identifikasi)}</div>` : ''}</td>
+                    <td>${esc(r.penyebab || '-')}</td>
+                    <td>${esc(r.dampak_timbul || '-')}</td>
+                    <td>${esc(r.penanganan_saat_ini || '-')}</td>
+                    <td class="rk-tengah">${r.dampak ?? '-'}</td>
+                    <td class="rk-tengah">${r.frekuensi ?? '-'}</td>
+                    <td class="rk-tengah" ${w ? `style="background:${w.bg};color:${w.fg}"` : ''}><b>${esc(r.tingkat_risiko || 'Belum dinilai')}</b>${r.skor_risiko ? `<div>Skor ${r.skor_risiko}</div>` : ''}</td>
+                    <td>${daftarT}</td>
+                    <td>${esc(r.pemilik_risiko || '-')}</td>
+                    <td><b>${esc((RISIKO_STATUS[st] || {}).label || st || '-')}</b>${r.is_profil_rs ? '<div class="rk-kecil">Profil risiko RS</div>' : ''}
+                        ${r.review_terakhir ? `<div class="rk-kecil">Review: ${tgl(r.review_terakhir)}</div>` : ''}
+                        ${st === 'aktif' && r.review_berikutnya ? `<div class="rk-kecil ${jt ? 'rk-merah' : ''}">Berikutnya: ${tgl(r.review_berikutnya)}${jt ? ' (jatuh tempo)' : ''}</div>` : ''}
+                        ${st === 'ditutup' && r.alasan_tutup ? `<div class="rk-kecil">Ditutup: ${esc(r.alasan_tutup)}</div>` : ''}</td></tr>`;
+            };
+            let isiTabel = '';
+            if (!baris.length) isiTabel = `<tr><td colspan="${kolom}" class="rk-tengah">Tidak ada risiko untuk saringan ini.</td></tr>`;
+            else if (!namaUnit) {
+                const perUnit = new Map(); baris.forEach(r => { const u = r.unit_kerja || '-'; if (!perUnit.has(u)) perUnit.set(u, []); perUnit.get(u).push(r); });
+                let no = 0;
+                [...perUnit.keys()].sort((a, b) => a.localeCompare(b, 'id')).forEach(u => {
+                    isiTabel += `<tr class="rk-grup"><td colspan="${kolom}">${esc(u)} <span class="rk-kecil">(${perUnit.get(u).length} risiko)</span></td></tr>`;
+                    perUnit.get(u).forEach(r => { isiTabel += isiBaris(r, ++no); });
+                });
+            } else isiTabel = baris.map((r, i) => isiBaris(r, i + 1)).join('');
+
+            const legenda = ['Ekstrem', 'Tinggi', 'Moderat', 'Rendah'].map(t => { const w = RISIKO_TINGKAT[t];
+                return `<tr><td style="background:${w.bg};color:${w.fg};font-weight:700;width:70px">${t}</td><td>${esc(w.keputusan)}</td><td style="width:90px">Review ${esc(w.review.toLowerCase())}</td></tr>`; }).join('');
+            const penanda = namaUnit
+                ? [{ atas: 'Disusun oleh,', jabatan: 'Kepala ' + namaUnit }, { atas: 'Mengetahui,', jabatan: 'Ketua Komite Mutu dan Keselamatan Pasien', nama: inst.ketua_komite_nama, nip: inst.ketua_komite_nip }]
+                : [{ atas: 'Mengetahui,', jabatan: 'Direktur', nama: inst.direktur_nama, nip: inst.direktur_nip }, { atas: '', jabatan: 'Ketua Komite Mutu dan Keselamatan Pasien', nama: inst.ketua_komite_nama, nip: inst.ketua_komite_nip }];
+            const ttd = `<table class="rk-ttd"><tr>${penanda.map((p, i) => `<td>
+                ${i === penanda.length - 1 ? esc(inst.kota || '') + ', ' + tglPanjang() : '&nbsp;'}<br>${esc(p.atas || '')}${p.atas ? '<br>' : ''}${esc(p.jabatan)}
+                <div class="rk-ruang-ttd"></div><b><u>${esc(p.nama || '(..................................................)')}</u></b>${p.nip ? '<br>NIP. ' + esc(p.nip) : ''}</td>`).join('')}</tr></table>`;
+
+            const judulKaki = `Register Risiko ${namaUnit || 'Seluruh Unit'} — dicetak ${tglPanjang()}`.replace(/"/g, "'");
+            document.getElementById('gayaHalamanCetak').textContent =
+                `@page { size: A4 landscape; margin: 12mm 10mm 14mm 10mm;
+                   @bottom-left { content: "${judulKaki}"; font-size: 7.5pt; font-family: Arial, Helvetica, sans-serif; color: #666; }
+                   @bottom-right { content: "Halaman " counter(page) " dari " counter(pages); font-size: 7.5pt; font-family: Arial, Helvetica, sans-serif; color: #666; } }`;
+
+            document.getElementById('dokumenCetak').innerHTML = `
+                ${kopLaporanHTML(inst, 'REGISTER RISIKO', (namaUnit ? 'UNIT ' + namaUnit.replace(/^unit\s+/i, '') : 'SELURUH UNIT KERJA').toUpperCase())}
+                <table class="rk-info"><tr>
+                    <td><span>Unit kerja</span><b>${esc(namaUnit || 'Seluruh unit')}</b></td>
+                    <td><span>Posisi data per</span><b>${tglPanjang()}</b></td>
+                    <td><span>Saringan</span><b>${esc(saringan)}</b></td>
+                    <td><span>Jumlah risiko</span><b>${baris.length}${belum ? ` (${belum} belum dinilai)` : ''}</b></td></tr></table>
+                <div class="rk-ringkas">
+                    <table class="rk-kotak-wadah"><tr>${kotak}</tr></table>
+                    <div><div class="rk-subjudul">Sebaran pada matriks risiko</div>${matriks}</div>
+                </div>
+                <table class="rk-register">
+                    <colgroup><col style="width:3%"><col style="width:15%"><col style="width:10%"><col style="width:10%"><col style="width:10%">
+                        <col style="width:3%"><col style="width:3%"><col style="width:7%"><col style="width:20%"><col style="width:8%"><col style="width:11%"></colgroup>
+                    <thead><tr><th>No</th><th>Risiko / Kategori</th><th>Penyebab</th><th>Akibat / Dampak</th><th>Pengendalian yang ada</th>
+                        <th title="Dampak">D</th><th title="Probabilitas">P</th><th>Tingkat</th><th>Rencana penanganan (opsi, PIC, tenggat, status)</th><th>Pemilik risiko</th><th>Status &amp; review</th></tr></thead>
+                    <tbody>${isiTabel}</tbody>
+                </table>
+                <div class="rk-bawah">
+                    <div class="rk-legenda"><div class="rk-subjudul">Keterangan</div>
+                        <table>${legenda}</table>
+                        <div class="rk-kecil" style="margin-top:4px">D = dampak (1 Tidak signifikan · 2 Minor · 3 Moderat · 4 Mayor · 5 Katastropik). P = probabilitas (1 Sangat jarang · 2 Jarang · 3 Mungkin · 4 Sering · 5 Sangat sering). Skor = D × P; tingkat dari matriks 5×5 (sama dengan grading IKP).</div></div>
+                    ${ttd}
+                </div>`;
+            document.body.classList.add('mode-cetak');
+            const selesai = () => { document.body.classList.remove('mode-cetak'); window.removeEventListener('afterprint', selesai); };
+            window.addEventListener('afterprint', selesai);
+            setTimeout(() => window.print(), 50);
+        };
 
         // ================= FORM =================
         window.bukaForm = function(id) {
@@ -603,5 +767,6 @@
             Swal.fire('Selesai', `${ok} draf dipindahkan ke server. Lengkapi kategori dan rencana penanganannya, lalu ajukan.`, 'success');
         };
     </script>
+    <div id="dokumenCetak"></div>
 </body>
 </html>

@@ -166,3 +166,12 @@ function ttdHTML(inst, penanda, tanggal) {
             <b><u>${esc(p.nama || '..............................')}</u></b><br>${p.nip ? 'NIP. ' + esc(p.nip) : ''}</td>`).join('')}
     </tr></table>`;
 }
+
+// 8. DIALOG SWEETALERT DI ATAS MODAL BOOTSTRAP
+// Modal Bootstrap 5 menarik kembali fokus keyboard yang keluar dari modal (focus trap),
+// sehingga kotak isian SweetAlert yang dibuka dari dalam modal tidak bisa diketik.
+// Event fokus yang menuju dialog SweetAlert dihentikan sebelum sampai ke Bootstrap
+// (listener capture di window berjalan lebih dulu daripada listener Bootstrap di document).
+window.addEventListener('focusin', e => {
+    if (e.target && e.target.closest && e.target.closest('.swal2-container')) e.stopImmediatePropagation();
+}, true);
