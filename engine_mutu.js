@@ -373,7 +373,7 @@ function mutuKolomDenganSumber(kolomForm, indeks) {
     const hasil = new Set(indeks), antre = [...indeks];
     while (antre.length) {
         const c = kolomForm[antre.pop()];
-        const f = c && c.formula ? String(c.formula) : '';
+        const f = c && String(c.tipe || '').toLowerCase().trim() === 'readonly' && c.formula ? String(c.formula) : '';   // hanya READONLY yang berumus
         for (const m of f.matchAll(/\[(\d+)\]/g)) { const j = parseInt(m[1], 10); if (!hasil.has(j)) { hasil.add(j); antre.push(j); } }
     }
     return hasil;

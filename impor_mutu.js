@@ -160,7 +160,8 @@ function imporKonversiSheet(sheet, formulir, unit, opsi = {}) {
     }
     if (idxPeriodeSheet === null) hasil.catatan.push('Tidak ditemukan kolom tanggal/bulan');
 
-    const kolomInput = kolomDef.map(k => !(k.formula || (k.tipe || '').toLowerCase() === 'readonly'));
+    // Hanya tipe READONLY yang terisi otomatis (rumus di tipe lain = sisa lama, diabaikan)
+    const kolomInput = kolomDef.map(k => (k.tipe || '').toLowerCase().trim() !== 'readonly');
 
     data.forEach((row, r) => {
         const nomorBaris = r + 2; // nomor baris di Excel

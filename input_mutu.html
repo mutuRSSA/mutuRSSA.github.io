@@ -460,7 +460,9 @@
         let periodeTerkunci = null;     // baris kunci_periode_mutu yang berlaku untuk unit + bulan terpilih
         const BARIS_KOSONG = 20;
 
-        const adaRumus = c => !!(c && c.formula && c.formula.trim() !== '');
+        // Kolom terisi otomatis HANYA bila tipenya READONLY dan punya rumus. Rumus sisa di tipe lain
+        // (mis. kolom yang dulu READONLY lalu diganti Dropdown) diabaikan agar petugas tetap bisa mengisi.
+        const adaRumus = c => !!(c && tipeKolom(c) === 'readonly' && c.formula && String(c.formula).trim() !== '');
         const nilaiError = v => typeof v === 'string' && /^#(DIV\/0!|VALUE!|N\/A|REF!|NAME\?|NUM!|ERROR!|CYCLE!)$/.test(v);
 
         function rumusBaris(col, r) {
