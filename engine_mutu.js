@@ -13,7 +13,8 @@
 // ---------------------------------------------------------------------
 // FORMAT TEMPLATE
 //   {"tipe":"COUNTALL"}                                   jumlah semua baris
-//   {"tipe":"COUNTALL","syarat":[{kolom,operator,nilai},...]}  jumlah baris yang memenuhi SEMUA syarat
+//   {"tipe":"COUNTALL","syarat":[{kolom,operator,nilai},...]}  jumlah baris yang memenuhi syarat
+//       (syarat ke-2 dst. boleh "hubung":"atau"; DAN dikerjakan lebih dulu daripada ATAU)
 //   {"tipe":"SUM","target_kolom":5,"syarat":[...]}         total angka kolom 5 (syarat opsional)
 //   {"tipe":"KONSTAN","nilai":0.01}                        angka tetap
 //   {"tipe":"GABUNGAN","bagian":[{"tanda":"+"|"-","id_form":"..."|null,"rumus":{...}}, ...]}
@@ -77,13 +78,25 @@ function mutuParseTemplate(template) {
     try { const o = JSON.parse(t); return (o && typeof o === 'object' && !Array.isArray(o)) ? o : null; } catch (e) { return null; }
 }
 
-// Semua syarat terpenuhi (daftar kosong = lolos). Sama dengan mutu_syarat_ok.
+// Daftar syarat dipecah menjadi kelompok DAN; syarat dengan hubung "atau" (mulai syarat ke-2)
+// membuka kelompok baru. [A, B, {C, hubung:'atau'}, D] = (A DAN B) ATAU (C DAN D).
+function mutuKelompokSyarat(syarat) {
+    const kel = [[]];
+    (Array.isArray(syarat) ? syarat : []).forEach((s, i) => {
+        if (i > 0 && s && s.hubung === 'atau') kel.push([]);
+        kel[kel.length - 1].push(s);
+    });
+    return kel;
+}
+// Syarat terpenuhi (daftar kosong = lolos): minimal satu kelompok DAN yang semua syaratnya cocok.
+// Sama dengan mutu_syarat_ok di database.
 function mutuSyaratOk(d, syarat) {
-    if (!Array.isArray(syarat)) return true;
-    return syarat.every(s => {
+    if (!Array.isArray(syarat) || !syarat.length) return true;
+    const cocok = s => {
         const i = mutuIndeks(mutuTeks(s && s.kolom));
         return i !== null && mutuCocok(mutuTeks(d[i]), s.operator, mutuTeks(s.nilai));
-    });
+    };
+    return mutuKelompokSyarat(syarat).some(k => k.every(cocok));
 }
 
 // Kontribusi SATU baris (sama dengan mutu_nilai_rumus). KONSTAN/GABUNGAN -> 0 di sini.
@@ -248,7 +261,15 @@ function jelaskanTemplate(teks, kolomPerForm) {
         const daftar = [];
         if (r.tipe === 'COUNTIF' && r.target_kolom !== undefined && r.target_kolom !== null && String(r.target_kolom) !== '') daftar.push(syarat(r.target_kolom, r.operator, r.nilai_kriteria));
         if (r.tipe === 'SUM' && r.syarat_kolom !== undefined && r.syarat_kolom !== null && String(r.syarat_kolom) !== '') daftar.push(syarat(r.syarat_kolom, r.syarat_operator, r.syarat_nilai));
-        if (Array.isArray(r.syarat)) r.syarat.forEach(s => daftar.push(syarat(s.kolom, s.operator, s.nilai)));
+        if (Array.isArray(r.syarat) && r.syarat.length) {
+            // DAN dikerjakan lebih dulu: kelompok DAN diberi kurung bila ada ATAU
+            const kel = mutuKelompokSyarat(r.syarat).map(k => k.map(s => syarat(s.kolom, s.operator, s.nilai)));
+            if (kel.length === 1) daftar.push(...kel[0]);
+            else {
+                const ekspr = kel.map(k => k.length > 1 ? `(${k.join(' DAN ')})` : k[0]).join(' ATAU ');
+                daftar.push(daftar.length ? `(${ekspr})` : ekspr);
+            }
+        }
         const dg = daftar.length ? ` dengan ${daftar.join(' DAN ')}` : '';
         const asal = form ? ` di formulir ${form}` : '';
         if (r.tipe === 'KONSTAN') return `angka tetap ${r.nilai}`;
@@ -443,6 +464,6 @@ if (typeof module !== 'undefined') module.exports = {
     mutuAngka, mutuIndeks, mutuCocok, mutuParseTemplate, mutuSyaratOk, mutuNilaiRumus, mutuBagian,
     eksekusiRumusEngine, indikatorPakaiEngine, mutuPengali, hitungCapaianND, hitungKelompokIndikator,
     cekTercapaiProfil, susunRingkasanDariHasil, jelaskanTemplate, periksaTemplate, MUTU_OPERATOR,
-    cariTidakTercapaiBeruntun, mutuBulat2, mutuPetaFormUnit, mutuUnitMelaporkan,
+    cariTidakTercapaiBeruntun, mutuBulat2, mutuPetaFormUnit, mutuUnitMelaporkan, mutuKelompokSyarat,
     mutuPetaAksesIndikator, mutuPasangAksesKolom, mutuUnitBerhakIndikator, mutuKolomIndikator, mutuAksesSemua, mutuDaftarAkses
 };

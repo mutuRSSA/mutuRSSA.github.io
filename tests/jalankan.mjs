@@ -59,7 +59,7 @@ for (const f of berkas.filter(dipilih)) {
 // ---------------------------------------------------------------------
 // 2. Mesin rumus: hitung_capaian_mutu (database) == engine_mutu.js (browser)
 //    Data & rumus acak (benih tetap) meliputi COUNTALL, COUNTIF, SUM, KONSTAN,
-//    syarat bertingkat, GABUNGAN antar formulir, nilai kosong/aneh.
+//    syarat bertingkat (DAN/ATAU), GABUNGAN antar formulir, nilai kosong/aneh.
 // ---------------------------------------------------------------------
 if (dipilih('mesin')) {
   const mulai = Date.now();
@@ -82,7 +82,12 @@ if (dipilih('mesin')) {
                    id_indikator: f, bulan: f === 'UJM3' ? antara(3, 6) : antara(1, 4), tahun: 2031,
                    data_input: Array.from({ length: 8 }, () => pilih(NILAI)) });
     }
-    const syarat = () => Array.from({ length: antara(0, 3) }, () => ({ kolom: pilih([0, 2, '5', 7, '9']), operator: pilih(OPS), nilai: pilih(KRIT) }));
+    // Syarat ke-2 dst. kadang dihubungkan ATAU (DAN dikerjakan lebih dulu)
+    const syarat = () => Array.from({ length: antara(0, 4) }, () => {
+      const x = { kolom: pilih([0, 2, '5', 7, '9']), operator: pilih(OPS), nilai: pilih(KRIT) };
+      const h = acak(); if (h < .35) x.hubung = 'atau'; else if (h < .45) x.hubung = 'dan';
+      return x;
+    });
     const sederhana = () => {
       const r = acak(); let t;
       if (r < .2) t = { tipe: 'COUNTALL' };

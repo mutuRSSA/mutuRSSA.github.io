@@ -6,7 +6,8 @@
 //   * satu sisi (N atau D) = satu atau beberapa KOMPONEN yang dijumlah/dikurangkan
 //   * komponen: Hitung baris | Jumlahkan kolom | Angka tetap
 //   * setiap komponen boleh dari formulir lain (unit & bulan yang sama)
-//   * setiap komponen boleh punya BANYAK syarat (semua harus terpenuhi)
+//   * setiap komponen boleh punya BANYAK syarat, dihubungkan dengan DAN / ATAU
+//     (DAN dikerjakan lebih dulu: A dan B atau C = (A dan B) atau C)
 // Menghasilkan template JSON yang dipahami engine_mutu.js & database.
 // Butuh: engine_mutu.js (jelaskanTemplate, periksaTemplate, mutuBagian,
 //        mutuParseTemplate, MUTU_OPERATOR), config.js (esc, supabaseClient).
@@ -54,7 +55,7 @@ function rbDariTemplate(sisi, teks) {
             k.syarat.push({ kolom: String(r.target_kolom), operator: r.operator || '==', nilai: r.nilai_kriteria ?? '' });
         if (r.tipe === 'SUM' && r.syarat_kolom !== undefined && r.syarat_kolom !== null && String(r.syarat_kolom) !== '')
             k.syarat.push({ kolom: String(r.syarat_kolom), operator: r.syarat_operator || '==', nilai: r.syarat_nilai ?? '' });
-        (Array.isArray(r.syarat) ? r.syarat : []).forEach(s => k.syarat.push({ kolom: String(s.kolom ?? ''), operator: s.operator || '==', nilai: s.nilai ?? '' }));
+        (Array.isArray(r.syarat) ? r.syarat : []).forEach(s => k.syarat.push({ kolom: String(s.kolom ?? ''), operator: s.operator || '==', nilai: s.nilai ?? '', hubung: s.hubung === 'atau' ? 'atau' : 'dan' }));
         return k;
     });
     return 'ok';
@@ -63,9 +64,10 @@ function rbDariTemplate(sisi, teks) {
 function rbKomponenKeRumus(k) {
     const angka = v => (String(v).trim() === '' || isNaN(Number(v))) ? String(v) : Number(v);
     if (k.metode === 'KONSTAN') return { tipe: 'KONSTAN', nilai: angka(k.nilai) };
-    const syarat = k.syarat.map(s => {
+    const syarat = k.syarat.map((s, j) => {
         const o = { kolom: angka(s.kolom), operator: s.operator || '==' };
         if (s.operator !== 'kosong' && s.operator !== 'tidak_kosong') o.nilai = s.nilai ?? '';
+        if (j > 0 && s.hubung === 'atau') o.hubung = 'atau';
         return o;
     });
     const r = k.metode === 'SUM' ? { tipe: 'SUM', target_kolom: angka(k.kolomJumlah) } : { tipe: 'COUNTALL' };
@@ -113,7 +115,10 @@ function rbRender(sisi) {
         const syaratHtml = k.syarat.map((s, j) => {
             const tanpaNilai = s.operator === 'kosong' || s.operator === 'tidak_kosong';
             return `<div class="d-flex gap-2 align-items-center mb-1 rb-syarat">
-                <span class="small text-muted" style="width:42px">${j === 0 ? 'jika' : 'dan'}</span>
+                ${j === 0 ? '<span class="small text-muted" style="width:86px;flex:none;padding-left:.5rem">jika</span>'
+                    : `<select class="form-select form-select-sm fw-bold ${s.hubung === 'atau' ? 'text-warning-emphasis border-warning' : 'text-muted'}" style="width:86px;flex:none;padding-left:.5rem;padding-right:1.6rem" title="Penghubung dengan syarat sebelumnya"
+                        onchange="rbUbahSyarat('${sisi}',${i},${j},'hubung',this.value)">
+                        <option value="dan" ${s.hubung !== 'atau' ? 'selected' : ''}>dan</option><option value="atau" ${s.hubung === 'atau' ? 'selected' : ''}>atau</option></select>`}
                 <select class="form-select form-select-sm" style="max-width:280px" onchange="rbUbahSyarat('${sisi}',${i},${j},'kolom',this.value)">${rbOpsiKolom(k.form, s.kolom)}</select>
                 <select class="form-select form-select-sm" style="max-width:190px" onchange="rbUbahSyarat('${sisi}',${i},${j},'operator',this.value)">
                     ${RB_OPERATOR.map(o => `<option value="${esc(o)}" ${s.operator === o ? 'selected' : ''}>${esc(MUTU_OPERATOR[o])}</option>`).join('')}
@@ -142,6 +147,8 @@ function rbRender(sisi) {
             </div>
             ${k.metode !== 'KONSTAN' ? `<div class="mt-2 ps-1">${syaratHtml}
                 <button type="button" class="btn btn-sm btn-link p-0" onclick="rbTambahSyarat('${sisi}',${i})"><i class="fas fa-plus me-1"></i>tambah syarat</button>
+                ${k.syarat.length > 2 && k.syarat.some((s, j) => j > 0 && s.hubung === 'atau') && k.syarat.some((s, j) => j > 0 && s.hubung !== 'atau')
+                    ? '<div class="small text-muted"><i class="fas fa-info-circle me-1"></i>DAN dikerjakan lebih dulu daripada ATAU — lihat kurung pada penjelasan rumus di bawah.</div>' : ''}
                 ${!kol ? '<div class="small text-danger">Formulir ini tidak ada di Form Builder.</div>' : ''}</div>` : ''}
         </div>`;
     }).join('') + `
@@ -177,7 +184,7 @@ window.rbUbahSyarat = function (sisi, i, j, kolom, nilai, tanpaRender) {
     RB.state[sisi][i].syarat[j][kolom] = nilai;
     if (tanpaRender) rbPerbaruiPenjelasan(sisi); else rbRender(sisi);
 };
-window.rbTambahSyarat = function (sisi, i) { RB.state[sisi][i].syarat.push({ kolom: '', operator: '==', nilai: '' }); rbRender(sisi); };
+window.rbTambahSyarat = function (sisi, i) { RB.state[sisi][i].syarat.push({ kolom: '', operator: '==', nilai: '', hubung: 'dan' }); rbRender(sisi); };
 window.rbHapusSyarat = function (sisi, i, j) { RB.state[sisi][i].syarat.splice(j, 1); rbRender(sisi); };
 window.rbTambahKomponen = function (sisi) { RB.state[sisi].push(rbKomponenBaru('COUNT', false)); rbRender(sisi); };
 window.rbHapusKomponen = function (sisi, i) { RB.state[sisi].splice(i, 1); rbRender(sisi); };
