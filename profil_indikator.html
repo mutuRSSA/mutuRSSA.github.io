@@ -15,9 +15,29 @@
         /* CARD ENSIKLOPEDIA */
         .card-custom { box-shadow: 0 4px 12px rgba(0,0,0,.05); border-radius: 12px; border: none; background: #fff; transition: transform 0.2s; }
         .card-custom:hover { transform: translateY(-3px); box-shadow: 0 8px 15px rgba(0,0,0,.1); }
-        .badge-tipe { font-size: 0.8rem; padding: 6px 12px; border-radius: 20px; }
+        .badge-tipe { font-size: 0.8rem; padding: 6px 12px; border-radius: 20px; white-space: normal; text-align: left; line-height: 1.3; }
+        /* Isi kartu tidak boleh keluar kotak: teks panjang turun baris */
+        .item-indikator .card-custom { min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
+        .id-form { display: inline-block; max-width: 100%; font-family: SFMono-Regular, Consolas, 'Courier New', monospace; font-size: .8rem; font-weight: 700;
+                   color: #b02a37; background: #fdf0f1; border: 1px solid #f5c2c7; border-radius: 6px; padding: 2px 8px; overflow-wrap: anywhere; }
         .badge-arsip { font-size: 0.8rem; padding: 6px 12px; border-radius: 20px; background-color: #6c757d; color: white; margin-left: 5px;}
         .math-box { background: #f8f9fa; border-left: 4px solid #0d6efd; padding: 15px; border-radius: 6px; font-family: 'Courier New', Courier, monospace; font-weight: bold; }
+        /* Isi kartu: capaian terakhir & cara menghitung */
+        .kartu-meta .chip-meta { font-size: .72rem; background: #f1f3f5; color: #495057; border-radius: 20px; padding: 2px 9px; }
+        .kartu-blok { background: #f8f9fa; border-radius: 8px; padding: 10px 12px; }
+        .kartu-label { font-size: .7rem; text-transform: uppercase; letter-spacing: .4px; color: #6c757d; font-weight: 600; }
+        .nilai-capaian { font-size: 1.6rem; font-weight: 800; line-height: 1.15; }
+        .tren { position: relative; display: flex; gap: 6px; align-items: flex-end; height: 62px; }
+        .tren-kolom { flex: 1; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; }
+        .tren-batang { border-radius: 3px 3px 0 0; min-height: 2px; }
+        .tren-batang.ok { background: #20c997; } .tren-batang.gagal { background: #f06571; }
+        .tren-batang.kosong { background: repeating-linear-gradient(45deg, #e9ecef, #e9ecef 3px, #f8f9fa 3px, #f8f9fa 6px); height: 72% !important; }
+        .tren-bln { font-size: .65rem; color: #868e96; text-align: center; height: 16px; line-height: 16px; }
+        .tren-target { position: absolute; left: 0; right: 0; border-top: 1.5px dashed #0d6efd; opacity: .7; pointer-events: none; }
+        .baris-nd { display: flex; gap: 8px; align-items: flex-start; font-size: .8rem; color: #343a40; margin-top: 6px; }
+        .nd { flex: none; width: 20px; height: 20px; border-radius: 5px; font-weight: 800; font-size: .72rem; display: inline-flex; align-items: center; justify-content: center; color: #fff; }
+        .nd-n { background: #198754; } .nd-d { background: #e0a800; }
+        .teks-2baris { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
         
         /* MODAL BUILDER */
         .form-label { font-weight: bold; color: #34495e; font-size: 0.85rem; margin-bottom: 0.3rem;}
@@ -323,7 +343,9 @@
                 const { data, error } = await supabaseClient.from('master_indikator').select('*').order('judul_indikator', { ascending: true });
                 if (error) throw error;
                 listIndikator = data;
+                capaianKartu = null;
                 renderKamus(listIndikator);
+                muatCapaianKartu();   // isi capaian terakhir di kartu (di belakang layar)
                 document.getElementById('wadahKamus').classList.remove('d-none');
             } catch (err) {
                 console.error(err);
@@ -331,6 +353,112 @@
             } finally { 
                 document.getElementById('loadingMessage').classList.add('d-none'); 
             }
+        }
+
+        // ================= Isi kartu: capaian terakhir & cara menghitung =================
+        const KARTU_BULAN = 6;   // tren berapa bulan terakhir
+        const NAMA_BLN_KARTU = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        let capaianKartu = null;   // Map id_indikator -> [{tahun, bulan, nilai, target, arah}] (null = belum dimuat)
+        const fmtAngka = v => v === null || v === undefined || isNaN(v) ? '-' : Number(v).toLocaleString('id-ID', { maximumFractionDigits: 2 });
+        const arahKecil = a => /kecil|negatif|≤|<=/i.test(a || '');
+        const teksTarget = item => item.target === null || item.target === undefined || String(item.target).trim() === '' ? '-'
+            : `${arahKecil(item.arah_target) ? '≤' : '≥'} ${fmtAngka(item.target)} ${item.satuan || ''}`.trim();
+        // Bulan-bulan yang ditampilkan: s.d. bulan lalu
+        function daftarBulanKartu() {
+            const d = new Date(); d.setDate(1); const hasil = [];
+            for (let i = KARTU_BULAN; i >= 1; i--) { const x = new Date(d.getFullYear(), d.getMonth() - i, 1); hasil.push({ tahun: x.getFullYear(), bulan: x.getMonth() + 1 }); }
+            return hasil;
+        }
+        function kolomFormKartu(item) { return f => { const x = listFormulirMaster.find(d => d.id_form === (f || item.id_form)); return x ? x.kolom : undefined; }; }
+        // N & D dalam kalimat: definisi di profil, atau penjelasan rumus otomatis
+        function teksNumDen(item, sisi) {
+            const definisi = (sisi === 'num' ? item.num_teks : item.den_teks) || '';
+            if (String(definisi).trim()) return String(definisi).trim();
+            const t = sisi === 'num' ? item.template_numerator : item.template_denominator;
+            return mutuParseTemplate(t) ? jelaskanTemplate(t, kolomFormKartu(item)) : '';
+        }
+        function badgeRumus(item) {
+            const ada = mutuParseTemplate(item.template_numerator) && mutuParseTemplate(item.template_denominator);
+            if (!ada) return '<span class="badge bg-secondary-subtle text-secondary-emphasis" title="Rumus N/D belum disusun di Builder Engine">Rumus belum disusun</span>';
+            const masalah = [...periksaTemplate(item.template_numerator, kolomFormKartu(item)), ...periksaTemplate(item.template_denominator, kolomFormKartu(item))];
+            return masalah.length ? `<span class="badge bg-danger-subtle text-danger-emphasis" title="${esc(masalah.join('; '))}"><i class="fas fa-exclamation-circle me-1"></i>Rumus bermasalah</span>`
+                                  : '<span class="badge bg-success-subtle text-success-emphasis"><i class="fas fa-check me-1"></i>Rumus siap</span>';
+        }
+        function htmlCaraHitung(item) {
+            const n = teksNumDen(item, 'num'), d = teksNumDen(item, 'den');
+            return `<div class="kartu-blok mb-3">
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-1"><span class="kartu-label">Cara menghitung</span>${badgeRumus(item)}</div>
+                <div class="baris-nd" title="${esc(n)}"><span class="nd nd-n">N</span><span class="teks-2baris">${esc(n || 'Belum didefinisikan')}</span></div>
+                <div class="baris-nd" title="${esc(d)}"><span class="nd nd-d">D</span><span class="teks-2baris">${esc(d || 'Belum didefinisikan')}</span></div>
+            </div>`;
+        }
+        function htmlCapaian(item) {
+            const target = teksTarget(item);
+            const kepala = (nilai, ket, kelas = 'text-muted') => `<div class="d-flex justify-content-between align-items-start gap-2">
+                    <div style="min-width:0"><div class="kartu-label">Capaian terakhir</div><div class="nilai-capaian ${kelas}">${nilai}</div><div class="small text-muted">${ket}</div></div>
+                    <div class="text-end flex-none"><div class="kartu-label">Target</div><div class="fw-bold text-primary text-nowrap" style="font-size:1.05rem">${esc(target)}</div></div></div>`;
+            if (item.status_aktif === false) return kepala('–', 'Indikator diarsipkan');
+            if (!(mutuParseTemplate(item.template_numerator) || mutuParseTemplate(item.template_denominator))) return kepala('–', 'Belum bisa dihitung (rumus belum disusun)');
+            if (capaianKartu === null) return kepala('<span class="spinner-border spinner-border-sm"></span>', 'Memuat capaian…');
+            const deret = capaianKartu.get(String(item.id_indikator)) || [];
+            const terakhir = [...deret].reverse().find(x => x.nilai !== null);
+            if (!terakhir) return kepala('–', `Belum ada data ${KARTU_BULAN} bulan terakhir`);
+            const ok = cekTercapaiProfil({ target: terakhir.target, arah_target: terakhir.arah }, terakhir.nilai);
+            const satuan = /%|persen/i.test(item.satuan || '') ? ' %' : '';
+            const status = ok === null ? '' : ok ? '<span class="text-success fw-bold">Tercapai</span>' : '<span class="text-danger fw-bold">Tidak tercapai</span>';
+            // Grafik batang mini: tinggi relatif terhadap nilai/target tertinggi, garis putus = target
+            const nilaiAda = deret.filter(x => x.nilai !== null).map(x => x.nilai);
+            const tTarget = parseFloat(item.target);
+            const maks = Math.max(...nilaiAda, isNaN(tTarget) ? 0 : tTarget, 1e-9);
+            const batang = deret.map(x => {
+                const okx = x.nilai === null ? null : cekTercapaiProfil({ target: x.target, arah_target: x.arah }, x.nilai);
+                const tinggi = x.nilai === null ? 0 : Math.max(4, Math.round(x.nilai / maks * 100));
+                const label = `${NAMA_BLN_KARTU[x.bulan - 1]} ${x.tahun}: ${x.nilai === null ? 'belum ada data' : fmtAngka(x.nilai) + satuan + (okx === null ? '' : okx ? ' (tercapai)' : ' (tidak tercapai)')}`;
+                // area batang = 72% tinggi grafik (sisanya label bulan)
+                return `<div class="tren-kolom" title="${esc(label)}"><div class="tren-batang ${x.nilai === null ? 'kosong' : okx === false ? 'gagal' : 'ok'}" style="height:${x.nilai === null ? 72 : tinggi * 0.72}%"></div>
+                        <div class="tren-bln">${NAMA_BLN_KARTU[x.bulan - 1]}</div></div>`;
+            }).join('');
+            const garis = isNaN(tTarget) ? '' : `<div class="tren-target" style="bottom:calc(16px + ${Math.min(100, tTarget / maks * 100) * 0.72}%)" title="Target ${esc(target)}"></div>`;
+            return kepala(fmtAngka(terakhir.nilai) + satuan, `${NAMA_BLN_KARTU[terakhir.bulan - 1]} ${terakhir.tahun} · ${status}`, ok === false ? 'text-danger' : ok ? 'text-success' : 'text-dark')
+                + `<div class="tren mt-2">${batang}${garis}</div>`;
+        }
+        // Capaian per indikator (seluruh RS, ΣN/ΣD; rata-rata capaian bila tanpa N/D) dari mesin database,
+        // hanya dari unit pelapor (Pengaturan Unit Kerja + Hak Akses Kolom), sama dengan Laporan Mutu.
+        async function muatCapaianKartu() {
+            try {
+                const bulan = daftarBulanKartu();
+                const perTahun = new Map(); bulan.forEach(b => { if (!perTahun.has(b.tahun)) perTahun.set(b.tahun, []); perTahun.get(b.tahun).push(b.bulan); });
+                const [hasil, resUnit] = await Promise.all([
+                    Promise.all([...perTahun].map(([th, bl]) => ambilSemuaBaris(() => supabaseClient.rpc('hitung_capaian_mutu', { p_tahun: th, p_bulan: bl }).order('id_indikator').order('unit_kerja').order('bulan'))
+                        .then(rows => rows.map(r => ({ ...r, tahun: th }))))),
+                    supabaseClient.from('master_unit').select('nama_unit, daftar_form')
+                ]);
+                const peta = mutuPasangAksesKolom(resUnit.error ? null : mutuPetaFormUnit(resUnit.data || []), listFormulirMaster, listIndikator);
+                const profil = new Map(listIndikator.map(p => [String(p.id_indikator), p]));
+                const kel = new Map();
+                hasil.flat().forEach(h => {
+                    const p = profil.get(String(h.id_indikator)); if (!p) return;
+                    if (!mutuUnitMelaporkan(peta, h.unit_kerja, p.id_form, h.id_indikator)) return;
+                    const k = `${h.id_indikator}|${h.tahun}|${h.bulan}`;
+                    if (!kel.has(k)) kel.set(k, { n: 0, d: 0, c: [], target: h.target ?? p.target, arah: h.arah_target ?? p.arah_target });
+                    const g = kel.get(k); g.n += Number(h.numerator) || 0; g.d += Number(h.denominator) || 0;
+                    if (h.capaian !== null && h.capaian !== undefined) g.c.push(Number(h.capaian));
+                });
+                capaianKartu = new Map();
+                listIndikator.forEach(p => {
+                    capaianKartu.set(String(p.id_indikator), bulan.map(b => {
+                        const g = kel.get(`${p.id_indikator}|${b.tahun}|${b.bulan}`);
+                        let nilai = null;
+                        if (g) nilai = g.d > 0 ? hitungCapaianND(g.n, g.d, p.satuan) : (g.c.length ? g.c.reduce((a, x) => a + x, 0) / g.c.length : null);
+                        if (nilai !== null && nilai !== undefined) nilai = Math.round(nilai * 100) / 100;
+                        return { ...b, nilai: nilai ?? null, target: g ? g.target : p.target, arah: g ? g.arah : p.arah_target };
+                    }));
+                });
+            } catch (e) {
+                console.warn('Capaian kartu tidak dapat dimuat:', e);
+                capaianKartu = new Map();
+            }
+            listIndikator.forEach(item => { const el = document.getElementById('cap_' + item.id_indikator); if (el) el.innerHTML = htmlCapaian(item); });
         }
 
         function renderKamus(data) {
@@ -390,25 +518,23 @@
                 wadah.innerHTML += `
                     <div class="col-md-6 col-lg-4 item-indikator" data-kategori="${esc(item.kategori_indikator || '')}">
                         <div class="card-custom p-4 h-100 d-flex flex-column ${cardClass}">
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <div>
+                            <div class="mb-2">
+                                <div class="d-flex flex-wrap align-items-center gap-1">
                                     <span class="badge ${badgeColor} badge-tipe">${esc(item.kategori_indikator || 'UMUM')}</span>
                                     ${arsipBadge}
                                 </div>
-                                <code class="text-danger fw-bold fs-6" title="ID Tabel Form"><i class="fas fa-link me-1"></i>${item.id_form}</code>
+                                <div class="id-form mt-2" title="ID formulir yang dipakai indikator ini"><i class="fas fa-link me-1"></i>${esc(item.id_form || '-')}</div>
                             </div>
-                            <h5 class="fw-bold text-dark mt-2 search-target" style="line-height: 1.4;">${esc(item.judul_indikator)}</h5>
-                            <p class="text-muted mb-3 search-target" style="font-size:0.85rem;"><i class="fas fa-hospital me-1"></i> Unit: ${esc(item.unit_pelaksana || 'Semua Unit')}</p>
-                            
-                            <div class="math-box mb-3 flex-grow-1">
-                                <div class="text-center text-success border-bottom border-success pb-1 mb-1" style="font-size:0.85rem;" title="${esc(item.num_teks || '')}">Numerator (N)</div>
-                                <div class="text-center text-warning text-darken" style="font-size:0.85rem;" title="${esc(item.den_teks || '')}">Denominator (D)</div>
+                            <h5 class="fw-bold text-dark mt-2 mb-1 search-target" style="line-height: 1.4;">${esc(item.judul_indikator)}</h5>
+                            <p class="text-muted mb-2 search-target" style="font-size:0.85rem;"><i class="fas fa-hospital me-1"></i> Unit: ${esc(item.unit_pelaksana || 'Semua Unit')}</p>
+                            <div class="d-flex flex-wrap gap-1 mb-3 kartu-meta">
+                                ${item.dimensi_mutu ? `<span class="chip-meta" title="Dimensi mutu"><i class="fas fa-gem me-1"></i>${esc(item.dimensi_mutu)}</span>` : ''}
+                                ${item.periode_pelaporan ? `<span class="chip-meta" title="Periode pelaporan"><i class="fas fa-calendar-alt me-1"></i>${esc(item.periode_pelaporan)}</span>` : ''}
+                                <span class="chip-meta" title="Arah capaian yang baik"><i class="fas ${arahKecil(item.arah_target) ? 'fa-arrow-down' : 'fa-arrow-up'} me-1"></i>${arahKecil(item.arah_target) ? 'Makin kecil makin baik' : 'Makin besar makin baik'}</span>
                             </div>
-                            
-                            <div class="d-flex justify-content-between align-items-center bg-light p-2 rounded mb-3">
-                                <span class="text-muted" style="font-size:0.85rem;">Target Capaian:</span>
-                                <span class="fw-bold fs-5 text-primary">${item.target != null ? item.target : '-'} ${esc(item.satuan || '')}</span>
-                            </div>
+
+                            <div class="kartu-blok mb-3" id="cap_${esc(item.id_indikator)}">${htmlCapaian(item)}</div>
+                            <div class="flex-grow-1">${htmlCaraHitung(item)}</div>
                             
                             <div class="mt-auto pt-2 border-top">
                                 ${btnDetailUmum}
