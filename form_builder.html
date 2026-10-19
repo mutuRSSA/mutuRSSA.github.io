@@ -230,6 +230,15 @@
 
         // Tipe dari builder Google Sheet lama -> nama tipe aplikasi
         const ALIAS_TIPE = { numeric: 'number', date: 'calendar' };
+        // TEXT(x, HH:MM) -> TEXT(x,"hh:mm"): format tanpa tanda kutip dibaca mesin rumus sebagai rentang sel (#SPILL!),
+        // dan detik harus huruf kecil ("SS" tidak dikenali).
+        function rapikanFormatTeks(f) {
+            return String(f ?? '').replace(/(\bTEXT\s*\([^,()]*(?:\([^()]*\)[^,()]*)*,\s*)("?)([A-Za-z:.\/\- ]+)\2(\s*\))/gi, (m, a, q, fmt, z) => {
+                const t = fmt.trim();
+                if (!/^[hmsdy:.\/\- ]+$/i.test(t)) return m;
+                return a + '"' + (/^[hms:. ]+$/i.test(t) ? t.toLowerCase() : t) + '"' + z;
+            });
+        }
 
         // lama = kolom yang sudah tersimpan. Kolom lama TIDAK dihapus, hanya disembunyikan,
         // karena posisi kolom [indeks] dipakai data yang sudah ada, rumus baris, dan rumus indikator.
@@ -560,6 +569,7 @@
 
                 // Rumus hanya untuk tipe READONLY; tipe lain selalu diisi petugas
                 if (tipe !== 'readonly') formula = '';
+                formula = rapikanFormatTeks(formula);
                 const kolom = { judul: judul, tipe: tipe, opsi: opsi, formula: formula, lebar: lebar, akses: akses };
                 const format = tipe === 'readonly' ? row.querySelector('.fb-col-format').value : '';
                 if (format) kolom.format = format;

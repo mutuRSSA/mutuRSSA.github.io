@@ -518,8 +518,17 @@
             return String(a ?? '').trim() === String(b ?? '').trim();
         }
 
+        // TEXT(x, HH:MM) -> TEXT(x,"hh:mm"): format tanpa tanda kutip dibaca mesin rumus sebagai rentang sel (#SPILL!),
+        // dan detik harus huruf kecil ("SS" tidak dikenali).
+        function rapikanFormatTeks(f) {
+            return String(f ?? '').replace(/(\bTEXT\s*\([^,()]*(?:\([^()]*\)[^,()]*)*,\s*)("?)([A-Za-z:.\/\- ]+)\2(\s*\))/gi, (m, a, q, fmt, z) => {
+                const t = fmt.trim();
+                if (!/^[hmsdy:.\/\- ]+$/i.test(t)) return m;
+                return a + '"' + (/^[hms:. ]+$/i.test(t) ? t.toLowerCase() : t) + '"' + z;
+            });
+        }
         function rumusBaris(col, r) {
-            return '=' + col.formula
+            return '=' + rapikanFormatTeks(col.formula)
                 .replace(/\[(\d+)\]:\[(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (r + 1) + ":" + colToLetter(parseInt(e)) + (r + 1))
                 .replace(/\[(\d+)\]/g, (m, idx) => colToLetter(parseInt(idx)) + (r + 1));
         }
