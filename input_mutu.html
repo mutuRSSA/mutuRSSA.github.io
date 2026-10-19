@@ -175,6 +175,7 @@
                         <div id="spreadsheetWadah" class="w-100 border rounded mb-3 bg-white" style="position: relative;">
                             <div id="spreadsheet" style="height: 500px;"></div>
                         </div>
+                        <div id="infoRumusUsang" class="alert alert-info py-2 px-3 small d-none mb-2"></div>
                         <div class="small fw-bold text-warning mb-2" id="statusTabel"></div>
                         <div class="d-grid mt-2">
                             <button type="button" class="btn btn-success fw-bold py-3 shadow fs-5" id="btnSimpanDataExcel" onclick="simpanDataTransaksi('excel')">
@@ -465,6 +466,58 @@
         const adaRumus = c => !!(c && tipeKolom(c) === 'readonly' && c.formula && String(c.formula).trim() !== '');
         const nilaiError = v => typeof v === 'string' && /^#(DIV\/0!|VALUE!|N\/A|REF!|NAME\?|NUM!|ERROR!|CYCLE!)$/.test(v);
 
+        // Mesin rumus: kenali teks tanggal/jam yang dipakai di aplikasi ini ("2026-09-28 10:05:00",
+        // "28/09/2026", "10:05") sebagai TANGGAL-JAM (angka hari Excel), sehingga [b]-[a] = selisih waktu.
+        // Bawaan Handsontable hanya mengenal YYYY-MM-DD, jadi kolom kalender DD/MM/YYYY tidak bisa dihitung.
+        const hfKonfig = () => ({ hyperformula: HyperFormula, dateFormats: ['YYYY-MM-DD', 'DD/MM/YYYY', 'YYYY/MM/DD'], timeFormats: ['hh:mm', 'hh:mm:ss', 'hh:mm:ss.sss'] });
+
+        // ---------- Format hasil kolom READONLY (Form Builder: "Format hasil") ----------
+        // jam_hm / jam_hms / tanggal / tanggal_jam : hasil tanggal-jam (angka hari) -> disimpan sebagai TEKS terformat
+        // durasi_hm / durasi_hms : hasil dalam MENIT -> disimpan sebagai ANGKA menit (syarat indikator "<= 60"
+        //                          tetap bekerja), hanya ditampilkan sebagai jj:mm(:dd)
+        const FORMAT_WAKTU = ['jam_hm', 'jam_hms', 'tanggal', 'tanggal_jam'];
+        const formatKolom = c => adaRumus(c) ? String(c.format || '') : '';
+        const dua = x => String(x).padStart(2, '0');
+        function angkaDari(v) {
+            if (typeof v === 'number') return isFinite(v) ? v : null;
+            const t = String(v ?? '').trim();
+            return /^-?\d+(\.\d+)?$/.test(t) ? Number(t) : null;
+        }
+        function waktuDariSerial(n, f) {
+            const hari = Math.floor(n), detikHari = Math.round((n - hari) * 86400);
+            const d = new Date(Date.UTC(1899, 11, 30) + (hari * 86400 + detikHari) * 1000);
+            const jam = `${dua(d.getUTCHours())}:${dua(d.getUTCMinutes())}`, detik = ':' + dua(d.getUTCSeconds());
+            const tgl = `${dua(d.getUTCDate())}/${dua(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`;
+            return f === 'jam_hm' ? jam : f === 'jam_hms' ? jam + detik : f === 'tanggal' ? tgl : `${tgl} ${jam}${detik}`;
+        }
+        function durasiDariMenit(n, f) {
+            const s = Math.round(Math.abs(n) * 60);
+            return (n < 0 && s ? '-' : '') + `${dua(Math.floor(s / 3600))}:${dua(Math.floor(s % 3600 / 60))}` + (f === 'durasi_hms' ? ':' + dua(s % 60) : '');
+        }
+        // Nilai yang disimpan ke database untuk kolom rumus
+        function nilaiSimpanRumus(col, v) {
+            if (v === undefined || v === null || v === '' || nilaiError(v)) return null;
+            if (typeof v !== 'number') return v;
+            const f = formatKolom(col);
+            if (FORMAT_WAKTU.includes(f)) return waktuDariSerial(v, f);
+            return Math.round(v * 1e6) / 1e6;     // buang sisa pembulatan biner (61.99999999 -> 62)
+        }
+        // Teks tampilan (tabel, Form Tunggal, arsip)
+        function tampilNilai(col, v) {
+            const f = formatKolom(col), n = angkaDari(v);
+            if (!f || n === null) return v;
+            if (FORMAT_WAKTU.includes(f)) return waktuDariSerial(n, f);
+            if (f === 'durasi_hm' || f === 'durasi_hms') return durasiDariMenit(n, f);
+            return v;
+        }
+        const durasiNegatif = (col, v) => formatKolom(col).startsWith('durasi_') && (angkaDari(v) ?? 0) < 0;
+        // Sama atau tidak: angka dibandingkan dengan toleransi (nilai lama belum dibulatkan)
+        function nilaiSama(a, b) {
+            const x = angkaDari(a), y = angkaDari(b);
+            if (x !== null && y !== null) return Math.abs(x - y) <= 1e-6 * Math.max(1, Math.abs(x));
+            return String(a ?? '').trim() === String(b ?? '').trim();
+        }
+
         function rumusBaris(col, r) {
             return '=' + col.formula
                 .replace(/\[(\d+)\]:\[(\d+)\]/g, (m, s, e) => colToLetter(parseInt(s)) + (r + 1) + ":" + colToLetter(parseInt(e)) + (r + 1))
@@ -480,6 +533,7 @@
             return cetakBiruAktif.map((col, idx) => {
                 const cell = row[idx];
                 if (tipeKolom(col) === 'checkbox') return (cell === true || cell === 'Ya') ? 'Ya' : 'Tidak';
+                if (adaRumus(col)) return nilaiSimpanRumus(col, cell);
                 if (cell === undefined || nilaiError(cell)) return null;
                 return cell;
             });
@@ -591,7 +645,7 @@
                     if (coords.row === -1 && coords.col >= 0 && coords.col < n && event.button === 0 && !event.target.closest('.manualColumnResizer')) klikJudulKolom(coords.col);
                 },
                 rowHeaders: true, width: '100%', height: 500, stretchH: 'all',
-                formulas: { engine: HyperFormula }, licenseKey: 'non-commercial-and-evaluation', 
+                formulas: { engine: hfKonfig() }, licenseKey: 'non-commercial-and-evaluation', 
                 autoColumnSize: false, manualColumnResize: true, minSpareRows: periodeTerkunci ? 0 : 5,
                 readOnly: !!periodeTerkunci,
                 // Salin / tempel (Ctrl+C, Ctrl+X, Ctrl+V; juga dari & ke Excel / Google Sheets)
@@ -700,6 +754,11 @@
                         if (cellProps.readOnly) { td.style.backgroundColor = '#eef1f4'; td.style.color = '#0a4f9e'; td.style.fontWeight = 'bold'; } 
                         else { td.style.backgroundColor = tersimpan ? '#f4f9ff' : '#ffffff'; td.style.color = '#2c3e50'; }
                         if (nilaiError(value)) td.innerHTML = '<span style="color:#dee2e6">-</span>'; 
+                        else if (c < n && value !== null && value !== '' && formatKolom(cetakBiruAktif[c])) {
+                            td.textContent = tampilNilai(cetakBiruAktif[c], value);
+                            td.style.textAlign = 'center';
+                            if (durasiNegatif(cetakBiruAktif[c], value)) { td.style.color = '#dc3545'; td.title = 'Durasi negatif: jam akhir lebih awal dari jam mulai. Periksa isian jam.'; }
+                        }
                     };
                     return cellProperties;
                 }
@@ -709,6 +768,30 @@
             if (urutKolom.form === document.getElementById('sel_indikator').value) terapkanUrut();
             else urutKolom = { form: null, col: -1, arah: 1 };
             siapkanHitungForm();
+            cekHasilRumusUsang();
+        }
+
+        // Hasil kolom otomatis yang tersimpan bisa usang (rumus di Form Builder diperbaiki setelah data diisi).
+        // Baris seperti itu ikut disimpan ulang pada "Simpan Semua Perubahan" agar laporan memakai hasil baru.
+        let barisRumusUsang = new Set();
+        function cekHasilRumusUsang() {
+            barisRumusUsang = new Set();
+            const hot = hotInstance, n = cetakBiruAktif.length, el = document.getElementById('infoRumusUsang');
+            if (hot && !periodeTerkunci && cetakBiruAktif.some(adaRumus)) {
+                const simpan = new Map(dataPeriode.map(d => [d.id, Array.isArray(d.data_input) ? d.data_input : []]));
+                hot.getData().forEach(row => {
+                    const id = row[n], isi = id && simpan.get(id);
+                    if (!isi) return;
+                    const baru = bersihkanBaris(row);
+                    if (cetakBiruAktif.some((c, i) => adaRumus(c) && !nilaiSama(baru[i], isi[i]))) barisRumusUsang.add(id);
+                });
+            }
+            if (el) {
+                el.classList.toggle('d-none', !barisRumusUsang.size);
+                el.innerHTML = barisRumusUsang.size ? `<i class="fas fa-sync-alt me-1"></i> <b>${barisRumusUsang.size} baris</b> tersimpan masih memakai hasil kolom otomatis lama (rumus di Form Builder sudah berubah).
+                    Tabel di atas sudah menampilkan hasil yang benar — klik <b>Simpan Semua Perubahan</b> agar ikut diperbarui di database dan laporan.` : '';
+            }
+            if (barisRumusUsang.size) tandaiBerubah(true);
         }
 
         // ---------- Isi otomatis berderet (seperti Excel) ----------
@@ -877,7 +960,7 @@
             if (hotHitung) { hotHitung.destroy(); hotHitung = null; }
             wadah.innerHTML = '';
             hotHitung = new Handsontable(wadah, {
-                data: [barisDenganRumus(0, false)], formulas: { engine: HyperFormula },
+                data: [barisDenganRumus(0, false)], formulas: { engine: hfKonfig() },
                 licenseKey: 'non-commercial-and-evaluation', width: 800, height: 80
             });
         }
@@ -942,6 +1025,7 @@
                     let idx = parseInt(el.getAttribute('data-index'));
                     let result = hotHitung.getDataAtCell(0, idx);
                     if (nilaiError(result) || result === null || result === '') { el.value = ''; } 
+                    else if (formatKolom(cetakBiruAktif[idx])) { el.value = tampilNilai(cetakBiruAktif[idx], result); }
                     else if (typeof result === 'number') { el.value = Math.round(result * 100) / 100; } 
                     else { el.value = result; }
                 });
@@ -1256,7 +1340,7 @@
                         idTampil.add(id);
                         if (kosong) { hapus.push(id); return; }          // isi baris dikosongkan = hapus
                         const clean = bersihkanBaris(row);
-                        if (kunciIsi(clean) !== barisAsli.get(id)) {
+                        if (kunciIsi(clean) !== barisAsli.get(id) || barisRumusUsang.has(id)) {
                             const per = hitungPeriode(clean, defBulan, defTahun);
                             ubah.push({ id, data_input: clean, bulan: per.bulan, tahun: per.tahun });
                         }
@@ -1373,7 +1457,7 @@
                             ${periodeTerkunci ? '<i class="fas fa-lock text-warning" title="Periode terkunci"></i>' : `
                             <button class="btn btn-sm btn-outline-primary me-1" title="Edit baris" onclick="editDataTransaksi('${escJsAttr(row.id)}')"><i class="fas fa-pen"></i></button>
                             <button class="btn btn-sm btn-outline-danger" title="Hapus baris" onclick="hapusDataTransaksi('${escJsAttr(row.id)}')"><i class="fas fa-times"></i></button>`}</td>`;
-                        if(Array.isArray(row.data_input)) { row.data_input.forEach((val, i) => { if (cetakBiruAktif[i] && cetakBiruAktif[i].sembunyi) return; htmlBaris += `<td>${val !== null && val !== undefined ? esc(val) : '-'}</td>`; }); }
+                        if(Array.isArray(row.data_input)) { row.data_input.forEach((val, i) => { if (cetakBiruAktif[i] && cetakBiruAktif[i].sembunyi) return; htmlBaris += `<td>${val !== null && val !== undefined ? esc(tampilNilai(cetakBiruAktif[i], val)) : '-'}</td>`; }); }
                         return htmlBaris + '</tr>';
                     }).join('');
                 }

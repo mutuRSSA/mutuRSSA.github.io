@@ -243,6 +243,11 @@
             let lebar = data ? data.lebar : '';
             let formula = data ? escapeHTML(data.formula) : ''; 
             let akses = data ? data.akses : 'ALL';
+            const formatHasil = data && data.format ? String(data.format) : '';
+            const opsiFormat = [['', 'Angka / teks apa adanya'], ['jam_hm', 'Jam (HH:MM)'], ['jam_hms', 'Jam (HH:MM:SS)'],
+                ['tanggal', 'Tanggal (DD/MM/YYYY)'], ['tanggal_jam', 'Tanggal & jam'],
+                ['durasi_hm', 'Durasi dari menit (jj:mm)'], ['durasi_hms', 'Durasi dari menit (jj:mm:dd)']]
+                .map(([v, t]) => `<option value="${v}" ${formatHasil === v ? 'selected' : ''}>${t}</option>`).join('');
 
             let selectTypes = ['text', 'number', 'dropdown', 'checkbox', 'calendar', 'time', 'durasi_hm', 'durasi_hms', 'durasi_ms', 'readonly'];
             if (!selectTypes.includes(tipe)) selectTypes.push(tipe);
@@ -307,9 +312,13 @@
                         ${tipe !== 'readonly' && formula ? `<div class="col-md-12 fb-rumus-lama"><div class="small text-warning-emphasis bg-warning-subtle border border-warning rounded px-2 py-1">
                             <i class="fas fa-exclamation-triangle me-1"></i>Kolom ini menyimpan rumus lama <code>${formula}</code> yang <b>diabaikan</b> karena tipenya bukan READONLY, sehingga petugas tetap bisa mengisi.
                             Rumus ini dihapus saat formulir disimpan. Pilih tipe READONLY bila kolom memang dihitung otomatis.</div></div>` : ''}
-                        <div class="col-md-12 fb-dep-formula" style="display: ${tipe === 'readonly' ? 'block' : 'none'};">
+                        <div class="col-md-8 fb-dep-formula" style="display: ${tipe === 'readonly' ? 'block' : 'none'};">
                             <label class="form-label-sm text-danger">Formula Math Excel (Otomatis)</label>
                             <input type="text" class="form-control form-control-sm fb-col-formula border-danger" value="${esc(formula)}" placeholder="Gunakan indeks [x]. Contoh: [1]/[2]*100">
+                        </div>
+                        <div class="col-md-4 fb-dep-formula" style="display: ${tipe === 'readonly' ? 'block' : 'none'};">
+                            <label class="form-label-sm text-danger">Format hasil</label>
+                            <select class="form-select form-select-sm fb-col-format border-danger" title="Jam/tanggal: hasil berupa tanggal-jam, mis. [3]. Durasi: hasil dalam MENIT, mis. ([4]-[3])*1440 — tetap tersimpan sebagai angka menit untuk rumus indikator.">${opsiFormat}</select>
                         </div>
                     </div>
                 </div>
@@ -496,7 +505,7 @@
             const tipe = row.querySelector('.fb-col-tipe').value;
             
             row.querySelector('.fb-dep-opsi').style.display = (tipe === 'dropdown') ? 'block' : 'none';
-            row.querySelector('.fb-dep-formula').style.display = (tipe === 'readonly') ? 'block' : 'none';
+            row.querySelectorAll('.fb-dep-formula').forEach(el => el.style.display = (tipe === 'readonly') ? 'block' : 'none');
             perbaruiRingkasanIndikator();
         }
 
@@ -552,6 +561,8 @@
                 // Rumus hanya untuk tipe READONLY; tipe lain selalu diisi petugas
                 if (tipe !== 'readonly') formula = '';
                 const kolom = { judul: judul, tipe: tipe, opsi: opsi, formula: formula, lebar: lebar, akses: akses };
+                const format = tipe === 'readonly' ? row.querySelector('.fb-col-format').value : '';
+                if (format) kolom.format = format;
                 if (row.dataset.sembunyi === '1') kolom.sembunyi = true;
                 columnsPayload.push(kolom);
             });
@@ -571,6 +582,14 @@
                     else if (r === i) masalah.push(`[${i}] ${c.judul}: merujuk dirinya sendiri`);
                 });
                 if ((c.formula.match(/\(/g) || []).length !== (c.formula.match(/\)/g) || []).length) masalah.push(`[${i}] ${c.judul}: jumlah tanda kurung tidak seimbang`);
+                // LEFT/RIGHT/MID pada kolom berisi tanggal/jam memotong ANGKA tanggal-jam, bukan teksnya
+                for (const m of c.formula.matchAll(/\b(LEFT|RIGHT|MID)\s*\(\s*\[(\d+)\]/gi)) {
+                    const sumber = columnsPayload[parseInt(m[2], 10)];
+                    if (sumber && sumber.tipe !== 'number' && sumber.tipe !== 'dropdown' && sumber.tipe !== 'checkbox')
+                        masalah.push(`[${i}] ${c.judul}: ${m[1].toUpperCase()}([${m[2]}]) — bila [${m[2]}] berisi tanggal/jam, mesin rumus membacanya sebagai angka sehingga hasilnya acak. Untuk jam pakai [${m[2]}] dengan Format hasil "Jam", atau TEXT([${m[2]}],"hh:mm").`);
+                }
+                if (c.format && c.format.startsWith('durasi_') && /\]\s*-\s*\[/.test(c.formula) && !/1440|\*\s*24\s*\*\s*60|\*\s*60\s*\*\s*24/.test(c.formula))
+                    masalah.push(`[${i}] ${c.judul}: Format hasil durasi membaca hasil sebagai MENIT. Selisih dua tanggal-jam harus dikali 1440, mis. ([b]-[a])*1440`);
             });
 
             Swal.fire({
